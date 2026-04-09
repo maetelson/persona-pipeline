@@ -1,0 +1,14 @@
+workbook_name: persona_pipeline_output.xlsx
+sheets:
+  - README
+  - SourceSummary
+  - QueryMap
+  - RawAudit
+  - ValidCandidates
+  - Episodes
+  - LabeledEpisodes
+  - ClusterSummary
+  - PersonaCandidates
+  - PriorityMatrix
+  - InvalidLog
+  - RunMeta

@@ -1,0 +1,1970 @@
+version: 7
+description: Run-ready source-friendly query map with source-optimized live phrasing for Reddit, Stack
+  Overflow, and GitHub discussions/issues.
+design_notes:
+  purpose: Collect raw discussions from marketers, PMs, ops, non-technical analysts, and business users
+    who hit dashboard trust, export, metric definition, and breakdown limits.
+  key_principles:
+  - Community raw phrasing beats research-language abstractions.
+  - Pain phrases are more valuable than broad BI head terms.
+  - Stack Overflow uses how-to, workflow, comparison, and validation phrasing.
+  - GitHub uses need, missing, support, limitation, and complaint phrasing.
+  priority_axes:
+  - dashboard after export to excel or spreadsheet
+  - metric definition confusion or mismatch
+  - date basis or date field mismatch
+  - segment breakdown after KPI change
+  - need to explain KPI changes to stakeholders
+  excluded_topics:
+  - dashboard design
+  - data viz best practices
+  - sql optimization
+  - ml analytics
+  - warehouse architecture
+  - machine learning
+  - forecasting
+  - visualization gallery
+seed_summary:
+  total_priority_seed_queries: 169
+  total_expanded_queries: 69
+  active_expanded_queries: 54
+  priority_distribution:
+    high: 136
+  source_seed_counts:
+    reddit: 31
+    stackoverflow: 43
+    github_discussions: 14
+source_seed_banks:
+  stackoverflow_raw_seeds:
+  - how to analyze conversion drop
+  - how to explain metric changes to stakeholders
+  - how to compare this week vs last week by channel
+  - how to segment conversion rate by device and source
+  - how to trust dashboard numbers
+  - how to validate dashboard metrics
+  - how to define conversion metric correctly
+  - why dashboard numbers do not match excel
+  - why dashboard numbers do not match sql
+  - export dashboard data to excel for analysis
+  - using excel after power bi
+  - using excel after tableau
+  - using excel after looker
+  - ad hoc analysis in power bi
+  - ad hoc analysis in tableau
+  - ad hoc analysis in looker
+  - how to drill down KPI changes
+  - how to investigate traffic drop by segment
+  - how to find why conversion rate dropped
+  - how to identify which segment caused KPI drop
+  - how to compare new vs returning users in dashboard
+  - how to exclude internal traffic from conversion analysis
+  - how to choose correct date field for reporting
+  - created_at vs signup_date reporting
+  - metric definition mismatch dashboard
+  - dashboard metric definition confusion
+  - BI dashboard not enough for analysis
+  - dashboard only shows summary need breakdown
+  - how to answer why metric changed
+  - how to explain weekly KPI drop
+  - how to break down revenue change by segment
+  - self service analytics with non technical users
+  - business users using power bi without sql
+  - non technical users analyze dashboard data
+  - how to analyze csv without database
+  - how to ask better analytics questions
+  - how to structure analytics question
+  - how to translate business question into sql
+  - how to translate business question into dashboard filters
+  github_raw_seeds:
+  - need better drill down for metric changes
+  - dashboard numbers do not match export
+  - export to excel for further analysis
+  - need weekly comparison by segment
+  - need breakdown by channel device new returning
+  - cannot explain why KPI changed
+  - missing metric definition in dashboard
+  - metric definition confusion
+  - need semantic layer for metrics
+  - business users cannot trust dashboard numbers
+  - need better ad hoc analysis workflow
+  - dashboard is not enough for root cause analysis
+  - need natural language query for dashboards
+  - need plain english explanation for metrics
+  - need to validate dashboard against sql
+  - dashboard and excel mismatch
+  - dashboard and csv mismatch
+  - need support for excluding internal traffic
+  - need support for choosing date basis
+  - wrong date field in reporting
+  - created_at vs event_date mismatch
+  - need comparison this week vs last week
+  - need better segmentation for conversion analysis
+  - need better filtering for stakeholder requests
+  - stakeholders ask why numbers changed
+  - manual excel work after dashboard
+  - copying dashboard data into spreadsheets
+  - need root cause analysis from dashboard
+  - need metric breakdown after summary chart
+  - need support for non technical analysts
+  - need support for marketers without sql
+  - confusing KPI definitions across teams
+  - inconsistent metric definitions
+  - need verified metrics
+  - need governed metrics
+  - need reusable metric templates
+  - need explanation for generated query
+  - need traceable analytics results
+  - need trustable AI analytics
+  - AI generated SQL cannot be trusted
+  - need clarification before running query
+  - ambiguous natural language query
+  - need date clarification in NLQ
+  - need dimension clarification in NLQ
+  - need support for ad hoc questions from business teams
+  tool_specific_raw_seeds:
+  - power bi export to excel for further analysis
+  - power bi metric definition confusion
+  - power bi dashboard numbers do not match excel
+  - power bi created_at vs event_date reporting
+  - power bi weekly comparison by segment
+  - tableau export to excel after dashboard
+  - tableau dashboard not enough for root cause analysis
+  - tableau trust dashboard numbers
+  - tableau drill down KPI change
+  - tableau ad hoc analysis workflow
+  - looker dashboard metric definition mismatch
+  - looker explore too hard for business users
+  - looker explain why metric changed
+  - looker weekly KPI breakdown
+  - looker dashboard export for excel analysis
+  - metabase dashboard numbers mismatch
+  - metabase need better drill down
+  - metabase explain metric change
+  - superset dashboard export to csv for analysis
+  - superset metric definition confusion
+  - apache superset root cause analysis
+  - redash export query result to excel
+  - redash dashboard stakeholder requests
+  - google analytics conversion drop by segment
+  - ga4 conversion reporting confusion
+  - ga4 event date vs conversion date
+  - ga4 trust dashboard numbers
+  role_based_raw_seeds:
+  - marketer dashboard export to excel
+  - marketing KPI changed how to explain
+  - growth marketer conversion drop analysis
+  - performance marketer weekly KPI breakdown
+  - product manager dashboard numbers mismatch
+  - pm needs ad hoc analysis without sql
+  - ops team dashboard trust issue
+  - business analyst metric definition mismatch
+  - non technical analyst dashboard export workflow
+  - stakeholder asks why conversion dropped
+  - marketing report this week vs last week
+  - explain KPI changes to leadership
+  - manual reporting after dashboard
+  complaint_style_raw_seeds:
+  - dashboard is not enough
+  - still using excel after dashboard
+  - have to export to excel every time
+  - stakeholders keep asking why numbers changed
+  - can?t trust the dashboard
+  - numbers don't match between tools
+  - metric definitions are confusing
+  - business users keep asking ad hoc questions
+  - too many manual checks before reporting
+  - have to validate everything in sql
+  - need to explain KPI drop quickly
+  - hard to break down metric changes
+  - hard to know which segment caused the drop
+  - hard to compare this week and last week correctly
+  - hard to choose the right date field
+  - hard to exclude internal users correctly
+  - AI query results are hard to trust
+  - natural language analytics is ambiguous
+  - business question is too vague to analyze
+  additional_generic_seeds:
+  - conversion drop
+  - kpi change
+  - metric change
+  - why metric changed
+  - why conversion dropped
+  - revenue drop
+  - dashboard export
+  - export to excel
+  - excel after dashboard
+  - manual analysis
+  - ad hoc analysis
+  - dashboard mismatch
+  - numbers dont match
+  - excel mismatch
+  - sql mismatch
+  - data inconsistency
+  - metric definition
+  - kpi definition
+  - metric confusion
+  - aggregation issue
+  - date field confusion
+  - created_at vs event_date
+  - date mismatch reporting
+  - wrong date field
+  - segment breakdown
+  - segment comparison
+  - channel breakdown
+  - device breakdown
+  - new vs returning
+  - root cause analysis
+  - kpi breakdown
+  - explain metric change
+  - cannot explain numbers
+exclude_keywords:
+- syntax
+- tutorial
+- beginner guide
+- getting started
+- installation
+- install issue
+- setup issue
+- homework
+- assignment
+- course project
+- hello world
+- API error only
+- stack trace only
+- dashboard design
+- data viz best practices
+- sql optimization
+- ml analytics
+- machine learning analytics
+- warehouse architecture
+- forecasting model only
+- visualization gallery
+- product promo
+priority_seed_queries:
+- query_id: Q001
+  query_text: how to analyze conversion drop
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q002
+  query_text: how to explain metric changes to stakeholders
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q003
+  query_text: how to compare this week vs last week by channel
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q004
+  query_text: how to segment conversion rate by device and source
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q005
+  query_text: how to trust dashboard numbers
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q006
+  query_text: how to validate dashboard metrics
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q007
+  query_text: how to define conversion metric correctly
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q008
+  query_text: why dashboard numbers do not match excel
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q009
+  query_text: why dashboard numbers do not match sql
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q010
+  query_text: export dashboard data to excel for analysis
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q011
+  query_text: using excel after power bi
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q012
+  query_text: using excel after tableau
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q013
+  query_text: using excel after looker
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q014
+  query_text: ad hoc analysis in power bi
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q015
+  query_text: ad hoc analysis in tableau
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q016
+  query_text: ad hoc analysis in looker
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q017
+  query_text: how to drill down KPI changes
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q018
+  query_text: how to investigate traffic drop by segment
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q019
+  query_text: how to find why conversion rate dropped
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q020
+  query_text: how to identify which segment caused KPI drop
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q021
+  query_text: how to compare new vs returning users in dashboard
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q022
+  query_text: how to exclude internal traffic from conversion analysis
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q023
+  query_text: how to choose correct date field for reporting
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q024
+  query_text: created_at vs signup_date reporting
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q025
+  query_text: metric definition mismatch dashboard
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q026
+  query_text: dashboard metric definition confusion
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q027
+  query_text: BI dashboard not enough for analysis
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q028
+  query_text: dashboard only shows summary need breakdown
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q029
+  query_text: how to answer why metric changed
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q030
+  query_text: how to explain weekly KPI drop
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q031
+  query_text: how to break down revenue change by segment
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q032
+  query_text: self service analytics with non technical users
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q033
+  query_text: business users using power bi without sql
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q034
+  query_text: non technical users analyze dashboard data
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q035
+  query_text: how to analyze csv without database
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q036
+  query_text: how to ask better analytics questions
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q037
+  query_text: how to structure analytics question
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q038
+  query_text: how to translate business question into sql
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q039
+  query_text: how to translate business question into dashboard filters
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q040
+  query_text: power bi export to excel for further analysis
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q041
+  query_text: power bi dashboard numbers do not match excel
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q042
+  query_text: power bi created_at vs event_date reporting
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q043
+  query_text: tableau export to excel after dashboard
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q044
+  query_text: tableau ad hoc analysis workflow
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q045
+  query_text: looker dashboard metric definition mismatch
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q046
+  query_text: looker dashboard export for excel analysis
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q047
+  query_text: metabase dashboard numbers mismatch
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q048
+  query_text: superset dashboard export to csv for analysis
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q049
+  query_text: redash export query result to excel
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q050
+  query_text: ga4 conversion reporting confusion
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q051
+  query_text: ga4 event date vs conversion date
+  priority: high
+  source_applicability:
+  - stackoverflow
+- query_id: Q052
+  query_text: need better drill down for metric changes
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q053
+  query_text: dashboard numbers do not match export
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q054
+  query_text: export to excel for further analysis
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q055
+  query_text: need weekly comparison by segment
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q056
+  query_text: need breakdown by channel device new returning
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q057
+  query_text: cannot explain why KPI changed
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q058
+  query_text: missing metric definition in dashboard
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q059
+  query_text: metric definition confusion
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q060
+  query_text: need semantic layer for metrics
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q061
+  query_text: business users cannot trust dashboard numbers
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q062
+  query_text: need better ad hoc analysis workflow
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q063
+  query_text: dashboard is not enough for root cause analysis
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q064
+  query_text: need natural language query for dashboards
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q065
+  query_text: need plain english explanation for metrics
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q066
+  query_text: need to validate dashboard against sql
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q067
+  query_text: dashboard and excel mismatch
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q068
+  query_text: dashboard and csv mismatch
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q069
+  query_text: need support for excluding internal traffic
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q070
+  query_text: need support for choosing date basis
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q071
+  query_text: wrong date field in reporting
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q072
+  query_text: created_at vs event_date mismatch
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q073
+  query_text: need comparison this week vs last week
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q074
+  query_text: need better segmentation for conversion analysis
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q075
+  query_text: need better filtering for stakeholder requests
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q076
+  query_text: stakeholders ask why numbers changed
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q077
+  query_text: manual excel work after dashboard
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q078
+  query_text: copying dashboard data into spreadsheets
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q079
+  query_text: need root cause analysis from dashboard
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q080
+  query_text: need metric breakdown after summary chart
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q081
+  query_text: need support for non technical analysts
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q082
+  query_text: need support for marketers without sql
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q083
+  query_text: confusing KPI definitions across teams
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q084
+  query_text: inconsistent metric definitions
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q085
+  query_text: need verified metrics
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q086
+  query_text: need governed metrics
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q087
+  query_text: need reusable metric templates
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q088
+  query_text: need explanation for generated query
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q089
+  query_text: need traceable analytics results
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q090
+  query_text: need trustable AI analytics
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q091
+  query_text: AI generated SQL cannot be trusted
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q092
+  query_text: need clarification before running query
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q093
+  query_text: ambiguous natural language query
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q094
+  query_text: need date clarification in NLQ
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q095
+  query_text: need dimension clarification in NLQ
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q096
+  query_text: need support for ad hoc questions from business teams
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q097
+  query_text: power bi metric definition confusion
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q098
+  query_text: tableau dashboard not enough for root cause analysis
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q099
+  query_text: looker explore too hard for business users
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q100
+  query_text: metabase need better drill down
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q101
+  query_text: superset metric definition confusion
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q102
+  query_text: apache superset root cause analysis
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q103
+  query_text: redash dashboard stakeholder requests
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q104
+  query_text: ga4 trust dashboard numbers
+  priority: high
+  source_applicability:
+  - github_discussions
+- query_id: Q105
+  query_text: marketer dashboard export to excel
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q106
+  query_text: marketing KPI changed how to explain
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q107
+  query_text: growth marketer conversion drop analysis
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q108
+  query_text: performance marketer weekly KPI breakdown
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q109
+  query_text: product manager dashboard numbers mismatch
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q110
+  query_text: pm needs ad hoc analysis without sql
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q111
+  query_text: ops team dashboard trust issue
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q112
+  query_text: business analyst metric definition mismatch
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q113
+  query_text: non technical analyst dashboard export workflow
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q114
+  query_text: stakeholder asks why conversion dropped
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q115
+  query_text: marketing report this week vs last week
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q116
+  query_text: explain KPI changes to leadership
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q117
+  query_text: manual reporting after dashboard
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q118
+  query_text: dashboard is not enough
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q119
+  query_text: still using excel after dashboard
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q120
+  query_text: have to export to excel every time
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q121
+  query_text: stakeholders keep asking why numbers changed
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q122
+  query_text: can?t trust the dashboard
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q123
+  query_text: numbers don't match between tools
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q124
+  query_text: metric definitions are confusing
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q125
+  query_text: business users keep asking ad hoc questions
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q126
+  query_text: too many manual checks before reporting
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q127
+  query_text: have to validate everything in sql
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q128
+  query_text: need to explain KPI drop quickly
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q129
+  query_text: hard to break down metric changes
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q130
+  query_text: hard to know which segment caused the drop
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q131
+  query_text: hard to compare this week and last week correctly
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q132
+  query_text: hard to choose the right date field
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q133
+  query_text: hard to exclude internal users correctly
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q134
+  query_text: AI query results are hard to trust
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q135
+  query_text: natural language analytics is ambiguous
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q136
+  query_text: business question is too vague to analyze
+  priority: high
+  source_applicability:
+  - reddit
+- query_id: Q137
+  query_text: conversion drop
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q138
+  query_text: kpi change
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q139
+  query_text: metric change
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q140
+  query_text: why metric changed
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q141
+  query_text: why conversion dropped
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q142
+  query_text: revenue drop
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q143
+  query_text: dashboard export
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q144
+  query_text: export to excel
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q145
+  query_text: excel after dashboard
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q146
+  query_text: manual analysis
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q147
+  query_text: ad hoc analysis
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q148
+  query_text: dashboard mismatch
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q149
+  query_text: numbers dont match
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q150
+  query_text: excel mismatch
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q151
+  query_text: sql mismatch
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q152
+  query_text: data inconsistency
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q153
+  query_text: metric definition
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q154
+  query_text: kpi definition
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q155
+  query_text: metric confusion
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q156
+  query_text: aggregation issue
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q157
+  query_text: date field confusion
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q158
+  query_text: created_at vs event_date
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q159
+  query_text: date mismatch reporting
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q160
+  query_text: wrong date field
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q161
+  query_text: segment breakdown
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q162
+  query_text: segment comparison
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q163
+  query_text: channel breakdown
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q164
+  query_text: device breakdown
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q165
+  query_text: new vs returning
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q166
+  query_text: root cause analysis
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+- query_id: Q167
+  query_text: kpi breakdown
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q168
+  query_text: explain metric change
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+- query_id: Q169
+  query_text: cannot explain numbers
+  priority: high
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+expanded_queries:
+- query_id: Q010
+  query_text: export dashboard data to excel
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: export_revalidation
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: export dashboard data to excel for analysis
+- query_id: Q011
+  query_text: power bi export to excel
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: export_revalidation
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: using excel after power bi
+- query_id: Q012
+  query_text: tableau export to excel
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: export_revalidation
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: using excel after tableau
+- query_id: Q008
+  query_text: dashboard numbers do not match sql
+  axes_used:
+  - tool_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: why dashboard numbers do not match excel
+- query_id: Q009
+  query_text: dashboard numbers do not match excel
+  axes_used:
+  - tool_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: why dashboard numbers do not match sql
+- query_id: Q023
+  query_text: using excel after power bi
+  axes_used:
+  - tool_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: workflow_pain
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: how to choose correct date field for reporting
+- query_id: Q024
+  query_text: using excel after tableau
+  axes_used:
+  - tool_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: workflow_pain
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: created_at vs signup_date reporting
+- query_id: Q025
+  query_text: using excel after looker
+  axes_used:
+  - tool_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: workflow_pain
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: metric definition mismatch dashboard
+- query_id: Q032
+  query_text: how to analyze csv without database
+  axes_used:
+  - tool_terms
+  source_applicability:
+  - stackoverflow
+  priority: low
+  expected_signal_type: workflow_pain
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: self service analytics with non technical users
+- query_id: Q021
+  query_text: how to choose correct date field for reporting
+  axes_used:
+  - problem_terms
+  - work_moment_terms
+  source_applicability:
+  - stackoverflow
+  priority: low
+  expected_signal_type: validation_trust
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: how to compare new vs returning users in dashboard
+- query_id: Q022
+  query_text: created_at vs signup_date reporting
+  axes_used:
+  - work_moment_terms
+  source_applicability:
+  - stackoverflow
+  priority: low
+  expected_signal_type: metric_definition_conflict
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: how to exclude internal traffic from conversion analysis
+- query_id: Q018
+  query_text: how to compare new vs returning users in dashboard
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - stackoverflow
+  priority: low
+  expected_signal_type: segment_breakdown
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: how to investigate traffic drop by segment
+- query_id: Q004
+  query_text: how to validate dashboard metrics
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: validation_trust
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: how to segment conversion rate by device and source
+- query_id: Q005
+  query_text: how to define conversion metric correctly
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - stackoverflow
+  priority: low
+  expected_signal_type: validation_trust
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: how to trust dashboard numbers
+- query_id: Q020
+  query_text: how to exclude internal traffic from conversion analysis
+  axes_used:
+  - work_moment_terms
+  source_applicability:
+  - stackoverflow
+  priority: low
+  expected_signal_type: segment_breakdown
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: how to identify which segment caused KPI drop
+- query_id: Q026
+  query_text: metric definition mismatch dashboard
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: stackoverflow_source_friendly
+  query_family: workflow_howto
+  priority_query_text: dashboard metric definition confusion
+- query_id: Q052
+  query_text: dashboard export excel
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - github_discussions
+  priority: high
+  expected_signal_type: export_revalidation
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: need better drill down for metric changes
+- query_id: Q058
+  query_text: semantic layer metrics
+  axes_used:
+  - tool_terms
+  source_applicability:
+  - github_discussions
+  priority: low
+  expected_signal_type: validation_trust
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: missing metric definition in dashboard
+- query_id: Q068
+  query_text: filter logic mismatch
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - github_discussions
+  priority: low
+  expected_signal_type: metric_definition_conflict
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: dashboard and csv mismatch
+- query_id: Q064
+  query_text: natural language query dashboards
+  axes_used:
+  - tool_terms
+  source_applicability:
+  - github_discussions
+  priority: low
+  expected_signal_type: nlq_trust
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: need natural language query for dashboards
+- query_id: Q053
+  query_text: dashboard numbers do not match export
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - github_discussions
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: dashboard numbers do not match export
+- query_id: Q054
+  query_text: export to excel for further analysis
+  axes_used:
+  - tool_terms
+  - problem_terms
+  - work_moment_terms
+  source_applicability:
+  - github_discussions
+  priority: low
+  expected_signal_type: export_revalidation
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: export to excel for further analysis
+- query_id: Q059
+  query_text: need weekly comparison by segment
+  axes_used:
+  - problem_terms
+  - work_moment_terms
+  source_applicability:
+  - github_discussions
+  priority: low
+  expected_signal_type: segment_breakdown
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: metric definition confusion
+- query_id: Q066
+  query_text: need to validate dashboard against sql
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - github_discussions
+  priority: low
+  expected_signal_type: validation_trust
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: need to validate dashboard against sql
+- query_id: Q077
+  query_text: need support for non technical analysts
+  axes_used:
+  - role_terms
+  source_applicability:
+  - github_discussions
+  priority: low
+  expected_signal_type: workflow_pain
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: manual excel work after dashboard
+- query_id: Q078
+  query_text: need support for marketers without sql
+  axes_used:
+  - role_terms
+  - tool_terms
+  source_applicability:
+  - github_discussions
+  priority: low
+  expected_signal_type: workflow_pain
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: copying dashboard data into spreadsheets
+- query_id: Q071
+  query_text: manual excel work after dashboard
+  axes_used:
+  - tool_terms
+  - work_moment_terms
+  source_applicability:
+  - github_discussions
+  priority: high
+  expected_signal_type: workflow_pain
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: wrong date field in reporting
+- query_id: Q074
+  query_text: need metric breakdown after summary chart
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - github_discussions
+  priority: low
+  expected_signal_type: segment_breakdown
+  seed_origin: github_source_friendly
+  query_family: feature_request_complaint
+  priority_query_text: need better segmentation for conversion analysis
+- query_id: Q104
+  query_text: still using excel after dashboard
+  axes_used:
+  - tool_terms
+  - work_moment_terms
+  source_applicability:
+  - reddit
+  priority: high
+  expected_signal_type: stakeholder_pullback
+  seed_origin: reddit_source_friendly
+  query_family: persona_complaint
+  priority_query_text: ga4 trust dashboard numbers
+- query_id: Q105
+  query_text: have to export to excel every time
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - reddit
+  priority: high
+  expected_signal_type: export_revalidation
+  seed_origin: reddit_source_friendly
+  query_family: persona_complaint
+  priority_query_text: marketer dashboard export to excel
+- query_id: Q106
+  query_text: stakeholders keep asking why numbers changed
+  axes_used:
+  - role_terms
+  - problem_terms
+  source_applicability:
+  - reddit
+  priority: high
+  expected_signal_type: stakeholder_explanation
+  seed_origin: reddit_source_friendly
+  query_family: persona_complaint
+  priority_query_text: marketing KPI changed how to explain
+- query_id: Q107
+  query_text: cant trust dashboard numbers
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - reddit
+  priority: high
+  expected_signal_type: validation_trust
+  seed_origin: reddit_source_friendly
+  query_family: persona_complaint
+  priority_query_text: growth marketer conversion drop analysis
+- query_id: Q108
+  query_text: manual reporting after dashboard
+  axes_used:
+  - tool_terms
+  - work_moment_terms
+  source_applicability:
+  - reddit
+  priority: high
+  expected_signal_type: workflow_pain
+  seed_origin: reddit_source_friendly
+  query_family: persona_complaint
+  priority_query_text: performance marketer weekly KPI breakdown
+- query_id: Q109
+  query_text: marketer dashboard export to excel
+  axes_used:
+  - role_terms
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - reddit
+  priority: high
+  expected_signal_type: export_revalidation
+  seed_origin: reddit_source_friendly
+  query_family: persona_complaint
+  priority_query_text: product manager dashboard numbers mismatch
+- query_id: Q110
+  query_text: product manager dashboard numbers mismatch
+  axes_used:
+  - role_terms
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - reddit
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: reddit_source_friendly
+  query_family: persona_complaint
+  priority_query_text: pm needs ad hoc analysis without sql
+- query_id: Q111
+  query_text: growth marketer conversion drop analysis
+  axes_used:
+  - role_terms
+  - problem_terms
+  - work_moment_terms
+  source_applicability:
+  - reddit
+  priority: high
+  expected_signal_type: root_cause
+  seed_origin: reddit_source_friendly
+  query_family: persona_complaint
+  priority_query_text: ops team dashboard trust issue
+- query_id: Q137
+  query_text: conversion drop
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: root_cause
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: conversion drop
+- query_id: Q138
+  query_text: kpi change
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: root_cause
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: kpi change
+- query_id: Q139
+  query_text: metric change
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: root_cause
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: metric change
+- query_id: Q140
+  query_text: why metric changed
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: root_cause
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: why metric changed
+- query_id: Q141
+  query_text: why conversion dropped
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: root_cause
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: why conversion dropped
+- query_id: Q142
+  query_text: revenue drop
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: root_cause
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: revenue drop
+- query_id: Q143
+  query_text: dashboard export
+  axes_used:
+  - tool_terms
+  - workflow_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+  priority: high
+  expected_signal_type: export_revalidation
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: dashboard export
+- query_id: Q144
+  query_text: export to excel
+  axes_used:
+  - tool_terms
+  - workflow_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+  priority: high
+  expected_signal_type: export_revalidation
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: export to excel
+- query_id: Q145
+  query_text: excel after dashboard
+  axes_used:
+  - tool_terms
+  - workflow_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: export_revalidation
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: excel after dashboard
+- query_id: Q146
+  query_text: manual analysis
+  axes_used:
+  - workflow_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: workflow_pain
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: manual analysis
+- query_id: Q147
+  query_text: ad hoc analysis
+  axes_used:
+  - workflow_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: workflow_pain
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: ad hoc analysis
+- query_id: Q148
+  query_text: dashboard mismatch
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: dashboard mismatch
+- query_id: Q149
+  query_text: numbers dont match
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: numbers dont match
+- query_id: Q150
+  query_text: excel mismatch
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: excel mismatch
+- query_id: Q151
+  query_text: sql mismatch
+  axes_used:
+  - tool_terms
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: sql mismatch
+- query_id: Q152
+  query_text: data inconsistency
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: data inconsistency
+- query_id: Q153
+  query_text: metric definition
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: metric definition
+- query_id: Q154
+  query_text: kpi definition
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: kpi definition
+- query_id: Q155
+  query_text: metric confusion
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: metric confusion
+- query_id: Q156
+  query_text: aggregation issue
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: aggregation issue
+- query_id: Q157
+  query_text: date field confusion
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: date field confusion
+- query_id: Q158
+  query_text: created_at vs event_date
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+  priority: high
+  expected_signal_type: workflow_pain
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: created_at vs event_date
+- query_id: Q159
+  query_text: date mismatch reporting
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: date mismatch reporting
+- query_id: Q160
+  query_text: wrong date field
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: metric_definition_conflict
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: wrong date field
+- query_id: Q161
+  query_text: segment breakdown
+  axes_used:
+  - problem_terms
+  - segmentation_terms
+  source_applicability:
+  - reddit
+  - stackoverflow
+  - github_discussions
+  priority: high
+  expected_signal_type: segment_breakdown
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: segment breakdown
+- query_id: Q162
+  query_text: segment comparison
+  axes_used:
+  - problem_terms
+  - segmentation_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: segment_breakdown
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: segment comparison
+- query_id: Q163
+  query_text: channel breakdown
+  axes_used:
+  - segmentation_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: segment_breakdown
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: channel breakdown
+- query_id: Q164
+  query_text: device breakdown
+  axes_used:
+  - segmentation_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: segment_breakdown
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: device breakdown
+- query_id: Q165
+  query_text: new vs returning
+  axes_used:
+  - segmentation_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: segment_breakdown
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: new vs returning
+- query_id: Q166
+  query_text: root cause analysis
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: root_cause
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: root cause analysis
+- query_id: Q167
+  query_text: kpi breakdown
+  axes_used:
+  - problem_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: root_cause
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: kpi breakdown
+- query_id: Q168
+  query_text: explain metric change
+  axes_used:
+  - problem_terms
+  - workflow_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: root_cause
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: explain metric change
+- query_id: Q169
+  query_text: cannot explain numbers
+  axes_used:
+  - workflow_terms
+  source_applicability:
+  - stackoverflow
+  priority: high
+  expected_signal_type: stakeholder_explanation
+  seed_origin: additional_generic_seeds
+  query_family: generic_pain_seed
+  priority_query_text: cannot explain numbers

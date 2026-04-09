@@ -1,0 +1,38 @@
+mode: recent_5y
+description: >
+  Shared collection and post-normalization time window. Default mode covers the
+  most recent five years and splits collection into three broad windows for
+  recall. Source overrides can request finer monthly or quarterly slicing.
+
+window_start: "2021-04-01T00:00:00+00:00"
+window_end: "2026-04-30T23:59:59+00:00"
+
+default_strategy: explicit
+default_slices:
+  - window_id: recent_5y_01
+    window_start: "2021-04-01T00:00:00+00:00"
+    window_end: "2022-12-31T23:59:59+00:00"
+  - window_id: recent_5y_02
+    window_start: "2023-01-01T00:00:00+00:00"
+    window_end: "2024-12-31T23:59:59+00:00"
+  - window_id: recent_5y_03
+    window_start: "2025-01-01T00:00:00+00:00"
+    window_end: "2026-04-30T23:59:59+00:00"
+
+source_overrides:
+  reddit:
+    strategy: explicit
+  stackoverflow:
+    strategy: explicit
+  github_discussions:
+    strategy: explicit
+  discourse:
+    strategy: quarterly
+  hackernews:
+    strategy: quarterly
+  youtube:
+    strategy: monthly
+
+exclude_missing_created_at: true
+missing_created_at_reason: missing_created_at
+outside_time_window_reason: outside_time_window

@@ -1,0 +1,7 @@
+source: hackernews
+enabled: false
+use_stub: true
+source_type: forum
+query_seeds:
+  - spreadsheet pain
+  - business analytics

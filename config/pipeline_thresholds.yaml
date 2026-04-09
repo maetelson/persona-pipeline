@@ -1,0 +1,59 @@
+pipeline_thresholds:
+  active_profile: exploratory
+  profiles:
+    exploratory:
+      episode:
+        min_total: 40
+        warn_if_below: 80
+        max_total: 3000
+        max_per_raw_post: 8
+        warn_if_avg_per_raw_post_above: 3.0
+      labeling:
+        min_labeled_rows: 40
+        max_unknown_ratio: 0.60
+        warn_unknown_ratio: 0.35
+        min_role_coverage_ratio: 0.40
+        min_question_coverage_ratio: 0.50
+        min_pain_coverage_ratio: 0.50
+        min_output_coverage_ratio: 0.30
+        max_single_code_share:
+          role: 0.95
+          question: 0.95
+          pain: 0.95
+      cluster_readiness:
+        min_rows_for_clustering: 60
+        min_distinct_question_codes: 2
+        min_distinct_pain_codes: 2
+        min_distinct_role_codes: 2
+      gate_mode:
+        episode_gate: warn
+        labeling_gate: warn
+        cluster_gate: warn
+    scaling:
+      episode:
+        min_total: 150
+        warn_if_below: 250
+        max_total: 5000
+        max_per_raw_post: 5
+        warn_if_avg_per_raw_post_above: 2.5
+      labeling:
+        min_labeled_rows: 150
+        max_unknown_ratio: 0.35
+        warn_unknown_ratio: 0.20
+        min_role_coverage_ratio: 0.60
+        min_question_coverage_ratio: 0.70
+        min_pain_coverage_ratio: 0.70
+        min_output_coverage_ratio: 0.50
+        max_single_code_share:
+          role: 0.85
+          question: 0.85
+          pain: 0.85
+      cluster_readiness:
+        min_rows_for_clustering: 150
+        min_distinct_question_codes: 3
+        min_distinct_pain_codes: 3
+        min_distinct_role_codes: 2
+      gate_mode:
+        episode_gate: strict
+        labeling_gate: strict
+        cluster_gate: strict

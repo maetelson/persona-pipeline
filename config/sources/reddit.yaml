@@ -1,0 +1,16 @@
+source: reddit
+enabled: true
+use_stub: false
+source_type: forum
+query_mode: expanded_map
+allowed_query_priorities:
+  - high
+  - medium
+search_sort: new
+max_posts_per_seed: 10
+max_pages_per_query: 4
+comment_limit_per_post: 10
+sleep_seconds: 1.5
+max_rate_limit_retries: 3
+rate_limit_wait_seconds: 20
+time_filter_mode: post_filter_only

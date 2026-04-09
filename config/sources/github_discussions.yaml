@@ -1,0 +1,20 @@
+source: github_discussions
+enabled: true
+use_stub: false
+source_type: discussion
+query_mode: expanded_map
+allowed_query_priorities:
+  - high
+  - medium
+enable_discussions: false
+repositories:
+  - apache/superset
+  - metabase/metabase
+  - getredash/redash
+  - cube-js/cube
+max_items_per_seed: 10
+max_pages_per_query: 3
+max_discussion_pages_per_query: 3
+max_comments_per_item: 10
+max_replies_per_comment: 5
+sleep_seconds: 0.75

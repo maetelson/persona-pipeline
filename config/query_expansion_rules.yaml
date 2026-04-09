@@ -1,0 +1,122 @@
+query_expansion_rules:
+  design_notes:
+    purpose: Turn source-specific complaint seeds into runnable query lists that improve both raw volume
+      and valid conversion.
+    rule_of_thumb:
+    - Stack Overflow prefers how-to, why, compare, validate, using, and workflow phrasing.
+    - GitHub prefers need, missing, support, limitation, cannot, confusing, and inconsistent phrasing.
+    - Prioritize dashboard-after-export, metric confusion, date basis mismatch, segment breakdown, and
+      explanation requests.
+  priority_combinations:
+  - - tool_terms
+    - problem_terms
+  - - tool_terms
+    - workflow_terms
+  - - tool_terms
+    - trust_validation_terms
+  - - segmentation_terms
+    - problem_terms
+  - - role_terms
+    - problem_terms
+  - - role_terms
+    - workflow_terms
+  - - complaint_style_terms
+    - tool_terms
+  - - output_terms
+    - problem_terms
+  source_applicability:
+    reddit:
+      prefer:
+      - role_terms
+      - problem_terms
+      - workflow_terms
+      - complaint_style_terms
+      - trust_validation_terms
+      avoid_if_only:
+      - broad_head_terms
+    stackoverflow:
+      prefer:
+      - tool_terms
+      - problem_terms
+      - workflow_terms
+      - segmentation_terms
+      - trust_validation_terms
+      avoid_if_only:
+      - broad_head_terms
+      - output_terms
+      - leadership
+      preferred_query_starts:
+      - how to
+      - why
+      - using
+      - export
+      - created_at vs
+      - metric definition
+    github_discussions:
+      prefer:
+      - tool_terms
+      - problem_terms
+      - workflow_terms
+      - trust_validation_terms
+      - complaint_style_terms
+      avoid_if_only:
+      - broad_head_terms
+      - business user
+      preferred_query_starts:
+      - need
+      - missing
+      - cannot
+      - confusing
+      - inconsistent
+      - manual
+      - copying
+  phrase_templates:
+  - '{tool_terms} {problem_terms}'
+  - '{tool_terms} {workflow_terms}'
+  - '{tool_terms} {trust_validation_terms}'
+  - '{role_terms} {problem_terms}'
+  - '{segmentation_terms} {problem_terms}'
+  - '{complaint_style_terms} {tool_terms}'
+  - '{output_terms} {problem_terms}'
+  source_friendly_templates:
+    stackoverflow:
+    - how to {problem_terms}
+    - why {problem_terms}
+    - using {tool_terms} after dashboard
+    - '{tool_terms} {problem_terms}'
+    - '{segmentation_terms} {problem_terms}'
+    github_discussions:
+    - need {problem_terms}
+    - missing {problem_terms}
+    - '{tool_terms} {problem_terms}'
+    - '{complaint_style_terms}'
+    - need support for {workflow_terms}
+  demote_if_contains:
+  - beginner
+  - tutorial
+  - syntax
+  - course
+  - assignment
+  - installation
+  - best practices
+  - design tips
+  - optimization
+  - architecture
+  - machine learning
+  - forecasting
+  hard_exclude_if_contains:
+  - homework
+  - leetcode
+  - hello world
+  - api error only
+  - stack trace
+  - visualization gallery
+  - warehouse architecture
+  - dashboard design
+  - sql optimization
+  - ml analytics
+  review_bucket_if_contains:
+  - promo
+  - demo
+  - template
+  - sample report

@@ -1,0 +1,154 @@
+role_keywords:
+  R_ANALYST:
+    - analyst
+    - dashboard
+    - report
+    - reporting
+    - sql
+  R_MANAGER:
+    - manager
+    - stakeholder
+    - leadership
+    - executive
+  R_MARKETER:
+    - media buyer
+    - campaign
+    - ads
+    - marketing
+
+moment_keywords:
+  M_REPORTING:
+    - report
+    - reporting
+    - export
+    - recurring
+  M_VALIDATION:
+    - qa
+    - validation
+    - reconcile
+    - compare
+  M_TRIAGE:
+    - investigate
+    - debug
+    - broken
+    - issue
+  M_AUTOMATION:
+    - automate
+    - automation
+    - pipeline
+    - script
+
+question_codes:
+  Q_REPORT_SPEED:
+    - recurring reporting
+    - deliver recurring reporting
+    - export faster
+    - reporting output faster
+  Q_VALIDATE_NUMBERS:
+    - validate and reconcile
+    - reconcile reported numbers
+    - validation
+    - qa
+  Q_DIAGNOSE_ISSUE:
+    - diagnose
+    - resolve analytics issues
+    - debug
+    - root cause
+  Q_AUTOMATE_WORKFLOW:
+    - automate
+    - automation
+    - workflow should be automated
+    - automate first
+
+pain_codes:
+  P_MANUAL_REPORTING:
+    - manual reporting
+    - copy paste
+    - spreadsheet workaround
+    - weekly report
+    - manual workaround
+  P_DATA_QUALITY:
+    - mismatch
+    - wrong number
+    - validation
+    - reconcile
+    - qa
+  P_TOOL_LIMITATION:
+    - limitation
+    - missing feature
+    - broken
+    - cannot
+    - tool limitation
+  P_HANDOFF:
+    - stakeholder
+    - handoff
+    - wait for
+    - review cycle
+
+env_codes:
+  E_SPREADSHEET:
+    - excel
+    - spreadsheet
+    - xlsx
+    - csv
+  E_SQL_BI:
+    - sql
+    - dashboard
+    - power bi
+    - tableau
+    - qlik
+    - superset
+    - metabase
+  E_PYTHON:
+    - python
+    - pandas
+    - notebook
+    - script
+  E_WAREHOUSE:
+    - snowflake
+    - bigquery
+    - redshift
+    - oracle
+    - database
+
+workaround_codes:
+  W_MANUAL:
+    - manual workaround
+    - manual
+    - copy paste
+  W_SPREADSHEET:
+    - spreadsheet workaround
+    - excel
+    - csv
+  W_SCRIPT:
+    - ad hoc script workaround
+    - python
+    - script
+
+output_codes:
+  O_XLSX:
+    - xlsx
+    - excel
+    - spreadsheet
+    - report
+  O_DASHBOARD:
+    - dashboard
+    - chart
+    - visualization
+  O_VALIDATED_DATASET:
+    - validated dataset
+    - reconciled data
+    - clean dataset
+  O_AUTOMATION_JOB:
+    - automation
+    - pipeline
+    - scheduled
+
+fit_keywords:
+  F_STRONG:
+    - strong_fit
+    - automate
+    - recurring
+    - bottleneck
+  F_REVIEW:
+    - review

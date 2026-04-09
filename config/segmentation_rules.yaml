@@ -1,0 +1,67 @@
+default_strategy: conservative_signature_split
+
+min_episode_len: 120
+max_episode_len: 1800
+min_unit_len: 120
+min_boundary_segment_len: 260
+max_units_from_body: 4
+max_comment_blocks: 1
+comment_block_max_chars: 800
+similarity_merge_threshold: 0.7
+min_signature_change_count: 3
+
+generic_values:
+  - unknown
+  - solo
+  - workflow_help
+  - general_friction
+  - unspecified
+  - unspecified_output
+
+non_boundary_patterns:
+  - looking for feedback
+  - need your feedback
+  - hi everyone
+  - thanks in advance
+  - duplicate of
+  - confirmed bug
+  - please help
+  - welcome to
+  - how do i ask
+  - provide enough code
+  - this is a confirmed bug
+  - this might help
+  - one possible way
+  - i would appreciate any guidance
+  - once upon a time
+  - chapter
+  - prologue
+  - epilogue
+  - the days fell into
+  - he woke up
+  - she looked at
+  - in the forest
+  - breath misting
+  - autumn forest
+
+boilerplate_patterns:
+  - please provide enough code
+  - welcome to so
+  - how do i ask a good question
+  - duplicate of
+  - greeting
+  - answer
+  - additional context
+  - bug description
+  - expected behavior
+  - screenshots or recordings
+  - prologue
+  - chapter
+  - epilogue
+
+repeat_phrases:
+  - excel export
+  - dashboard export
+  - manual reporting
+  - stakeholder report
+  - root cause

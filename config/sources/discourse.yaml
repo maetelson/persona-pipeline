@@ -1,0 +1,7 @@
+source: discourse
+enabled: false
+use_stub: true
+source_type: forum
+query_seeds:
+  - analyst workflow
+  - automation request

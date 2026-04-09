@@ -1,0 +1,477 @@
+query_seed_taxonomy:
+  design_notes:
+    purpose: Keep a reviewable keyword bank for persona-heavy BI complaint and workaround collection.
+    rule_of_thumb:
+    - Broad BI terms alone are too noisy for first-pass collection.
+    - Prefer dashboard re-validation, explanation, breakdown, metric confusion, and export-to-excel language.
+    - Use community-style wording over research-language abstractions.
+  broad_head_terms:
+  - dashboard
+  - reporting
+  - report
+  - spreadsheet
+  - Excel
+  - pivot table
+  - metrics
+  - KPI
+  - segment analysis
+  - cohort analysis
+  - funnel analysis
+  - root cause analysis
+  - anomaly investigation
+  - manual reporting
+  - spreadsheet rework
+  - reporting automation
+  - self service analytics
+  - business intelligence
+  - BI dashboard
+  - validated dataset
+  - data reconciliation
+  - metric definition
+  - metric mismatch
+  - dashboard trust
+  - data discrepancy
+  - numbers do not match
+  - ad hoc analysis
+  role_terms:
+  - analyst
+  - business analyst
+  - data analyst
+  - marketing analyst
+  - non technical analyst
+  - performance marketer
+  - growth marketer
+  - CRM marketer
+  - retention marketer
+  - marketer
+  - product manager
+  - pm
+  - ops team
+  - ops manager
+  - operations planner
+  - business user
+  - stakeholder
+  - manager
+  - leadership
+  - marketers without sql
+  - non technical users
+  problem_terms:
+  - why did conversion drop
+  - why is retention down
+  - why dashboard numbers do not match excel
+  - why dashboard numbers do not match sql
+  - metric definition mismatch
+  - dashboard metric definition confusion
+  - dashboard numbers do not match export
+  - dashboard and excel mismatch
+  - dashboard and csv mismatch
+  - cannot explain why KPI changed
+  - how to explain weekly KPI drop
+  - need to explain KPI drop quickly
+  - need better drill down for metric changes
+  - need better segmentation for conversion analysis
+  - hard to break down metric changes
+  - hard to know which segment caused the drop
+  - created_at vs event_date mismatch
+  - created_at vs signup_date reporting
+  - wrong date field in reporting
+  - need support for choosing date basis
+  - need support for excluding internal traffic
+  - business users cannot trust dashboard numbers
+  - dashboard is not enough for root cause analysis
+  - manual excel work after dashboard
+  - copying dashboard data into spreadsheets
+  - still using excel after dashboard
+  - have to export to excel every time
+  - stakeholders keep asking why numbers changed
+  - metric definitions are confusing
+  - have to validate everything in sql
+  - natural language analytics is ambiguous
+  - AI generated SQL cannot be trusted
+  - need explanation for generated query
+  - conversion drop
+  - kpi change
+  - metric change
+  - why metric changed
+  - why conversion dropped
+  - revenue drop
+  - dashboard mismatch
+  - numbers dont match
+  - excel mismatch
+  - sql mismatch
+  - data inconsistency
+  - metric definition
+  - kpi definition
+  - metric confusion
+  - aggregation issue
+  - date field confusion
+  - created_at vs event_date
+  - date mismatch reporting
+  - wrong date field
+  - root cause analysis
+  - kpi breakdown
+  - explain metric change
+  - cannot explain numbers
+  tool_terms:
+  - Power BI
+  - Tableau
+  - Looker
+  - GA4
+  - Google Analytics
+  - Metabase
+  - Superset
+  - Apache Superset
+  - Redash
+  - dashboard
+  - workbook
+  - report
+  - spreadsheet
+  - Excel
+  - csv
+  - SQL
+  - semantic layer
+  - semantic model
+  - data team
+  - drill down
+  - filter
+  - segment breakdown
+  - export to excel
+  work_moment_terms:
+  - weekly review
+  - weekly KPI review
+  - monthly review
+  - weekly comparison
+  - this week vs last week
+  - stakeholder meeting
+  - exec reporting
+  - leadership review
+  - ad hoc request
+  - last minute request
+  - campaign recap
+  - report deadline
+  - root cause analysis
+  - further analysis
+  workflow_terms:
+  - export to excel for analysis
+  - export to csv for analysis
+  - using excel after dashboard
+  - validate dashboard against sql
+  - copying dashboard data into spreadsheets
+  - manual excel work after dashboard
+  - dashboard only shows summary need breakdown
+  - business users using power bi without sql
+  - non technical users analyze dashboard data
+  - translate business question into dashboard filters
+  - translate business question into sql
+  - how to analyze csv without database
+  - need better ad hoc analysis workflow
+  - need support for ad hoc questions from business teams
+  - dashboard export
+  - export to excel
+  - excel after dashboard
+  - manual analysis
+  - ad hoc analysis
+  trust_validation_terms:
+  - how to trust dashboard numbers
+  - how to validate dashboard metrics
+  - source of truth
+  - metric definition confusion
+  - same KPI different number
+  - numbers do not match
+  - dashboard trust
+  - can?t trust the dashboard
+  - cannot trust dashboard numbers
+  - compare dashboard with raw data
+  - validate before reporting
+  - date basis
+  - filter logic mismatch
+  - verified metrics
+  - governed metrics
+  - traceable analytics results
+  - trustable AI analytics
+  segmentation_terms:
+  - segment comparison
+  - segment breakdown
+  - by channel
+  - by device
+  - by source
+  - new vs returning
+  - conversion drop by segment
+  - which segment caused KPI drop
+  - compare this week vs last week by channel
+  - exclude internal traffic
+  - breakdown by channel device new returning
+  - cohort retention
+  - funnel drop off
+  - channel breakdown
+  - device breakdown
+  output_terms:
+  - explain metric changes to stakeholders
+  - plain english explanation for metrics
+  - executive summary
+  - one line summary
+  - summary chart breakdown
+  - report ready table
+  - validated dataset
+  - root cause table
+  - explanation for leadership
+  complaint_style_terms:
+  - dashboard is not enough
+  - still using excel after dashboard
+  - have to export to excel every time
+  - stakeholders keep asking why numbers changed
+  - can?t trust the dashboard
+  - numbers don't match between tools
+  - metric definitions are confusing
+  - business users keep asking ad hoc questions
+  - too many manual checks before reporting
+  - have to validate everything in sql
+  - need to explain KPI drop quickly
+  - hard to break down metric changes
+  - hard to know which segment caused the drop
+  - hard to compare this week and last week correctly
+  - hard to choose the right date field
+  - hard to exclude internal users correctly
+  - AI query results are hard to trust
+  - natural language analytics is ambiguous
+  - business question is too vague to analyze
+  source_seed_banks:
+    stackoverflow_raw_seeds:
+    - how to analyze conversion drop
+    - how to explain metric changes to stakeholders
+    - how to compare this week vs last week by channel
+    - how to segment conversion rate by device and source
+    - how to trust dashboard numbers
+    - how to validate dashboard metrics
+    - how to define conversion metric correctly
+    - why dashboard numbers do not match excel
+    - why dashboard numbers do not match sql
+    - export dashboard data to excel for analysis
+    - using excel after power bi
+    - using excel after tableau
+    - using excel after looker
+    - ad hoc analysis in power bi
+    - ad hoc analysis in tableau
+    - ad hoc analysis in looker
+    - how to drill down KPI changes
+    - how to investigate traffic drop by segment
+    - how to find why conversion rate dropped
+    - how to identify which segment caused KPI drop
+    - how to compare new vs returning users in dashboard
+    - how to exclude internal traffic from conversion analysis
+    - how to choose correct date field for reporting
+    - created_at vs signup_date reporting
+    - metric definition mismatch dashboard
+    - dashboard metric definition confusion
+    - BI dashboard not enough for analysis
+    - dashboard only shows summary need breakdown
+    - how to answer why metric changed
+    - how to explain weekly KPI drop
+    - how to break down revenue change by segment
+    - self service analytics with non technical users
+    - business users using power bi without sql
+    - non technical users analyze dashboard data
+    - how to analyze csv without database
+    - how to ask better analytics questions
+    - how to structure analytics question
+    - how to translate business question into sql
+    - how to translate business question into dashboard filters
+    github_raw_seeds:
+    - need better drill down for metric changes
+    - dashboard numbers do not match export
+    - export to excel for further analysis
+    - need weekly comparison by segment
+    - need breakdown by channel device new returning
+    - cannot explain why KPI changed
+    - missing metric definition in dashboard
+    - metric definition confusion
+    - need semantic layer for metrics
+    - business users cannot trust dashboard numbers
+    - need better ad hoc analysis workflow
+    - dashboard is not enough for root cause analysis
+    - need natural language query for dashboards
+    - need plain english explanation for metrics
+    - need to validate dashboard against sql
+    - dashboard and excel mismatch
+    - dashboard and csv mismatch
+    - need support for excluding internal traffic
+    - need support for choosing date basis
+    - wrong date field in reporting
+    - created_at vs event_date mismatch
+    - need comparison this week vs last week
+    - need better segmentation for conversion analysis
+    - need better filtering for stakeholder requests
+    - stakeholders ask why numbers changed
+    - manual excel work after dashboard
+    - copying dashboard data into spreadsheets
+    - need root cause analysis from dashboard
+    - need metric breakdown after summary chart
+    - need support for non technical analysts
+    - need support for marketers without sql
+    - confusing KPI definitions across teams
+    - inconsistent metric definitions
+    - need verified metrics
+    - need governed metrics
+    - need reusable metric templates
+    - need explanation for generated query
+    - need traceable analytics results
+    - need trustable AI analytics
+    - AI generated SQL cannot be trusted
+    - need clarification before running query
+    - ambiguous natural language query
+    - need date clarification in NLQ
+    - need dimension clarification in NLQ
+    - need support for ad hoc questions from business teams
+    tool_specific_raw_seeds:
+    - power bi export to excel for further analysis
+    - power bi metric definition confusion
+    - power bi dashboard numbers do not match excel
+    - power bi created_at vs event_date reporting
+    - power bi weekly comparison by segment
+    - tableau export to excel after dashboard
+    - tableau dashboard not enough for root cause analysis
+    - tableau trust dashboard numbers
+    - tableau drill down KPI change
+    - tableau ad hoc analysis workflow
+    - looker dashboard metric definition mismatch
+    - looker explore too hard for business users
+    - looker explain why metric changed
+    - looker weekly KPI breakdown
+    - looker dashboard export for excel analysis
+    - metabase dashboard numbers mismatch
+    - metabase need better drill down
+    - metabase explain metric change
+    - superset dashboard export to csv for analysis
+    - superset metric definition confusion
+    - apache superset root cause analysis
+    - redash export query result to excel
+    - redash dashboard stakeholder requests
+    - google analytics conversion drop by segment
+    - ga4 conversion reporting confusion
+    - ga4 event date vs conversion date
+    - ga4 trust dashboard numbers
+    role_based_raw_seeds:
+    - marketer dashboard export to excel
+    - marketing KPI changed how to explain
+    - growth marketer conversion drop analysis
+    - performance marketer weekly KPI breakdown
+    - product manager dashboard numbers mismatch
+    - pm needs ad hoc analysis without sql
+    - ops team dashboard trust issue
+    - business analyst metric definition mismatch
+    - non technical analyst dashboard export workflow
+    - stakeholder asks why conversion dropped
+    - marketing report this week vs last week
+    - explain KPI changes to leadership
+    - manual reporting after dashboard
+    complaint_style_raw_seeds:
+    - dashboard is not enough
+    - still using excel after dashboard
+    - have to export to excel every time
+    - stakeholders keep asking why numbers changed
+    - can?t trust the dashboard
+    - numbers don't match between tools
+    - metric definitions are confusing
+    - business users keep asking ad hoc questions
+    - too many manual checks before reporting
+    - have to validate everything in sql
+    - need to explain KPI drop quickly
+    - hard to break down metric changes
+    - hard to know which segment caused the drop
+    - hard to compare this week and last week correctly
+    - hard to choose the right date field
+    - hard to exclude internal users correctly
+    - AI query results are hard to trust
+    - natural language analytics is ambiguous
+    - business question is too vague to analyze
+    additional_generic_seeds:
+    - conversion drop
+    - kpi change
+    - metric change
+    - why metric changed
+    - why conversion dropped
+    - revenue drop
+    - dashboard export
+    - export to excel
+    - excel after dashboard
+    - manual analysis
+    - ad hoc analysis
+    - dashboard mismatch
+    - numbers dont match
+    - excel mismatch
+    - sql mismatch
+    - data inconsistency
+    - metric definition
+    - kpi definition
+    - metric confusion
+    - aggregation issue
+    - date field confusion
+    - created_at vs event_date
+    - date mismatch reporting
+    - wrong date field
+    - segment breakdown
+    - segment comparison
+    - channel breakdown
+    - device breakdown
+    - new vs returning
+    - root cause analysis
+    - kpi breakdown
+    - explain metric change
+    - cannot explain numbers
+  exclude_terms:
+  - syntax
+  - tutorial
+  - beginner guide
+  - getting started
+  - installation
+  - install issue
+  - setup issue
+  - homework
+  - assignment
+  - course project
+  - hello world
+  - API error only
+  - stack trace only
+  - dashboard design
+  - data viz best practices
+  - sql optimization
+  - ml analytics
+  - machine learning analytics
+  - warehouse architecture
+  - forecasting model only
+  - visualization gallery
+  - product promo
+  additional_generic_seeds:
+  - conversion drop
+  - kpi change
+  - metric change
+  - why metric changed
+  - why conversion dropped
+  - revenue drop
+  - dashboard export
+  - export to excel
+  - excel after dashboard
+  - manual analysis
+  - ad hoc analysis
+  - dashboard mismatch
+  - numbers dont match
+  - excel mismatch
+  - sql mismatch
+  - data inconsistency
+  - metric definition
+  - kpi definition
+  - metric confusion
+  - aggregation issue
+  - date field confusion
+  - created_at vs event_date
+  - date mismatch reporting
+  - wrong date field
+  - segment breakdown
+  - segment comparison
+  - channel breakdown
+  - device breakdown
+  - new vs returning
+  - root cause analysis
+  - kpi breakdown
+  - explain metric change
+  - cannot explain numbers

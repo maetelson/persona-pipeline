@@ -1,0 +1,102 @@
+min_text_len: 40
+default_mode: analysis
+mode_profiles:
+  collection:
+    require_business_signal: false
+    require_pain_signal: false
+    require_any_signal: true
+  analysis:
+    require_business_signal: true
+    require_pain_signal: true
+    require_any_signal: false
+exclude_languages:
+  - unknown
+spam_keywords:
+  - buy now
+  - discount code
+  - subscribe for more
+business_signal_keywords:
+  - analyst
+  - analytics
+  - dashboard
+  - report
+  - reporting
+  - stakeholder
+  - export
+  - excel
+  - spreadsheet
+  - metric
+  - kpi
+  - workflow
+  - pipeline
+  - query
+  - data quality
+  - validation
+  - reconciliation
+  - manual reporting
+pain_signal_keywords:
+  - manual
+  - repetitive
+  - bottleneck
+  - painful
+  - slow
+  - time consuming
+  - frustrating
+  - error
+  - mismatch
+  - broken
+  - issue
+  - bug
+  - difficult
+  - hard
+  - cumbersome
+  - workaround
+  - copy paste
+  - duplicate work
+tutorial_keywords:
+  - tutorial
+  - beginner tutorial
+  - step by step
+  - guide for beginners
+  - how to learn
+  - crash course
+syntax_keywords:
+  - syntax error
+  - expected token
+  - semicolon
+  - indentation
+  - import error
+  - nullpointerexception
+  - typeerror
+  - stack trace
+promo_keywords:
+  - sign up
+  - free trial
+  - product hunt
+  - sponsored
+  - book a demo
+  - limited offer
+  - newsletter
+student_homework_keywords:
+  - homework
+  - assignment
+  - class project
+  - school project
+  - university project
+  - exam question
+  - final year project
+  - due tomorrow
+career_advice_keywords:
+  - resume
+  - cv
+  - job search
+  - getting interviews
+  - interview
+  - internship
+  - offer letter
+  - salary negotiation
+  - career advice
+  - roast my resume
+  - resume feedback
+  - applying to jobs
+  - blunt critiques

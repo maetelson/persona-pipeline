@@ -1,0 +1,8 @@
+weights:
+  pain_keyword_match: 0.4
+  output_clarity: 0.2
+  role_clarity: 0.2
+  workaround_presence: 0.2
+default_priority_band:
+  high: 0.75
+  medium: 0.45

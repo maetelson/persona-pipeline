@@ -1,0 +1,16 @@
+source: stackoverflow
+enabled: true
+use_stub: false
+source_type: qa
+query_mode: expanded_map
+allowed_query_priorities:
+  - high
+  - medium
+site: stackoverflow
+pagesize: 10
+max_pages_per_query: 3
+max_answers_per_question: 5
+max_comments_per_post: 10
+search_sort: relevance
+search_order: desc
+sleep_seconds: 0.75
