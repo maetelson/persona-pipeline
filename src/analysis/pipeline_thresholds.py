@@ -84,14 +84,15 @@ def evaluate_labeling_thresholds(labeled_df: pd.DataFrame, profile: str, profile
     cfg = dict(profile_cfg.get("labeling", {}) or {})
     gate_mode = str(profile_cfg.get("gate_mode", {}).get("labeling_gate", "warn"))
     total_rows = int(len(labeled_df))
-    unknown_ratio = float(_unknown_ratio(labeled_df))
-    role_coverage = _coverage_ratio(labeled_df, "role_codes")
-    question_coverage = _coverage_ratio(labeled_df, "question_codes")
-    pain_coverage = _coverage_ratio(labeled_df, "pain_codes")
-    output_coverage = _coverage_ratio(labeled_df, "output_codes")
-    role_share = _dominant_share(labeled_df, "role_codes")
-    question_share = _dominant_share(labeled_df, "question_codes")
-    pain_share = _dominant_share(labeled_df, "pain_codes")
+    scoring_df = _persona_core_subset(labeled_df)
+    unknown_ratio = float(_unknown_ratio(scoring_df))
+    role_coverage = _coverage_ratio(scoring_df, "role_codes")
+    question_coverage = _coverage_ratio(scoring_df, "question_codes")
+    pain_coverage = _coverage_ratio(scoring_df, "pain_codes")
+    output_coverage = _coverage_ratio(scoring_df, "output_codes")
+    role_share = _dominant_share(scoring_df, "role_codes")
+    question_share = _dominant_share(scoring_df, "question_codes")
+    pain_share = _dominant_share(scoring_df, "pain_codes")
 
     rows = [
         _low_only(
@@ -355,3 +356,10 @@ def _worst_status(statuses: list[str]) -> str:
     if "warn" in statuses:
         return "warn"
     return "pass"
+
+
+def _persona_core_subset(df: pd.DataFrame) -> pd.DataFrame:
+    """Use persona-core-eligible rows when available for labeling thresholds."""
+    if df.empty or "persona_core_eligible" not in df.columns:
+        return df
+    return df[df["persona_core_eligible"].fillna(True)]

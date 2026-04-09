@@ -1,0 +1,47 @@
+source_id: trustradius
+source_group: review_sites
+max_query_count: 10
+source_notes: "TrustRadius seeds stay compact and bias toward candid workflow pain in review narratives."
+products:
+  - Power BI
+  - Tableau
+  - Looker
+  - Sigma
+  - Qlik
+  - Domo
+  - ThoughtSpot
+core_seeds:
+  - seed: manual reporting workflow
+    reason: Targets repeated report assembly work discussed by practitioners.
+  - seed: dashboard reporting burden
+    reason: Captures complaints that dashboards do not finish the reporting job.
+  - seed: export to excel workaround
+    reason: Finds spreadsheet fallback language in review prose.
+  - seed: spreadsheet rework after dashboard
+    reason: Targets manual cleanup and reshaping outside the BI tool.
+  - seed: dashboard numbers don't match
+    reason: Pulls trust and discrepancy complaints.
+  - seed: metric definition mismatch
+    reason: Surfaces conflicting KPI logic and definitions.
+  - seed: source of truth confusion
+    reason: Targets review language about reconciling systems before sharing numbers.
+  - seed: stakeholder reporting pressure
+    reason: Focuses on business-facing delivery burden.
+  - seed: explain KPI change
+    reason: Captures root-cause and interpretation difficulty.
+  - seed: presentation-ready output
+    reason: Pulls complaints about turning analysis into business-ready deliverables.
+optional_templates:
+  - template: "{product} reporting"
+    reason: Product-aware reporting lookup.
+  - template: "{product} export to excel"
+    reason: Product-aware spreadsheet workaround lookup.
+  - template: "{product} numbers don't match"
+    reason: Product-aware trust issue lookup.
+  - template: "{product} stakeholder reporting"
+    reason: Product-aware business delivery lookup.
+  - template: "{product} KPI definition"
+    reason: Product-aware metric mismatch lookup.
+  - template: "{product} manual reporting"
+    reason: Product-aware repeated reporting lookup.
+negative_terms: []

@@ -1,0 +1,39 @@
+source_id: power_bi_community
+source_group: official_communities
+max_query_count: 10
+source_notes: "Power BI Community seeds use short issue-title wording aimed at reporting pain, not admin setup."
+products:
+  - Power BI
+core_seeds:
+  - seed: export to excel
+    reason: Targets repeated export workaround threads.
+  - seed: export data for reporting
+    reason: Pulls business-facing export pain rather than admin setup.
+  - seed: manual reporting workflow
+    reason: Captures repeated report assembly burden.
+  - seed: dashboard numbers wrong
+    reason: Targets trust complaints about displayed values.
+  - seed: metric mismatch
+    reason: Pulls KPI discrepancy and reconciliation issues.
+  - seed: scheduled report issue
+    reason: Captures recurring reporting delivery friction.
+  - seed: filter mismatch
+    reason: Targets breakdown and filter inconsistency issues.
+  - seed: drill down by segment
+    reason: Pulls decomposition and drill-down pain.
+  - seed: presentation-ready output
+    reason: Finds threads asking for business-ready output.
+  - seed: reconcile source data
+    reason: Targets validation against upstream data sources.
+optional_templates:
+  - template: "{product} export to excel"
+    reason: Product-aware export issue lookup.
+  - template: "{product} numbers don't match"
+    reason: Product-aware trust issue lookup.
+  - template: "{product} scheduled report"
+    reason: Product-aware recurring reporting lookup.
+  - template: "{product} filter mismatch"
+    reason: Product-aware breakdown mismatch lookup.
+  - template: "{product} metric definition"
+    reason: Product-aware KPI semantics lookup.
+negative_terms: []

@@ -1,0 +1,31 @@
+source_id: reddit_business_intelligence
+source_group: reddit
+max_query_count: 8
+source_notes: "r/BusinessIntelligence seeds focus on dashboard trust, drill-down limits, and reporting burden."
+core_seeds:
+  - seed: dashboard numbers don't match source data
+    reason: Targets trust and reconciliation issues in BI workflows.
+  - seed: don't trust dashboard numbers
+    reason: Pulls direct dashboard credibility complaints.
+  - seed: export to excel every week
+    reason: Captures recurring spreadsheet fallback after BI use.
+  - seed: manual reporting after dashboard refresh
+    reason: Targets repeated work that still happens after refresh.
+  - seed: metric definition mismatch
+    reason: Finds posts about inconsistent KPI logic.
+  - seed: stakeholders want drill down by segment
+    reason: Captures demand for deeper breakdowns than the dashboard gives.
+  - seed: can't explain KPI change in review
+    reason: Pulls interpretation pain in business-review settings.
+  - seed: reconcile numbers before sending report
+    reason: Targets repeated validation before stakeholders see the numbers.
+optional_templates:
+  - template: dashboard trust issue
+    reason: Extra phrase for trust-focused BI complaints.
+  - template: metric definition conflict
+    reason: Extra phrase for KPI semantics issues.
+  - template: presentation-ready output
+    reason: Extra phrase for business-facing output burden.
+  - template: scheduled report workaround
+    reason: Extra phrase for recurring report delivery workarounds.
+negative_terms: []

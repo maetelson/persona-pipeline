@@ -42,3 +42,28 @@ type(scope): short summary
 - `fix(export): validate workbook sheet presence`
 - `refactor(analysis): simplify final report assembly`
 - `docs(repo): add commit message convention`
+
+## Auto Sync Flow
+
+Install the tracked git hooks once:
+
+```text
+python run/99_install_git_hooks.py
+```
+
+After that:
+
+- every commit message is checked by the local `commit-msg` hook
+- every successful commit is pushed by the local `post-commit` hook
+
+If you want one command for stage + commit + push:
+
+```text
+python run/98_git_sync.py "type(scope): short summary"
+```
+
+If you want the same flow explicitly tied to the end of one work cycle:
+
+```text
+python run/97_finalize_task.py "type(scope): short summary"
+```

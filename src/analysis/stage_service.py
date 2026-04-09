@@ -66,9 +66,12 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
     valid_df = inputs["valid_df"]
     normalized_df = inputs["normalized_df"]
     raw_audit_df = inputs["raw_audit_df"]
+    clustering_labeled_df = _persona_core_subset(labeled_df)
+    clustering_episode_ids = set(clustering_labeled_df.get("episode_id", pd.Series(dtype=str)).astype(str).tolist())
+    clustering_episodes_df = episodes_df[episodes_df["episode_id"].astype(str).isin(clustering_episode_ids)].reset_index(drop=True)
 
     cluster_threshold_df, cluster_meta = evaluate_cluster_thresholds(
-        labeled_df,
+        clustering_labeled_df,
         inputs["threshold_profile"],
         inputs["threshold_profile_cfg"],
     )
@@ -76,25 +79,25 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
 
     priority_scores_df = build_priority_scores(labeled_df, inputs["scoring"])
     if cluster_meta["cluster_allowed"]:
-        cluster_summary_df = build_cluster_summary(labeled_df)
-        persona_candidates_df = build_persona_candidates(labeled_df, priority_scores_df)
+        cluster_summary_df = build_cluster_summary(clustering_labeled_df)
+        persona_candidates_df = build_persona_candidates(clustering_labeled_df, priority_scores_df[priority_scores_df["episode_id"].astype(str).isin(clustering_episode_ids)].reset_index(drop=True))
     else:
-        cluster_summary_df = build_cluster_summary(labeled_df.iloc[0:0].copy())
+        cluster_summary_df = build_cluster_summary(clustering_labeled_df.iloc[0:0].copy())
         persona_candidates_df = build_persona_candidates(
-            labeled_df.iloc[0:0].copy(),
+            clustering_labeled_df.iloc[0:0].copy(),
             priority_scores_df.iloc[0:0].copy(),
         )
     cluster_summary_df = _annotate_analysis_df(cluster_summary_df, cluster_meta)
     persona_candidates_df = _annotate_analysis_df(persona_candidates_df, cluster_meta)
     priority_scores_df = _annotate_analysis_df(priority_scores_df, cluster_meta)
 
-    code_freq_df = build_code_frequency_table(labeled_df)
-    code_edges_df = build_code_edges(labeled_df, code_freq_df, min_pair_count=5, normalization="count")
+    code_freq_df = build_code_frequency_table(clustering_labeled_df)
+    code_edges_df = build_code_edges(clustering_labeled_df, code_freq_df, min_pair_count=5, normalization="count")
     clusters_df, cluster_summary_rows = build_code_clusters(code_freq_df, code_edges_df)
 
     cluster_profiles = build_cluster_profiles(
-        episodes_df=episodes_df,
-        labeled_df=labeled_df,
+        episodes_df=clustering_episodes_df,
+        labeled_df=clustering_labeled_df,
         clusters_df=clusters_df,
         cluster_summary_rows=cluster_summary_rows,
         priority_df=priority_scores_df,
@@ -102,11 +105,11 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
 
     axis_candidates_df, final_axis_schema, implementation_note = discover_persona_axes(
         episodes_df=episodes_df,
-        labeled_df=labeled_df,
+        labeled_df=clustering_labeled_df,
     )
     audit_outputs = build_axis_quality_audit(
-        episodes_df=episodes_df,
-        labeled_df=labeled_df,
+        episodes_df=clustering_episodes_df,
+        labeled_df=clustering_labeled_df,
         candidate_df=axis_candidates_df,
         current_axis_schema=final_axis_schema,
         config=inputs["axis_reduction_config"],
@@ -142,8 +145,8 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         cluster_profiles=cluster_profiles,
     )
     persona_service_outputs = build_persona_outputs(
-        episodes_df=episodes_df,
-        labeled_df=labeled_df,
+        episodes_df=clustering_episodes_df,
+        labeled_df=clustering_labeled_df,
         final_axis_schema=reduced_outputs["reduced_axis_schema"],
         quality_checks=quality_checks,
     )
@@ -205,6 +208,8 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         "source_distribution_df": source_distribution_df,
         "taxonomy_summary_df": taxonomy_summary_df,
         "workbook_frames": workbook_frames,
+        "clustering_labeled_df": clustering_labeled_df,
+        "clustering_episodes_df": clustering_episodes_df,
     }
 
 
@@ -352,3 +357,10 @@ def _annotate_analysis_df(df: pd.DataFrame, cluster_meta: dict[str, Any]) -> pd.
     if result.empty:
         return pd.DataFrame(result)
     return result
+
+
+def _persona_core_subset(labeled_df: pd.DataFrame) -> pd.DataFrame:
+    """Exclude low-signal rows from persona-core clustering when flagged."""
+    if labeled_df.empty or "persona_core_eligible" not in labeled_df.columns:
+        return labeled_df.copy()
+    return labeled_df[labeled_df["persona_core_eligible"].fillna(True)].reset_index(drop=True)

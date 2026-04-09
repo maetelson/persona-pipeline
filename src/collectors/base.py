@@ -13,6 +13,7 @@ from typing import Any, Callable
 
 from src.utils.dates import build_relative_time_window, build_time_slices, utc_now_iso
 from src.utils.io import ensure_dir, load_yaml, write_jsonl
+from src.utils.seed_bank import resolve_seed_queries
 
 
 @dataclass(slots=True)
@@ -125,7 +126,13 @@ class BaseCollector(ABC):
 
     def build_stub_record(self, index: int = 1) -> RawRecord:
         """Create a default raw stub for local skeleton runs."""
-        seed = (self.config.get("query_seeds") or ["stub query"])[0]
+        query_seeds = self.config.get("query_seeds") or resolve_seed_queries(
+            self.root_dir,
+            config=self.config,
+            source_id=self.source_name,
+            source_group=str(self.config.get("source_group", "")),
+        )
+        seed = (query_seeds or ["stub query"])[0]
         slug = self.source_name.replace("_", "-")
         time_slices = self.build_time_slices()
         time_slice = time_slices[0] if time_slices else None
@@ -411,7 +418,12 @@ class BaseCollector(ABC):
 
     def _fallback_query_seed_tasks(self) -> list[QuerySeedTask]:
         """Build query tasks from legacy source config seeds."""
-        query_seeds = self.config.get("query_seeds") or []
+        query_seeds = self.config.get("query_seeds") or resolve_seed_queries(
+            self.root_dir,
+            config=self.config,
+            source_id=self.source_name,
+            source_group=str(self.config.get("source_group", "")),
+        )
         return [
             QuerySeedTask(
                 query_id=f"{self.source_name.upper()}_LEGACY_{index:03d}",

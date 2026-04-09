@@ -30,6 +30,12 @@ def build_label_audit(labeled_df: pd.DataFrame, llm_audit_df: pd.DataFrame | Non
         "question_dominant_code_share": round(_dominant_share(labeled_df, "question_codes"), 4),
         "pain_dominant_code_share": round(_dominant_share(labeled_df, "pain_codes"), 4),
     }
+    if "labelability_status" in labeled_df.columns:
+        metrics["labelable_count"] = int((labeled_df["labelability_status"] == "labelable").sum())
+        metrics["borderline_count"] = int((labeled_df["labelability_status"] == "borderline").sum())
+        metrics["low_signal_count"] = int((labeled_df["labelability_status"] == "low_signal").sum())
+    if "persona_core_eligible" in labeled_df.columns:
+        metrics["persona_core_eligible_count"] = int(labeled_df["persona_core_eligible"].fillna(False).sum())
 
     if llm_audit_df is not None and not llm_audit_df.empty:
         metrics["rule_labeled_only_count"] = int((llm_audit_df["llm_status"] == "not_targeted").sum())
@@ -79,6 +85,9 @@ def build_labeling_audit(labeled_df: pd.DataFrame, llm_audit_df: pd.DataFrame) -
         )
 
     detail = labeled_df[["episode_id", "label_confidence", "label_reason"] + CORE_LABEL_COLUMNS].copy()
+    for column in ["labelability_status", "labelability_score", "labelability_reason", "persona_core_eligible"]:
+        if column in labeled_df.columns:
+            detail[column] = labeled_df[column]
     detail["unknown_remaining"] = _row_has_unknown(detail)
     detail["missing_core_family"] = _row_has_missing_core(detail)
     if llm_audit_df is not None and not llm_audit_df.empty:

@@ -30,6 +30,7 @@ from src.normalizers.reddit_public_normalizer import RedditPublicNormalizer
 from src.normalizers.review_site_normalizer import ReviewSiteNormalizer
 from src.utils.io import ensure_dir, list_jsonl_files, load_yaml, read_jsonl, read_parquet, write_parquet
 from src.utils.logging import get_logger
+from src.utils.seed_bank import export_seed_artifacts, load_seed_bank, render_optional_queries, validate_seed_bank
 from src.utils.source_registry import SourceDefinition, filter_source_definitions, load_source_definitions
 
 LOGGER = get_logger("run.source_cli")
@@ -40,7 +41,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Source-group collection CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    for command_name in ["collect", "normalize", "prefilter", "dry-run", "qa-relevance"]:
+    for command_name in ["collect", "normalize", "prefilter", "dry-run", "qa-relevance", "show-seeds", "validate-seeds", "export-seed-summary"]:
         command = subparsers.add_parser(command_name)
         _add_target_args(command)
         if command_name in {"prefilter", "qa-relevance"}:
@@ -89,6 +90,12 @@ def main() -> None:
         dry_run(selected)
     elif args.command == "qa-relevance":
         qa_relevance(selected, limit=int(args.limit), export_borderline=bool(args.export_borderline))
+    elif args.command == "show-seeds":
+        show_seeds(selected)
+    elif args.command == "validate-seeds":
+        validate_seeds(selected)
+    elif args.command == "export-seed-summary":
+        export_seed_summary(selected)
 
 
 def collect_sources(selected: list[SourceDefinition], manual_input_dir: str | None = None) -> None:
@@ -254,6 +261,65 @@ def dry_run(selected: list[SourceDefinition]) -> None:
     ensure_dir(ROOT / "data" / "analysis")
     dry_run_df.to_csv(ROOT / "data" / "analysis" / "source_cli_dry_run.csv", index=False)
     LOGGER.info("\n%s", dry_run_df.to_string(index=False))
+
+
+def show_seeds(selected: list[SourceDefinition]) -> None:
+    """Print compact seed banks for the selected sources."""
+    for definition in selected:
+        seed_bank = load_seed_bank(ROOT, definition.source_group, definition.source_id)
+        if seed_bank is None:
+            LOGGER.info("No compact seed bank configured for %s", definition.source_id)
+            continue
+        lines = [
+            f"source={definition.source_id}",
+            f"source_group={definition.source_group}",
+            f"max_query_count={seed_bank.max_query_count}",
+            "core_seeds:",
+        ]
+        lines.extend([f"  - {item.seed} :: {item.reason}" for item in seed_bank.core_seeds])
+        if seed_bank.optional_templates:
+            lines.append("optional_templates:")
+            lines.extend([f"  - {item.template} :: {item.reason}" for item in seed_bank.optional_templates])
+            rendered = render_optional_queries(seed_bank)
+            if rendered:
+                lines.append("rendered_optional_examples:")
+                lines.extend([f"  - {query}" for query in rendered[: seed_bank.max_query_count]])
+        lines.append(f"negative_terms: {', '.join(seed_bank.all_negative_terms)}")
+        LOGGER.info("\n%s", "\n".join(lines))
+
+
+def validate_seeds(selected: list[SourceDefinition]) -> None:
+    """Validate compact seed banks and write audit artifacts."""
+    artifacts = export_seed_artifacts(ROOT, selected)
+    error_count = 0
+    seed_bank_groups = {"review_sites", "reddit", "official_communities"}
+    for definition in selected:
+        seed_bank = load_seed_bank(ROOT, definition.source_group, definition.source_id)
+        if seed_bank is None:
+            if definition.source_group in seed_bank_groups:
+                LOGGER.warning("Missing compact seed bank for %s", definition.source_id)
+                error_count += 1
+            continue
+        findings = validate_seed_bank(seed_bank)
+        if findings:
+            for finding in findings:
+                log_message = "%s [%s] %s"
+                if finding["level"] == "error":
+                    LOGGER.error(log_message, definition.source_id, finding["code"], finding["message"])
+                    error_count += 1
+                else:
+                    LOGGER.warning(log_message, definition.source_id, finding["code"], finding["message"])
+        else:
+            LOGGER.info("Validated seed bank for %s with no findings", definition.source_id)
+    LOGGER.info("Wrote seed artifacts: %s", ", ".join(str(path) for path in artifacts.values()))
+    if error_count:
+        raise SystemExit(f"Seed validation failed with {error_count} error(s).")
+
+
+def export_seed_summary(selected: list[SourceDefinition]) -> None:
+    """Export compact seed bank summary and markdown artifacts."""
+    artifacts = export_seed_artifacts(ROOT, selected)
+    LOGGER.info("Wrote seed artifacts: %s", ", ".join(str(path) for path in artifacts.values()))
 
 
 def _build_collector(definition: SourceDefinition, config: dict[str, object]):

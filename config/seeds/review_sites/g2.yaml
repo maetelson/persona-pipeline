@@ -1,0 +1,47 @@
+source_id: g2
+source_group: review_sites
+max_query_count: 10
+source_notes: "Compact review-site seed bank tuned for workflow pain phrasing rather than broad software discovery terms."
+products:
+  - Power BI
+  - Tableau
+  - Looker
+  - Sigma
+  - Qlik
+  - Domo
+  - ThoughtSpot
+core_seeds:
+  - seed: manual reporting workflow
+    reason: Targets repeated reporting work described in practical reviews.
+  - seed: dashboard reporting burden
+    reason: Captures reviews where dashboards are useful but still insufficient for delivery work.
+  - seed: export to excel workaround
+    reason: Surfaces spreadsheet fallback behavior after BI usage.
+  - seed: spreadsheet rework after dashboard
+    reason: Targets cleanup and reshaping work outside the tool.
+  - seed: dashboard numbers don't match
+    reason: Focuses on trust and reconciliation complaints.
+  - seed: metric definition mismatch
+    reason: Captures definition conflicts between teams or reports.
+  - seed: source of truth confusion
+    reason: Targets validation pain around conflicting data sources.
+  - seed: stakeholder reporting pressure
+    reason: Pulls reviews describing delivery expectations from leadership or business teams.
+  - seed: explain KPI change
+    reason: Finds reviews where users can see change but cannot interpret it.
+  - seed: presentation-ready output
+    reason: Targets complaints about preparing output for business consumption.
+optional_templates:
+  - template: "{product} reporting"
+    reason: Product-aware review lookup for reporting-focused language.
+  - template: "{product} export to excel"
+    reason: Product-aware export workaround lookup.
+  - template: "{product} numbers don't match"
+    reason: Product-aware trust and reconciliation lookup.
+  - template: "{product} stakeholder reporting"
+    reason: Product-aware delivery and reporting burden lookup.
+  - template: "{product} KPI definition"
+    reason: Product-aware metric semantics lookup.
+  - template: "{product} manual reporting"
+    reason: Product-aware manual reporting lookup.
+negative_terms: []

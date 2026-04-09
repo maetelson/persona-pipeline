@@ -1,0 +1,39 @@
+source_id: tableau_community
+source_group: official_communities
+max_query_count: 10
+source_notes: "Tableau Community seeds keep to issue-title style and bias toward dashboard trust and reporting delivery pain."
+products:
+  - Tableau
+core_seeds:
+  - seed: export to excel
+    reason: Targets spreadsheet fallback and export complaints.
+  - seed: export data for reporting
+    reason: Pulls reporting-oriented data export issues.
+  - seed: manual reporting workflow
+    reason: Captures recurring report preparation burden.
+  - seed: dashboard numbers wrong
+    reason: Targets trust issues around displayed metrics.
+  - seed: metric mismatch
+    reason: Pulls KPI discrepancy and definition conflict threads.
+  - seed: scheduled report issue
+    reason: Captures recurring delivery friction.
+  - seed: filter mismatch
+    reason: Targets inconsistency between expected and actual breakdowns.
+  - seed: drill down by segment
+    reason: Pulls decomposition difficulty in business questions.
+  - seed: presentation-ready output
+    reason: Finds requests for stakeholder-ready output forms.
+  - seed: reconcile source data
+    reason: Targets manual validation against source systems.
+optional_templates:
+  - template: "{product} export to excel"
+    reason: Product-aware export issue lookup.
+  - template: "{product} numbers don't match"
+    reason: Product-aware trust issue lookup.
+  - template: "{product} scheduled report"
+    reason: Product-aware recurring report lookup.
+  - template: "{product} filter mismatch"
+    reason: Product-aware breakdown issue lookup.
+  - template: "{product} metric definition"
+    reason: Product-aware KPI definition lookup.
+negative_terms: []

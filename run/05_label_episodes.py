@@ -6,6 +6,8 @@ import os
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -18,11 +20,15 @@ from src.analysis.pipeline_thresholds import (
     threshold_summary_message,
     upsert_threshold_audit,
 )
+from src.labeling.labelability import build_labelability_table
 from src.labeling.llm_labeler import enrich_with_llm_labels, resolve_llm_runtime
+from src.labeling.quality import build_label_quality_audit, write_label_quality_outputs
+from src.labeling.repair import apply_label_repairs, build_axis_label_details
 from src.labeling.rule_labeler import prelabel_episodes
 from src.utils.io import load_yaml, read_parquet, write_parquet
 from src.utils.logging import get_logger
 from src.utils.run_helpers import load_dotenv
+from src.utils.pipeline_schema import LABEL_CODE_COLUMNS
 
 LOGGER = get_logger("run.label_episodes")
 
@@ -32,7 +38,14 @@ def main() -> None:
     load_dotenv(ROOT / ".env")
 
     episodes_df = read_parquet(ROOT / "data" / "episodes" / "episode_table.parquet")
+    if not episodes_df.empty and "episode_id" in episodes_df.columns:
+        duplicate_count = int(episodes_df["episode_id"].astype(str).duplicated().sum())
+        if duplicate_count:
+            LOGGER.warning("Deduplicating %s duplicate episode_id rows before labeling.", duplicate_count)
+            episodes_df = episodes_df.drop_duplicates(subset=["episode_id"], keep="first").reset_index(drop=True)
     codebook = load_yaml(ROOT / "config" / "codebook.yaml")
+    labeling_policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
+    previous_labeled_df = read_parquet(ROOT / "data" / "labeled" / "labeled_episodes.parquet")
     llm_config = {
         "enabled": _env_flag("ENABLE_LLM_LABELER", "LLM_LABELER_ENABLED", default=False),
         "dry_run": _env_flag("LLM_DRY_RUN", "LLM_LABELER_DRY_RUN", "LABELING_DRY_RUN", default=False),
@@ -50,19 +63,38 @@ def main() -> None:
         "timeout_seconds": int(os.getenv("LLM_LABELER_TIMEOUT_SECONDS", "45")),
         "cache_path": ROOT / "data" / "labeled" / "llm_response_cache.jsonl",
         "codebook": codebook,
+        "policy": labeling_policy,
     }
 
+    labelability_df = build_labelability_table(episodes_df, labeling_policy)
     labeled_df = prelabel_episodes(episodes_df, codebook)
+    labeled_df = labeled_df.merge(
+        labelability_df[["episode_id", "labelability_status", "labelability_score", "labelability_reason", "persona_core_eligible"]],
+        on="episode_id",
+        how="left",
+    )
+    labeled_df = _apply_low_signal_gate(labeled_df)
     write_parquet(labeled_df, ROOT / "data" / "labeled" / "labeled_episodes_rule_only.parquet")
     runtime = resolve_llm_runtime(llm_config)
     labeled_df, llm_audit_df = enrich_with_llm_labels(episodes_df, labeled_df, config=llm_config)
+    labeled_df, repaired_df = apply_label_repairs(episodes_df, labeled_df, labelability_df, labeling_policy)
+    details_df = build_axis_label_details(episodes_df, labeled_df, labelability_df)
     audit_df = build_label_audit(labeled_df, llm_audit_df)
     labeling_audit_df = build_labeling_audit(labeled_df, llm_audit_df)
+    quality_outputs = build_label_quality_audit(
+        episodes_df=episodes_df,
+        labeled_df=labeled_df,
+        details_df=details_df,
+        labelability_df=labelability_df,
+    )
 
     write_parquet(labeled_df, ROOT / "data" / "labeled" / "labeled_episodes.parquet")
     write_parquet(audit_df, ROOT / "data" / "labeled" / "label_audit.parquet")
     write_parquet(labeling_audit_df, ROOT / "data" / "labeled" / "labeling_audit.parquet")
     write_parquet(llm_audit_df, ROOT / "data" / "labeled" / "llm_label_audit.parquet")
+    write_parquet(labelability_df, ROOT / "data" / "labeled" / "labelability_audit.parquet")
+    label_quality_paths = write_label_quality_outputs(ROOT, quality_outputs, repaired_df, details_df)
+    _write_before_after_quality_report(ROOT, previous_labeled_df, labeled_df, labelability_df)
     profile, profile_cfg = load_threshold_profile(ROOT / "config" / "pipeline_thresholds.yaml")
     threshold_df = evaluate_labeling_thresholds(labeled_df, profile, profile_cfg)
     combined_threshold_df = upsert_threshold_audit(ROOT, threshold_df)
@@ -96,9 +128,92 @@ def main() -> None:
         LOGGER.info("API was not called because %s", runtime["skip_reason"])
     else:
         LOGGER.info("Actual-run used model_primary=%s and escalation=%s", runtime["model_primary"], runtime["enable_escalation"])
+    LOGGER.info("Label quality artifacts: %s", ", ".join(str(path) for path in label_quality_paths.values()))
     gate_mode = str(profile_cfg.get("gate_mode", {}).get("labeling_gate", "warn"))
     if gate_mode == "strict" and stage_status == "fail":
         raise RuntimeError("Labeling threshold failed under strict profile. See data/analysis/pipeline_threshold_audit.parquet")
+
+
+def _apply_low_signal_gate(labeled_df):
+    """Blank persona-driving families for low-signal rows so they do not pollute clustering."""
+    if labeled_df.empty or "labelability_status" not in labeled_df.columns:
+        return labeled_df
+    result = labeled_df.copy()
+    low_signal_mask = result["labelability_status"].fillna("").astype(str).eq("low_signal")
+    if not low_signal_mask.any():
+        return result
+    for column in LABEL_CODE_COLUMNS:
+        result.loc[low_signal_mask, column] = "unknown"
+    result.loc[low_signal_mask, "label_confidence"] = 0.2
+    result.loc[low_signal_mask, "label_reason"] = (
+        result.loc[low_signal_mask, "label_reason"].fillna("").astype(str) + " | low_signal_input"
+    ).str.strip(" |")
+    result.loc[low_signal_mask, "persona_core_eligible"] = False
+    return result
+
+
+def _write_before_after_quality_report(root_dir, before_df, after_df, labelability_df) -> None:
+    """Write before/after quality comparison for the rerun."""
+    before_unknown = _unknown_ratio(before_df)
+    after_unknown = _unknown_ratio(after_df)
+    before_core_unknown = _unknown_ratio(_persona_core_subset(before_df))
+    after_core_unknown = _unknown_ratio(_persona_core_subset(after_df))
+    low_signal_rate = (
+        float((labelability_df["labelability_status"] == "low_signal").mean())
+        if not labelability_df.empty
+        else 0.0
+    )
+    rows = [
+        {"metric": "before_unknown_ratio", "value": before_unknown},
+        {"metric": "after_unknown_ratio", "value": after_unknown},
+        {"metric": "unknown_ratio_delta", "value": round(after_unknown - before_unknown, 6)},
+        {"metric": "before_core_unknown_ratio", "value": before_core_unknown},
+        {"metric": "after_core_unknown_ratio", "value": after_core_unknown},
+        {"metric": "core_unknown_ratio_delta", "value": round(after_core_unknown - before_core_unknown, 6)},
+        {"metric": "before_labeled_rows", "value": int(len(before_df))},
+        {"metric": "after_labeled_rows", "value": int(len(after_df))},
+        {"metric": "low_signal_rate", "value": round(low_signal_rate, 6)},
+        {"metric": "persona_core_eligible_rows", "value": int(after_df.get("persona_core_eligible", pd.Series(dtype=bool)).fillna(True).sum())},
+    ]
+    output_df = pd.DataFrame(rows)
+    write_parquet(output_df, root_dir / "data" / "analysis" / "before_after_label_metrics.parquet")
+    output_df.to_csv(root_dir / "data" / "analysis" / "before_after_label_metrics.csv", index=False)
+    (root_dir / "data" / "analysis" / "before_after_label_metrics.md").write_text(
+        "\n".join(
+            [
+                "# Before vs After Label Metrics",
+                "",
+                f"- before unknown ratio: `{before_unknown:.6f}`",
+                f"- after unknown ratio: `{after_unknown:.6f}`",
+                f"- delta: `{after_unknown - before_unknown:+.6f}`",
+                f"- before core-eligible unknown ratio: `{before_core_unknown:.6f}`",
+                f"- after core-eligible unknown ratio: `{after_core_unknown:.6f}`",
+                f"- core delta: `{after_core_unknown - before_core_unknown:+.6f}`",
+                f"- low-signal rate: `{low_signal_rate:.6f}`",
+                f"- persona-core-eligible rows: `{int(after_df.get('persona_core_eligible', pd.Series(dtype=bool)).fillna(True).sum())}`",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def _unknown_ratio(df) -> float:
+    """Return the fraction of rows with any core family unknown."""
+    if df is None or getattr(df, "empty", True):
+        return 1.0
+    mask = pd.Series(False, index=df.index)
+    for column in ["role_codes", "question_codes", "pain_codes", "output_codes"]:
+        if column in df.columns:
+            mask = mask | df[column].fillna("").astype(str).eq("unknown")
+    return float(mask.mean())
+
+
+def _persona_core_subset(df):
+    """Use persona-core-eligible rows when present."""
+    if df is None or getattr(df, "empty", True) or "persona_core_eligible" not in df.columns:
+        return df
+    return df[df["persona_core_eligible"].fillna(True)]
 
 def _env_flag(*keys: str, default: bool) -> bool:
     """Return the first matching true/false environment flag."""

@@ -12,3 +12,7 @@ aliases:
   - reddit business intelligence
   - r/businessintelligence
 seed_template_group: reddit
+query_mode: source_config
+seed_bank_path: config/seeds/reddit/reddit_business_intelligence.yaml
+max_query_count: 8
+enable_optional_seed_templates: false

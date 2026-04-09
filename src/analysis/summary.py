@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 from src.utils.pipeline_schema import (
+    CORE_LABEL_COLUMNS,
     LABEL_CODE_COLUMNS,
     compute_quality_flag,
     row_has_unknown_labels,
@@ -147,7 +148,9 @@ def build_quality_checks(
     total_raw_count = int(raw_audit_df.get("raw_record_count", pd.Series(dtype=int)).fillna(0).sum()) if not raw_audit_df.empty else 0
     cleaned_count = int(len(valid_df))
     labeled_count = int(len(labeled_df))
-    unknown_ratio = round(_row_unknown_ratio(labeled_df), 6)
+    core_labeled_df = _persona_core_subset(labeled_df)
+    unknown_ratio = round(_row_unknown_ratio(core_labeled_df), 6)
+    overall_unknown_ratio = round(_row_unknown_ratio(labeled_df), 6)
     cluster_count = int(len(cluster_profiles))
     cluster_distribution = [
         {
@@ -161,15 +164,24 @@ def build_quality_checks(
         "total_raw_count": total_raw_count,
         "cleaned_count": cleaned_count,
         "labeled_count": labeled_count,
+        "persona_core_labeled_count": int(len(core_labeled_df)),
         "unknown_ratio": unknown_ratio,
+        "overall_unknown_ratio": overall_unknown_ratio,
         "cluster_count": cluster_count,
         "cluster_distribution": cluster_distribution,
         "quality_flag": compute_quality_flag(unknown_ratio),
     }
+
+
+def _persona_core_subset(labeled_df: pd.DataFrame) -> pd.DataFrame:
+    """Use persona-core-eligible rows when available for quality scoring."""
+    if labeled_df.empty or "persona_core_eligible" not in labeled_df.columns:
+        return labeled_df
+    return labeled_df[labeled_df["persona_core_eligible"].fillna(True)]
 def _row_unknown_ratio(labeled_df: pd.DataFrame) -> float:
     """Return ratio of rows that still have any unresolved label family."""
     if labeled_df.empty:
         return 1.0
-    label_columns = [column for column in LABEL_CODE_COLUMNS if column in labeled_df.columns]
+    label_columns = [column for column in CORE_LABEL_COLUMNS if column in labeled_df.columns]
     unknown_mask = labeled_df[label_columns].apply(lambda row: row_has_unknown_labels(row.tolist()), axis=1)
     return float(unknown_mask.mean())

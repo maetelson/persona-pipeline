@@ -23,7 +23,10 @@ def load_jsonl_cache(path: Path) -> dict[str, dict[str, Any]]:
         line = line.strip()
         if not line:
             continue
-        payload = json.loads(line)
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
         key = str(payload.get("cache_key", "") or "")
         if not key:
             continue

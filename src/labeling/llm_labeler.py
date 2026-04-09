@@ -11,11 +11,9 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 import pandas as pd
+from src.labeling.prompt_builder import build_label_prompt
 from src.labeling.prompt_payload import (
     LABEL_COLUMNS,
-    build_compact_episode_payload,
-    build_compact_label_schema,
-    compact_json,
     expand_compact_label_suggestion,
     extract_compact_rule_labels,
     truncate_text,
@@ -116,6 +114,7 @@ def enrich_with_llm_labels(
             labeled_row=row,
             codebook=runtime["codebook"],
             target_meta=target_meta,
+            policy=runtime["policy"],
         )
         audit_row["prompt_chars"] = len(prompt_payload["prompt"])
         audit_row["prompt_cache_key"] = runtime["prompt_cache_key"]
@@ -230,6 +229,9 @@ def enrich_with_llm_labels(
 
 def should_send_to_llm(row: pd.Series, threshold: float) -> tuple[bool, str]:
     """Return whether a row should reach the LLM and a readable reason string."""
+    labelability_status = str(row.get("labelability_status", "") or "")
+    if labelability_status == "low_signal":
+        return False, "low_signal_input"
     reasons: list[str] = []
     unknown_columns = [column for column in LABEL_COLUMNS if schema_is_unknown_like(row.get(column, "unknown"))]
     missing_core = [column for column in CORE_LABEL_COLUMNS if schema_is_unknown_like(row.get(column, "unknown"))]
@@ -282,6 +284,7 @@ def resolve_llm_runtime(config: dict[str, Any] | None = None) -> dict[str, Any]:
     cache_enabled = _first_non_empty("LLM_CACHE_ENABLED", default=str(cfg.get("cache_enabled", "true"))).lower() == "true"
     cache_path = Path(str(cfg.get("cache_path", Path("data") / "labeled" / "llm_response_cache.jsonl")))
     codebook = dict(cfg.get("codebook", {}) or {})
+    policy = dict(cfg.get("policy", {}) or {})
 
     skip_reason = ""
     mode = "direct"
@@ -314,6 +317,7 @@ def resolve_llm_runtime(config: dict[str, Any] | None = None) -> dict[str, Any]:
         "backend": backend,
         "timeout_seconds": timeout_seconds,
         "codebook": codebook,
+        "policy": policy,
         "skip_reason": skip_reason,
         "max_output_tokens": max_output_tokens,
         "prompt_cache_key": prompt_cache_key,
@@ -359,7 +363,13 @@ def _prepare_batch_mode(
             continue
         episode_row = episode_lookup.loc[episode_id]
         labeled_row = result[result["episode_id"].astype(str) == episode_id].iloc[0]
-        prompt_payload = _build_prompt_payload(episode_row=episode_row, labeled_row=labeled_row, codebook=runtime["codebook"], target_meta=target_meta)
+        prompt_payload = _build_prompt_payload(
+            episode_row=episode_row,
+            labeled_row=labeled_row,
+            codebook=runtime["codebook"],
+            target_meta=target_meta,
+            policy=runtime["policy"],
+        )
         cache_key = _cache_key_for_prompt(
             model=runtime["model_primary"],
             requested_families=prompt_payload["requested_families"],
@@ -421,28 +431,19 @@ def _build_prompt_payload(
     labeled_row: pd.Series,
     codebook: dict[str, Any],
     target_meta: dict[str, Any],
+    policy: dict[str, Any],
 ) -> dict[str, Any]:
     """Build a short prompt with only the needed families and compact fields."""
     requested_families = _requested_families(labeled_row, target_meta["reason"])
-    compact_codebook_json = _compact_codebook_json(codebook, requested_families)
-    episode_payload = build_compact_episode_payload(episode_row)
-    current_labels = extract_compact_rule_labels(labeled_row, requested_families)
-    prompt_schema_json = compact_json(build_compact_label_schema(requested_families))
-    prompt = "\n".join(
-        [
-            PROMPT_SYSTEM,
-            f"t={target_meta['reason']}",
-            f"f={','.join(requested_families)}",
-            f"c={compact_codebook_json}",
-            f"r={compact_json(current_labels)}",
-            f"e={compact_json(episode_payload)}",
-            f"s={prompt_schema_json}",
-        ]
+    prompt_payload = build_label_prompt(
+        episode_row=episode_row,
+        labeled_row=labeled_row,
+        requested_families=requested_families,
+        target_reason=target_meta["reason"],
+        codebook=codebook,
+        policy=policy,
     )
-    return {
-        "prompt": prompt,
-        "requested_families": requested_families,
-    }
+    return prompt_payload
 
 
 def _requested_families(labeled_row: pd.Series, target_reason: str) -> list[str]:

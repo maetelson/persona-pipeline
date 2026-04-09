@@ -10,3 +10,7 @@ manual_input_dir: data/manual_ingest/g2
 aliases:
   - G2
 seed_template_group: review_sites
+query_mode: source_config
+seed_bank_path: config/seeds/review_sites/g2.yaml
+max_query_count: 10
+enable_optional_seed_templates: false

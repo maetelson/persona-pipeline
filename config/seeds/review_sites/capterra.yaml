@@ -1,0 +1,47 @@
+source_id: capterra
+source_group: review_sites
+max_query_count: 10
+source_notes: "Capterra seeds emphasize recurring reporting and spreadsheet workaround language over buyer-intent queries."
+products:
+  - Power BI
+  - Tableau
+  - Looker
+  - Sigma
+  - Qlik
+  - Domo
+  - ThoughtSpot
+core_seeds:
+  - seed: manual reporting workflow
+    reason: Captures repeated report production burden in reviews.
+  - seed: dashboard reporting burden
+    reason: Targets reviews where dashboard output is not enough for actual reporting work.
+  - seed: export to excel workaround
+    reason: Pulls spreadsheet-export fallback complaints.
+  - seed: spreadsheet rework after dashboard
+    reason: Finds cleanup and reformatting effort outside the tool.
+  - seed: dashboard numbers don't match
+    reason: Targets trust and mismatch language.
+  - seed: metric definition mismatch
+    reason: Finds complaints about inconsistent KPI logic.
+  - seed: source of truth confusion
+    reason: Pulls reconciliation pain between dashboard and source systems.
+  - seed: stakeholder reporting pressure
+    reason: Captures reporting burden driven by leadership or stakeholders.
+  - seed: explain KPI change
+    reason: Targets interpretation and root-cause difficulty.
+  - seed: presentation-ready output
+    reason: Finds need for business-ready exports rather than monitoring views.
+optional_templates:
+  - template: "{product} reporting"
+    reason: Product-aware reporting lookup.
+  - template: "{product} export to excel"
+    reason: Product-aware export workaround lookup.
+  - template: "{product} numbers don't match"
+    reason: Product-aware discrepancy lookup.
+  - template: "{product} stakeholder reporting"
+    reason: Product-aware stakeholder delivery lookup.
+  - template: "{product} KPI definition"
+    reason: Product-aware definition conflict lookup.
+  - template: "{product} manual reporting"
+    reason: Product-aware manual reporting lookup.
+negative_terms: []

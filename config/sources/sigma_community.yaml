@@ -13,3 +13,7 @@ thread_urls:
 aliases:
   - sigma computing community
 seed_template_group: official_communities
+query_mode: source_config
+seed_bank_path: config/seeds/official_communities/sigma_community.yaml
+max_query_count: 10
+enable_optional_seed_templates: false

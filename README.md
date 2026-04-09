@@ -242,6 +242,31 @@ Examples:
 - `fix(export): validate workbook sheet presence`
 - `refactor(analysis): simplify final report assembly`
 
+## Git Sync Flow
+
+Install the tracked hooks once:
+
+```bash
+python run/99_install_git_hooks.py
+```
+
+After that:
+
+- each commit message is checked against the repo convention
+- each successful commit is pushed to the configured remote automatically
+
+If you want a single command for stage + commit + push:
+
+```bash
+python run/98_git_sync.py "type(scope): short summary"
+```
+
+If you want a task-finalize command that always stages, commits, and pushes at the end of one work cycle:
+
+```bash
+python run/97_finalize_task.py "type(scope): short summary"
+```
+
 ## Docs
 
 - [ORCHESTRATION.md](./ORCHESTRATION.md): stage order and rerun behavior

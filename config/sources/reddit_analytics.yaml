@@ -11,3 +11,7 @@ max_comments_per_thread: 6
 aliases:
   - reddit analytics
 seed_template_group: reddit
+query_mode: source_config
+seed_bank_path: config/seeds/reddit/reddit_analytics.yaml
+max_query_count: 8
+enable_optional_seed_templates: false

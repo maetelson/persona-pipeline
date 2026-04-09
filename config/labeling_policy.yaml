@@ -1,0 +1,228 @@
+llm_labeling:
+  prompt_version: v2
+  low_signal_skip_llm: true
+  borderline_send_to_llm: true
+  choose_broad_label_when_directional: true
+  unknown_allowed_only_when:
+    - evidence is absent across the requested family
+    - evidence is contradictory across broad label directions
+    - the current taxonomy has no reasonable broad fit
+  source_guidance:
+    reddit: "Complaint-style natural language. Focus on repeated reporting pain, follow-up requests, trust issues, and spreadsheet workarounds."
+    stackoverflow: "May look technical, but keep reporting, dashboard trust, spreadsheet output, KPI mismatch, and explanation pain if present."
+    review_sites: "Pros/cons/use-case language. Prefer recurring workflow pain over buyer-intent language."
+    official_communities: "Issue-title style. Prioritize user-facing reporting pain over admin or deployment setup."
+  families:
+    role_codes:
+      definition: "Who is carrying the work or answer burden."
+      choose_when: "Pick the broadest role direction supported by text."
+      unknown_when: "Only when the actor is absent or conflicting."
+      boundary_rules:
+        - "R_MARKETER when campaign, attribution, channel, ROAS, or media-buying context dominates."
+        - "R_MANAGER when leadership, executive, stakeholder, finance review, or business-owner pressure dominates."
+        - "R_ANALYST for BI analyst, business analyst, reporting owner, dashboard owner, ops analyst, or generic practitioner doing the work."
+      positive_examples:
+        - text: "Leadership wants a channel breakdown and I have to rebuild the report every week."
+          label: R_MANAGER
+        - text: "I own the weekly dashboard refresh and still export it to Excel for the business review."
+          label: R_ANALYST
+        - text: "Our campaign reporting still needs manual attribution checks before we share it."
+          label: R_MARKETER
+      boundary_examples:
+        - text: "A data analyst supporting campaign reporting should still be R_MARKETER if the marketing workflow is dominant."
+          label: R_MARKETER
+        - text: "A dashboard owner without a named title should still be R_ANALYST."
+          label: R_ANALYST
+    moment_codes:
+      definition: "Where the workflow is stuck right now."
+      choose_when: "Choose reporting, validation, triage, or automation from the actual work moment."
+      unknown_when: "Only when the workflow stage cannot be inferred."
+      boundary_rules:
+        - "M_REPORTING for recurring report prep, export, formatting, delivery, or business review work."
+        - "M_VALIDATION for reconcile, numbers don't match, trust, source-of-truth, or pre-send checking."
+        - "M_TRIAGE for why-did-it-change, issue diagnosis, drill-down, or explanation work."
+        - "M_AUTOMATION for repeated steps the user wants scheduled or templated away."
+      positive_examples:
+        - text: "Monthly reporting still takes too long because I have to format everything manually."
+          label: M_REPORTING
+        - text: "The numbers in Power BI do not match finance so I re-check them before sending."
+          label: M_VALIDATION
+        - text: "I can see conversion dropped but I cannot tell which segment caused it."
+          label: M_TRIAGE
+    question_codes:
+      definition: "What the user is trying to accomplish."
+      choose_when: "Pick the main outcome the user is asking for."
+      unknown_when: "Only when no clear business question exists."
+      boundary_rules:
+        - "Q_REPORT_SPEED for faster recurring reporting, easier delivery, or less manual reporting prep."
+        - "Q_VALIDATE_NUMBERS for mismatch, trust, reconcile, or source-of-truth problems."
+        - "Q_DIAGNOSE_ISSUE for KPI change explanation, drop analysis, or drill-down questions."
+        - "Q_AUTOMATE_WORKFLOW for repeated manual steps the user wants automated."
+      positive_examples:
+        - text: "I export this to Excel every week because the dashboard is not enough for the leadership report."
+          label: Q_REPORT_SPEED
+        - text: "The dashboard numbers do not match the source data and I need to explain why."
+          label: Q_VALIDATE_NUMBERS
+        - text: "Why did conversion drop on mobile but not desktop?"
+          label: Q_DIAGNOSE_ISSUE
+      boundary_examples:
+        - text: "If the real pain is repeated export and formatting, prefer Q_REPORT_SPEED over Q_AUTOMATE_WORKFLOW."
+          label: Q_REPORT_SPEED
+    pain_codes:
+      definition: "The main recurring bottleneck blocking the work."
+      choose_when: "Choose the broad bottleneck most directly supported by the evidence."
+      unknown_when: "Only when the work is relevant but the bottleneck family is genuinely unclear."
+      boundary_rules:
+        - "P_MANUAL_REPORTING for repeated export, spreadsheet cleanup, report prep, or reformatting."
+        - "P_DATA_QUALITY for mismatch, trust, reconcile, source-of-truth, or metric logic conflict."
+        - "P_TOOL_LIMITATION for dashboards not supporting needed breakdowns, output, drill-down, or explanation."
+        - "P_HANDOFF for repeated follow-up questions, stakeholder answer burden, or cross-team dependency."
+      positive_examples:
+        - text: "We still do this manually in spreadsheets after every dashboard refresh."
+          label: P_MANUAL_REPORTING
+        - text: "The dashboard numbers do not match finance definitions."
+          label: P_DATA_QUALITY
+        - text: "The tool shows the KPI but not enough detail to explain the change."
+          label: P_TOOL_LIMITATION
+        - text: "Stakeholders keep asking follow-up cuts after every review."
+          label: P_HANDOFF
+    env_codes:
+      definition: "What execution environment the work depends on."
+      choose_when: "Choose the broad environment used in the workflow."
+      unknown_when: "Only when no environment is mentioned."
+      boundary_rules:
+        - "E_SPREADSHEET for Excel, Sheets, workbook, csv cleanup, or spreadsheet delivery."
+        - "E_SQL_BI for Power BI, Tableau, Looker, Sigma, dashboard, report builder, SQL-based BI usage."
+        - "E_PYTHON for notebook, pandas, python script, or scripting workaround."
+        - "E_WAREHOUSE for Snowflake, BigQuery, Redshift, Oracle, or warehouse-first context."
+    workaround_codes:
+      definition: "What workaround the user uses to get the work done."
+      choose_when: "Choose a workaround only if the text implies an active workaround, not just a tool mention."
+      unknown_when: "Only when no workaround behavior is present."
+      boundary_rules:
+        - "W_MANUAL for manual copy/paste or hand editing."
+        - "W_SPREADSHEET for Excel or CSV fallback used as a workaround."
+        - "W_SCRIPT for scripts or code used to patch around the workflow."
+    output_codes:
+      definition: "What final artifact the user needs."
+      choose_when: "Choose the broadest concrete output need."
+      unknown_when: "Only when no deliverable is implied."
+      boundary_rules:
+        - "O_XLSX for spreadsheet, Excel-ready, board deck table, or report-ready extract."
+        - "O_DASHBOARD for dashboard monitoring, dashboard update, or live BI view."
+        - "O_VALIDATED_DATASET for reconciled numbers or trusted dataset delivery."
+        - "O_AUTOMATION_JOB for scheduled output or automated job."
+      positive_examples:
+        - text: "I need presentation-ready output for the monthly business review."
+          label: O_XLSX
+        - text: "I just need the dashboard to refresh with the right segment filter."
+          label: O_DASHBOARD
+        - text: "We need a reconciled dataset before finance signs off."
+          label: O_VALIDATED_DATASET
+    fit_code:
+      definition: "Overall fit of the row for persona mining."
+      choose_when: "F_STRONG for recurring workflow bottleneck evidence. F_REVIEW for softer but still relevant review-style pain."
+      unknown_when: "Only when the row is low-signal or clearly outside persona mining scope."
+few_shot_examples:
+  reddit:
+    - text: "Stakeholders keep asking follow-ups after every dashboard review, so I export to Excel and rebuild the cuts manually."
+      labels:
+        moment_codes: M_REPORTING
+        question_codes: Q_REPORT_SPEED
+        pain_codes: P_HANDOFF
+        output_codes: O_XLSX
+    - text: "The dashboard numbers don't match our source of truth and I have to reconcile them before the monthly review."
+      labels:
+        moment_codes: M_VALIDATION
+        question_codes: Q_VALIDATE_NUMBERS
+        pain_codes: P_DATA_QUALITY
+        output_codes: O_VALIDATED_DATASET
+  stackoverflow:
+    - text: "Power BI measure returns a different KPI than finance and it breaks the monthly report."
+      labels:
+        question_codes: Q_VALIDATE_NUMBERS
+        pain_codes: P_DATA_QUALITY
+        output_codes: O_XLSX
+    - text: "Tableau calc works for monitoring but I still cannot explain why the KPI moved by segment."
+      labels:
+        question_codes: Q_DIAGNOSE_ISSUE
+        pain_codes: P_TOOL_LIMITATION
+        output_codes: O_DASHBOARD
+  review_sites:
+    - text: "The dashboards are fine for monitoring, but we still export to spreadsheets for leadership reporting."
+      labels:
+        moment_codes: M_REPORTING
+        question_codes: Q_REPORT_SPEED
+        pain_codes: P_MANUAL_REPORTING
+        output_codes: O_XLSX
+  official_communities:
+    - text: "Export to Excel issue: dashboard numbers do not match the source data for the scheduled report."
+      labels:
+        moment_codes: M_VALIDATION
+        question_codes: Q_VALIDATE_NUMBERS
+        pain_codes: P_DATA_QUALITY
+        output_codes: O_XLSX
+labelability:
+  low_signal_min_text_length: 80
+  strong_signal_threshold: 5
+  borderline_signal_threshold: 3
+  positive_terms:
+    - report
+    - reporting
+    - dashboard
+    - excel
+    - spreadsheet
+    - export
+    - reconcile
+    - trust
+    - metric
+    - kpi
+    - stakeholder
+    - leadership
+    - segment
+    - channel
+    - device
+    - explain
+    - why did
+    - source of truth
+    - numbers don't match
+    - presentation-ready
+  negative_terms:
+    - sdk
+    - oauth
+    - npm
+    - docker
+    - kubernetes
+    - selenium
+    - playwright
+    - traceback
+    - stack trace
+    - package install
+    - deployment
+    - ci/cd
+    - auth flow
+    - scraper
+    - webdriver
+repair:
+  min_labelability_for_repair: borderline
+  broad_role_rules:
+    analyst:
+      - dashboard owner
+      - reporting owner
+      - analyst
+      - business analyst
+      - bi analyst
+      - operations analyst
+      - revenue ops
+    manager:
+      - stakeholder
+      - leadership
+      - executive
+      - board report
+      - finance review
+    marketer:
+      - campaign
+      - attribution
+      - channel
+      - media buyer
+      - marketing

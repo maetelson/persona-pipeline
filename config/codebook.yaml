@@ -1,6 +1,15 @@
 role_keywords:
   R_ANALYST:
     - analyst
+    - business analyst
+    - bi analyst
+    - reporting owner
+    - dashboard owner
+    - report owner
+    - operations analyst
+    - ops analyst
+    - revenue ops
+    - finance analyst
     - dashboard
     - report
     - reporting
@@ -10,11 +19,19 @@ role_keywords:
     - stakeholder
     - leadership
     - executive
+    - business owner
+    - board report
+    - monthly business review
+    - finance review
   R_MARKETER:
     - media buyer
     - campaign
     - ads
     - marketing
+    - attribution
+    - channel
+    - roas
+    - conversion
 
 moment_keywords:
   M_REPORTING:
@@ -22,21 +39,35 @@ moment_keywords:
     - reporting
     - export
     - recurring
+    - monthly
+    - weekly
+    - board report
+    - business review
   M_VALIDATION:
     - qa
     - validation
     - reconcile
     - compare
+    - source of truth
+    - trust
+    - numbers do not match
+    - numbers don't match
   M_TRIAGE:
     - investigate
     - debug
     - broken
     - issue
+    - why did
+    - explain
+    - drill down
+    - segment
   M_AUTOMATION:
     - automate
     - automation
     - pipeline
     - script
+    - scheduled
+    - template
 
 question_codes:
   Q_REPORT_SPEED:
@@ -44,21 +75,36 @@ question_codes:
     - deliver recurring reporting
     - export faster
     - reporting output faster
+    - manual reporting takes too long
+    - export to excel every week
+    - report for leadership
+    - presentation ready
   Q_VALIDATE_NUMBERS:
     - validate and reconcile
     - reconcile reported numbers
     - validation
     - qa
+    - dashboard numbers don't match
+    - source of truth
+    - metric definition
+    - reconcile dashboard with source data
   Q_DIAGNOSE_ISSUE:
     - diagnose
     - resolve analytics issues
     - debug
     - root cause
+    - why did conversion drop
+    - can't explain kpi change
+    - breakdown by segment
+    - breakdown by channel
   Q_AUTOMATE_WORKFLOW:
     - automate
     - automation
     - workflow should be automated
     - automate first
+    - repeated manual steps
+    - scheduled report
+    - template this workflow
 
 pain_codes:
   P_MANUAL_REPORTING:
@@ -67,23 +113,39 @@ pain_codes:
     - spreadsheet workaround
     - weekly report
     - manual workaround
+    - export to excel
+    - spreadsheet rework
+    - presentation ready
+    - still using spreadsheets
   P_DATA_QUALITY:
     - mismatch
     - wrong number
     - validation
     - reconcile
     - qa
+    - source of truth
+    - metric definition
+    - numbers don't match
+    - finance definition
   P_TOOL_LIMITATION:
     - limitation
     - missing feature
     - broken
     - cannot
     - tool limitation
+    - dashboard is not enough
+    - cannot explain
+    - can't explain
+    - drill down
   P_HANDOFF:
     - stakeholder
     - handoff
     - wait for
     - review cycle
+    - follow up
+    - follow-up
+    - leadership wants
+    - ad hoc request
 
 env_codes:
   E_SPREADSHEET:
@@ -91,6 +153,8 @@ env_codes:
     - spreadsheet
     - xlsx
     - csv
+    - google sheets
+    - workbook
   E_SQL_BI:
     - sql
     - dashboard
@@ -99,6 +163,11 @@ env_codes:
     - qlik
     - superset
     - metabase
+    - looker
+    - looker studio
+    - sigma
+    - domo
+    - thoughtspot
   E_PYTHON:
     - python
     - pandas
@@ -116,14 +185,20 @@ workaround_codes:
     - manual workaround
     - manual
     - copy paste
+    - hand edit
+    - reformat manually
   W_SPREADSHEET:
     - spreadsheet workaround
     - excel
     - csv
+    - workbook
+    - google sheets
   W_SCRIPT:
     - ad hoc script workaround
     - python
     - script
+    - notebook
+    - workaround query
 
 output_codes:
   O_XLSX:
@@ -131,6 +206,10 @@ output_codes:
     - excel
     - spreadsheet
     - report
+    - presentation ready
+    - board report
+    - executive summary
+    - leadership report
   O_DASHBOARD:
     - dashboard
     - chart
@@ -139,10 +218,14 @@ output_codes:
     - validated dataset
     - reconciled data
     - clean dataset
+    - source of truth
+    - trusted dataset
   O_AUTOMATION_JOB:
     - automation
     - pipeline
     - scheduled
+    - template
+    - recurring job
 
 fit_keywords:
   F_STRONG:
@@ -150,5 +233,11 @@ fit_keywords:
     - automate
     - recurring
     - bottleneck
+    - reporting burden
+    - dashboard trust
+    - manual reporting
   F_REVIEW:
     - review
+    - pros
+    - cons
+    - use case

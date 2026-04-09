@@ -29,6 +29,26 @@ class SourceCliSmokeTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertTrue((ROOT / "data" / "analysis" / "source_cli_dry_run.csv").exists())
 
+    def test_show_and_validate_seed_cli_completes(self) -> None:
+        show = subprocess.run(
+            [sys.executable, "run/10_source_cli.py", "show-seeds", "--source", "g2"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(show.returncode, 0, msg=show.stderr)
+
+        validate = subprocess.run(
+            [sys.executable, "run/10_source_cli.py", "validate-seeds", "--source-group", "review_sites"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(validate.returncode, 0, msg=validate.stderr)
+        self.assertTrue((ROOT / "data" / "analysis" / "source_seed_bank_summary.csv").exists())
+
     def test_ingest_manual_cli_completes_for_g2(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)

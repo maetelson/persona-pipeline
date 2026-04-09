@@ -10,3 +10,7 @@ manual_input_dir: data/manual_ingest/capterra
 aliases:
   - Capterra
 seed_template_group: review_sites
+query_mode: source_config
+seed_bank_path: config/seeds/review_sites/capterra.yaml
+max_query_count: 10
+enable_optional_seed_templates: false
