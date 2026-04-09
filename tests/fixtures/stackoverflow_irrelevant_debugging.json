@@ -1,0 +1,11 @@
+{
+  "source": "stackoverflow",
+  "raw_id": "so-drop-1",
+  "title": "OAuth package install fails with traceback",
+  "body": "pip install dependency conflict in docker container with stack trace and fastapi deploy issue.",
+  "comments_text": "",
+  "raw_text": "",
+  "source_meta": {
+    "json": "{\"raw_question\": {\"tags\": [\"python\", \"oauth-2.0\", \"docker\"], \"is_answered\": false}, \"tags\": [\"python\", \"oauth-2.0\", \"docker\"], \"is_answered\": false}"
+  }
+}

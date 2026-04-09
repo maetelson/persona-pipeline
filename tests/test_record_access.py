@@ -8,8 +8,11 @@ from src.utils.record_access import (
     get_record_codes,
     get_record_id,
     get_record_source,
+    get_record_source_meta,
+    get_record_tags,
     get_record_text,
     is_valid_record,
+    serialize_source_meta,
 )
 
 
@@ -44,6 +47,15 @@ class RecordAccessTests(unittest.TestCase):
     def test_is_valid_record_uses_required_fields(self) -> None:
         self.assertTrue(is_valid_record({"episode_id": "1", "normalized_episode": "x"}))
         self.assertFalse(is_valid_record({"episode_id": "", "normalized_episode": "x"}))
+
+    def test_source_meta_helpers_roundtrip_and_extract_tags(self) -> None:
+        payload = serialize_source_meta(
+            {"raw_question": {"tags": ["power-bi", "dax"]}},
+            window_id="w1",
+        )
+        record = {"source_meta": payload}
+        self.assertEqual(get_record_source_meta(record)["window_id"], "w1")
+        self.assertEqual(get_record_tags(record), ["power-bi", "dax"])
 
 
 if __name__ == "__main__":

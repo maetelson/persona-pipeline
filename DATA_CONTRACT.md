@@ -23,17 +23,43 @@
 Required columns:
 
 - `source`
+- `source_group`
+- `source_name`
 - `source_type`
 - `raw_id`
+- `raw_source_id`
 - `url`
+- `canonical_url`
 - `query_seed`
 - `title`
 - `body`
+- `body_text`
 - `comments_text`
 - `raw_text`
 - `created_at`
 - `fetched_at`
+- `retrieved_at`
+- `author_name`
+- `product_or_tool`
+- `subreddit_or_forum`
+- `thread_title`
+- `parent_context`
+- `role_hint`
+- `company_size_hint`
+- `industry_hint`
+- `workflow_hint`
+- `pain_point_hint`
+- `output_need_hint`
+- `dev_heavy_score`
+- `biz_user_score`
+- `relevance_score`
 - `language`
+- `crawl_method`
+- `crawl_status`
+- `manual_import_flag`
+- `raw_file_path`
+- `parse_version`
+- `hash_id`
 - `author_hint`
 - `source_meta`
 - `dedupe_key`
@@ -43,6 +69,8 @@ Notes:
 
 - `created_at` is required downstream for time window filtering
 - `source_meta` is stored as JSON-compatible payload/string for parquet stability
+- old consumers may continue using the legacy subset of columns
+- source-group collectors are expected to fill the added fields when available
 
 ## `valid_candidates`
 
@@ -154,6 +182,17 @@ Notes:
 
 - `raw_post`
 - `raw_comments`
+
+### Review sites
+
+- direct crawl may be blocked
+- emit `crawl_status=blocked_or_manual_required` instead of crashing
+- manual HTML / CSV / JSON / JSONL snapshots should map through the same parser + normalizer path
+
+### Official communities
+
+- feed items and public thread HTML may both be used
+- thread/reply linkage should be preserved with `thread_title` and `parent_context`
 
 ### Stack Overflow
 

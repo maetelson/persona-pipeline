@@ -1,0 +1,14 @@
+source_id: reddit_business_intelligence
+source_name: r/BusinessIntelligence
+source_group: reddit
+collector_kind: reddit
+normalizer_kind: reddit
+enabled: true
+subreddit: BusinessIntelligence
+manual_input_dir: data/manual_ingest/reddit_business_intelligence
+max_posts_per_run: 12
+max_comments_per_thread: 6
+aliases:
+  - reddit business intelligence
+  - r/businessintelligence
+seed_template_group: reddit

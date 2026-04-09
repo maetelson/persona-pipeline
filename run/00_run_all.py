@@ -24,10 +24,10 @@ STEPS = [
     "02_normalize_all.py",
     "02.5_filter_time_window.py",
     "03_filter_valid.py",
+    "03_5_prefilter_relevance.py",
     "04_build_episodes.py",
     "05_label_episodes.py",
     "06_1_discover_persona_axes.py",
-    "06_cluster_and_score.py",
     "07_export_xlsx.py",
 ]
 

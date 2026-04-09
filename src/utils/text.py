@@ -23,3 +23,9 @@ def make_dedupe_key(*parts: str | None) -> str:
     """Create a stable dedupe key from key text fragments."""
     combined = "||".join(clean_text(part).lower() for part in parts if part)
     return hashlib.sha1(combined.encode("utf-8")).hexdigest()
+
+
+def make_hash_id(*parts: str | None) -> str:
+    """Create a stable hash id from any identifying fragments."""
+    combined = "||".join(clean_text(part).lower() for part in parts if part)
+    return hashlib.sha1(combined.encode("utf-8")).hexdigest()

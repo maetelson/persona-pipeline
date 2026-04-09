@@ -1,0 +1,11 @@
+{
+  "source": "stackoverflow",
+  "raw_id": "so-keep-1",
+  "title": "Power BI measure mismatch in monthly finance report",
+  "body": "Our KPI definition differs from finance definition, and the leadership dashboard numbers do not match the source data.",
+  "comments_text": "",
+  "raw_text": "",
+  "source_meta": {
+    "json": "{\"raw_question\": {\"tags\": [\"power-bi\", \"dax\"], \"is_answered\": true}, \"tags\": [\"power-bi\", \"dax\"], \"is_answered\": true}"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "source": "stackoverflow",
+  "raw_id": "so-borderline-1",
+  "title": "DAX filter context question",
+  "body": "I am trying to understand a calculated field and the result changes by row context.",
+  "comments_text": "",
+  "raw_text": "",
+  "source_meta": {
+    "json": "{\"raw_question\": {\"tags\": [\"dax\", \"power-bi\"], \"is_answered\": false}, \"tags\": [\"dax\", \"power-bi\"], \"is_answered\": false}"
+  }
+}

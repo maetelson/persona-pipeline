@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from collections import Counter
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from src.analysis.example_selection import select_cluster_representative_texts
+from src.utils.io import load_yaml
 from src.utils.pipeline_schema import LABEL_CODE_COLUMNS, split_pipe_codes
 
 
@@ -62,6 +65,7 @@ def build_cluster_profiles(
         return []
 
     cluster_df = pd.DataFrame(exploded_rows)
+    example_config = load_yaml(Path(__file__).resolve().parents[2] / "config" / "example_selection.yaml")
     profiles: list[dict[str, Any]] = []
     total_rows = max(cluster_df["episode_id"].nunique(), 1)
     for cluster_id, cluster_rows in cluster_df.groupby("cluster_id", dropna=False):
@@ -69,7 +73,7 @@ def build_cluster_profiles(
         cluster_codes = cluster_code_lookup.get(str(cluster_id), set())
         top_demographics = _top_codes(cluster_rows, "role_codes", limit=5)
         top_need_codes = _top_need_codes(cluster_rows, cluster_codes=cluster_codes, limit=8)
-        representative_texts = _representative_texts(cluster_rows, max_items=max_representative_texts)
+        representative_texts = _representative_texts(cluster_rows, config=example_config, max_items=max_representative_texts)
         profiles.append(
             {
                 "cluster_id": str(cluster_id),
@@ -108,20 +112,10 @@ def _top_codes(cluster_rows: pd.DataFrame, column: str, limit: int, allowed_code
     return [code for code, _ in counts.most_common(limit)]
 
 
-def _representative_texts(cluster_rows: pd.DataFrame, max_items: int) -> list[str]:
+def _representative_texts(cluster_rows: pd.DataFrame, config: dict[str, Any], max_items: int) -> list[str]:
     """Pick representative episode texts grounded in the source rows."""
     ranked = cluster_rows.sort_values(
         ["cluster_overlap_count", "priority_score", "label_confidence", "episode_id"],
         ascending=[False, False, False, True],
     )
-    seen: set[str] = set()
-    texts: list[str] = []
-    for text in ranked.get("normalized_episode", pd.Series(dtype=str)):
-        normalized = str(text or "").strip()
-        if not normalized or normalized in seen:
-            continue
-        seen.add(normalized)
-        texts.append(normalized[:500])
-        if len(texts) >= max_items:
-            break
-    return texts
+    return select_cluster_representative_texts(ranked, config=config, max_items=max_items)

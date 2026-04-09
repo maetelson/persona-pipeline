@@ -1,0 +1,47 @@
+audit:
+  tiny_class_share_threshold: 0.03
+  warn_unknown_rate: 0.30
+  high_unknown_rate: 0.45
+  min_cluster_contribution: 0.08
+  strong_cluster_contribution: 0.16
+  dominant_share_warn: 0.72
+  dominant_share_drop: 0.90
+  overlap_merge_threshold: 0.60
+
+axes:
+  user_role:
+    preferred_action: keep_optional
+    deprecation_notice: "High unknown share makes this better as descriptive metadata than a core clustering axis."
+  workflow_stage:
+    preferred_action: keep_core
+  analysis_goal:
+    preferred_action: keep_core
+  bottleneck_type:
+    preferred_action: keep_core
+  tool_dependency_mode:
+    preferred_action: keep_core
+  output_expectation:
+    preferred_action: keep_optional
+    deprecation_notice: "Useful for summary copy, but too imbalanced to remain core."
+  trust_validation_need:
+    preferred_action: simplify
+    simplify_map:
+      high: high_validation_pressure
+      medium: validation_pressure_present
+      low: validation_pressure_present
+    deprecation_notice: "Retained only as optional metadata after collapse."
+  analysis_maturity:
+    preferred_action: merge
+    target_axis: tool_dependency_mode
+    merge_value_map:
+      manual_workaround_heavy: spreadsheet_heavy
+      spreadsheet_led_self_serve: spreadsheet_heavy
+      script_assisted_self_serve: script_assisted
+      warehouse_backed_self_serve: warehouse_backed
+    deprecation_notice: "Merged into tool_dependency_mode because the concepts overlap strongly in this corpus."
+  urgency_pressure:
+    preferred_action: drop
+    deprecation_notice: "Single-value, low-separation axis."
+  demographic_profile:
+    preferred_action: drop
+    deprecation_notice: "No grounded signal in the corpus."

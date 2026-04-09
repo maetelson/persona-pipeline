@@ -1,0 +1,12 @@
+source_id: gartner_peer_insights
+source_name: gartner_peer_insights
+source_group: review_sites
+collector_kind: review_sites
+normalizer_kind: review_sites
+enabled: true
+direct_crawl_enabled: false
+direct_urls: []
+manual_input_dir: data/manual_ingest/gartner_peer_insights
+aliases:
+  - Gartner Peer Insights
+seed_template_group: review_sites

@@ -1,0 +1,302 @@
+feature_weights:
+  manual_reporting: 1.35
+  spreadsheet_rework: 1.25
+  dashboard_mistrust: 1.2
+  metric_reconciliation: 1.25
+  adhoc_stakeholder_requests: 1.15
+  recurring_export_work: 1.2
+  presentation_ready_output_need: 1.1
+  root_cause_analysis_difficulty: 1.2
+  segmentation_breakdown_confusion: 1.1
+  metric_definition_mismatch: 1.2
+  cross_team_number_alignment: 1.1
+  tool_limitation_workaround: 1.15
+  repeated_validation_before_sending: 1.15
+  reporting_deadline_pressure: 1.0
+  numbers_visible_but_not_explainable: 1.2
+
+label_signal_weights:
+  pain_codes:
+    P_MANUAL_REPORTING:
+      manual_reporting: 1.0
+      spreadsheet_rework: 0.7
+      recurring_export_work: 0.5
+    P_TOOL_LIMITATION:
+      tool_limitation_workaround: 1.0
+      presentation_ready_output_need: 0.3
+    P_DATA_QUALITY:
+      dashboard_mistrust: 0.8
+      metric_reconciliation: 1.0
+      repeated_validation_before_sending: 0.8
+      metric_definition_mismatch: 0.5
+    P_HANDOFF:
+      cross_team_number_alignment: 1.0
+      adhoc_stakeholder_requests: 0.5
+  question_codes:
+    Q_REPORT_SPEED:
+      manual_reporting: 0.7
+      recurring_export_work: 0.7
+      reporting_deadline_pressure: 0.7
+      presentation_ready_output_need: 0.4
+    Q_VALIDATE_NUMBERS:
+      dashboard_mistrust: 0.8
+      metric_reconciliation: 1.0
+      repeated_validation_before_sending: 0.9
+      metric_definition_mismatch: 0.8
+      cross_team_number_alignment: 0.4
+    Q_DIAGNOSE_ISSUE:
+      root_cause_analysis_difficulty: 1.0
+      segmentation_breakdown_confusion: 0.8
+      numbers_visible_but_not_explainable: 0.9
+    Q_AUTOMATE_WORKFLOW:
+      manual_reporting: 0.4
+      tool_limitation_workaround: 0.6
+      recurring_export_work: 0.4
+  moment_codes:
+    M_REPORTING:
+      manual_reporting: 0.7
+      recurring_export_work: 0.6
+      presentation_ready_output_need: 0.5
+      reporting_deadline_pressure: 0.8
+    M_VALIDATION:
+      dashboard_mistrust: 0.8
+      metric_reconciliation: 0.8
+      repeated_validation_before_sending: 1.0
+    M_TRIAGE:
+      root_cause_analysis_difficulty: 0.8
+      numbers_visible_but_not_explainable: 0.7
+    M_AUTOMATION:
+      tool_limitation_workaround: 0.5
+      manual_reporting: 0.3
+  output_codes:
+    O_XLSX:
+      recurring_export_work: 1.0
+      spreadsheet_rework: 0.9
+      presentation_ready_output_need: 0.9
+      manual_reporting: 0.5
+    O_DASHBOARD:
+      dashboard_mistrust: 0.3
+      presentation_ready_output_need: 0.4
+    O_AUTOMATION_JOB:
+      tool_limitation_workaround: 0.4
+  workaround_codes:
+    W_MANUAL:
+      manual_reporting: 0.9
+      repeated_validation_before_sending: 0.5
+    W_SPREADSHEET:
+      spreadsheet_rework: 1.0
+      recurring_export_work: 0.5
+      manual_reporting: 0.4
+    W_SCRIPT:
+      tool_limitation_workaround: 0.6
+
+axis_signal_weights:
+  bottleneck_type:
+    manual_reporting:
+      manual_reporting: 0.8
+      spreadsheet_rework: 0.4
+    tool_limitation:
+      tool_limitation_workaround: 0.8
+    data_quality:
+      metric_reconciliation: 0.7
+      dashboard_mistrust: 0.5
+    handoff_dependency:
+      cross_team_number_alignment: 0.8
+    general_friction:
+      tool_limitation_workaround: 0.3
+  analysis_goal:
+    report_speed:
+      manual_reporting: 0.4
+      reporting_deadline_pressure: 0.4
+    diagnose_change:
+      root_cause_analysis_difficulty: 0.7
+      numbers_visible_but_not_explainable: 0.6
+    validate_numbers:
+      metric_reconciliation: 0.7
+      repeated_validation_before_sending: 0.7
+    automate_workflow:
+      tool_limitation_workaround: 0.5
+  workflow_stage:
+    reporting:
+      manual_reporting: 0.5
+      presentation_ready_output_need: 0.4
+    triage:
+      root_cause_analysis_difficulty: 0.5
+    validation:
+      repeated_validation_before_sending: 0.6
+  tool_dependency_mode:
+    spreadsheet_heavy:
+      spreadsheet_rework: 0.8
+      recurring_export_work: 0.5
+    bi_dashboard_heavy:
+      dashboard_mistrust: 0.4
+    script_assisted:
+      tool_limitation_workaround: 0.3
+
+text_patterns:
+  manual_reporting:
+    - "manual reporting"
+    - "weekly reporting"
+    - "monthly reporting"
+    - "every week"
+    - "every month"
+    - "board report"
+    - "monthly business review"
+    - "weekly kpi"
+  spreadsheet_rework:
+    - "export to excel"
+    - "manual spreadsheet"
+    - "spreadsheet-heavy"
+    - "in spreadsheets"
+    - "copy into powerpoint"
+    - "paste into slides"
+    - "excel every week"
+  dashboard_mistrust:
+    - "don't trust dashboard"
+    - "do not trust dashboard"
+    - "dashboard mismatch"
+    - "numbers don't match"
+    - "numbers do not match"
+    - "dashboard is not enough"
+  metric_reconciliation:
+    - "reconcile numbers"
+    - "reconcile dashboard"
+    - "source of truth"
+    - "match source data"
+    - "validate numbers"
+  adhoc_stakeholder_requests:
+    - "ad hoc request"
+    - "ad hoc requests"
+    - "stakeholders keep asking"
+    - "follow-up questions"
+    - "leadership wants"
+    - "executive summary"
+  recurring_export_work:
+    - "export to excel"
+    - "csv export"
+    - "xlsx"
+    - "presentation-ready"
+    - "board-ready"
+    - "send the report"
+  presentation_ready_output_need:
+    - "presentation-ready output"
+    - "board-ready dashboard"
+    - "report for leadership"
+    - "executive summary"
+    - "for leadership"
+    - "for the board"
+  root_cause_analysis_difficulty:
+    - "why did"
+    - "root cause"
+    - "can't explain"
+    - "cannot explain"
+    - "what drove"
+    - "what changed"
+  segmentation_breakdown_confusion:
+    - "break down by"
+    - "breakdown by"
+    - "segment analysis"
+    - "by channel"
+    - "by device"
+    - "by region"
+    - "drill down"
+  metric_definition_mismatch:
+    - "metric definition"
+    - "definition differs"
+    - "finance definition"
+    - "different definition"
+    - "kpi definition"
+  cross_team_number_alignment:
+    - "finance definition"
+    - "cross-team"
+    - "stakeholder alignment"
+    - "numbers align"
+    - "same numbers"
+  tool_limitation_workaround:
+    - "workaround"
+    - "tool limitation"
+    - "dashboard cannot"
+    - "not enough for reporting"
+    - "still need manual"
+  repeated_validation_before_sending:
+    - "before sending"
+    - "before the report goes out"
+    - "double check numbers"
+    - "keep reconciling"
+    - "validate before"
+  reporting_deadline_pressure:
+    - "reporting deadline"
+    - "weekly report"
+    - "monthly report"
+    - "deadline"
+    - "before leadership review"
+  numbers_visible_but_not_explainable:
+    - "can see the kpi"
+    - "can see conversion dropped"
+    - "numbers are visible"
+    - "can't tell why"
+    - "cannot tell why"
+    - "can see the drop but"
+
+core_features:
+  - manual_reporting
+  - spreadsheet_rework
+  - dashboard_mistrust
+  - metric_reconciliation
+  - adhoc_stakeholder_requests
+  - recurring_export_work
+  - presentation_ready_output_need
+  - root_cause_analysis_difficulty
+  - segmentation_breakdown_confusion
+  - metric_definition_mismatch
+  - cross_team_number_alignment
+  - tool_limitation_workaround
+  - repeated_validation_before_sending
+  - reporting_deadline_pressure
+  - numbers_visible_but_not_explainable
+
+cluster_context_features:
+  - spreadsheet_rework
+  - recurring_export_work
+  - presentation_ready_output_need
+  - dashboard_mistrust
+  - metric_reconciliation
+  - adhoc_stakeholder_requests
+  - root_cause_analysis_difficulty
+  - segmentation_breakdown_confusion
+  - metric_definition_mismatch
+  - cross_team_number_alignment
+  - tool_limitation_workaround
+  - repeated_validation_before_sending
+  - reporting_deadline_pressure
+  - numbers_visible_but_not_explainable
+
+clustering:
+  min_primary_score: 0.8
+  secondary_score_floor: 0.9
+  secondary_ratio_floor: 0.55
+  min_anchor_size: 45
+  min_anchor_share: 0.04
+  max_anchor_count: 8
+  merge_similarity_threshold: 0.72
+  merge_signature_floor: 0.52
+  max_context_features: 2
+  max_examples_per_cluster: 6
+
+naming:
+  manual_reporting: "Manual Reporting Burden"
+  spreadsheet_rework: "Spreadsheet Rework Burden"
+  dashboard_mistrust: "Dashboard Reconciliation Burden"
+  metric_reconciliation: "Metric Reconciliation Burden"
+  adhoc_stakeholder_requests: "Ad Hoc Follow-up Burden"
+  recurring_export_work: "Export-to-Excel Workaround"
+  presentation_ready_output_need: "Presentation-Ready Output Burden"
+  root_cause_analysis_difficulty: "Root-Cause Explanation Burden"
+  segmentation_breakdown_confusion: "Segmentation Breakdown Confusion"
+  metric_definition_mismatch: "Metric Definition Conflict"
+  cross_team_number_alignment: "Cross-Team Number Alignment Burden"
+  tool_limitation_workaround: "Tool-Limitation Workaround Burden"
+  repeated_validation_before_sending: "Pre-Send Validation Burden"
+  reporting_deadline_pressure: "Reporting Deadline Pressure"
+  numbers_visible_but_not_explainable: "Numbers Visible But Not Explainable"
+  mixed_workflow_friction: "Mixed Workflow Friction"

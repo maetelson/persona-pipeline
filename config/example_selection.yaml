@@ -1,0 +1,157 @@
+snippet:
+  min_chars: 45
+  max_chars: 420
+  max_sentences: 2
+
+thresholds:
+  strong_representative_min_score: 8.0
+  usable_min_score: 5.5
+  borderline_min_score: 3.0
+  duplicate_similarity_threshold: 0.72
+
+weights:
+  bottleneck_specificity: 1.5
+  workflow_context: 1.1
+  business_context: 1.0
+  stakeholder_pressure: 0.9
+  reporting_pain: 1.2
+  dashboard_trust: 1.0
+  excel_rework: 1.0
+  adhoc_analysis: 0.9
+  root_cause: 1.0
+  metric_definition: 1.0
+  output_need: 0.8
+  persona_fit: 1.2
+  genericness_penalty: 1.4
+  technical_noise_penalty: 1.6
+  duplicate_penalty: 1.5
+
+positive_patterns:
+  workflow_context:
+    - export to excel
+    - every week
+    - weekly report
+    - monthly report
+    - board report
+    - business review
+    - manual spreadsheet
+    - manually in spreadsheets
+    - recurring reporting
+    - reporting deadline
+  business_context:
+    - finance
+    - leadership
+    - stakeholder
+    - executive
+    - campaign reporting
+    - revenue ops
+    - business analyst
+    - marketing
+    - operations
+    - board deck
+  bottleneck_specificity:
+    - don't trust
+    - numbers don't match
+    - reconcile numbers
+    - dashboard is not enough
+    - can't explain
+    - conversion dropped
+    - break down by
+    - segment
+    - channel
+    - device
+    - source of truth
+    - metric definition
+    - follow-up questions
+    - ad hoc
+  output_need:
+    - presentation-ready
+    - export
+    - xlsx
+    - spreadsheet
+    - report
+    - send the report
+
+negative_patterns:
+  technical_noise:
+    - sdk
+    - api auth
+    - oauth
+    - npm
+    - docker
+    - kubernetes
+    - selenium
+    - playwright
+    - stack trace
+    - traceback
+    - dependency conflict
+    - package install
+    - react bug
+    - javascript error
+    - flask route
+    - django setup
+    - build failure
+    - ci/cd
+    - aws lambda
+    - terraform
+    - gitlab-ci
+    - websocket error
+    - prometheus
+    - /metrics
+    - endpoint is shown as down
+    - exporter service
+    - application insights
+  genericness:
+    - i’d like to introduce
+    - what it does
+    - located strategically
+    - investment thesis
+    - apply now
+    - description while exploring
+    - official protocol
+    - proposal for
+    - problem trend charts currently have several limitations
+    - feature request
+    - asset class
+    - position overview
+
+subpatterns:
+  reporting_prep:
+    - weekly report
+    - monthly report
+    - board report
+    - business review
+    - reporting deadline
+  export_spreadsheet:
+    - export to excel
+    - spreadsheet
+    - xlsx
+    - csv
+    - manual spreadsheet
+  dashboard_trust:
+    - don't trust
+    - numbers don't match
+    - reconcile
+    - source of truth
+    - dashboard is not enough
+  segmentation_breakdown:
+    - break down by
+    - segment
+    - channel
+    - device
+    - drill
+  adhoc_followups:
+    - ad hoc
+    - follow-up questions
+    - stakeholder asks
+    - asked again
+  metric_mismatch:
+    - metric definition
+    - finance definition
+    - numbers don't match
+    - mismatch
+  root_cause:
+    - can't explain
+    - why did
+    - root cause
+    - drove it

@@ -2,23 +2,18 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any, Iterable
 
-from src.utils.pipeline_schema import LABEL_CODE_COLUMNS, split_pipe_codes
-
-
-TEXT_FIELDS = [
-    "normalized_episode",
-    "evidence_snippet",
-    "business_question",
-    "bottleneck_text",
-    "workaround_text",
-    "desired_output",
-    "title",
-    "body",
-    "comments_text",
-    "raw_text",
-]
+from src.utils.pipeline_schema import (
+    LABEL_CODE_COLUMNS,
+    RECORD_ID_FIELDS,
+    RECORD_SOURCE_TEXT_FIELDS,
+    RECORD_TEXT_FIELDS,
+    SOURCE_META_JSON_KEY,
+    parse_json_dict,
+    split_pipe_codes,
+)
 
 DEMO_FIELDS = [
     "role_codes",
@@ -40,7 +35,7 @@ def get_record_value(record: Any, field: str, default: object = "") -> object:
 
 def get_record_id(record: Any) -> str:
     """Return the best available stable identifier for one record."""
-    for field in ["episode_id", "raw_id", "id"]:
+    for field in RECORD_ID_FIELDS:
         value = str(get_record_value(record, field, "") or "").strip()
         if value:
             return value
@@ -54,13 +49,18 @@ def get_record_source(record: Any) -> str:
 
 def get_record_text(record: Any, fields: Iterable[str] | None = None) -> str:
     """Return one normalized text blob from the requested fields."""
-    selected_fields = list(fields or TEXT_FIELDS)
+    selected_fields = list(fields or RECORD_TEXT_FIELDS)
     parts = []
     for field in selected_fields:
         value = str(get_record_value(record, field, "") or "").strip()
         if value:
             parts.append(value)
     return " ".join(parts).strip()
+
+
+def get_record_source_text(record: Any) -> str:
+    """Return source-facing text fields used by relevance and forum parsers."""
+    return get_record_text(record, fields=RECORD_SOURCE_TEXT_FIELDS)
 
 
 def get_record_codes(record: Any, columns: Iterable[str] | None = None) -> dict[str, list[str]]:
@@ -84,6 +84,33 @@ def get_record_demo(record: Any) -> list[str]:
             if text:
                 values.append(text)
     return values
+
+
+def get_record_source_meta(record: Any) -> dict[str, Any]:
+    """Return parsed source metadata for normalized rows."""
+    return parse_json_dict(get_record_value(record, "source_meta", {}), nested_json_key=SOURCE_META_JSON_KEY)
+
+
+def get_record_tags(record: Any) -> list[str]:
+    """Return normalized source tags when present."""
+    source_meta = get_record_source_meta(record)
+    raw_question = source_meta.get("raw_question", {}) if isinstance(source_meta.get("raw_question"), dict) else {}
+    tags = raw_question.get("tags", source_meta.get("tags", []))
+    if not isinstance(tags, list):
+        return []
+    return [str(tag).strip().lower() for tag in tags if str(tag).strip()]
+
+
+def serialize_source_meta(payload: dict[str, Any] | None, **extra_fields: Any) -> dict[str, str]:
+    """Serialize source metadata into the normalized storage contract."""
+    merged = {**dict(payload or {}), **{key: value for key, value in extra_fields.items() if value not in {"", None}}}
+    return {
+        SOURCE_META_JSON_KEY: json.dumps(
+            merged,
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    }
 
 
 def is_valid_record(record: Any, required_fields: Iterable[str] | None = None) -> bool:

@@ -1,0 +1,273 @@
+enable_llm_relevance: false
+keep_threshold: 9.5
+borderline_threshold: 5.5
+borderline_export_limit: 200
+technical_only_drop:
+  min_negative_total: 5.0
+  max_positive_total: 3.5
+source_defaults:
+  reddit:
+    source_group: existing_forums
+    source_weight: 1.05
+  stackoverflow:
+    source_group: existing_forums
+    source_weight: 0.98
+reddit:
+  relevant_subreddits:
+    r/analytics: 2.2
+    r/businessintelligence: 2.4
+    r/excel: 2.0
+    r/marketinganalytics: 2.1
+    r/powerbi: 1.8
+    r/tableau: 1.6
+  negative_subreddit_patterns:
+    - "^r/programming$"
+    - "^r/learnpython$"
+    - "^r/webdev$"
+    - "^r/datascience$"
+    - "^r/machinelearning$"
+  negative_subreddit_weight: -1.8
+stackoverflow:
+  strong_positive_tags:
+    power-bi: 2.4
+    tableau: 2.2
+    excel: 2.3
+    google-sheets: 1.8
+    looker-studio: 2.2
+    dax: 1.2
+    powerquery: 1.2
+    power-query: 1.2
+    reporting-services: 1.8
+  conditional_tags:
+    sql: 0.4
+    csv: 0.5
+    pivot-table: 1.0
+    formulas: 0.8
+    calculated-columns: 0.8
+  negative_tags:
+    selenium: 2.5
+    oauth-2.0: 2.4
+    npm: 2.2
+    reactjs: 2.0
+    docker: 2.1
+    kubernetes: 2.1
+    css: 1.6
+    html: 1.4
+    playwright: 2.3
+    sqlalchemy: 1.7
+  accepted_answer_bonus: 0.2
+score_weights:
+  biz_workflow_score: 1.0
+  bi_tool_score: 1.0
+  reporting_pain_score: 1.1
+  dashboard_trust_score: 1.2
+  excel_rework_score: 1.1
+  adhoc_analysis_score: 1.0
+  metric_definition_score: 1.0
+  segmentation_breakdown_score: 1.0
+  root_cause_score: 1.0
+  stakeholder_pressure_score: 1.1
+  dev_heavy_score: -1.0
+  generic_programming_score: -1.0
+  infra_noise_score: -1.0
+  implementation_only_score: -1.1
+strong_positive_lexicon:
+  biz_workflow_score:
+    - report for leadership
+    - board report
+    - monthly business review
+    - weekly reporting
+    - reporting deadline
+    - executive summary
+    - campaign reporting
+    - finance reporting
+    - ops reporting
+    - manual reporting
+    - ad hoc request
+    - stakeholder asks
+  dashboard_trust_score:
+    - dashboard numbers wrong
+    - don't trust dashboard
+    - dashboard mismatch
+    - numbers don't match
+    - reconcile numbers
+    - source of truth
+  excel_rework_score:
+    - export to excel
+    - spreadsheet-heavy
+    - manual reporting
+    - spreadsheet heavy
+  reporting_pain_score:
+    - monthly business review
+    - weekly reporting
+    - reporting deadline
+    - executive summary
+  adhoc_analysis_score:
+    - ad hoc request
+    - ad hoc analysis
+  metric_definition_score:
+    - metric definition
+    - source of truth
+    - numbers don't match
+  segmentation_breakdown_score:
+    - break down by channel
+    - break down by device
+    - segment analysis
+  root_cause_score:
+    - why did conversion drop
+    - explain KPI change
+  stakeholder_pressure_score:
+    - stakeholder asks
+    - report for leadership
+    - board report
+    - executive summary
+medium_positive_lexicon:
+  bi_tool_score:
+    - dax
+    - power query
+    - tableau calc
+    - looker studio formula
+    - pivot table
+    - calculated field
+    - filter context
+    - blended data
+    - segmentation
+    - cohort
+    - funnel drop
+    - attribution
+    - conversion trend
+    - export issue
+    - scheduled report
+    - csv upload
+    - join mismatch
+positive_context_terms:
+  - reporting
+  - dashboard
+  - kpi
+  - metric
+  - stakeholder
+  - leadership
+  - finance
+  - marketer
+  - business user
+  - analyst
+  - revenue ops
+  - monthly
+  - weekly
+  - segment
+  - reconcile
+  - source data
+bi_tool_terms:
+  - power bi
+  - tableau
+  - looker studio
+  - excel
+  - google sheets
+  - dax
+  - power query
+  - reporting services
+strong_negative_lexicon:
+  dev_heavy_score:
+    - sdk
+    - api auth
+    - oauth
+    - npm
+    - yarn
+    - pip install
+    - playwright
+    - webdriver
+    - browser automation
+    - stack trace
+    - traceback
+    - dependency conflict
+    - package install
+    - javascript error
+    - build failure
+  generic_programming_score:
+    - react bug
+    - css issue
+    - html layout
+    - flask route
+    - django setup
+    - fastapi deploy
+    - regex parser implementation
+  infra_noise_score:
+    - docker
+    - kubernetes
+    - ci/cd
+    - aws lambda
+    - terraform
+    - cron syntax
+  implementation_only_score:
+    - selenium
+    - scraper blocked
+    - scraping setup
+    - oauth flow
+    - package installation
+recovery_terms:
+  - dax
+  - sql
+  - power query
+  - calculated field
+  - measure
+  - formula
+  - pivot table
+recovery_context_terms:
+  - monthly report
+  - leadership
+  - finance definition
+  - dashboard inconsistency
+  - reconcile
+  - reporting
+  - business user
+  - executive summary
+positive_patterns:
+  reporting_pain_score:
+    - pattern: export .* excel .* every week
+      signal: weekly_excel_export
+      weight: 2.6
+    - pattern: monthly reporting .* too long
+      signal: monthly_reporting_too_long
+      weight: 2.5
+    - pattern: dashboard .* not enough .* reporting
+      signal: dashboard_not_enough_for_reporting
+      weight: 2.2
+  dashboard_trust_score:
+    - pattern: stakeholders? .* don't trust .* dashboard
+      signal: stakeholders_dont_trust_dashboard
+      weight: 2.8
+    - pattern: numbers .* power bi .* don't match
+      signal: power_bi_numbers_mismatch
+      weight: 2.6
+    - pattern: dashboard numbers .* source data
+      signal: dashboard_source_mismatch
+      weight: 2.4
+  excel_rework_score:
+    - pattern: manually .* spreadsheets?
+      signal: manual_spreadsheet_work
+      weight: 2.4
+    - pattern: export .* excel
+      signal: export_excel
+      weight: 2.0
+  segmentation_breakdown_score:
+    - pattern: breakdown by (segment|channel|device)
+      signal: segmentation_breakdown_request
+      weight: 2.2
+  root_cause_score:
+    - pattern: can't explain .* kpi .* changed
+      signal: kpi_change_unexplained
+      weight: 2.8
+    - pattern: why did .* conversion drop
+      signal: conversion_drop_root_cause
+      weight: 2.7
+  adhoc_analysis_score:
+    - pattern: business users? keep asking ad hoc questions
+      signal: adhoc_business_questions
+      weight: 2.5
+  stakeholder_pressure_score:
+    - pattern: leadership wants .* breakdown
+      signal: leadership_breakdown_pressure
+      weight: 2.6
+    - pattern: reconcile .* before sending .* report
+      signal: reconcile_before_report
+      weight: 2.7

@@ -66,8 +66,6 @@ def export_workbook_from_frames(root_dir: Path, frames: dict[str, pd.DataFrame])
     _verify_workbook_sheets(output_path)
 
     return output_path
-
-
 def _prepare_workbook_frames(frames: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
     """Validate and normalize workbook frames before export."""
     normalized = {sheet_name: round_frame_ratios(sheet_name, frames.get(sheet_name, pd.DataFrame())) for sheet_name in WORKBOOK_SHEET_NAMES}

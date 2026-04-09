@@ -1,0 +1,15 @@
+source_id: tableau_community
+source_name: tableau_community
+source_group: official_communities
+collector_kind: official_communities
+normalizer_kind: official_communities
+enabled: true
+forum_name: Tableau Community
+product_or_tool: Tableau
+manual_input_dir: data/manual_ingest/tableau_community
+feed_urls: []
+thread_urls:
+  - https://community.tableau.com/s/questions
+aliases:
+  - tableau community
+seed_template_group: official_communities

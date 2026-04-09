@@ -1,0 +1,71 @@
+version: 1
+description: Query banks for non-developer BI and analytics pain-point discovery.
+negative_downweight_lexicon:
+  - SDK
+  - API auth
+  - OAuth
+  - npm
+  - stack trace
+  - docker
+  - kubernetes
+  - CI/CD
+  - plugin development
+  - extension API
+  - javascript error
+  - python package install
+  - dependency conflict
+  - build failure
+query_banks:
+  reporting_pain:
+    - dashboard numbers wrong
+    - monthly reporting takes too long
+    - manual reporting in excel
+    - report for leadership
+    - board deck reporting
+  dashboard_trust:
+    - don't trust dashboard
+    - business users stopped using dashboard
+    - reconcile dashboard with source data
+    - numbers look wrong
+  manual_excel_work:
+    - export to excel every week
+    - spreadsheet-heavy reporting
+    - Power BI export to excel workflow
+    - Tableau manual reporting
+  ad_hoc_analysis:
+    - ad hoc request from stakeholders
+    - why did conversion drop
+    - break down by segment channel device
+    - can't explain KPI change
+  metric_inconsistency:
+    - metric inconsistency
+    - dashboard numbers wrong
+    - reconcile dashboard with source data
+    - numbers look wrong
+  root_cause:
+    - root cause analysis difficulty
+    - why did conversion drop
+    - can't explain KPI change
+  segmentation_confusion:
+    - break down by segment channel device
+    - segmentation breakdown confusion
+    - compare by segment
+source_templates:
+  review_sites:
+    preferred_banks:
+      - reporting_pain
+      - dashboard_trust
+      - manual_excel_work
+      - metric_inconsistency
+  reddit:
+    preferred_banks:
+      - reporting_pain
+      - ad_hoc_analysis
+      - dashboard_trust
+      - segmentation_confusion
+  official_communities:
+    preferred_banks:
+      - dashboard_trust
+      - manual_excel_work
+      - ad_hoc_analysis
+      - root_cause

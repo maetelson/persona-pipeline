@@ -24,18 +24,22 @@ from src.analysis.raw_audit import (
     build_summary_df,
 )
 from src.collectors.discourse_collector import DiscourseCollector
+from src.collectors.official_community_collector import OfficialCommunityCollector
 from src.collectors.github_discussions_collector import GitHubDiscussionsCollector
 from src.collectors.hackernews_collector import HackerNewsCollector
 from src.collectors.reddit_collector import RedditCollector
+from src.collectors.reddit_public_collector import RedditPublicCollector
+from src.collectors.review_site_collector import ReviewSiteCollector
 from src.collectors.stackoverflow_collector import StackOverflowCollector
 from src.collectors.youtube_collector import YouTubeCollector
 from src.utils.io import load_yaml, write_parquet
 from src.utils.logging import get_logger
 from src.utils.run_helpers import load_dotenv, parse_csv_env_set
+from src.utils.source_registry import load_source_definitions
 
 LOGGER = get_logger("run.collect_all")
 
-COLLECTOR_REGISTRY = {
+COLLECTOR_REGISTRY: dict[str, tuple[Path, object]] = {
     "reddit": (ROOT / "config" / "sources" / "reddit.yaml", RedditCollector),
     "stackoverflow": (ROOT / "config" / "sources" / "stackoverflow.yaml", StackOverflowCollector),
     "github_discussions": (ROOT / "config" / "sources" / "github_discussions.yaml", GitHubDiscussionsCollector),
@@ -44,6 +48,25 @@ COLLECTOR_REGISTRY = {
     "youtube": (ROOT / "config" / "sources" / "youtube.yaml", YouTubeCollector),
 }
 
+
+def _extend_registry_with_source_groups() -> dict[str, tuple[Path, object]]:
+    """Add config-driven source-group collectors to the legacy registry."""
+    registry = dict(COLLECTOR_REGISTRY)
+    collector_map = {
+        "review_sites": ReviewSiteCollector,
+        "reddit": RedditPublicCollector,
+        "official_communities": OfficialCommunityCollector,
+    }
+    for definition in load_source_definitions(ROOT, include_disabled=True):
+        collector_cls = collector_map.get(definition.collector_kind)
+        if collector_cls is None:
+            continue
+        registry[definition.source_id] = (
+            definition.config_path,
+            lambda config, source_id=definition.source_id, cls=collector_cls: cls(source_id, config=config, data_dir=ROOT / "data"),
+        )
+    return registry
+
 def main() -> None:
     """Collect raw JSONL for all enabled sources and write raw count audits."""
     load_dotenv(ROOT / ".env")
@@ -51,7 +74,7 @@ def main() -> None:
     source_rows: list[dict[str, str | int]] = []
     page_rows: list[dict[str, str | int | float]] = []
     error_rows: list[dict[str, str | int | bool]] = []
-    for source_name, (config_path, collector_cls) in COLLECTOR_REGISTRY.items():
+    for source_name, (config_path, collector_cls) in _extend_registry_with_source_groups().items():
         if source_filter and source_name not in source_filter:
             LOGGER.info("Skipping source outside COLLECT_SOURCE_FILTER: %s", source_name)
             continue
@@ -60,7 +83,7 @@ def main() -> None:
             LOGGER.info("Skipping disabled source: %s", source_name)
             continue
 
-        collector = collector_cls(config=config, data_dir=ROOT / "data")
+        collector = collector_cls(config=config, data_dir=ROOT / "data") if isinstance(collector_cls, type) else collector_cls(config)
         try:
             records = collector.collect()
             output_path = collector.save(records)

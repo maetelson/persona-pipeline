@@ -51,11 +51,32 @@ python run/01_5_expand_queries_from_raw.py
 python run/02_normalize_all.py
 python run/02.5_filter_time_window.py
 python run/03_filter_valid.py
+python run/03_5_prefilter_relevance.py
 python run/04_build_episodes.py
 python run/05_label_episodes.py
 python run/06_1_discover_persona_axes.py
 python run/06_cluster_and_score.py
 python run/07_export_xlsx.py
+```
+
+Source-group CLI for the new BI-focused sources:
+
+```bash
+python run/10_source_cli.py collect --source-group review_sites
+python run/10_source_cli.py collect --source-group reddit
+python run/10_source_cli.py collect --source-group official_communities
+python run/10_source_cli.py collect --source g2
+python run/10_source_cli.py collect --source r/excel
+python run/10_source_cli.py collect --source power_bi_community
+python run/10_source_cli.py normalize --source-group review_sites
+python run/10_source_cli.py prefilter --source-group reddit --export-borderline
+python run/10_source_cli.py ingest-manual --source g2 --input-dir data/manual_ingest/g2
+python run/10_source_cli.py dry-run --source-group official_communities
+python run/10_source_cli.py prefilter --source reddit --export-borderline --limit 200
+python run/10_source_cli.py prefilter --source stackoverflow --export-borderline --limit 200
+python run/10_source_cli.py prefilter --source-group existing_forums --export-borderline --limit 200
+python run/10_source_cli.py qa-relevance --source reddit --limit 200
+python run/10_source_cli.py qa-relevance --source stackoverflow --limit 200
 ```
 
 ## Current source status
@@ -69,6 +90,31 @@ python run/07_export_xlsx.py
 | Discourse | Stub | Placeholder collector/normalizer |
 | Hacker News | Stub | Placeholder collector/normalizer |
 | YouTube | Stub | Placeholder collector/normalizer |
+
+## New BI-focused source groups
+
+- `review_sites`
+  - `g2`
+  - `trustradius`
+  - `capterra`
+  - `gartner_peer_insights`
+- `reddit`
+  - `r/excel`
+  - `r/analytics`
+  - `r/BusinessIntelligence`
+  - `r/MarketingAnalytics`
+- `official_communities`
+  - `power_bi_community`
+  - `tableau_community`
+  - `looker_studio_community`
+  - `sigma_community`
+
+Review sites use a safe two-lane ingestion design:
+
+- Lane 1: direct crawl only when a public page is safely accessible and robots-safe
+- Lane 2: manual import from saved HTML / CSV / JSON snapshots in `data/manual_ingest/<source>`
+
+Blocked review sites do not fail the pipeline. They emit `crawl_status=blocked_or_manual_required` so you can continue with manual snapshots through the same parser and normalization layer.
 
 ## Requirements
 
@@ -139,6 +185,10 @@ Runtime data artifacts are local-only and should not be committed.
 - [CODEBOOK.md](./CODEBOOK.md): labeling definitions
 - [RUNBOOK.md](./RUNBOOK.md): execution notes and operational details
 - [TASKS.md](./TASKS.md): current implementation checklist
+- [SOURCE_SETUP.md](./SOURCE_SETUP.md): source-group setup and extension guide
+- [MANUAL_IMPORT.md](./MANUAL_IMPORT.md): blocked-site manual ingest flow
+- [SCHEMA.md](./SCHEMA.md): normalized source-group schema details
+- [QA_CHECKLIST.md](./QA_CHECKLIST.md): parser and output QA checklist
 
 ## Current state
 

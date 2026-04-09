@@ -1,0 +1,11 @@
+{
+  "source": "reddit",
+  "raw_id": "reddit-keep-1",
+  "title": "We still export this dashboard to Excel every week",
+  "body": "Stakeholders do not trust the dashboard numbers, so I reconcile source data before the leadership report.",
+  "comments_text": "This monthly business review is still spreadsheet-heavy.",
+  "raw_text": "",
+  "source_meta": {
+    "json": "{\"subreddit_name_prefixed\": \"r/excel\", \"raw_post\": {\"subreddit_name_prefixed\": \"r/excel\", \"link_flair_text\": \"Discussion\"}}"
+  }
+}

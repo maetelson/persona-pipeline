@@ -1,0 +1,15 @@
+source_id: sigma_community
+source_name: sigma_community
+source_group: official_communities
+collector_kind: official_communities
+normalizer_kind: official_communities
+enabled: true
+forum_name: Sigma Community
+product_or_tool: Sigma
+manual_input_dir: data/manual_ingest/sigma_community
+feed_urls: []
+thread_urls:
+  - https://community.sigmacomputing.com/
+aliases:
+  - sigma computing community
+seed_template_group: official_communities

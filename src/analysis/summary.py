@@ -84,9 +84,11 @@ def build_taxonomy_summary(final_axis_schema: list[dict[str, object]]) -> pd.Dat
             {
                 "axis_name": str(row.get("axis_name", "")).strip(),
                 "why_it_matters": str(row.get("why_it_matters", "")).strip(),
-                "allowed_values_or_logic": " | ".join(str(value) for value in list(row.get("allowed_values", []) or []))
+                "allowed_values_or_logic": " | ".join(str(value) for value in list(row.get("allowed_values_or_logic", []) or row.get("allowed_values", []) or []))
                 or str(row.get("clustering_logic", "")).strip(),
                 "evidence_fields": " | ".join(str(value) for value in list(row.get("evidence_fields_used", []) or row.get("evidence_fields", []) or [])),
+                "axis_role": str(row.get("axis_role", "core")).strip(),
+                "reduction_decision": str(row.get("reduction_decision", "")).strip(),
             }
         )
     return pd.DataFrame(rows)

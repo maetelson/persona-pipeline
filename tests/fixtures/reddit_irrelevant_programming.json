@@ -1,0 +1,11 @@
+{
+  "source": "reddit",
+  "raw_id": "reddit-drop-1",
+  "title": "Selenium scraper blocked after webdriver update",
+  "body": "My browser automation script fails with stack trace after pip install dependency conflict.",
+  "comments_text": "Need help with playwright and oauth setup.",
+  "raw_text": "",
+  "source_meta": {
+    "json": "{\"subreddit_name_prefixed\": \"r/learnpython\", \"raw_post\": {\"subreddit_name_prefixed\": \"r/learnpython\", \"link_flair_text\": \"Question\"}}"
+  }
+}

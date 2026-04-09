@@ -8,7 +8,7 @@ from typing import Iterable
 
 import pandas as pd
 
-from src.labeling.prompt_payload import build_episode_payload, extract_rule_labels
+from src.labeling.prompt_payload import build_compact_episode_payload, extract_compact_rule_labels
 
 
 def build_batch_requests(
@@ -35,9 +35,9 @@ def build_batch_requests(
                 "model": model,
                 "max_output_tokens": max_output_tokens,
                 "prompt_cache_key": prompt_cache_key,
-                "episode": build_episode_payload(episode_row),
+                "episode": build_compact_episode_payload(episode_row),
                 "rule_labels": (
-                    extract_rule_labels(
+                    extract_compact_rule_labels(
                         labeled_row,
                         [
                             "role_codes",

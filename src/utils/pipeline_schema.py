@@ -2,9 +2,32 @@
 
 from __future__ import annotations
 
+import json
 from typing import Iterable
 
 UNKNOWN_VALUES = {"", "unknown", "null", "none", "nan", "other", "unspecified", "unspecified_output", "unassigned"}
+
+RECORD_ID_FIELDS = ["episode_id", "raw_id", "raw_source_id", "id"]
+RECORD_TEXT_FIELDS = [
+    "normalized_episode",
+    "evidence_snippet",
+    "business_question",
+    "bottleneck_text",
+    "workaround_text",
+    "desired_output",
+    "title",
+    "body",
+    "body_text",
+    "comments_text",
+    "raw_text",
+    "thread_title",
+    "parent_context",
+]
+RECORD_SOURCE_TEXT_FIELDS = ["body", "body_text", "comments_text", "raw_text", "thread_title", "parent_context"]
+SOURCE_META_JSON_KEY = "json"
+ROLE_HEAVY_NAME_TERMS = ["analyst", "manager", "marketer", "user", "persona"]
+TOOL_HEAVY_NAME_TERMS = ["power bi", "tableau", "excel", "looker", "sigma", "google sheets", "sheets"]
+GENERIC_PERSONA_NAMES = {"mixed workflow friction", "workflow friction", "mixed persona", "persona"}
 
 LABEL_CODE_COLUMNS = [
     "role_codes",
@@ -173,3 +196,31 @@ def round_frame_ratios(sheet_name: str, df):
 def row_has_unknown_labels(values: Iterable[object]) -> bool:
     """Return whether any label-family value remains unresolved."""
     return any(is_unknown_like(value) for value in values)
+
+
+def contains_any_term(value: object, terms: Iterable[object]) -> bool:
+    """Return whether a string contains any candidate substring."""
+    lowered = str(value or "").strip().lower()
+    if not lowered:
+        return False
+    return any(str(term or "").strip().lower() in lowered for term in terms if str(term or "").strip())
+
+
+def parse_json_dict(value: object, nested_json_key: str = SOURCE_META_JSON_KEY) -> dict:
+    """Parse a dict-or-JSON payload into a plain dictionary."""
+    if isinstance(value, dict):
+        nested = value.get(nested_json_key)
+        if isinstance(nested, str):
+            try:
+                parsed = json.loads(nested)
+                return parsed if isinstance(parsed, dict) else {key: item for key, item in value.items() if key != nested_json_key}
+            except json.JSONDecodeError:
+                return {key: item for key, item in value.items() if key != nested_json_key}
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+    return {}

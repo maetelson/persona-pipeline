@@ -1,0 +1,11 @@
+{
+  "source": "reddit",
+  "raw_id": "reddit-keep-2",
+  "title": "Power BI dashboard numbers do not match source data",
+  "body": "I can see the KPI but cannot explain why it changed, and leadership wants a breakdown by segment and channel.",
+  "comments_text": "",
+  "raw_text": "",
+  "source_meta": {
+    "json": "{\"subreddit_name_prefixed\": \"r/BusinessIntelligence\", \"raw_post\": {\"subreddit_name_prefixed\": \"r/BusinessIntelligence\", \"link_flair_text\": \"Help\"}}"
+  }
+}

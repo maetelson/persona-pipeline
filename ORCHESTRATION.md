@@ -14,11 +14,12 @@ Expanded sequence used by `00_run_all.py`:
 4. `run/02_normalize_all.py`
 5. `run/02.5_filter_time_window.py`
 6. `run/03_filter_valid.py`
-7. `run/04_build_episodes.py`
-8. `run/05_label_episodes.py`
-9. `run/06_1_discover_persona_axes.py`
-10. `run/06_cluster_and_score.py`
-11. `run/07_export_xlsx.py`
+7. `run/03_5_prefilter_relevance.py`
+8. `run/04_build_episodes.py`
+9. `run/05_label_episodes.py`
+10. `run/06_1_discover_persona_axes.py`
+11. `run/06_cluster_and_score.py`
+12. `run/07_export_xlsx.py`
 
 ## Stage boundaries
 
@@ -121,6 +122,20 @@ Expanded sequence used by `00_run_all.py`:
 - default filter mode is `collection` for raw expansion work; switch to `analysis` for stricter review
 - invalid reason required
 - downstream loss audit includes source-level valid/invalid ratios
+
+### Relevance prefilter
+
+- input: `data/valid/valid_candidates.parquet`
+- outputs:
+  - `data/prefilter/relevance_keep.parquet`
+  - `data/prefilter/relevance_borderline.parquet`
+  - `data/prefilter/relevance_drop.parquet`
+  - `data/valid/valid_candidates_prefiltered.parquet`
+  - `data/valid/borderline_candidates.parquet`
+- purpose:
+  - keep BI/reporting/dashboard/Excel/stakeholder pain
+  - drop generic technical and implementation-only noise
+  - preserve borderline records for manual review
 
 ### Episode build
 

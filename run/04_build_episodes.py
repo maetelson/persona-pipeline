@@ -25,7 +25,9 @@ LOGGER = get_logger("run.build_episodes")
 
 def main() -> None:
     """Create the episode table parquet."""
-    valid_df = read_parquet(ROOT / "data" / "valid" / "valid_candidates.parquet")
+    valid_df = read_parquet(ROOT / "data" / "valid" / "valid_candidates_prefiltered.parquet")
+    if valid_df.empty:
+        valid_df = read_parquet(ROOT / "data" / "valid" / "valid_candidates.parquet")
     rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
     episodes_df = build_episode_table(valid_df, rules)
     write_parquet(episodes_df, ROOT / "data" / "episodes" / "episode_table.parquet")

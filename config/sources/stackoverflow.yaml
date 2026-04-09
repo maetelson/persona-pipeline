@@ -1,4 +1,9 @@
 source: stackoverflow
+source_id: stackoverflow
+source_name: stackoverflow
+source_group: existing_forums
+collector_kind: existing_forums
+normalizer_kind: existing_forums
 enabled: true
 use_stub: false
 source_type: qa
@@ -14,3 +19,6 @@ max_comments_per_post: 10
 search_sort: relevance
 search_order: desc
 sleep_seconds: 0.75
+aliases:
+  - stackoverflow
+  - stack overflow

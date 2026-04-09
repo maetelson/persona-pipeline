@@ -1,4 +1,9 @@
 source: reddit
+source_id: reddit
+source_name: reddit
+source_group: existing_forums
+collector_kind: existing_forums
+normalizer_kind: existing_forums
 enabled: true
 use_stub: false
 source_type: forum
@@ -14,3 +19,5 @@ sleep_seconds: 1.5
 max_rate_limit_retries: 3
 rate_limit_wait_seconds: 20
 time_filter_mode: post_filter_only
+aliases:
+  - reddit

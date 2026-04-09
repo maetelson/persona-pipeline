@@ -36,6 +36,29 @@ class RawRecord:
     window_end: str = ""
     page_no: int = 1
     author_hint: str = ""
+    source_group: str = ""
+    source_name: str = ""
+    raw_source_id: str = ""
+    canonical_url: str = ""
+    body_text: str = ""
+    author_name: str = ""
+    retrieved_at: str = ""
+    product_or_tool: str = ""
+    subreddit_or_forum: str = ""
+    thread_title: str = ""
+    parent_context: str = ""
+    role_hint: str = ""
+    company_size_hint: str = ""
+    industry_hint: str = ""
+    workflow_hint: str = ""
+    pain_point_hint: str = ""
+    output_need_hint: str = ""
+    crawl_method: str = ""
+    crawl_status: str = ""
+    manual_import_flag: bool = False
+    raw_file_path: str = ""
+    parse_version: str = "v1"
+    hash_id: str = ""
     source_meta: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -129,6 +152,32 @@ class BaseCollector(ABC):
             window_end=time_slice.end_at.isoformat() if time_slice else "",
             page_no=1,
             author_hint="anonymous_practitioner",
+            source_group=self.config.get("source_group", ""),
+            source_name=self.config.get("source_name", self.source_name),
+            raw_source_id=f"{self.source_name}-{index}",
+            canonical_url=f"https://example.com/{slug}/{index}",
+            body_text=(
+                "I manually export dashboard data every week, clean it in spreadsheets, "
+                "and copy the same metrics into a stakeholder report."
+            ),
+            author_name="anonymous_practitioner",
+            retrieved_at=utc_now_iso(),
+            product_or_tool=self.config.get("product_or_tool", ""),
+            subreddit_or_forum=self.config.get("subreddit_or_forum", ""),
+            thread_title=f"{self.source_name} stub post about analyst bottlenecks",
+            parent_context=self.config.get("parent_context", ""),
+            role_hint="business analyst",
+            company_size_hint="",
+            industry_hint="",
+            workflow_hint="manual reporting",
+            pain_point_hint="dashboard trust and spreadsheet rework",
+            output_need_hint="stakeholder report",
+            crawl_method="stub",
+            crawl_status="stubbed",
+            manual_import_flag=bool(self.config.get("manual_import_flag", False)),
+            raw_file_path="",
+            parse_version="v1",
+            hash_id=f"{self.source_name}-{index}",
             source_meta={
                 "collector_mode": "stub",
                 "query_id": f"{self.source_name.upper()}_STUB_001",

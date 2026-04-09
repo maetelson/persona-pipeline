@@ -1,0 +1,127 @@
+name_templates:
+  manual_reporting:
+    primary_name: "Manual Reporting Burden"
+    subtitle: "Repeated spreadsheet restructuring before stakeholder delivery"
+    insight: "They are not blocked by seeing numbers; they are blocked by having to repeatedly reshape, export, and package those numbers for reporting."
+    repeated_work_pattern: "The same reporting steps repeat on a weekly or monthly cadence before results can be sent onward."
+    why_existing_workflow_fails: "Dashboards help monitor status, but they do not produce report-ready outputs in the format stakeholders actually need."
+    solution_direction: "Reduce repeated spreadsheet restructuring and delivery prep."
+    target_problem: "Dashboard results still need manual cleanup, export handling, and formatting before they can be shared."
+    expected_user_value: "Faster reporting turnaround with less repetitive manual effort."
+    suggested_interventions:
+      - "Export-ready reporting blocks with stable table and narrative formatting"
+      - "Reusable reporting templates tied to recurring reporting workflows"
+      - "Answer-to-slide or answer-to-table output generation"
+  metric_reconciliation:
+    primary_name: "Metric Reconciliation Burden"
+    subtitle: "Repeated validation before numbers can be trusted or sent"
+    insight: "The pain is not access to metrics; it is the repeated effort to verify which number is correct before anyone can use it confidently."
+    repeated_work_pattern: "Before reports are sent, numbers are checked, compared, and reconciled against another source or definition."
+    why_existing_workflow_fails: "Current dashboards expose results but do not make metric logic, assumptions, and source-of-truth differences easy to trace."
+    solution_direction: "Make number logic and discrepancy causes traceable."
+    target_problem: "Users do not trust dashboard outputs without a manual validation loop."
+    expected_user_value: "Fewer reconciliation loops and faster trust recovery."
+    suggested_interventions:
+      - "Metric definition trace and source-of-truth lineage"
+      - "Discrepancy explanation between dashboard and comparison source"
+      - "Assumption and calculation warnings attached to reported numbers"
+  dashboard_mistrust:
+    primary_name: "Dashboard Reconciliation Burden"
+    subtitle: "Numbers are visible but still not trusted"
+    insight: "Monitoring is possible, but trust breaks down when people need to explain or defend the dashboard number in a business conversation."
+    repeated_work_pattern: "Dashboard outputs are checked against another source before they are accepted."
+    why_existing_workflow_fails: "The workflow surfaces numbers but not enough explanation for why they are right, different, or safe to use."
+    solution_direction: "Turn dashboard outputs into explainable and defensible numbers."
+    target_problem: "Users cannot rely on the dashboard without extra reconciliation work."
+    expected_user_value: "More confidence in reported numbers and fewer manual trust checks."
+    suggested_interventions:
+      - "Metric logic explainer beside the result"
+      - "Definition change and discrepancy alerts"
+      - "Guided reconciliation view across competing number sources"
+  root_cause_analysis_difficulty:
+    primary_name: "Root-Cause Explanation Burden"
+    subtitle: "KPI movement is visible, but the driver is still unclear"
+    insight: "The recurring problem is not noticing that a KPI changed; it is failing to explain what actually drove the change in time for stakeholder follow-up."
+    repeated_work_pattern: "After a metric moves, users repeatedly drill down, segment, and reinterpret results to answer the same 'why did this change?' question."
+    why_existing_workflow_fails: "Dashboards highlight movement, but they do not convert vague business questions into a structured path to diagnosis."
+    solution_direction: "Help turn vague business questions into analyzable explanations."
+    target_problem: "Users can see KPI movement but cannot quickly identify the segment, channel, or definition behind it."
+    expected_user_value: "Faster diagnosis and better stakeholder response."
+    suggested_interventions:
+      - "Suggested breakdown paths for common KPI-change questions"
+      - "Explanation-first outputs that summarize likely drivers"
+      - "Clarification prompts that refine broad business questions into analysis steps"
+  segmentation_breakdown_confusion:
+    primary_name: "Segmentation Breakdown Confusion"
+    subtitle: "Users know they need a breakdown, but not which one will answer the question"
+    insight: "They are stuck in the step between seeing a change and choosing the right slice that will actually explain it."
+    repeated_work_pattern: "Users repeatedly test segment, device, channel, or region breakdowns to answer business follow-up questions."
+    why_existing_workflow_fails: "Current workflows expose filters and cuts, but do not guide users toward the breakdown most likely to explain the problem."
+    solution_direction: "Guide users toward the most informative breakdown for the question at hand."
+    target_problem: "Users waste time trying multiple slices before landing on the one that explains the KPI movement."
+    expected_user_value: "Less exploration waste and faster explanation quality."
+    suggested_interventions:
+      - "Breakdown suggestions based on question type"
+      - "Comparative segment summaries for likely drivers"
+      - "Prompts that narrow the search space before deep analysis"
+  tool_limitation_workaround:
+    primary_name: "Tool-Limitation Workaround Burden"
+    subtitle: "The core task is possible only after leaving or bypassing the current tool"
+    insight: "The real burden is not lack of data; it is that the existing tool stops short of the work users must finish for a real business outcome."
+    repeated_work_pattern: "Users repeatedly leave the tool, script around it, or fall back to manual steps to complete the task."
+    why_existing_workflow_fails: "The workflow supports partial analysis but breaks at the moment users need a report-ready, explainable, or reusable business answer."
+    solution_direction: "Close the gap between insight discovery and usable business output."
+    target_problem: "Users must invent workarounds because the current tool does not support the final step they actually need."
+    expected_user_value: "Less context switching and fewer brittle workaround processes."
+    suggested_interventions:
+      - "Native support for the missing downstream step"
+      - "Reusable guided workflows for common workaround-heavy tasks"
+      - "Structured outputs that remove the need for ad hoc scripts or exports"
+  mixed_workflow_friction:
+    primary_name: "Mixed Workflow Friction"
+    subtitle: "Evidence points to several related burdens, but one dominant pattern is still weak"
+    insight: "This cluster reflects repeated workflow pain, but the evidence is still mixed across several adjacent bottlenecks."
+    repeated_work_pattern: "Users bounce between explanation, trust, and workaround work without one sharply dominant problem pattern."
+    why_existing_workflow_fails: "The current evidence suggests multiple failure points, so the workflow gap is real but not yet crisply isolated."
+    solution_direction: "Narrow the workflow gap before committing to a broad solution bet."
+    target_problem: "There is recurring friction, but the dominant failure mode still needs validation."
+    expected_user_value: "Lower risk discovery and better targeting before full product investment."
+    suggested_interventions:
+      - "Focused research on the highest-frequency sub-pattern inside the cluster"
+      - "Lightweight support for the most repeated subtask while evidence is refined"
+
+subtitle_patterns:
+  recurring_export_work: "Frequent export and delivery prep"
+  spreadsheet_rework: "Spreadsheet-heavy restructuring work"
+  presentation_ready_output_need: "Pressure to turn analysis into presentation-ready output"
+  repeated_validation_before_sending: "Validation loops before anything can be sent"
+  numbers_visible_but_not_explainable: "The number is visible, but the explanation is still missing"
+  dashboard_mistrust: "Trust breaks before the number can be used"
+  adhoc_stakeholder_requests: "Follow-up questions keep reopening the work"
+
+solution_guardrails:
+  generic_phrases:
+    - "AI can help"
+    - "use automation"
+    - "improve efficiency"
+    - "better analytics"
+  role_heavy_terms:
+    - "analyst"
+    - "manager"
+    - "marketer"
+    - "user"
+    - "persona"
+    - "cluster"
+  tool_heavy_terms:
+    - "power bi"
+    - "tableau"
+    - "excel"
+    - "looker"
+    - "metabase"
+
+quality_thresholds:
+  weak_separation_max: 0.12
+  weak_cohesion_max: 0.82
+  high_role_dominance: 0.9
+  high_source_dominance: 0.85
+  low_example_count: 2

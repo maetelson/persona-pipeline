@@ -1,0 +1,14 @@
+source_id: reddit_marketing_analytics
+source_name: r/MarketingAnalytics
+source_group: reddit
+collector_kind: reddit
+normalizer_kind: reddit
+enabled: true
+subreddit: MarketingAnalytics
+manual_input_dir: data/manual_ingest/reddit_marketing_analytics
+max_posts_per_run: 12
+max_comments_per_thread: 6
+aliases:
+  - reddit marketing analytics
+  - r/marketinganalytics
+seed_template_group: reddit

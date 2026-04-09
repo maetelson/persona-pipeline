@@ -13,9 +13,11 @@ from urllib.request import Request, urlopen
 import pandas as pd
 from src.labeling.prompt_payload import (
     LABEL_COLUMNS,
-    build_episode_payload,
+    build_compact_episode_payload,
+    build_compact_label_schema,
     compact_json,
-    extract_rule_labels,
+    expand_compact_label_suggestion,
+    extract_compact_rule_labels,
     truncate_text,
 )
 from src.utils.llm_cache import (
@@ -27,20 +29,7 @@ from src.utils.llm_cache import (
 )
 from src.utils.pipeline_schema import CORE_LABEL_COLUMNS, is_unknown_like as schema_is_unknown_like
 
-PROMPT_SYSTEM = "Label episode. JSON only. Keep strongest supported labels. reason<12w."
-
-PROMPT_RESPONSE_SCHEMA = {
-    "role_codes": ["CODE"],
-    "moment_codes": ["CODE"],
-    "question_codes": ["CODE"],
-    "pain_codes": ["CODE"],
-    "env_codes": ["CODE"],
-    "workaround_codes": ["CODE"],
-    "output_codes": ["CODE"],
-    "fit_code": "CODE",
-    "confidence": 0.0,
-    "reason": "short phrase",
-}
+PROMPT_SYSTEM = "Label evidence. JSON only. Use schema keys exactly. Keep strongest supported codes only."
 
 FAMILY_CODEBOOK_MAP = {
     "role_codes": "role_keywords",
@@ -60,7 +49,6 @@ GENERIC_SINGLE_CODES = {
     "output_codes": {"O_XLSX", "O_DASHBOARD", "O_VALIDATED_DATASET", "O_AUTOMATION_JOB"},
 }
 
-PROMPT_SCHEMA_JSON = compact_json(PROMPT_RESPONSE_SCHEMA)
 _COMPACT_CODEBOOK_JSON_CACHE: dict[tuple[int, tuple[str, ...]], str] = {}
 
 
@@ -94,6 +82,7 @@ def enrich_with_llm_labels(
         return result, audit_df
 
     audit_rows: list[dict[str, Any]] = []
+    response_cache: dict[str, dict[str, Any]] = {}
     for index, row in result.iterrows():
         should_target, target_reason = should_send_to_llm(row=row, threshold=runtime["threshold"])
         target_meta = targeted_rows.get(str(row["episode_id"])) if should_target else None
@@ -135,6 +124,25 @@ def enrich_with_llm_labels(
             requested_families=prompt_payload["requested_families"],
             prompt=prompt_payload["prompt"],
         )
+        if cache_key in response_cache:
+            cached = response_cache[cache_key]
+            merged_any = _merge_llm_suggestion(result, index=index, suggestion=cached)
+            result.at[index, "label_confidence"] = max(
+                float(result.at[index, "label_confidence"] or 0.0),
+                float(cached.get("label_confidence", 0.0) or 0.0),
+            )
+            result.at[index, "label_reason"] = _append_reason(
+                str(result.at[index, "label_reason"]),
+                str(cached.get("label_reason", "llm:run_reuse")),
+            )
+            audit_row["llm_status"] = "run_reuse"
+            audit_row["llm_reason"] = "llm:run_reuse"
+            audit_row["parse_success"] = True
+            audit_row["unknown_after"] = _count_unknown_codes(result.loc[index])
+            audit_row["label_confidence_after"] = float(result.at[index, "label_confidence"] or 0.0)
+            audit_row["fallback_used"] = False
+            audit_rows.append(audit_row)
+            continue
         if cache_key in cache_store:
             cached = cache_store[cache_key]
             merged_any = _merge_llm_suggestion(result, index=index, suggestion=cached)
@@ -192,6 +200,7 @@ def enrich_with_llm_labels(
             audit_row["llm_reason"] = str(suggestion.get("label_reason", "llm:applied"))
             audit_row["parse_success"] = True
             _attach_usage(audit_row, llm_response["usage"])
+            response_cache[cache_key] = suggestion
             if runtime["cache_enabled"]:
                 cache_store[cache_key] = suggestion
                 append_jsonl_cache(runtime["cache_path"], cache_key, suggestion)
@@ -416,8 +425,9 @@ def _build_prompt_payload(
     """Build a short prompt with only the needed families and compact fields."""
     requested_families = _requested_families(labeled_row, target_meta["reason"])
     compact_codebook_json = _compact_codebook_json(codebook, requested_families)
-    episode_payload = build_episode_payload(episode_row)
-    current_labels = extract_rule_labels(labeled_row, requested_families)
+    episode_payload = build_compact_episode_payload(episode_row)
+    current_labels = extract_compact_rule_labels(labeled_row, requested_families)
+    prompt_schema_json = compact_json(build_compact_label_schema(requested_families))
     prompt = "\n".join(
         [
             PROMPT_SYSTEM,
@@ -426,7 +436,7 @@ def _build_prompt_payload(
             f"c={compact_codebook_json}",
             f"r={compact_json(current_labels)}",
             f"e={compact_json(episode_payload)}",
-            f"s={PROMPT_SCHEMA_JSON}",
+            f"s={prompt_schema_json}",
         ]
     )
     return {
@@ -567,6 +577,7 @@ def _validate_llm_suggestion(
     requested_families: list[str],
 ) -> dict[str, Any]:
     """Validate compact JSON output against requested codes only."""
+    suggestion = expand_compact_label_suggestion(suggestion)
     validated: dict[str, Any] = {}
     for family in requested_families:
         codebook_key = FAMILY_CODEBOOK_MAP.get(family)

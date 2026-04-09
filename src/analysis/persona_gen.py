@@ -27,8 +27,34 @@ PERSONA_SCHEMA = {
     "opportunity": "",
 }
 
-SYSTEM_PROMPT = "Grounded persona JSON only. Use input evidence only. No invented facts."
-PERSONA_SCHEMA_JSON = json.dumps(PERSONA_SCHEMA, ensure_ascii=False, separators=(",", ":"))
+SYSTEM_PROMPT = "Grounded persona JSON only. Use evidence only. No invented facts."
+PERSONA_SCHEMA_ALIASES = {
+    "persona_name": "n",
+    "one_line_summary": "s",
+    "core_demographic": "d",
+    "top_pain_points": "p",
+    "co_occurring_needs": "c",
+    "example_quotes": "q",
+    "opportunity": "o",
+}
+PERSONA_SCHEMA_ALIAS_REVERSE = {alias: key for key, alias in PERSONA_SCHEMA_ALIASES.items()}
+PROFILE_FIELD_ALIASES = {
+    "cluster_id": "i",
+    "size": "z",
+    "top_demographics": "d",
+    "top_need_codes": "n",
+    "top_outputs": "o",
+    "top_envs": "v",
+    "representative_texts": "t",
+}
+PERSONA_SCHEMA_JSON = json.dumps(
+    {
+        PERSONA_SCHEMA_ALIASES[key]: ([] if isinstance(value, list) else value)
+        for key, value in PERSONA_SCHEMA.items()
+    },
+    ensure_ascii=False,
+    separators=(",", ":"),
+)
 
 CODE_LABELS = {
     "R_ANALYST": "Analyst",
@@ -67,23 +93,32 @@ def generate_personas(cluster_profiles: list[dict[str, Any]]) -> tuple[list[dict
     audit_rows: list[dict[str, Any]] = []
     runtime = _resolve_runtime()
     cache_store = load_jsonl_cache(runtime["cache_path"]) if runtime["cache_enabled"] else {}
+    response_cache: dict[str, dict[str, Any]] = {}
     for profile in cluster_profiles:
+        compact_profile = _compact_profile(profile)
         if runtime["enabled"]:
             try:
-                compact_profile = _compact_profile(profile)
                 cache_key = build_prompt_cache_key(
                     model=runtime["model"],
                     prompt=json.dumps(compact_profile, ensure_ascii=False, separators=(",", ":")),
                     namespace="persona",
                 )
-                if cache_key in cache_store:
+                if cache_key in response_cache:
+                    persona = _validate_persona(response_cache[cache_key], profile)
+                    status = "run_reuse"
+                    reason = "persona_llm_run_reuse"
+                elif cache_key in cache_store:
                     persona = _validate_persona(cache_store[cache_key], profile)
                     status = "cache_hit"
                     reason = "persona_llm_cache_hit"
                 else:
-                    persona = _call_persona_llm(profile=profile, runtime=runtime)
+                    persona = _validate_persona(
+                        _call_persona_llm(compact_profile=compact_profile, runtime=runtime),
+                        profile,
+                    )
                     status = "applied"
                     reason = "persona_llm_applied"
+                    response_cache[cache_key] = persona
                     if runtime["cache_enabled"]:
                         cache_store[cache_key] = persona
                         append_jsonl_cache(runtime["cache_path"], cache_key, persona)
@@ -133,9 +168,8 @@ def _resolve_runtime() -> dict[str, Any]:
     }
 
 
-def _call_persona_llm(profile: dict[str, Any], runtime: dict[str, Any]) -> dict[str, Any]:
+def _call_persona_llm(compact_profile: dict[str, Any], runtime: dict[str, Any]) -> dict[str, Any]:
     """Call OpenAI Responses API for one persona summary."""
-    compact_profile = _compact_profile(profile)
     payload = {
         "model": runtime["model"],
         "input": "\n".join(
@@ -165,20 +199,20 @@ def _call_persona_llm(profile: dict[str, Any], runtime: dict[str, Any]) -> dict[
         raise RuntimeError(f"persona llm http {exc.code}") from exc
     except URLError as exc:
         raise RuntimeError("persona llm network error") from exc
-    parsed = parse_responses_json(raw)
-    return _validate_persona(parsed, profile)
+    parsed = _expand_persona_aliases(parse_responses_json(raw))
+    return parsed
 
 
 def _compact_profile(profile: dict[str, Any]) -> dict[str, Any]:
     """Shrink cluster profile payload to what the persona generator actually needs."""
     return {
-        "cluster_id": profile.get("cluster_id", ""),
-        "size": profile.get("size", 0),
-        "top_demographics": profile.get("top_demographics", [])[:4],
-        "top_need_codes": profile.get("top_need_codes", [])[:6],
-        "top_outputs": profile.get("top_outputs", [])[:4],
-        "top_envs": profile.get("top_envs", [])[:4],
-        "representative_texts": [truncate_text(str(text or ""), 160) for text in list(profile.get("representative_texts", [])[:4])],
+        PROFILE_FIELD_ALIASES["cluster_id"]: profile.get("cluster_id", ""),
+        PROFILE_FIELD_ALIASES["size"]: profile.get("size", 0),
+        PROFILE_FIELD_ALIASES["top_demographics"]: profile.get("top_demographics", [])[:3],
+        PROFILE_FIELD_ALIASES["top_need_codes"]: profile.get("top_need_codes", [])[:5],
+        PROFILE_FIELD_ALIASES["top_outputs"]: profile.get("top_outputs", [])[:3],
+        PROFILE_FIELD_ALIASES["top_envs"]: profile.get("top_envs", [])[:3],
+        PROFILE_FIELD_ALIASES["representative_texts"]: [truncate_text(str(text or ""), 120) for text in list(profile.get("representative_texts", [])[:3])],
     }
 
 
@@ -190,11 +224,13 @@ def _fallback_persona(profile: dict[str, Any]) -> dict[str, Any]:
     primary_demo = demographics[0] if demographics else "mixed practitioners"
     primary_need = needs[0] if needs else "mixed workflow needs"
     primary_need_label = _humanize_code(primary_need, fallback="workflow needs")
+    recommended_name = str(profile.get("recommended_name", "") or "").strip()
+    top_bottlenecks = [_humanize_code(code, fallback=code) for code in list(profile.get("top_bottlenecks", []))[:4]]
     return {
-        "persona_name": _humanize_code(primary_demo, fallback="Mixed Workflow Persona"),
-        "one_line_summary": f"{_humanize_code(primary_demo, 'Mixed practitioners')} with recurring {primary_need_label.lower()} needs",
+        "persona_name": recommended_name or primary_need_label or _humanize_code(primary_demo, fallback="Mixed Workflow Persona"),
+        "one_line_summary": f"{recommended_name or primary_need_label} centered on recurring {primary_need_label.lower()} pain",
         "core_demographic": _humanize_code(primary_demo, fallback="mixed practitioners"),
-        "top_pain_points": [_humanize_code(code, fallback=code) for code in needs[:4]],
+        "top_pain_points": top_bottlenecks or [_humanize_code(code, fallback=code) for code in needs[:4]],
         "co_occurring_needs": [_humanize_code(code, fallback=code) for code in needs[4:8]],
         "example_quotes": quotes,
         "opportunity": f"Improve workflows around {primary_need_label.lower()} with clearer trust, breakdown, and output support.",
@@ -215,6 +251,14 @@ def _validate_persona(persona: dict[str, Any], profile: dict[str, Any]) -> dict[
         if value in ("", []):
             validated[key] = fallback[key]
     return validated
+
+
+def _expand_persona_aliases(persona: dict[str, Any]) -> dict[str, Any]:
+    """Expand compact persona JSON keys back into the public schema."""
+    return {
+        PERSONA_SCHEMA_ALIAS_REVERSE.get(str(key), str(key)): value
+        for key, value in dict(persona or {}).items()
+    }
 
 
 def _humanize_code(code: str, fallback: str) -> str:

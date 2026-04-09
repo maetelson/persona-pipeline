@@ -58,7 +58,7 @@ def _build_persona_table(personas: list[dict[str, Any]], cluster_profiles: list[
                 "one_line_summary": persona.get("one_line_summary", ""),
                 "core_demographic": persona.get("core_demographic", ""),
                 "percent_of_total_data": round(float(profile.get("share_of_total", 0.0)) * 100, 2),
-                "dominant_needs": " | ".join(profile.get("top_need_codes", [])[:5]),
+                "dominant_needs": " | ".join(profile.get("top_bottlenecks", profile.get("top_need_codes", []))[:5]),
                 "demographic_bias": " | ".join(profile.get("top_demographics", [])[:3]),
                 "opportunity": persona.get("opportunity", ""),
             }
@@ -81,7 +81,7 @@ def _build_cluster_stats(cluster_profiles: list[dict[str, Any]], cluster_summary
                 "top_codes": " | ".join(summary.get("top_codes", [])),
                 "edge_density": float(summary.get("edge_density", 0.0)),
                 "top_demographics": " | ".join(profile.get("top_demographics", [])[:3]),
-                "top_need_codes": " | ".join(profile.get("top_need_codes", [])[:5]),
+                "top_need_codes": " | ".join(profile.get("top_bottlenecks", profile.get("top_need_codes", []))[:5]),
             }
         )
     return pd.DataFrame(rows)

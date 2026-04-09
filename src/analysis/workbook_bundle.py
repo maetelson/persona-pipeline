@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 
 from src.utils.io import ensure_dir, read_parquet, write_parquet
-from src.utils.pipeline_schema import WORKBOOK_RATIO_COLUMNS, WORKBOOK_SHEET_NAMES, reorder_frame_columns, round_frame_ratios
+from src.utils.pipeline_schema import WORKBOOK_COLUMN_ORDERS, WORKBOOK_RATIO_COLUMNS, WORKBOOK_SHEET_NAMES, reorder_frame_columns, round_frame_ratios
 
 
 def assemble_workbook_frames(
@@ -89,6 +88,10 @@ def validate_workbook_frames(frames: dict[str, pd.DataFrame]) -> list[str]:
         if frame is None:
             messages.append(f"sheet frame is null: {sheet_name}")
             continue
+        expected_columns = WORKBOOK_COLUMN_ORDERS.get(sheet_name, [])
+        for column in expected_columns:
+            if column not in frame.columns:
+                messages.append(f"missing optional column: {sheet_name}.{column}")
         ratio_columns = WORKBOOK_RATIO_COLUMNS.get(sheet_name, {})
         for column, digits in ratio_columns.items():
             if column not in frame.columns:

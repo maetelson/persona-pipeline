@@ -1,0 +1,14 @@
+source_id: reddit_r_excel
+source_name: r/excel
+source_group: reddit
+collector_kind: reddit
+normalizer_kind: reddit
+enabled: true
+subreddit: excel
+manual_input_dir: data/manual_ingest/reddit_r_excel
+max_posts_per_run: 12
+max_comments_per_thread: 6
+aliases:
+  - reddit excel
+  - excel
+seed_template_group: reddit

@@ -1,0 +1,21 @@
+{
+  "data": {
+    "children": [
+      {
+        "kind": "t3",
+        "data": {
+          "id": "abc123",
+          "title": "Monthly reporting takes too long in Power BI",
+          "selftext": "We export to Excel every week because the dashboard numbers look wrong.",
+          "created_utc": 1710000000,
+          "author": "analyst_one",
+          "permalink": "/r/excel/comments/abc123/monthly_reporting_takes_too_long/",
+          "subreddit_name_prefixed": "r/excel",
+          "score": 42,
+          "num_comments": 3,
+          "link_flair_text": "Discussion"
+        }
+      }
+    ]
+  }
+}
