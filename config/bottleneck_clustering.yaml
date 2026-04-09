@@ -275,12 +275,13 @@ clustering:
   min_primary_score: 0.8
   secondary_score_floor: 0.9
   secondary_ratio_floor: 0.55
-  min_anchor_size: 45
-  min_anchor_share: 0.04
-  max_anchor_count: 8
-  merge_similarity_threshold: 0.72
-  merge_signature_floor: 0.52
-  max_context_features: 2
+  min_anchor_size: 24
+  min_anchor_share: 0.025
+  max_anchor_count: 10
+  merge_similarity_threshold: 0.84
+  merge_signature_floor: 0.74
+  require_shared_secondary_for_primary_merge: true
+  max_context_features: 3
   max_examples_per_cluster: 6
 
 naming:

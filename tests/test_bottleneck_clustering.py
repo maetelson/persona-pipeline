@@ -90,6 +90,39 @@ class BottleneckClusteringTests(unittest.TestCase):
         self.assertIn("role_feature_importance_before_after_df", outputs)
         self.assertFalse(outputs["cluster_comparison_before_after_df"].empty)
 
+    def test_sparse_signature_without_similar_anchor_keeps_separate_persona(self) -> None:
+        config = dict(self.config)
+        config["clustering"] = dict(self.config.get("clustering", {}))
+        config["clustering"]["min_anchor_size"] = 2
+        config["clustering"]["min_anchor_share"] = 0.2
+        config["clustering"]["merge_similarity_threshold"] = 0.95
+        feature_columns = list(config.get("core_features", []))
+        rows = []
+        for episode_id, signature, primary, values in [
+            ("a1", "primary=manual_reporting||secondary=recurring_export_work", "manual_reporting", {"manual_reporting": 2.1, "recurring_export_work": 1.4}),
+            ("a2", "primary=manual_reporting||secondary=recurring_export_work", "manual_reporting", {"manual_reporting": 2.0, "recurring_export_work": 1.3}),
+            ("b1", "primary=metric_reconciliation||secondary=dashboard_mistrust", "metric_reconciliation", {"metric_reconciliation": 2.2, "dashboard_mistrust": 1.4}),
+            ("b2", "primary=metric_reconciliation||secondary=dashboard_mistrust", "metric_reconciliation", {"metric_reconciliation": 2.0, "dashboard_mistrust": 1.2}),
+            ("c1", "primary=root_cause_analysis_difficulty||secondary=segmentation_breakdown_confusion", "root_cause_analysis_difficulty", {"root_cause_analysis_difficulty": 2.3, "segmentation_breakdown_confusion": 1.5}),
+        ]:
+            row = {
+                "episode_id": episode_id,
+                "cluster_signature": signature,
+                "primary_bottleneck": primary,
+                "secondary_bottlenecks": "",
+                "primary_score": 2.0,
+                "role_metadata": "analyst",
+                "source_metadata": "reddit",
+            }
+            for feature in feature_columns:
+                row[feature] = float(values.get(feature, 0.0))
+            rows.append(row)
+        feature_df = pd.DataFrame(rows)
+        assignments_df = assign_bottleneck_clusters(feature_df, config)
+        self.assertEqual(assignments_df["persona_id"].nunique(), 3)
+        sparse_persona = assignments_df.loc[assignments_df["episode_id"] == "c1", "persona_id"].iloc[0]
+        self.assertTrue(isinstance(sparse_persona, str) and sparse_persona.startswith("persona_"))
+
 
 def _sample_inputs() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Return a compact synthetic corpus for clustering tests."""

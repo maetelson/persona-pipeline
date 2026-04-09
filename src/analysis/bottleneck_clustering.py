@@ -158,19 +158,25 @@ def assign_bottleneck_clusters(feature_df: pd.DataFrame, config: dict[str, Any])
             continue
         signature_rows = feature_df[feature_df["cluster_signature"].astype(str) == signature]
         vector = _signature_vector(signature_rows, _feature_columns(config))
-        signature_to_anchor[signature] = _nearest_signature_anchor(
+        nearest_anchor = _nearest_signature_anchor(
             vector,
             anchor_feature_lookup,
             float(config.get("clustering", {}).get("merge_similarity_threshold", 0.72)),
         )
+        signature_to_anchor[signature] = nearest_anchor or signature
+        if not nearest_anchor and signature not in anchor_feature_lookup:
+            anchor_feature_lookup[signature] = vector
+            anchor_signatures.append(signature)
 
     naming_lookup = {}
-    for signature in anchor_signatures:
+    all_signatures = list(dict.fromkeys([*anchor_signatures, *signature_to_anchor.keys()]))
+    for signature in all_signatures:
         mapping = _parse_signature(signature)
         naming_lookup[signature] = _recommended_cluster_name(mapping.get("primary", "mixed_workflow_friction"), mapping.get("secondary", []), config)
     canonical_anchors: list[str] = []
     anchor_canonical_map: dict[str, str] = {}
     merge_signature_floor = float(config.get("clustering", {}).get("merge_signature_floor", 0.52))
+    require_shared_secondary = bool(config.get("clustering", {}).get("require_shared_secondary_for_primary_merge", True))
     for signature in anchor_signatures:
         mapping = _parse_signature(signature)
         matched_anchor = ""
@@ -178,8 +184,10 @@ def assign_bottleneck_clusters(feature_df: pd.DataFrame, config: dict[str, Any])
             canonical_mapping = _parse_signature(canonical)
             same_name = naming_lookup.get(signature, "") == naming_lookup.get(canonical, "")
             same_primary = mapping.get("primary", "") == canonical_mapping.get("primary", "")
+            shared_secondary = bool(set(mapping.get("secondary", [])) & set(canonical_mapping.get("secondary", [])))
             similar = _cosine_similarity(anchor_feature_lookup.get(signature, {}), anchor_feature_lookup.get(canonical, {})) >= merge_signature_floor
-            if same_name or (same_primary and similar):
+            can_merge_primary = same_primary and similar and (shared_secondary or not require_shared_secondary)
+            if same_name or can_merge_primary:
                 matched_anchor = canonical
                 break
         if matched_anchor:
@@ -496,7 +504,7 @@ def _nearest_signature_anchor(vector: dict[str, float], anchor_lookup: dict[str,
         if score > best_score:
             best_anchor = anchor
             best_score = score
-    return best_anchor if best_score >= threshold else best_anchor
+    return best_anchor if best_score >= threshold else ""
 
 
 def _cluster_fit_score(row: pd.Series, centroid: dict[str, float], feature_columns: list[str]) -> float:

@@ -2,7 +2,8 @@ source: github_discussions
 enabled: true
 use_stub: false
 source_type: discussion
-query_mode: expanded_map
+query_mode: source_config
+seed_bank_path: config/seeds/existing_forums/github_discussions.yaml
 allowed_query_priorities:
   - high
 enable_discussions: false
@@ -10,9 +11,9 @@ repositories:
   - apache/superset
   - metabase/metabase
   - getredash/redash
-  - cube-js/cube
-max_items_per_seed: 10
-max_pages_per_query: 3
+max_queries_per_run: 8
+max_items_per_seed: 6
+max_pages_per_query: 2
 max_discussion_pages_per_query: 3
 max_comments_per_item: 10
 max_replies_per_comment: 5

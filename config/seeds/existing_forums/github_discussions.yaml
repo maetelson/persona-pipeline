@@ -1,0 +1,33 @@
+source_id: github_discussions
+source_group: existing_forums
+max_query_count: 8
+source_notes: "GitHub discussions/issues are high-noise for this project, so only compact BI workflow complaint seeds are active."
+core_seeds:
+  - seed: "dashboard numbers don't match source data"
+    reason: Targets trust and reconciliation complaints rather than maintainer bug chatter.
+  - seed: export to excel for further analysis
+    reason: Pulls spreadsheet fallback workflows that still happen after dashboard use.
+  - seed: manual reporting after dashboard
+    reason: Captures repeated report prep pain that is useful for persona mining.
+  - seed: cannot explain why KPI changed
+    reason: Targets root-cause explanation burden instead of generic feature requests.
+  - seed: metric definition confusion across teams
+    reason: Pulls source-of-truth and KPI semantics pain with business context.
+  - seed: stakeholders ask why numbers changed
+    reason: Captures follow-up burden and business-facing explanation pressure.
+  - seed: need better drill down by segment
+    reason: Targets breakdown limits that block diagnosis and reporting.
+  - seed: dashboard is not enough for reporting
+    reason: Pulls tool-limitation complaints tied to actual reporting work.
+negative_terms:
+  - installation
+  - deployment
+  - kubernetes
+  - stack trace
+  - api
+  - auth
+  - sdk
+  - plugin
+  - feature request
+  - enhancement
+  - regression
