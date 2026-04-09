@@ -94,7 +94,13 @@ def main() -> None:
     write_parquet(llm_audit_df, ROOT / "data" / "labeled" / "llm_label_audit.parquet")
     write_parquet(labelability_df, ROOT / "data" / "labeled" / "labelability_audit.parquet")
     label_quality_paths = write_label_quality_outputs(ROOT, quality_outputs, repaired_df, details_df)
-    _write_before_after_quality_report(ROOT, previous_labeled_df, labeled_df, labelability_df)
+    _write_before_after_quality_report(
+        ROOT,
+        previous_labeled_df,
+        labeled_df,
+        labelability_df,
+        labeling_policy.get("audit", {}),
+    )
     profile, profile_cfg = load_threshold_profile(ROOT / "config" / "pipeline_thresholds.yaml")
     threshold_df = evaluate_labeling_thresholds(labeled_df, profile, profile_cfg)
     combined_threshold_df = upsert_threshold_audit(ROOT, threshold_df)
@@ -152,28 +158,33 @@ def _apply_low_signal_gate(labeled_df):
     return result
 
 
-def _write_before_after_quality_report(root_dir, before_df, after_df, labelability_df) -> None:
+def _write_before_after_quality_report(root_dir, before_df, after_df, labelability_df, audit_config) -> None:
     """Write before/after quality comparison for the rerun."""
     before_unknown = _unknown_ratio(before_df)
     after_unknown = _unknown_ratio(after_df)
     before_core_unknown = _unknown_ratio(_persona_core_subset(before_df))
     after_core_unknown = _unknown_ratio(_persona_core_subset(after_df))
+    reported_baseline_unknown = float(audit_config.get("reported_baseline_unknown_ratio", 0.0) or 0.0)
+    reported_baseline_quality_flag = str(audit_config.get("reported_baseline_quality_flag", "") or "").strip()
     low_signal_rate = (
         float((labelability_df["labelability_status"] == "low_signal").mean())
         if not labelability_df.empty
         else 0.0
     )
     rows = [
-        {"metric": "before_unknown_ratio", "value": before_unknown},
-        {"metric": "after_unknown_ratio", "value": after_unknown},
-        {"metric": "unknown_ratio_delta", "value": round(after_unknown - before_unknown, 6)},
-        {"metric": "before_core_unknown_ratio", "value": before_core_unknown},
-        {"metric": "after_core_unknown_ratio", "value": after_core_unknown},
-        {"metric": "core_unknown_ratio_delta", "value": round(after_core_unknown - before_core_unknown, 6)},
-        {"metric": "before_labeled_rows", "value": int(len(before_df))},
-        {"metric": "after_labeled_rows", "value": int(len(after_df))},
-        {"metric": "low_signal_rate", "value": round(low_signal_rate, 6)},
-        {"metric": "persona_core_eligible_rows", "value": int(after_df.get("persona_core_eligible", pd.Series(dtype=bool)).fillna(True).sum())},
+        {"metric": "before_unknown_ratio", "value_numeric": before_unknown, "value_text": ""},
+        {"metric": "after_unknown_ratio", "value_numeric": after_unknown, "value_text": ""},
+        {"metric": "unknown_ratio_delta", "value_numeric": round(after_unknown - before_unknown, 6), "value_text": ""},
+        {"metric": "reported_baseline_unknown_ratio", "value_numeric": reported_baseline_unknown, "value_text": ""},
+        {"metric": "reported_baseline_to_after_delta", "value_numeric": round(after_unknown - reported_baseline_unknown, 6), "value_text": ""},
+        {"metric": "before_core_unknown_ratio", "value_numeric": before_core_unknown, "value_text": ""},
+        {"metric": "after_core_unknown_ratio", "value_numeric": after_core_unknown, "value_text": ""},
+        {"metric": "core_unknown_ratio_delta", "value_numeric": round(after_core_unknown - before_core_unknown, 6), "value_text": ""},
+        {"metric": "reported_baseline_quality_flag", "value_numeric": None, "value_text": reported_baseline_quality_flag},
+        {"metric": "before_labeled_rows", "value_numeric": int(len(before_df)), "value_text": ""},
+        {"metric": "after_labeled_rows", "value_numeric": int(len(after_df)), "value_text": ""},
+        {"metric": "low_signal_rate", "value_numeric": round(low_signal_rate, 6), "value_text": ""},
+        {"metric": "persona_core_eligible_rows", "value_numeric": int(after_df.get("persona_core_eligible", pd.Series(dtype=bool)).fillna(True).sum()), "value_text": ""},
     ]
     output_df = pd.DataFrame(rows)
     write_parquet(output_df, root_dir / "data" / "analysis" / "before_after_label_metrics.parquet")
@@ -186,9 +197,12 @@ def _write_before_after_quality_report(root_dir, before_df, after_df, labelabili
                 f"- before unknown ratio: `{before_unknown:.6f}`",
                 f"- after unknown ratio: `{after_unknown:.6f}`",
                 f"- delta: `{after_unknown - before_unknown:+.6f}`",
+                f"- reported baseline unknown ratio: `{reported_baseline_unknown:.6f}`",
+                f"- baseline to after delta: `{after_unknown - reported_baseline_unknown:+.6f}`",
                 f"- before core-eligible unknown ratio: `{before_core_unknown:.6f}`",
                 f"- after core-eligible unknown ratio: `{after_core_unknown:.6f}`",
                 f"- core delta: `{after_core_unknown - before_core_unknown:+.6f}`",
+                f"- reported baseline quality flag: `{reported_baseline_quality_flag or 'n/a'}`",
                 f"- low-signal rate: `{low_signal_rate:.6f}`",
                 f"- persona-core-eligible rows: `{int(after_df.get('persona_core_eligible', pd.Series(dtype=bool)).fillna(True).sum())}`",
             ]

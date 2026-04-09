@@ -1,4 +1,4 @@
-"""Source-aware relevance scoring for Reddit and Stack Overflow BI pain discovery."""
+"""Source-aware relevance scoring for forum-like BI pain discovery."""
 
 from __future__ import annotations
 
@@ -328,6 +328,41 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
                 source_reasons.append(f"stackoverflow_tag_downweight:{tag}")
         if normalized["is_answered"]:
             scores["bi_tool_score"] += float(stack_cfg.get("accepted_answer_bonus", 0.0))
+
+    if source == "github_discussions":
+        github_cfg = source_cfg
+        workflow_term_hits = sum(
+            1 for term in github_cfg.get("workflow_context_terms", []) or [] if str(term).lower() in text
+        )
+        repo_term_hits = sum(
+            1 for term in github_cfg.get("positive_repo_terms", []) or [] if str(term).lower() in text
+        )
+        technical_issue_hits = sum(
+            1 for term in github_cfg.get("technical_issue_patterns", []) or [] if str(term).lower() in text
+        )
+        maintainer_noise_hits = sum(
+            1 for term in github_cfg.get("maintainer_noise_patterns", []) or [] if str(term).lower() in text
+        )
+        if workflow_term_hits:
+            bonus = float(github_cfg.get("workflow_context_bonus", 0.6))
+            scores["biz_workflow_score"] += bonus
+            positive_hits.append(("github_workflow_context", bonus))
+            source_reasons.append("github_discussions_workflow_context")
+        if technical_issue_hits and workflow_term_hits < 2:
+            penalty = technical_issue_hits * float(github_cfg.get("issue_template_penalty", 1.6))
+            scores["implementation_only_score"] += penalty
+            negative_hits.append(("github_issue_template_noise", round(penalty, 2)))
+            source_reasons.append("github_discussions_issue_template_downweight")
+        if maintainer_noise_hits and workflow_term_hits < 2:
+            penalty = maintainer_noise_hits * float(github_cfg.get("maintainer_noise_penalty", 1.2))
+            scores["generic_programming_score"] += penalty
+            negative_hits.append(("github_maintainer_noise", round(penalty, 2)))
+            source_reasons.append("github_discussions_maintainer_downweight")
+        if repo_term_hits and workflow_term_hits == 0:
+            penalty = float(github_cfg.get("low_context_extra_penalty", 1.0))
+            scores["infra_noise_score"] += penalty
+            negative_hits.append(("github_repo_without_workflow_context", penalty))
+            source_reasons.append("github_discussions_low_context_repo_match")
 
     technical_recovery = _apply_technical_but_relevant_recovery(text, scores, rules)
     if technical_recovery:

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
+import tempfile
 import subprocess
 import sys
 import unittest
@@ -15,6 +17,12 @@ from src.labeling.repair import apply_label_repairs, build_axis_label_details
 from src.utils.io import load_yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+_LABEL_EPISODES_SPEC = importlib.util.spec_from_file_location("run_05_label_episodes", ROOT / "run" / "05_label_episodes.py")
+if _LABEL_EPISODES_SPEC is None or _LABEL_EPISODES_SPEC.loader is None:
+    raise RuntimeError("Unable to load run/05_label_episodes.py for tests.")
+_LABEL_EPISODES_MODULE = importlib.util.module_from_spec(_LABEL_EPISODES_SPEC)
+_LABEL_EPISODES_SPEC.loader.exec_module(_LABEL_EPISODES_MODULE)
+_write_before_after_quality_report = _LABEL_EPISODES_MODULE._write_before_after_quality_report
 
 
 class LabelQualityTests(unittest.TestCase):
@@ -87,6 +95,37 @@ class LabelQualityTests(unittest.TestCase):
         details = build_axis_label_details(episodes, repaired, labelability)
         self.assertIn("confidence_score", details.columns)
         self.assertFalse(repairs.empty)
+
+    def test_before_after_quality_report_includes_reported_baseline(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "data" / "analysis").mkdir(parents=True, exist_ok=True)
+            before = pd.DataFrame([{"episode_id": "1", "role_codes": "unknown", "question_codes": "unknown", "pain_codes": "unknown", "output_codes": "unknown"}])
+            after = pd.DataFrame(
+                [
+                    {
+                        "episode_id": "1",
+                        "role_codes": "R_ANALYST",
+                        "question_codes": "Q_REPORT_SPEED",
+                        "pain_codes": "P_MANUAL_REPORTING",
+                        "output_codes": "O_XLSX",
+                        "persona_core_eligible": True,
+                    }
+                ]
+            )
+            labelability = pd.DataFrame([{"episode_id": "1", "labelability_status": "labelable"}])
+            _write_before_after_quality_report(
+                root,
+                before,
+                after,
+                labelability,
+                {"reported_baseline_unknown_ratio": 0.717116, "reported_baseline_quality_flag": "LOW_QUALITY"},
+            )
+            metrics = pd.read_csv(root / "data" / "analysis" / "before_after_label_metrics.csv")
+            numeric_lookup = dict(zip(metrics["metric"], metrics["value_numeric"]))
+            text_lookup = dict(zip(metrics["metric"], metrics["value_text"].fillna("")))
+            self.assertAlmostEqual(float(numeric_lookup["reported_baseline_unknown_ratio"]), 0.717116, places=6)
+            self.assertEqual(str(text_lookup["reported_baseline_quality_flag"]), "LOW_QUALITY")
 
 
 class LabelCliSmokeTests(unittest.TestCase):

@@ -5,7 +5,6 @@ source_type: discussion
 query_mode: expanded_map
 allowed_query_priorities:
   - high
-  - medium
 enable_discussions: false
 repositories:
   - apache/superset

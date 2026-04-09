@@ -29,7 +29,7 @@ axes:
       high: high_validation_pressure
       medium: validation_pressure_present
       low: validation_pressure_present
-    deprecation_notice: "Retained only as optional metadata after collapse."
+    deprecation_notice: "Retained only as optional metadata after collapse; excluded from core persona clustering because coverage is still too weak."
   analysis_maturity:
     preferred_action: merge
     target_axis: tool_dependency_mode

@@ -12,6 +12,9 @@ source_defaults:
   stackoverflow:
     source_group: existing_forums
     source_weight: 0.98
+  github_discussions:
+    source_group: existing_forums
+    source_weight: 0.72
 reddit:
   relevant_subreddits:
     r/analytics: 2.2
@@ -56,6 +59,51 @@ stackoverflow:
     playwright: 2.3
     sqlalchemy: 1.7
   accepted_answer_bonus: 0.2
+github_discussions:
+  positive_repo_terms:
+    - metabase
+    - superset
+    - redash
+    - cube
+  workflow_context_bonus: 0.6
+  workflow_context_terms:
+    - dashboard
+    - reporting
+    - report
+    - metric
+    - numbers don't match
+    - reconcile
+    - export
+    - excel
+    - stakeholder
+    - leadership
+    - segment
+    - breakdown
+  technical_issue_patterns:
+    - steps to reproduce
+    - expected behavior
+    - actual behavior
+    - version
+    - environment
+    - stack trace
+    - traceback
+    - console error
+    - installation
+    - plugin
+    - auth
+    - api
+    - sdk
+    - build
+    - deploy
+  issue_template_penalty: 1.6
+  maintainer_noise_patterns:
+    - feature request
+    - bug report
+    - regression
+    - reproduce
+    - enhancement
+  maintainer_noise_penalty: 1.2
+  low_context_extra_penalty: 1.0
 score_weights:
   biz_workflow_score: 1.0
   bi_tool_score: 1.0

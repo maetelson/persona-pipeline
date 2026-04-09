@@ -226,3 +226,6 @@ repair:
       - channel
       - media buyer
       - marketing
+audit:
+  reported_baseline_unknown_ratio: 0.717116
+  reported_baseline_quality_flag: LOW_QUALITY

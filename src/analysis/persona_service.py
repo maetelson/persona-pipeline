@@ -32,9 +32,14 @@ def build_persona_outputs(
 ) -> dict[str, Any]:
     """Build bottleneck-first persona clusters and report-ready persona outputs."""
     axis_names = [str(row.get("axis_name", "")).strip() for row in final_axis_schema if str(row.get("axis_name", "")).strip()]
+    core_axis_names = [
+        str(row.get("axis_name", "")).strip()
+        for row in final_axis_schema
+        if str(row.get("axis_name", "")).strip() and str(row.get("axis_role", "core")).strip() == "core"
+    ]
     merged = episodes_df.merge(labeled_df, on="episode_id", how="inner").fillna("")
     axis_wide_df, axis_long_df = build_axis_assignments(episodes_df, labeled_df, axis_names=axis_names)
-    if merged.empty or axis_wide_df.empty or not axis_names:
+    if merged.empty or axis_wide_df.empty or not core_axis_names:
         return _empty_outputs()
 
     cluster_outputs = build_bottleneck_cluster_outputs(
@@ -53,10 +58,10 @@ def build_persona_outputs(
     )
     total_labeled_records = int(quality_checks.get("labeled_count", len(labeled_df)))
 
-    overview_df = _build_overview_df(persona_source_df, axis_names, quality_checks, total_labeled_records)
+    overview_df = _build_overview_df(persona_source_df, core_axis_names, quality_checks, total_labeled_records)
     persona_summary_df = _build_persona_summary_df(
         persona_source_df,
-        axis_names,
+        core_axis_names,
         total_labeled_records,
         summary_examples_lookup=_summary_examples_lookup(cluster_outputs["selected_examples_df"]),
         naming_lookup=_naming_lookup(cluster_outputs["cluster_naming_recommendations_df"]),
@@ -65,7 +70,7 @@ def build_persona_outputs(
     persona_pains_df = _build_persona_pains_df(persona_source_df)
     persona_cooccurrence_df = _build_persona_cooccurrence_df(persona_source_df)
     persona_examples_df = _build_persona_examples_df(cluster_outputs["selected_examples_df"])
-    cluster_stats_df = _build_cluster_stats_df(persona_source_df, axis_names, total_labeled_records, cluster_outputs["cluster_meaning_audit_df"])
+    cluster_stats_df = _build_cluster_stats_df(persona_source_df, core_axis_names, total_labeled_records, cluster_outputs["cluster_meaning_audit_df"])
     quality_checks_df = build_quality_checks_df(quality_checks)
 
     outputs = {

@@ -104,6 +104,43 @@ class RelevancePrefilterTests(unittest.TestCase):
         _, _, drop_df = apply_relevance_prefilter(frame, self.rules)
         self.assertEqual(drop_df.iloc[0]["relevance_decision"], "drop")
 
+    def test_github_discussion_issue_template_noise_is_dropped_without_workflow_context(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "github_discussions",
+                    "raw_id": "gh-noise",
+                    "title": "Bug report: expected behavior vs actual behavior",
+                    "body": "Version 1.2.3. Steps to reproduce. Console error after plugin installation.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{\"repository\": \"apache/superset\"}"},
+                }
+            ]
+        )
+        _, _, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 1)
+        self.assertIn("github_issue_template_noise", drop_df.iloc[0]["top_negative_signals"])
+
+    def test_github_discussion_reporting_context_survives_downweight(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "github_discussions",
+                    "raw_id": "gh-reporting",
+                    "title": "Dashboard numbers do not match source data in scheduled report export",
+                    "body": "Leadership does not trust the dashboard because we still reconcile the export before sending the weekly reporting pack.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{\"repository\": \"metabase/metabase\"}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, _ = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertIn("github_discussions_workflow_context", scored.iloc[0]["source_specific_reason"])
+
 
 if __name__ == "__main__":
     unittest.main()
