@@ -79,17 +79,38 @@ python run/10_source_cli.py qa-relevance --source reddit --limit 200
 python run/10_source_cli.py qa-relevance --source stackoverflow --limit 200
 ```
 
+Important implementation note:
+
+- `review_sites` and `official_communities` use shared collector implementations by source group
+- This is code reuse only, not source merging
+- Each configured source still runs independently and keeps its own outputs
+- Raw outputs remain source-specific under `data/raw/{source_id}/`
+- Normalized outputs remain source-specific under `data/normalized/{source_id}.parquet`
+- Coverage, keep/drop, and QA reports can still be calculated per source because each row keeps its own `source` value
+
 ## Current source status
 
 | Source | Status | Notes |
 |---|---|---|
-| Reddit | Implemented | Live collection requires `REDDIT_USER_AGENT` |
-| Stack Overflow | Implemented | Live collection supported |
+| Reddit | Implemented | Legacy Reddit collector remains available; live collection requires `REDDIT_USER_AGENT` |
+| Stack Overflow | Implemented | Legacy Stack Overflow collector remains available |
 | GitHub Issues | Implemented | REST search based |
 | GitHub Discussions | Conditionally implemented | Requires `GITHUB_TOKEN` |
 | Discourse | Stub | Placeholder collector/normalizer |
 | Hacker News | Stub | Placeholder collector/normalizer |
 | YouTube | Stub | Placeholder collector/normalizer |
+| `g2` | Implemented | Uses shared `review_sites` collector code, but writes source-specific raw/normalized outputs |
+| `trustradius` | Implemented | Uses shared `review_sites` collector code, but writes source-specific raw/normalized outputs |
+| `capterra` | Implemented | Uses shared `review_sites` collector code, but writes source-specific raw/normalized outputs |
+| `gartner_peer_insights` | Implemented | Uses shared `review_sites` collector code, but writes source-specific raw/normalized outputs |
+| `r/excel` | Implemented | Uses source-specific config and keeps source-specific outputs |
+| `r/analytics` | Implemented | Uses source-specific config and keeps source-specific outputs |
+| `r/BusinessIntelligence` | Implemented | Uses source-specific config and keeps source-specific outputs |
+| `r/MarketingAnalytics` | Implemented | Uses source-specific config and keeps source-specific outputs |
+| `power_bi_community` | Implemented | Uses shared `official_communities` collector code, but writes source-specific raw/normalized outputs |
+| `tableau_community` | Implemented | Uses shared `official_communities` collector code, but writes source-specific raw/normalized outputs |
+| `looker_studio_community` | Implemented | Uses shared `official_communities` collector code, but writes source-specific raw/normalized outputs |
+| `sigma_community` | Implemented | Uses shared `official_communities` collector code, but writes source-specific raw/normalized outputs |
 
 ## New BI-focused source groups
 
@@ -115,6 +136,12 @@ Review sites use a safe two-lane ingestion design:
 - Lane 2: manual import from saved HTML / CSV / JSON snapshots in `data/manual_ingest/<source>`
 
 Blocked review sites do not fail the pipeline. They emit `crawl_status=blocked_or_manual_required` so you can continue with manual snapshots through the same parser and normalization layer.
+
+Even though these sources share collector code by source group, they are still tracked per source:
+
+- `g2`, `trustradius`, `capterra`, and `gartner_peer_insights` keep separate raw and normalized outputs
+- `power_bi_community`, `tableau_community`, `looker_studio_community`, and `sigma_community` also keep separate raw and normalized outputs
+- Combined outputs may be written for convenience, but per-source counting and filtering remain available from the source-specific files and the `source` column
 
 ## Requirements
 
