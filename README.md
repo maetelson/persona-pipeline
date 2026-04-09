@@ -178,6 +178,43 @@ Typical generated outputs include:
 
 Runtime data artifacts are local-only and should not be committed.
 
+## Commit Messages
+
+Use this repo convention for commits:
+
+```text
+type(scope): short summary
+```
+
+Recommended types:
+
+- `feat`
+- `fix`
+- `refactor`
+- `docs`
+- `test`
+- `chore`
+
+Recommended scopes:
+
+- `collect`
+- `normalize`
+- `filter`
+- `episodes`
+- `label`
+- `analysis`
+- `export`
+- `config`
+- `docs`
+- `tests`
+- `repo`
+
+Examples:
+
+- `feat(collect): add review site manual ingest flow`
+- `fix(export): validate workbook sheet presence`
+- `refactor(analysis): simplify final report assembly`
+
 ## Docs
 
 - [ORCHESTRATION.md](./ORCHESTRATION.md): stage order and rerun behavior
@@ -185,6 +222,7 @@ Runtime data artifacts are local-only and should not be committed.
 - [CODEBOOK.md](./CODEBOOK.md): labeling definitions
 - [RUNBOOK.md](./RUNBOOK.md): execution notes and operational details
 - [TASKS.md](./TASKS.md): current implementation checklist
+- [COMMIT_CONVENTION.md](./COMMIT_CONVENTION.md): commit message format for this repo
 - [SOURCE_SETUP.md](./SOURCE_SETUP.md): source-group setup and extension guide
 - [MANUAL_IMPORT.md](./MANUAL_IMPORT.md): blocked-site manual ingest flow
 - [SCHEMA.md](./SCHEMA.md): normalized source-group schema details
