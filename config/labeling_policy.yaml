@@ -10,8 +10,6 @@ llm_labeling:
   source_guidance:
     reddit: "Complaint-style natural language. Focus on repeated reporting pain, follow-up requests, trust issues, and spreadsheet workarounds."
     stackoverflow: "May look technical, but keep reporting, dashboard trust, spreadsheet output, KPI mismatch, and explanation pain if present."
-    review_sites: "Pros/cons/use-case language. Prefer recurring workflow pain over buyer-intent language."
-    official_communities: "Issue-title style. Prioritize user-facing reporting pain over admin or deployment setup."
   families:
     role_codes:
       definition: "Who is carrying the work or answer burden."
@@ -148,20 +146,6 @@ few_shot_examples:
         question_codes: Q_DIAGNOSE_ISSUE
         pain_codes: P_TOOL_LIMITATION
         output_codes: O_DASHBOARD
-  review_sites:
-    - text: "The dashboards are fine for monitoring, but we still export to spreadsheets for leadership reporting."
-      labels:
-        moment_codes: M_REPORTING
-        question_codes: Q_REPORT_SPEED
-        pain_codes: P_MANUAL_REPORTING
-        output_codes: O_XLSX
-  official_communities:
-    - text: "Export to Excel issue: dashboard numbers do not match the source data for the scheduled report."
-      labels:
-        moment_codes: M_VALIDATION
-        question_codes: Q_VALIDATE_NUMBERS
-        pain_codes: P_DATA_QUALITY
-        output_codes: O_XLSX
 labelability:
   low_signal_min_text_length: 80
   strong_signal_threshold: 5

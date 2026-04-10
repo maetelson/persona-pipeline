@@ -18,12 +18,6 @@ PROMPT_SYSTEM = "Classify persona labels from evidence. Prefer broad useful labe
 SOURCE_GROUP_HINTS = {
     "reddit": "reddit",
     "stackoverflow": "stackoverflow",
-    "review_sites": "review_sites",
-    "official_communities": "official_communities",
-    "power_bi_community": "official_communities",
-    "tableau_community": "official_communities",
-    "looker_studio_community": "official_communities",
-    "sigma_community": "official_communities",
 }
 
 

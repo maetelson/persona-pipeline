@@ -13,12 +13,10 @@ import pandas as pd
 
 from src.normalizers.base import NORMALIZED_POST_COLUMNS
 from src.normalizers.discourse_normalizer import DiscourseNormalizer
-from src.normalizers.official_community_normalizer import OfficialCommunityNormalizer
 from src.normalizers.github_discussions_normalizer import GitHubDiscussionsNormalizer
 from src.normalizers.hackernews_normalizer import HackerNewsNormalizer
 from src.normalizers.reddit_normalizer import RedditNormalizer
 from src.normalizers.reddit_public_normalizer import RedditPublicNormalizer
-from src.normalizers.review_site_normalizer import ReviewSiteNormalizer
 from src.normalizers.stackoverflow_normalizer import StackOverflowNormalizer
 from src.normalizers.youtube_normalizer import YouTubeNormalizer
 from src.utils.io import list_jsonl_files, read_jsonl, write_parquet
@@ -41,9 +39,7 @@ def _extend_registry_with_source_groups():
     """Attach config-driven source-group normalizers to the registry."""
     registry = dict(NORMALIZER_REGISTRY)
     normalizer_map = {
-        "review_sites": ReviewSiteNormalizer,
         "reddit": RedditPublicNormalizer,
-        "official_communities": OfficialCommunityNormalizer,
     }
     for definition in load_source_definitions(ROOT, include_disabled=True):
         normalizer_cls = normalizer_map.get(definition.normalizer_kind)

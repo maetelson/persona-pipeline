@@ -1,17 +1,16 @@
 negative_terms:
-  - pricing
-  - free trial
+  - salary
+  - career
+  - interview
+  - certificate
+  - certification
+  - tutorial
+  - course
+  - resume
+  - job
+  - homework
+  - internship
   - api auth
   - oauth
   - sdk
-  - npm
   - docker
-  - selenium
-  - playwright
-  - build error
-  - package install
-  - deployment
-  - plugin development
-  - scraping setup
-  - web scraping
-  - browser automation

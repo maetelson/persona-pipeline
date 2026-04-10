@@ -200,3 +200,104 @@ def build_downstream_loss_audit(
             }
         )
     return pd.DataFrame(rows)
+
+
+SOURCE_HEALTH_COLUMNS = [
+    "source_id",
+    "fetched_count",
+    "parsed_count",
+    "normalized_count",
+    "empty_query_count",
+    "parse_error_count",
+    "deduped_count",
+    "dropped_by_validation_count",
+]
+
+
+def build_source_health_df(
+    raw_audit_df: pd.DataFrame,
+    page_audit_df: pd.DataFrame,
+    error_audit_df: pd.DataFrame,
+    normalized_df: pd.DataFrame,
+    validation_dropped_df: pd.DataFrame,
+    duplicate_invalid_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Build source-level health diagnostics across collection and validation."""
+    sources = sorted(
+        set(_column_values(raw_audit_df, "source"))
+        | set(_column_values(page_audit_df, "source"))
+        | set(_column_values(error_audit_df, "source"))
+        | set(_column_values(normalized_df, "source"))
+        | set(_column_values(validation_dropped_df, "source"))
+        | set(_column_values(duplicate_invalid_df, "source"))
+    )
+
+    rows: list[dict[str, int | str]] = []
+    for source in sources:
+        fetched_count = _sum_for_source(raw_audit_df, source, "source", "raw_record_count")
+        parsed_count = _sum_for_source(page_audit_df, source, "source", "page_raw_count_before_dedupe")
+        if parsed_count == 0:
+            parsed_count = fetched_count
+        normalized_count = _count_for_source(normalized_df, source)
+        empty_query_count = _empty_page_count(page_audit_df, source)
+        parse_error_count = _error_count(error_audit_df, source, "parse")
+        deduped_count = _count_for_source(duplicate_invalid_df, source)
+        dropped_count = _count_for_source(validation_dropped_df, source)
+        rows.append(
+            {
+                "source_id": source,
+                "fetched_count": fetched_count,
+                "parsed_count": parsed_count,
+                "normalized_count": normalized_count,
+                "empty_query_count": empty_query_count,
+                "parse_error_count": parse_error_count,
+                "deduped_count": deduped_count,
+                "dropped_by_validation_count": dropped_count,
+            }
+        )
+    return pd.DataFrame(rows, columns=SOURCE_HEALTH_COLUMNS)
+
+
+def _column_values(df: pd.DataFrame, column: str) -> list[str]:
+    """Return non-empty string values from a dataframe column."""
+    if df.empty or column not in df.columns:
+        return []
+    return [str(value) for value in df[column].dropna().astype(str).tolist() if str(value)]
+
+
+def _sum_for_source(df: pd.DataFrame, source: str, source_column: str, value_column: str) -> int:
+    """Return integer sum for one source/value column pair."""
+    if df.empty or source_column not in df.columns or value_column not in df.columns:
+        return 0
+    matched = df[df[source_column].astype(str) == source]
+    if matched.empty:
+        return 0
+    return int(pd.to_numeric(matched[value_column], errors="coerce").fillna(0).sum())
+
+
+def _count_for_source(df: pd.DataFrame, source: str) -> int:
+    """Count dataframe rows for a source column."""
+    if df.empty or "source" not in df.columns:
+        return 0
+    return int((df["source"].astype(str) == source).sum())
+
+
+def _empty_page_count(page_audit_df: pd.DataFrame, source: str) -> int:
+    """Count collection units that produced no parsed rows."""
+    if page_audit_df.empty or "source" not in page_audit_df.columns:
+        return 0
+    source_df = page_audit_df[page_audit_df["source"].astype(str) == source]
+    if source_df.empty or "page_raw_count_before_dedupe" not in source_df.columns:
+        return 0
+    return int((pd.to_numeric(source_df["page_raw_count_before_dedupe"], errors="coerce").fillna(0) == 0).sum())
+
+
+def _error_count(error_audit_df: pd.DataFrame, source: str, error_stage: str) -> int:
+    """Count source errors at a specific stage."""
+    if error_audit_df.empty or "source" not in error_audit_df.columns or "error_stage" not in error_audit_df.columns:
+        return 0
+    matched = error_audit_df[
+        (error_audit_df["source"].astype(str) == source)
+        & (error_audit_df["error_stage"].astype(str) == error_stage)
+    ]
+    return int(len(matched))

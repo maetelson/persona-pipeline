@@ -121,6 +121,9 @@ class BaseCollector(ABC):
     def save(self, records: list[RawRecord]) -> Path:
         """Persist collected records as JSONL."""
         output_path = self.data_dir / "raw.jsonl"
+        preserve_empty = os.getenv("PRESERVE_RAW_ON_EMPTY", "").strip().lower() == "true"
+        if preserve_empty and not records and output_path.exists() and output_path.stat().st_size > 0:
+            return output_path
         write_jsonl(output_path, [record.to_dict() for record in records])
         return output_path
 

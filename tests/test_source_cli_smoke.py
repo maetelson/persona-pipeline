@@ -5,10 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 import json
 import pandas as pd
-import shutil
 import subprocess
 import sys
-import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,11 +14,11 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
 class SourceCliSmokeTests(unittest.TestCase):
-    """Verify the CLI can run in dry-run and manual-ingest modes."""
+    """Verify the CLI can run source dry-run, seed, and relevance commands."""
 
     def test_dry_run_cli_completes(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/10_source_cli.py", "dry-run", "--source-group", "review_sites"],
+            [sys.executable, "run/10_source_cli.py", "dry-run", "--source-group", "reddit"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -31,7 +29,7 @@ class SourceCliSmokeTests(unittest.TestCase):
 
     def test_show_and_validate_seed_cli_completes(self) -> None:
         show = subprocess.run(
-            [sys.executable, "run/10_source_cli.py", "show-seeds", "--source", "g2"],
+            [sys.executable, "run/10_source_cli.py", "show-seeds", "--source", "r/excel"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -40,7 +38,7 @@ class SourceCliSmokeTests(unittest.TestCase):
         self.assertEqual(show.returncode, 0, msg=show.stderr)
 
         validate = subprocess.run(
-            [sys.executable, "run/10_source_cli.py", "validate-seeds", "--source-group", "review_sites"],
+            [sys.executable, "run/10_source_cli.py", "validate-seeds", "--source-group", "reddit"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -48,21 +46,6 @@ class SourceCliSmokeTests(unittest.TestCase):
         )
         self.assertEqual(validate.returncode, 0, msg=validate.stderr)
         self.assertTrue((ROOT / "data" / "analysis" / "source_seed_bank_summary.csv").exists())
-
-    def test_ingest_manual_cli_completes_for_g2(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
-            shutil.copy(FIXTURES / "review_page.html", temp_path / "review_page.html")
-            result = subprocess.run(
-                [sys.executable, "run/10_source_cli.py", "ingest-manual", "--source", "g2", "--input-dir", str(temp_path)],
-                cwd=ROOT,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            self.assertEqual(result.returncode, 0, msg=result.stderr)
-            self.assertTrue((ROOT / "data" / "raw" / "g2" / "raw.jsonl").exists())
-            self.assertTrue((ROOT / "data" / "normalized" / "g2.parquet").exists())
 
     def test_prefilter_and_qa_relevance_cli_for_existing_forums(self) -> None:
         normalized_path = ROOT / "data" / "normalized" / "normalized_posts.parquet"

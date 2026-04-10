@@ -141,6 +141,15 @@ class RelevancePrefilterTests(unittest.TestCase):
         scored = keep_df if not keep_df.empty else borderline_df
         self.assertIn("github_discussions_workflow_context", scored.iloc[0]["source_specific_reason"])
 
+    def test_prefilter_is_idempotent_for_scored_rows(self) -> None:
+        frame = pd.DataFrame([_load_fixture("stackoverflow_relevant_reporting_mismatch.json")])
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        scored_df = pd.concat([keep_df, borderline_df, drop_df], ignore_index=True)
+        keep_again, borderline_again, drop_again = apply_relevance_prefilter(scored_df, self.rules)
+        rescored_df = pd.concat([keep_again, borderline_again, drop_again], ignore_index=True)
+        self.assertEqual(len(rescored_df), len(scored_df))
+        self.assertFalse(rescored_df.columns.duplicated().any())
+
 
 if __name__ == "__main__":
     unittest.main()

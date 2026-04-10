@@ -1,31 +1,31 @@
 source_id: reddit_analytics
 source_group: reddit
 max_query_count: 8
-source_notes: "r/analytics seeds emphasize KPI interpretation, follow-up questions, and dashboard trust rather than tooling talk."
+source_notes: "r/analytics seeds emphasize ad hoc analysis, KPI interpretation, follow-up questions, and trust friction."
 core_seeds:
-  - seed: dashboard numbers don't match
-    reason: Targets trust and mismatch pain in analyst discussions.
   - seed: why did conversion drop
-    reason: Pulls direct root-cause investigation questions.
-  - seed: can't explain KPI change
-    reason: Captures interpretation difficulty rather than access problems.
-  - seed: stakeholders keep asking follow-ups
-    reason: Targets repeated ad hoc analysis after initial reporting.
-  - seed: leadership wants a breakdown
-    reason: Pulls stakeholder-driven segmentation requests.
-  - seed: ad hoc analysis requests keep piling up
-    reason: Captures repeated inbound question burden.
-  - seed: numbers don't match source of truth
-    reason: Targets reconciliation and source-of-truth issues.
-  - seed: still exporting to spreadsheets after dashboard
-    reason: Finds dashboard insufficiency followed by manual rework.
+    reason: Targets root-cause analysis questions.
+  - seed: follow up breakdown
+    reason: Finds repeated decomposition requests.
+  - seed: ad hoc requests
+    reason: Captures inbound analysis burden.
+  - seed: dashboard numbers don't match
+    reason: Pulls trust and discrepancy complaints.
+  - seed: can't explain KPI
+    reason: Captures interpretation bottlenecks.
+  - seed: stakeholders keep asking
+    reason: Finds repeated follow-up pressure.
+  - seed: still exporting spreadsheets
+    reason: Captures fallback after dashboard use.
+  - seed: takes too long
+    reason: Pulls direct workflow-friction language.
 optional_templates:
   - template: segment breakdown request
-    reason: Extra phrase for decomposition and drill-down pain.
+    reason: Extra decomposition phrasing.
   - template: manual KPI reconciliation
-    reason: Extra phrase for repeated number checking.
+    reason: Extra number-checking phrasing.
   - template: dashboard trust issue
-    reason: Extra phrase for trust-focused complaint titles.
-  - template: presentation-ready output
-    reason: Extra phrase for delivery-ready reporting needs.
+    reason: Extra trust-focused complaint title.
+  - template: recurring analysis requests
+    reason: Extra ad hoc workload phrasing.
 negative_terms: []

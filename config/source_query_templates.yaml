@@ -51,21 +51,9 @@ query_banks:
     - segmentation breakdown confusion
     - compare by segment
 source_templates:
-  review_sites:
-    preferred_banks:
-      - reporting_pain
-      - dashboard_trust
-      - manual_excel_work
-      - metric_inconsistency
   reddit:
     preferred_banks:
       - reporting_pain
       - ad_hoc_analysis
       - dashboard_trust
       - segmentation_confusion
-  official_communities:
-    preferred_banks:
-      - dashboard_trust
-      - manual_excel_work
-      - ad_hoc_analysis
-      - root_cause

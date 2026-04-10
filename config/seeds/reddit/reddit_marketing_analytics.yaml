@@ -1,31 +1,31 @@
 source_id: reddit_marketing_analytics
 source_group: reddit
 max_query_count: 8
-source_notes: "r/MarketingAnalytics seeds center on campaign reporting, attribution confusion, and stakeholder update pressure."
+source_notes: "r/MarketingAnalytics seeds center campaign reporting, conversion-drop follow-ups, and channel/device breakdowns."
 core_seeds:
-  - seed: why did conversion drop by channel
-    reason: Targets root-cause analysis framed in channel terms.
-  - seed: campaign reporting still manual
-    reason: Pulls repeated reporting burden in marketing workflows.
-  - seed: stakeholders want channel and device breakdown
-    reason: Captures stakeholder-driven segmentation requests.
-  - seed: attribution numbers don't match dashboard
-    reason: Targets trust issues around marketing metrics.
-  - seed: can't explain KPI change after campaign launch
-    reason: Pulls interpretation difficulty in a marketing setting.
-  - seed: export to excel for weekly marketing report
-    reason: Captures spreadsheet fallback for recurring updates.
-  - seed: dashboard is not enough for stakeholder updates
-    reason: Finds monitoring-vs-reporting insufficiency language.
-  - seed: reconciling campaign numbers before review
-    reason: Targets repeated validation before reporting out.
+  - seed: why did conversion drop
+    reason: Targets campaign root-cause questions.
+  - seed: channel breakdown
+    reason: Finds stakeholder segmentation asks.
+  - seed: device breakdown
+    reason: Captures common marketing follow-up cuts.
+  - seed: campaign report manual
+    reason: Pulls recurring campaign reporting burden.
+  - seed: attribution numbers don't match
+    reason: Targets metric trust issues.
+  - seed: still exporting excel
+    reason: Captures spreadsheet fallback for campaign reports.
+  - seed: follow up analysis
+    reason: Finds repeated post-report investigation.
+  - seed: dashboard not enough
+    reason: Pulls monitoring-vs-reporting frustration.
 optional_templates:
-  - template: channel breakdown request
-    reason: Extra phrase for segmentation pressure.
-  - template: campaign reporting spreadsheet
-    reason: Extra phrase for manual marketing reporting work.
-  - template: dashboard numbers don't match
-    reason: Extra phrase for trust complaints in marketing threads.
-  - template: presentation-ready marketing report
-    reason: Extra phrase for delivery-ready reporting needs.
+  - template: weekly campaign report
+    reason: Extra recurring campaign reporting phrase.
+  - template: conversion drop breakdown
+    reason: Extra root-cause phrasing.
+  - template: campaign numbers mismatch
+    reason: Extra trust and attribution phrase.
+  - template: stakeholder marketing report
+    reason: Extra delivery-pressure phrase.
 negative_terms: []

@@ -24,12 +24,10 @@ from src.analysis.raw_audit import (
     build_summary_df,
 )
 from src.collectors.discourse_collector import DiscourseCollector
-from src.collectors.official_community_collector import OfficialCommunityCollector
 from src.collectors.github_discussions_collector import GitHubDiscussionsCollector
 from src.collectors.hackernews_collector import HackerNewsCollector
 from src.collectors.reddit_collector import RedditCollector
 from src.collectors.reddit_public_collector import RedditPublicCollector
-from src.collectors.review_site_collector import ReviewSiteCollector
 from src.collectors.stackoverflow_collector import StackOverflowCollector
 from src.collectors.youtube_collector import YouTubeCollector
 from src.utils.io import load_yaml, write_parquet
@@ -53,9 +51,7 @@ def _extend_registry_with_source_groups() -> dict[str, tuple[Path, object]]:
     """Add config-driven source-group collectors to the legacy registry."""
     registry = dict(COLLECTOR_REGISTRY)
     collector_map = {
-        "review_sites": ReviewSiteCollector,
         "reddit": RedditPublicCollector,
-        "official_communities": OfficialCommunityCollector,
     }
     for definition in load_source_definitions(ROOT, include_disabled=True):
         collector_cls = collector_map.get(definition.collector_kind)
@@ -93,7 +89,7 @@ def main() -> None:
                     "source": source_name,
                     "raw_record_count": len(records),
                     "raw_path": str(output_path),
-                    "collector_mode": "stub" if config.get("use_stub", True) else "custom",
+                    "collector_mode": "stub" if config.get("use_stub", False) else "custom",
                     "status": "ok",
                     "error_message": "",
                     "page_error_count": len(collector.error_stats),
@@ -108,7 +104,7 @@ def main() -> None:
                     "source": source_name,
                     "raw_record_count": 0,
                     "raw_path": "",
-                    "collector_mode": "stub" if config.get("use_stub", True) else "custom",
+                    "collector_mode": "stub" if config.get("use_stub", False) else "custom",
                     "status": "error",
                     "error_message": str(exc),
                     "page_error_count": len(collector.error_stats),

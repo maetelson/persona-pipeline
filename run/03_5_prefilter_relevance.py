@@ -126,3 +126,7 @@ def _write_before_after_reports(
         for label, frame in report_map.items():
             write_parquet(frame, ROOT / "data" / "analysis" / f"{source}_{label}.parquet")
             frame.to_csv(ROOT / "data" / "analysis" / f"{source}_{label}.csv", index=False)
+
+
+if __name__ == "__main__":
+    main()

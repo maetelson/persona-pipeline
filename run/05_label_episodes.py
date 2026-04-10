@@ -38,6 +38,10 @@ def main() -> None:
     load_dotenv(ROOT / ".env")
 
     episodes_df = read_parquet(ROOT / "data" / "episodes" / "episode_table.parquet")
+    if episodes_df.empty:
+        _write_empty_label_outputs(ROOT)
+        LOGGER.info("No episodes to label; wrote empty labeled artifacts.")
+        return
     if not episodes_df.empty and "episode_id" in episodes_df.columns:
         duplicate_count = int(episodes_df["episode_id"].astype(str).duplicated().sum())
         if duplicate_count:
@@ -156,6 +160,32 @@ def _apply_low_signal_gate(labeled_df):
     ).str.strip(" |")
     result.loc[low_signal_mask, "persona_core_eligible"] = False
     return result
+
+
+def _write_empty_label_outputs(root_dir: Path) -> None:
+    """Write empty label artifacts with stable schemas when no episodes exist."""
+    columns = [
+        "episode_id",
+        *LABEL_CODE_COLUMNS,
+        "label_confidence",
+        "label_reason",
+        "rule_hit_count",
+        "rule_core_known_count",
+        "rule_unknown_family_count",
+        "rule_coarse_match",
+        "labelability_status",
+        "labelability_score",
+        "labelability_reason",
+        "persona_core_eligible",
+    ]
+    labeled_df = pd.DataFrame(columns=columns)
+    empty_audit_df = pd.DataFrame()
+    write_parquet(labeled_df, root_dir / "data" / "labeled" / "labeled_episodes.parquet")
+    write_parquet(labeled_df, root_dir / "data" / "labeled" / "labeled_episodes_rule_only.parquet")
+    write_parquet(empty_audit_df, root_dir / "data" / "labeled" / "label_audit.parquet")
+    write_parquet(empty_audit_df, root_dir / "data" / "labeled" / "labeling_audit.parquet")
+    write_parquet(empty_audit_df, root_dir / "data" / "labeled" / "llm_label_audit.parquet")
+    write_parquet(empty_audit_df, root_dir / "data" / "labeled" / "labelability_audit.parquet")
 
 
 def _write_before_after_quality_report(root_dir, before_df, after_df, labelability_df, audit_config) -> None:

@@ -12,7 +12,7 @@ if str(ROOT) not in sys.path:
 
 import pandas as pd
 
-from src.analysis.raw_audit import build_downstream_loss_audit
+from src.analysis.raw_audit import build_downstream_loss_audit, build_source_health_df
 from src.filters.dedupe import split_duplicate_posts
 from src.filters.invalid_filter import activate_rule_mode, apply_invalid_filter
 from src.utils.io import load_yaml, read_parquet, write_parquet
@@ -31,10 +31,10 @@ def main() -> None:
     rules = activate_rule_mode(rules, mode=filter_mode)
 
     candidate_df = time_filtered_df if not time_filtered_df.empty else normalized_df
-    valid_df, invalid_df = apply_invalid_filter(candidate_df, rules)
+    valid_df, invalid_rule_df = apply_invalid_filter(candidate_df, rules)
     valid_df, duplicate_invalid_df = split_duplicate_posts(valid_df)
 
-    invalid_frames = [frame for frame in [time_invalid_df, invalid_df, duplicate_invalid_df] if not frame.empty]
+    invalid_frames = [frame for frame in [time_invalid_df, invalid_rule_df, duplicate_invalid_df] if not frame.empty]
     if invalid_frames:
         invalid_df = pd.concat(invalid_frames, ignore_index=True)
     else:
@@ -45,6 +45,21 @@ def main() -> None:
     write_parquet(invalid_df, ROOT / "data" / "valid" / "invalid_log.parquet")
     loss_audit_df = build_downstream_loss_audit(candidate_df, valid_df, invalid_df)
     write_parquet(loss_audit_df, ROOT / "data" / "valid" / "downstream_loss_audit.parquet")
+    validation_dropped_df = (
+        pd.concat([frame for frame in [time_invalid_df, invalid_rule_df] if not frame.empty], ignore_index=True)
+        if not time_invalid_df.empty or not invalid_rule_df.empty
+        else pd.DataFrame(columns=list(candidate_df.columns) + ["invalid_reason"])
+    )
+    source_health_df = build_source_health_df(
+        raw_audit_df=read_parquet(ROOT / "data" / "analysis" / "raw_audit.parquet"),
+        page_audit_df=read_parquet(ROOT / "data" / "analysis" / "raw_page_audit.parquet"),
+        error_audit_df=read_parquet(ROOT / "data" / "analysis" / "raw_error_audit.parquet"),
+        normalized_df=normalized_df,
+        validation_dropped_df=validation_dropped_df,
+        duplicate_invalid_df=duplicate_invalid_df,
+    )
+    write_parquet(source_health_df, ROOT / "data" / "analysis" / "source_health_after_fix.parquet")
+    source_health_df.to_csv(ROOT / "data" / "analysis" / "source_health_after_fix.csv", index=False)
 
     if invalid_df.empty:
         invalid_reason_audit_df = pd.DataFrame(columns=["source", "invalid_reason", "count"])

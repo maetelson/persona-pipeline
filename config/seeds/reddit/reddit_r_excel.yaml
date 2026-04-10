@@ -1,31 +1,31 @@
 source_id: reddit_r_excel
 source_group: reddit
 max_query_count: 8
-source_notes: "r/excel seeds use spreadsheet-heavy complaint phrasing that sounds like real post titles."
+source_notes: "r/excel seeds use spreadsheet-heavy complaint phrasing around cleanup, copy-paste, and report fallback."
 core_seeds:
-  - seed: export to excel every week
-    reason: Targets repeated spreadsheet export work as a visible reporting burden.
-  - seed: manual reporting takes too long
-    reason: Pulls direct complaints about repeated reporting effort.
-  - seed: still using spreadsheets after dashboard
-    reason: Captures fallback behavior when dashboards are not enough.
-  - seed: monthly reporting workbook is manual
-    reason: Focuses on recurring workbook maintenance and update pain.
-  - seed: dashboard numbers don't match excel
-    reason: Targets trust and reconciliation problems framed in spreadsheet language.
-  - seed: leadership wants a breakdown by segment
-    reason: Captures stakeholder-driven breakdown requests.
-  - seed: reconciling report numbers before sending
-    reason: Targets repeated validation before sharing reports.
-  - seed: can't explain KPI change in spreadsheet report
-    reason: Pulls root-cause explanation pain within spreadsheet workflows.
+  - seed: every week cleanup
+    reason: Targets repeated spreadsheet cleanup complaints.
+  - seed: copy paste reporting
+    reason: Finds manual report assembly pain.
+  - seed: exported report cleanup
+    reason: Pulls Excel cleanup after BI exports.
+  - seed: still using excel
+    reason: Captures spreadsheet fallback behavior.
+  - seed: numbers don't match
+    reason: Targets reconciliation and trust issues.
+  - seed: reconcile with excel
+    reason: Finds validation against spreadsheet workbooks.
+  - seed: report takes too long
+    reason: Pulls direct reporting-effort complaints.
+  - seed: follow up breakdown
+    reason: Captures stakeholder breakdown requests.
 optional_templates:
-  - template: weekly reporting workbook
-    reason: Extra spreadsheet-heavy phrasing for recurring reporting.
   - template: manual spreadsheet reporting
     reason: Extra phrase for spreadsheet-centered reporting pain.
-  - template: excel report numbers don't match
+  - template: excel report cleanup
+    reason: Extra cleanup phrasing for exported reports.
+  - template: workbook numbers mismatch
     reason: Extra trust and reconciliation phrasing.
-  - template: presentation-ready excel report
-    reason: Extra phrase for business-ready spreadsheet output need.
+  - template: weekly report workbook
+    reason: Extra recurring workbook phrasing.
 negative_terms: []

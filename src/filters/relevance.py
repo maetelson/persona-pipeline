@@ -62,10 +62,10 @@ def apply_relevance_prefilter(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Split rows into keep, borderline, and drop with transparent scores."""
     if df.empty:
-        empty = pd.DataFrame(columns=list(df.columns) + _output_columns())
+        empty = pd.DataFrame(columns=_dedupe_column_names([*df.columns, *_output_columns()]))
         return empty.copy(), empty.copy(), empty.copy()
 
-    result = _ensure_required_columns(df.copy())
+    result = _ensure_required_columns(df.loc[:, ~df.columns.duplicated()].copy())
     normalized_contexts = [_normalize_row_context(row, rules) for _, row in result.iterrows()]
     evaluations = [_evaluate_row_from_context(row, rules, normalized) for (_, row), normalized in zip(result.iterrows(), normalized_contexts, strict=False)]
     result["subreddit_or_forum"] = [
@@ -523,6 +523,18 @@ def _output_columns() -> list[str]:
         "source_specific_reason",
         "prefilter_reason",
     ]
+
+
+def _dedupe_column_names(columns: list[str]) -> list[str]:
+    """Return column names without duplicates while preserving order."""
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for column in columns:
+        if column in seen:
+            continue
+        seen.add(column)
+        deduped.append(column)
+    return deduped
 
 
 def _apply_optional_llm_hook(df: pd.DataFrame, rules: dict[str, Any], llm_hook: LlmHook | None):

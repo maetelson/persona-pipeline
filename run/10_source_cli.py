@@ -12,9 +12,7 @@ if str(ROOT) not in sys.path:
 
 import pandas as pd
 
-from src.collectors.official_community_collector import OfficialCommunityCollector
 from src.collectors.reddit_public_collector import RedditPublicCollector
-from src.collectors.review_site_collector import ReviewSiteCollector
 from src.filters.relevance import (
     apply_relevance_prefilter,
     build_before_after_comparison,
@@ -25,9 +23,7 @@ from src.filters.relevance import (
     build_top_negative_signal_report,
 )
 from src.normalizers.base import NORMALIZED_POST_COLUMNS
-from src.normalizers.official_community_normalizer import OfficialCommunityNormalizer
 from src.normalizers.reddit_public_normalizer import RedditPublicNormalizer
-from src.normalizers.review_site_normalizer import ReviewSiteNormalizer
 from src.utils.io import ensure_dir, list_jsonl_files, load_yaml, read_jsonl, read_parquet, write_parquet
 from src.utils.logging import get_logger
 from src.utils.seed_bank import export_seed_artifacts, load_seed_bank, render_optional_queries, validate_seed_bank
@@ -48,15 +44,12 @@ def build_parser() -> argparse.ArgumentParser:
             command.add_argument("--export-borderline", action="store_true", help="Write borderline rows for manual review.")
             command.add_argument("--limit", type=int, default=200, help="Limit rows for QA export.")
 
-    ingest_manual = subparsers.add_parser("ingest-manual")
-    _add_target_args(ingest_manual)
-    ingest_manual.add_argument("--input-dir", required=True, help="Manual snapshot directory to ingest.")
     return parser
 
 
 def _add_target_args(parser: argparse.ArgumentParser) -> None:
     """Add common target args to a parser."""
-    parser.add_argument("--source-group", choices=["review_sites", "reddit", "official_communities", "existing_forums"], default=None)
+    parser.add_argument("--source-group", choices=["reddit", "existing_forums"], default=None)
     parser.add_argument("--source", default=None)
     parser.add_argument("--include-disabled", action="store_true")
 
@@ -80,12 +73,6 @@ def main() -> None:
         normalize_sources(selected)
     elif args.command == "prefilter":
         prefilter_sources(selected, export_borderline=bool(args.export_borderline), limit=int(args.limit))
-    elif args.command == "ingest-manual":
-        if len(selected) != 1:
-            raise SystemExit("ingest-manual requires exactly one --source target.")
-        collect_sources(selected, manual_input_dir=args.input_dir)
-        normalize_sources(selected)
-        prefilter_sources(selected, export_borderline=True, limit=200)
     elif args.command == "dry-run":
         dry_run(selected)
     elif args.command == "qa-relevance":
@@ -292,7 +279,7 @@ def validate_seeds(selected: list[SourceDefinition]) -> None:
     """Validate compact seed banks and write audit artifacts."""
     artifacts = export_seed_artifacts(ROOT, selected)
     error_count = 0
-    seed_bank_groups = {"review_sites", "reddit", "official_communities"}
+    seed_bank_groups = {"reddit"}
     for definition in selected:
         seed_bank = load_seed_bank(ROOT, definition.source_group, definition.source_id)
         if seed_bank is None:
@@ -325,23 +312,15 @@ def export_seed_summary(selected: list[SourceDefinition]) -> None:
 def _build_collector(definition: SourceDefinition, config: dict[str, object]):
     """Return the collector instance for one source definition."""
     data_dir = ROOT / "data"
-    if definition.collector_kind == "review_sites":
-        return ReviewSiteCollector(definition.source_id, config=config, data_dir=data_dir)
     if definition.collector_kind == "reddit":
         return RedditPublicCollector(definition.source_id, config=config, data_dir=data_dir)
-    if definition.collector_kind == "official_communities":
-        return OfficialCommunityCollector(definition.source_id, config=config, data_dir=data_dir)
     raise ValueError(f"Unsupported collector kind: {definition.collector_kind}")
 
 
 def _build_normalizer(definition: SourceDefinition):
     """Return the normalizer instance for one source definition."""
-    if definition.normalizer_kind == "review_sites":
-        return ReviewSiteNormalizer()
     if definition.normalizer_kind == "reddit":
         return RedditPublicNormalizer()
-    if definition.normalizer_kind == "official_communities":
-        return OfficialCommunityNormalizer()
     if definition.normalizer_kind == "existing_forums":
         raise ValueError("Use the legacy run scripts for existing forum normalization.")
     raise ValueError(f"Unsupported normalizer kind: {definition.normalizer_kind}")

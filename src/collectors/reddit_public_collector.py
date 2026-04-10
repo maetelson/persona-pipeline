@@ -39,10 +39,19 @@ class RedditPublicCollector(BaseCollector):
         listing_url = f"https://www.reddit.com/r/{quote(subreddit)}/new.json?limit={int(self.config.get('max_posts_per_run', 10))}&raw_json=1"
         allowed, reason = check_robots_allowed(listing_url, user_agent=user_agent)
         if not allowed:
-            return [self._blocked_record(reason)]
+            self._record_fetch_error(listing_url, "robots", "", reason)
+            self._record_page_result(listing_url, 0, "robots_disallow")
+            return []
         listing_response = fetch_text(listing_url, user_agent=user_agent)
         if not listing_response.ok:
-            return [self._blocked_record(listing_response.error_message or listing_response.crawl_status)]
+            self._record_fetch_error(
+                listing_url,
+                "fetch",
+                str(listing_response.status_code),
+                listing_response.error_message or listing_response.crawl_status,
+            )
+            self._record_page_result(listing_url, 0, listing_response.crawl_status)
+            return []
         payload = json.loads(listing_response.body_text)
         posts = parse_reddit_listing_payload(payload)
         records: list[RawRecord] = []
@@ -59,6 +68,7 @@ class RedditPublicCollector(BaseCollector):
             comments = parse_reddit_comment_payload(comments_payload)
             records.extend(self._build_comment_records(post, comments))
         LOGGER.info("Collected %s Reddit rows for %s", len(records), self.source_name)
+        self._record_page_result(listing_url, len(records), "" if records else "empty_listing")
         return records
 
     def _build_thread_record(self, post: dict[str, Any]) -> RawRecord:
@@ -168,30 +178,40 @@ class RedditPublicCollector(BaseCollector):
                 return tool
         return ""
 
-    def _blocked_record(self, reason: str) -> RawRecord:
-        """Return a non-fatal blocked row."""
-        return RawRecord(
-            source=self.source_name,
-            source_group=str(self.config.get("source_group", "reddit")),
-            source_name=str(self.config.get("source_name", self.source_name)),
-            source_type="status",
-            raw_id=f"{self.source_name}-blocked",
-            raw_source_id=f"{self.source_name}-blocked",
-            url="",
-            canonical_url="",
-            title=f"{self.source_name} collection blocked",
-            body=str(reason or "public collection unavailable"),
-            body_text=str(reason or "public collection unavailable"),
-            comments_text="",
-            created_at="",
-            fetched_at="",
-            retrieved_at="",
-            query_seed=str(self.config.get("subreddit", "")),
-            crawl_method="reddit_public_json",
-            crawl_status="blocked_or_manual_required",
-            manual_import_flag=False,
-            raw_file_path="",
-            parse_version="reddit_public_v1",
-            hash_id=make_hash_id(self.source_name, "blocked"),
-            source_meta={"blocked_reason": reason},
+    def _record_fetch_error(self, query_text: str, error_stage: str, error_code: str, message: str) -> None:
+        """Track blocked/fetch failures without creating fake raw documents."""
+        self.error_stats.append(
+            {
+                "source": self.source_name,
+                "query_id": "subreddit_listing",
+                "query_text": query_text,
+                "window_id": "",
+                "window_start": "",
+                "window_end": "",
+                "page_no": 1,
+                "error_stage": error_stage,
+                "error_type": error_stage,
+                "error_code": error_code,
+                "error_message": message,
+                "is_retryable": False,
+            }
+        )
+
+    def _record_page_result(self, query_text: str, count: int, stop_reason: str) -> None:
+        """Record subreddit listing collection for source health diagnostics."""
+        self.collection_stats.append(
+            {
+                "source": self.source_name,
+                "query_id": "subreddit_listing",
+                "query_text": query_text,
+                "window_id": "",
+                "window_start": "",
+                "window_end": "",
+                "page_no": 1,
+                "page_raw_count": count,
+                "page_raw_count_before_dedupe": count,
+                "duplicate_count": 0,
+                "duplicate_ratio": 0.0,
+                "stop_reason": stop_reason,
+            }
         )

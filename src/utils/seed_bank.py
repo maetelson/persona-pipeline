@@ -11,15 +11,11 @@ import pandas as pd
 from src.utils.io import ensure_dir, load_yaml
 
 CORE_SEED_COUNTS: dict[str, int] = {
-    "review_sites": 10,
     "reddit": 8,
-    "official_communities": 10,
 }
 
 OPTIONAL_TEMPLATE_CAPS: dict[str, int] = {
-    "review_sites": 6,
     "reddit": 4,
-    "official_communities": 5,
 }
 
 DISALLOWED_GENERIC_SEEDS = {
@@ -47,19 +43,6 @@ DEV_HEAVY_TERMS = {
 }
 
 SEED_STYLE_TERMS: dict[str, tuple[str, ...]] = {
-    "review_sites": (
-        "report",
-        "dashboard",
-        "excel",
-        "spreadsheet",
-        "metric",
-        "numbers",
-        "kpi",
-        "stakeholder",
-        "manual",
-        "presentation",
-        "source of truth",
-    ),
     "reddit": (
         "every week",
         "takes too long",
@@ -71,18 +54,6 @@ SEED_STYLE_TERMS: dict[str, tuple[str, ...]] = {
         "follow-up",
         "follow up",
         "breakdown",
-    ),
-    "official_communities": (
-        "export",
-        "report",
-        "numbers",
-        "metric",
-        "filter",
-        "segment",
-        "scheduled",
-        "reconcile",
-        "dashboard",
-        "presentation",
     ),
 }
 
@@ -286,16 +257,6 @@ def validate_seed_bank(seed_bank: SeedBank) -> list[dict[str, str]]:
             }
         )
 
-    if seed_bank.source_group == "official_communities":
-        long_issue_titles = [item.seed for item in seed_bank.core_seeds if len(item.seed.split()) > 5]
-        if long_issue_titles:
-            findings.append(
-                {
-                    "level": "warning",
-                    "code": "issue_title_length",
-                    "message": f"issue-title seeds are verbose: {', '.join(long_issue_titles[:3])}",
-                }
-            )
     return findings
 
 

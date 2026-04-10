@@ -55,9 +55,14 @@ def build_final_source_distribution(
 ) -> pd.DataFrame:
     """Build final source distribution with labeled-share percentages."""
     source_df = build_source_summary(normalized_df, valid_df, episodes_df)
+    episode_source_df = (
+        episodes_df[["episode_id", "source"]].drop_duplicates(subset=["episode_id"], keep="first")
+        if not episodes_df.empty and "episode_id" in episodes_df.columns and "source" in episodes_df.columns
+        else pd.DataFrame(columns=["episode_id", "source"])
+    )
     labeled_with_source = (
-        labeled_df[["episode_id"]].merge(episodes_df[["episode_id", "source"]], on="episode_id", how="left")
-        if not labeled_df.empty and "episode_id" in labeled_df.columns and "episode_id" in episodes_df.columns
+        labeled_df[["episode_id"]].merge(episode_source_df, on="episode_id", how="left")
+        if not labeled_df.empty and "episode_id" in labeled_df.columns
         else pd.DataFrame(columns=["source"])
     )
     sources = sorted(set(source_df.get("source", pd.Series(dtype=str)).tolist()) | set(labeled_with_source.get("source", pd.Series(dtype=str)).dropna().tolist()))
