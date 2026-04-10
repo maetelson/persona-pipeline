@@ -57,13 +57,14 @@ COLLECTOR_REGISTRY: dict[str, tuple[Path, object]] = {
 def _extend_registry_with_source_groups() -> dict[str, tuple[Path, object]]:
     """Add config-driven source-group collectors to the legacy registry."""
     registry = dict(COLLECTOR_REGISTRY)
+    definitions = load_source_definitions(ROOT, include_disabled=True)
     collector_map = {
         "business_communities": BusinessCommunityCollector,
         "discourse": DiscourseCollector,
         "google_ads_help_community": GoogleAdsHelpCommunityCollector,
         "reddit": RedditPublicCollector,
     }
-    for definition in load_source_definitions(ROOT, include_disabled=True):
+    for definition in definitions:
         collector_cls = collector_map.get(definition.collector_kind)
         if collector_cls is None:
             continue
@@ -83,6 +84,8 @@ def _extend_registry_with_source_groups() -> dict[str, tuple[Path, object]]:
             definition.config_path,
             lambda config, source_id=definition.source_id, cls=collector_cls: cls(source_id, config=config, data_dir=ROOT / "data"),
         )
+    if any(definition.collector_kind == "discourse" and definition.source_id != "discourse" for definition in definitions):
+        registry.pop("discourse", None)
     return registry
 
 def main() -> None:

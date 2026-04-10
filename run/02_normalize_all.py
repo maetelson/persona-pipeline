@@ -39,16 +39,19 @@ NORMALIZER_REGISTRY = {
 def _extend_registry_with_source_groups():
     """Attach config-driven source-group normalizers to the registry."""
     registry = dict(NORMALIZER_REGISTRY)
+    definitions = load_source_definitions(ROOT, include_disabled=True)
     normalizer_map = {
         "business_communities": BusinessCommunityNormalizer,
         "discourse": DiscourseNormalizer,
         "reddit": RedditPublicNormalizer,
     }
-    for definition in load_source_definitions(ROOT, include_disabled=True):
+    for definition in definitions:
         normalizer_cls = normalizer_map.get(definition.normalizer_kind)
         if normalizer_cls is None:
             continue
         registry[definition.source_id] = normalizer_cls()
+    if any(definition.normalizer_kind == "discourse" and definition.source_id != "discourse" for definition in definitions):
+        registry.pop("discourse", None)
     return registry
 
 
