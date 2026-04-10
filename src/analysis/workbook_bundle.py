@@ -23,24 +23,30 @@ def assemble_workbook_frames(
     persona_cooccurrence_df: pd.DataFrame,
     persona_examples_df: pd.DataFrame,
     quality_checks_df: pd.DataFrame,
+    source_diagnostics_df: pd.DataFrame | None = None,
+    quality_failures_df: pd.DataFrame | None = None,
+    metric_glossary_df: pd.DataFrame | None = None,
 ) -> dict[str, pd.DataFrame]:
     """Build the canonical workbook-frame mapping."""
-    frames = [
-        overview_df,
-        counts_df,
-        source_distribution_df,
-        taxonomy_summary_df,
-        cluster_stats_df,
-        persona_summary_df,
-        persona_axes_df,
-        persona_needs_df,
-        persona_cooccurrence_df,
-        persona_examples_df,
-        quality_checks_df,
-    ]
+    frame_by_sheet = {
+        "overview": overview_df,
+        "counts": counts_df,
+        "source_distribution": source_distribution_df,
+        "taxonomy_summary": taxonomy_summary_df,
+        "cluster_stats": cluster_stats_df,
+        "persona_summary": persona_summary_df,
+        "persona_axes": persona_axes_df,
+        "persona_needs": persona_needs_df,
+        "persona_cooccurrence": persona_cooccurrence_df,
+        "persona_examples": persona_examples_df,
+        "quality_checks": quality_checks_df,
+        "source_diagnostics": source_diagnostics_df if source_diagnostics_df is not None else pd.DataFrame(),
+        "quality_failures": quality_failures_df if quality_failures_df is not None else pd.DataFrame(),
+        "metric_glossary": metric_glossary_df if metric_glossary_df is not None else pd.DataFrame(),
+    }
     return {
-        sheet_name: round_frame_ratios(sheet_name, reorder_frame_columns(sheet_name, frame))
-        for sheet_name, frame in zip(WORKBOOK_SHEET_NAMES, frames, strict=True)
+        sheet_name: round_frame_ratios(sheet_name, reorder_frame_columns(sheet_name, frame_by_sheet.get(sheet_name, pd.DataFrame())))
+        for sheet_name in WORKBOOK_SHEET_NAMES
     }
 
 

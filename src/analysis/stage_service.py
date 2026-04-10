@@ -22,6 +22,12 @@ from src.analysis.persona_axes import discover_persona_axes, write_persona_axis_
 from src.analysis.persona_gen import generate_personas
 from src.analysis.persona_messaging import build_persona_messaging_outputs, write_persona_messaging_outputs
 from src.analysis.persona_service import build_persona_outputs, write_persona_outputs
+from src.analysis.diagnostics import (
+    build_metric_glossary,
+    build_quality_failures,
+    build_source_diagnostics,
+    finalize_quality_checks,
+)
 from src.analysis.pipeline_thresholds import evaluate_cluster_thresholds, load_threshold_profile, upsert_threshold_audit
 from src.analysis.profiling import build_cluster_profiles
 from src.analysis.report_export import export_persona_reports
@@ -143,6 +149,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         valid_df=valid_df,
         labeled_df=labeled_df,
         cluster_profiles=cluster_profiles,
+        root_dir=root_dir,
     )
     persona_service_outputs = build_persona_outputs(
         episodes_df=clustering_episodes_df,
@@ -156,8 +163,32 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         valid_df=valid_df,
         labeled_df=labeled_df,
         cluster_profiles=bottleneck_cluster_profiles,
+        root_dir=root_dir,
+    )
+    source_diagnostics_df = build_source_diagnostics(
+        root_dir=root_dir,
+        normalized_df=normalized_df,
+        valid_df=valid_df,
+        episodes_df=episodes_df,
+        labeled_df=labeled_df,
+        persona_assignments_df=persona_service_outputs["persona_assignments_df"],
+        cluster_stats_df=persona_service_outputs["cluster_stats_df"],
+    )
+    quality_checks = finalize_quality_checks(
+        quality_checks,
+        source_diagnostics_df=source_diagnostics_df,
+        cluster_stats_df=persona_service_outputs["cluster_stats_df"],
+        persona_examples_df=persona_service_outputs["persona_examples_df"],
     )
     persona_service_outputs["quality_checks_df"] = build_quality_checks_df(quality_checks)
+    quality_failures_df = build_quality_failures(
+        quality_checks=quality_checks,
+        source_diagnostics_df=source_diagnostics_df,
+        cluster_stats_df=persona_service_outputs["cluster_stats_df"],
+        persona_examples_df=persona_service_outputs["persona_examples_df"],
+    )
+    metric_glossary_df = build_metric_glossary()
+    _update_overview_quality(persona_service_outputs["overview_df"], quality_checks)
 
     counts_df = build_counts_table(
         raw_audit_df=raw_audit_df,
@@ -165,12 +196,14 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         valid_df=valid_df,
         episodes_df=episodes_df,
         labeled_df=labeled_df,
+        root_dir=root_dir,
     )
     source_distribution_df = build_final_source_distribution(
         normalized_df=normalized_df,
         valid_df=valid_df,
         episodes_df=episodes_df,
         labeled_df=labeled_df,
+        root_dir=root_dir,
     )
     taxonomy_summary_df = build_taxonomy_summary(reduced_outputs["reduced_axis_schema"])
     workbook_frames = assemble_workbook_frames(
@@ -185,6 +218,9 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         persona_cooccurrence_df=persona_service_outputs["persona_cooccurrence_df"],
         persona_examples_df=persona_service_outputs["persona_examples_df"],
         quality_checks_df=persona_service_outputs["quality_checks_df"],
+        source_diagnostics_df=source_diagnostics_df,
+        quality_failures_df=quality_failures_df,
+        metric_glossary_df=metric_glossary_df,
     )
     return {
         "cluster_meta": cluster_meta,
@@ -207,6 +243,9 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         "counts_df": counts_df,
         "source_distribution_df": source_distribution_df,
         "taxonomy_summary_df": taxonomy_summary_df,
+        "source_diagnostics_df": source_diagnostics_df,
+        "quality_failures_df": quality_failures_df,
+        "metric_glossary_df": metric_glossary_df,
         "workbook_frames": workbook_frames,
         "clustering_labeled_df": clustering_labeled_df,
         "clustering_episodes_df": clustering_episodes_df,
@@ -281,11 +320,17 @@ def persist_analysis_outputs(
         deterministic_outputs["counts_df"].to_csv(analysis_dir / "counts.csv", index=False)
         deterministic_outputs["source_distribution_df"].to_csv(analysis_dir / "source_distribution.csv", index=False)
         deterministic_outputs["taxonomy_summary_df"].to_csv(analysis_dir / "taxonomy_summary.csv", index=False)
+        deterministic_outputs["source_diagnostics_df"].to_csv(analysis_dir / "source_diagnostics.csv", index=False)
+        deterministic_outputs["quality_failures_df"].to_csv(analysis_dir / "quality_failures.csv", index=False)
+        deterministic_outputs["metric_glossary_df"].to_csv(analysis_dir / "metric_glossary.csv", index=False)
         debug_paths.update(
             {
                 "counts_csv": analysis_dir / "counts.csv",
                 "source_distribution_csv": analysis_dir / "source_distribution.csv",
                 "taxonomy_summary_csv": analysis_dir / "taxonomy_summary.csv",
+                "source_diagnostics_csv": analysis_dir / "source_diagnostics.csv",
+                "quality_failures_csv": analysis_dir / "quality_failures.csv",
+                "metric_glossary_csv": analysis_dir / "metric_glossary.csv",
             }
         )
         if optional_outputs:
@@ -364,3 +409,14 @@ def _persona_core_subset(labeled_df: pd.DataFrame) -> pd.DataFrame:
     if labeled_df.empty or "persona_core_eligible" not in labeled_df.columns:
         return labeled_df.copy()
     return labeled_df[labeled_df["persona_core_eligible"].fillna(True)].reset_index(drop=True)
+
+
+def _update_overview_quality(overview_df: pd.DataFrame, quality_checks: dict[str, Any]) -> None:
+    """Patch overview rows after final quality gates are available."""
+    if overview_df.empty or "metric" not in overview_df.columns or "value" not in overview_df.columns:
+        return
+    for metric in ["quality_flag", "unknown_ratio", "single_cluster_dominance", "min_cluster_size"]:
+        if metric not in set(overview_df["metric"].astype(str)):
+            overview_df.loc[len(overview_df)] = {"metric": metric, "value": quality_checks.get(metric, "")}
+            continue
+        overview_df.loc[overview_df["metric"].astype(str).eq(metric), "value"] = quality_checks.get(metric, "")

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
+from src.analysis.diagnostics import count_raw_jsonl_by_source
 from src.utils.pipeline_schema import (
     CORE_LABEL_COLUMNS,
     LABEL_CODE_COLUMNS,
@@ -34,15 +37,27 @@ def build_counts_table(
     valid_df: pd.DataFrame,
     episodes_df: pd.DataFrame,
     labeled_df: pd.DataFrame,
+    root_dir: Path | None = None,
 ) -> pd.DataFrame:
     """Build deterministic top-line pipeline counts for the final report."""
-    total_raw_count = int(raw_audit_df.get("raw_record_count", pd.Series(dtype=int)).fillna(0).sum()) if not raw_audit_df.empty else 0
+    raw_counts_df = count_raw_jsonl_by_source(root_dir) if root_dir is not None else pd.DataFrame()
+    total_raw_count = (
+        int(raw_counts_df.get("raw_count", pd.Series(dtype=int)).fillna(0).sum())
+        if not raw_counts_df.empty
+        else int(raw_audit_df.get("raw_record_count", pd.Series(dtype=int)).fillna(0).sum()) if not raw_audit_df.empty else 0
+    )
+    prefiltered_df = pd.DataFrame()
+    if root_dir is not None:
+        from src.utils.io import read_parquet
+
+        prefiltered_df = read_parquet(root_dir / "data" / "valid" / "valid_candidates_prefiltered.parquet")
     rows = [
-        {"metric": "raw_records", "count": total_raw_count},
-        {"metric": "normalized_records", "count": int(len(normalized_df))},
-        {"metric": "valid_records", "count": int(len(valid_df))},
-        {"metric": "episodes", "count": int(len(episodes_df))},
-        {"metric": "labeled_records", "count": int(len(labeled_df))},
+        _count_row("raw_records", total_raw_count, "raw_jsonl_rows", total_raw_count, "Non-empty JSONL rows under data/raw/{source}/*.jsonl."),
+        _count_row("normalized_records", int(len(normalized_df)), "normalized_posts_rows", int(len(normalized_df)), "Rows in normalized_posts.parquet."),
+        _count_row("valid_records", int(len(valid_df)), "valid_candidate_rows", int(len(valid_df)), "Rows in valid_candidates.parquet before relevance prefiltering."),
+        _count_row("prefiltered_valid_records", int(len(prefiltered_df)), "prefiltered_valid_rows", int(len(prefiltered_df)), "Rows passed into episode building when the prefilter output exists."),
+        _count_row("episodes", int(len(episodes_df)), "episode_rows", int(len(episodes_df)), "Rows in episode_table.parquet."),
+        _count_row("labeled_records", int(len(labeled_df)), "labeled_episode_rows", int(len(labeled_df)), "Rows in labeled_episodes.parquet."),
     ]
     return pd.DataFrame(rows)
 
@@ -52,9 +67,16 @@ def build_final_source_distribution(
     valid_df: pd.DataFrame,
     episodes_df: pd.DataFrame,
     labeled_df: pd.DataFrame,
+    root_dir: Path | None = None,
 ) -> pd.DataFrame:
     """Build final source distribution with labeled-share percentages."""
     source_df = build_source_summary(normalized_df, valid_df, episodes_df)
+    raw_counts_df = count_raw_jsonl_by_source(root_dir) if root_dir is not None else pd.DataFrame()
+    prefiltered_df = pd.DataFrame()
+    if root_dir is not None:
+        from src.utils.io import read_parquet
+
+        prefiltered_df = read_parquet(root_dir / "data" / "valid" / "valid_candidates_prefiltered.parquet")
     episode_source_df = (
         episodes_df[["episode_id", "source"]].drop_duplicates(subset=["episode_id"], keep="first")
         if not episodes_df.empty and "episode_id" in episodes_df.columns and "source" in episodes_df.columns
@@ -65,18 +87,26 @@ def build_final_source_distribution(
         if not labeled_df.empty and "episode_id" in labeled_df.columns
         else pd.DataFrame(columns=["source"])
     )
-    sources = sorted(set(source_df.get("source", pd.Series(dtype=str)).tolist()) | set(labeled_with_source.get("source", pd.Series(dtype=str)).dropna().tolist()))
+    sources = sorted(
+        set(raw_counts_df.get("source", pd.Series(dtype=str)).astype(str).tolist())
+        | set(source_df.get("source", pd.Series(dtype=str)).tolist())
+        | set(labeled_with_source.get("source", pd.Series(dtype=str)).dropna().tolist())
+    )
     total_labeled = int(len(labeled_with_source))
     rows: list[dict[str, object]] = []
     for source in sources:
         rows.append(
             {
                 "source": source,
+                "raw_count": _aggregated_source_count(raw_counts_df, source, "raw_count"),
                 "normalized_count": int((normalized_df["source"] == source).sum()) if not normalized_df.empty else 0,
                 "valid_count": int((valid_df["source"] == source).sum()) if not valid_df.empty else 0,
+                "prefiltered_valid_count": int((prefiltered_df["source"] == source).sum()) if not prefiltered_df.empty and "source" in prefiltered_df.columns else 0,
                 "episode_count": int((episodes_df["source"] == source).sum()) if not episodes_df.empty else 0,
                 "labeled_count": int((labeled_with_source["source"] == source).sum()) if not labeled_with_source.empty else 0,
                 "share_of_labeled": round_pct(int((labeled_with_source["source"] == source).sum()) if not labeled_with_source.empty else 0, total_labeled),
+                "denominator_type": "labeled_episode_rows",
+                "denominator_value": total_labeled,
             }
         )
     return pd.DataFrame(rows)
@@ -95,6 +125,7 @@ def build_taxonomy_summary(final_axis_schema: list[dict[str, object]]) -> pd.Dat
                 "evidence_fields": " | ".join(str(value) for value in list(row.get("evidence_fields_used", []) or row.get("evidence_fields", []) or [])),
                 "axis_role": str(row.get("axis_role", "core")).strip(),
                 "reduction_decision": str(row.get("reduction_decision", "")).strip(),
+                "metric_glossary_note": "See metric_glossary sheet for raw/normalized/valid/episode/labeled/core_labeled definitions.",
             }
         )
     return pd.DataFrame(rows)
@@ -105,6 +136,8 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
     thresholds = {
         "unknown_ratio": 0.30,
         "cluster_count": 2,
+        "labeled_source_count": 3,
+        "largest_cluster_share": 70.0,
     }
     rows: list[dict[str, object]] = []
     for metric, value in quality_checks.items():
@@ -115,28 +148,46 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
                     "value": len(value) if isinstance(value, list) else 0,
                     "threshold": "",
                     "status": "info",
+                    "level": "info",
+                    "denominator_type": "persona_core_labeled_rows",
+                    "denominator_value": quality_checks.get("persona_core_labeled_count", ""),
                     "notes": str(value)[:1000],
                 }
             )
             continue
         threshold = thresholds.get(metric, "")
         status = "pass"
+        level = "pass"
         notes = ""
         if metric == "unknown_ratio" and float(value) > 0.30:
             status = "warn"
+            level = "warning"
             notes = "unknown ratio above recommended threshold"
         elif metric == "cluster_count" and int(value) < 2:
             status = "warn"
+            level = "warning"
             notes = "too few clusters for robust persona comparison"
+        elif metric == "labeled_source_count" and int(value) < 3:
+            status = "fail"
+            level = "hard_fail"
+            notes = "fewer than 3 labeled sources"
+        elif metric == "largest_cluster_share" and float(value) > 70.0:
+            status = "fail"
+            level = "hard_fail"
+            notes = "largest cluster exceeds 70% of denominator"
         elif metric == "quality_flag":
-            status = "pass" if str(value) == "OK" else "warn"
-            notes = "derived from unknown_ratio threshold"
+            status = "pass" if str(value) == "OK" else "fail" if str(value) == "UNSTABLE" else "warn"
+            level = "pass" if str(value) == "OK" else "hard_fail" if str(value) == "UNSTABLE" else "soft_fail"
+            notes = "derived from source diversity, cluster dominance, persona promotion, example grounding, and denominator gates"
         rows.append(
             {
                 "metric": metric,
                 "value": value,
                 "threshold": threshold,
                 "status": status,
+                "level": level,
+                "denominator_type": _quality_denominator_type(metric, quality_checks),
+                "denominator_value": _quality_denominator_value(metric, quality_checks),
                 "notes": notes,
             }
         )
@@ -148,9 +199,15 @@ def build_quality_checks(
     valid_df: pd.DataFrame,
     labeled_df: pd.DataFrame,
     cluster_profiles: list[dict[str, object]],
+    root_dir: Path | None = None,
 ) -> dict[str, object]:
     """Build analysis quality checks for persona-report readiness."""
-    total_raw_count = int(raw_audit_df.get("raw_record_count", pd.Series(dtype=int)).fillna(0).sum()) if not raw_audit_df.empty else 0
+    raw_counts_df = count_raw_jsonl_by_source(root_dir) if root_dir is not None else pd.DataFrame()
+    total_raw_count = (
+        int(raw_counts_df.get("raw_count", pd.Series(dtype=int)).fillna(0).sum())
+        if not raw_counts_df.empty
+        else int(raw_audit_df.get("raw_record_count", pd.Series(dtype=int)).fillna(0).sum()) if not raw_audit_df.empty else 0
+    )
     cleaned_count = int(len(valid_df))
     labeled_count = int(len(labeled_df))
     core_labeled_df = _persona_core_subset(labeled_df)
@@ -161,7 +218,7 @@ def build_quality_checks(
         {
             "cluster_id": str(row.get("cluster_id", "")),
             "size": int(row.get("size", 0)),
-            "share_of_total": float(row.get("share_of_total", 0.0)),
+            "share_of_core_labeled": float(row.get("share_of_total", 0.0)),
         }
         for row in cluster_profiles
     ]
@@ -183,6 +240,8 @@ def _persona_core_subset(labeled_df: pd.DataFrame) -> pd.DataFrame:
     if labeled_df.empty or "persona_core_eligible" not in labeled_df.columns:
         return labeled_df
     return labeled_df[labeled_df["persona_core_eligible"].fillna(True)]
+
+
 def _row_unknown_ratio(labeled_df: pd.DataFrame) -> float:
     """Return ratio of rows that still have any unresolved label family."""
     if labeled_df.empty:
@@ -190,3 +249,52 @@ def _row_unknown_ratio(labeled_df: pd.DataFrame) -> float:
     label_columns = [column for column in CORE_LABEL_COLUMNS if column in labeled_df.columns]
     unknown_mask = labeled_df[label_columns].apply(lambda row: row_has_unknown_labels(row.tolist()), axis=1)
     return float(unknown_mask.mean())
+
+
+def _count_row(metric: str, count: int, denominator_type: str, denominator_value: int, definition: str) -> dict[str, object]:
+    """Build one count row with its denominator definition."""
+    return {
+        "metric": metric,
+        "count": count,
+        "denominator_type": denominator_type,
+        "denominator_value": denominator_value,
+        "definition": definition,
+    }
+
+
+def _aggregated_source_count(df: pd.DataFrame, source: str, column: str) -> int:
+    """Return a source count from an aggregated source table."""
+    if df.empty or "source" not in df.columns or column not in df.columns:
+        return 0
+    match = df[df["source"].astype(str) == source]
+    return int(pd.to_numeric(match[column], errors="coerce").fillna(0).sum()) if not match.empty else 0
+
+
+def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) -> str:
+    """Return denominator type for a quality metric."""
+    if metric in {"unknown_ratio", "cluster_distribution", "cluster_count", "largest_cluster_share"}:
+        return "persona_core_labeled_rows"
+    if metric in {"overall_unknown_ratio", "labeled_count"}:
+        return "labeled_episode_rows"
+    if metric in {"cleaned_count"}:
+        return "valid_candidate_rows"
+    if metric in {"total_raw_count", "raw_source_count"}:
+        return "raw_jsonl_rows"
+    if metric == "labeled_source_count":
+        return "source_count"
+    return str(quality_checks.get("denominator_type", "explicit_metric_value"))
+
+
+def _quality_denominator_value(metric: str, quality_checks: dict[str, object]) -> object:
+    """Return denominator value for a quality metric."""
+    if metric in {"unknown_ratio", "cluster_distribution", "cluster_count", "largest_cluster_share"}:
+        return quality_checks.get("persona_core_labeled_count", "")
+    if metric in {"overall_unknown_ratio", "labeled_count"}:
+        return quality_checks.get("labeled_count", "")
+    if metric == "cleaned_count":
+        return quality_checks.get("cleaned_count", "")
+    if metric in {"total_raw_count", "raw_source_count"}:
+        return quality_checks.get("total_raw_count", "")
+    if metric == "labeled_source_count":
+        return quality_checks.get("raw_source_count", "")
+    return ""

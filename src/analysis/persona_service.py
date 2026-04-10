@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -57,12 +58,14 @@ def build_persona_outputs(
         .drop_duplicates(subset=["episode_id"])
     )
     total_labeled_records = int(quality_checks.get("labeled_count", len(labeled_df)))
+    cluster_policy = _cluster_promotion_policy(persona_source_df, total_labeled_records)
 
-    overview_df = _build_overview_df(persona_source_df, core_axis_names, quality_checks, total_labeled_records)
+    overview_df = _build_overview_df(persona_source_df, core_axis_names, quality_checks, total_labeled_records, cluster_policy)
     persona_summary_df = _build_persona_summary_df(
         persona_source_df,
         core_axis_names,
         total_labeled_records,
+        cluster_policy,
         summary_examples_lookup=_summary_examples_lookup(cluster_outputs["selected_examples_df"]),
         naming_lookup=_naming_lookup(cluster_outputs["cluster_naming_recommendations_df"]),
     )
@@ -70,7 +73,7 @@ def build_persona_outputs(
     persona_pains_df = _build_persona_pains_df(persona_source_df)
     persona_cooccurrence_df = _build_persona_cooccurrence_df(persona_source_df)
     persona_examples_df = _build_persona_examples_df(cluster_outputs["selected_examples_df"])
-    cluster_stats_df = _build_cluster_stats_df(persona_source_df, core_axis_names, total_labeled_records, cluster_outputs["cluster_meaning_audit_df"])
+    cluster_stats_df = _build_cluster_stats_df(persona_source_df, core_axis_names, total_labeled_records, cluster_policy, cluster_outputs["cluster_meaning_audit_df"])
     quality_checks_df = build_quality_checks_df(quality_checks)
 
     outputs = {
@@ -197,11 +200,15 @@ def _build_overview_df(
     axis_names: list[str],
     quality_checks: dict[str, Any],
     total_labeled_records: int,
+    cluster_policy: dict[str, Any],
 ) -> pd.DataFrame:
     """Build workbook overview sheet."""
     overview_rows = [
         {"metric": "total_labeled_records", "value": total_labeled_records},
-        {"metric": "persona_count", "value": int(persona_source_df["persona_id"].nunique())},
+        {"metric": "persona_count", "value": int(cluster_policy["promoted_count"])},
+        {"metric": "exploratory_bucket_count", "value": int(cluster_policy["exploratory_count"])},
+        {"metric": "min_cluster_size", "value": int(cluster_policy["min_cluster_size"])},
+        {"metric": "single_cluster_dominance", "value": bool(cluster_policy["single_cluster_dominance"])},
         {"metric": "selected_axes", "value": " | ".join(axis_names)},
         {"metric": "clustering_mode", "value": "bottleneck_first"},
         {"metric": "quality_flag", "value": quality_checks.get("quality_flag", "unknown")},
@@ -214,6 +221,7 @@ def _build_persona_summary_df(
     persona_source_df: pd.DataFrame,
     axis_names: list[str],
     total_labeled_records: int,
+    cluster_policy: dict[str, Any],
     summary_examples_lookup: dict[str, list[str]],
     naming_lookup: dict[str, str],
 ) -> pd.DataFrame:
@@ -229,13 +237,20 @@ def _build_persona_summary_df(
         tool_mode = _top_value(group, "tool_dependency_mode")
         output_mode = _top_value(group, "output_expectation")
         cluster_name = naming_lookup.get(str(persona_id), str(group.get("cluster_name", pd.Series([persona_id])).iloc[0]))
+        promotion = cluster_policy["status_by_persona"].get(str(persona_id), {})
+        persona_name = _archetype_name(role, workflow, bottleneck, goal, output_mode, promotion.get("status", "exploratory_bucket"))
         rows.append(
             {
                 "persona_id": persona_id,
-                "persona_name": cluster_name,
+                "persona_name": persona_name,
                 "persona_size": persona_size,
                 "share_of_total": round_pct(persona_size, total_labeled_records),
-                "one_line_summary": _one_line_summary(cluster_name, workflow, bottleneck, goal),
+                "denominator_type": "labeled_episode_rows",
+                "denominator_value": total_labeled_records,
+                "min_cluster_size": int(cluster_policy["min_cluster_size"]),
+                "promotion_status": promotion.get("status", "exploratory_bucket"),
+                "promotion_reason": promotion.get("reason", ""),
+                "one_line_summary": _one_line_summary(persona_name, workflow, bottleneck, goal, output_mode, promotion.get("status", "")),
                 "main_workflow_context": workflow,
                 "dominant_bottleneck": bottleneck,
                 "analysis_behavior": goal,
@@ -245,6 +260,7 @@ def _build_persona_summary_df(
                 "top_pain_points": " | ".join(_top_themes(group, ["pain_codes", "question_codes"], limit=4)),
                 "representative_examples": " | ".join(summary_examples_lookup.get(str(persona_id), [])),
                 "why_this_persona_matters": _why_persona_matters(group, bottleneck, goal, output_mode),
+                "legacy_cluster_name": cluster_name,
             }
         )
     return pd.DataFrame(rows).sort_values(["persona_size", "persona_id"], ascending=[False, True]).reset_index(drop=True)
@@ -313,16 +329,22 @@ def _build_persona_cooccurrence_df(persona_source_df: pd.DataFrame) -> pd.DataFr
 def _build_persona_examples_df(selected_examples_df: pd.DataFrame) -> pd.DataFrame:
     """Build grounded representative examples per persona."""
     if selected_examples_df is None or selected_examples_df.empty:
-        return pd.DataFrame(columns=["persona_id", "example_rank", "grounded_text", "reason_selected"])
-    preferred = ["persona_id", "example_rank", "grounded_text", "reason_selected"]
-    remainder = [column for column in selected_examples_df.columns if column not in preferred]
-    return selected_examples_df[preferred + remainder].sort_values(["persona_id", "example_rank"]).reset_index(drop=True)
+        return pd.DataFrame(columns=["persona_id", "example_rank", "grounded_text", "why_selected", "matched_axes", "reason_selected"])
+    frame = selected_examples_df.copy()
+    if "why_selected" not in frame.columns:
+        frame["why_selected"] = frame.get("reason_selected", "")
+    if "matched_axes" not in frame.columns:
+        frame["matched_axes"] = frame.get("cluster_fit_reason", "")
+    preferred = ["persona_id", "example_rank", "grounded_text", "why_selected", "matched_axes", "reason_selected"]
+    remainder = [column for column in frame.columns if column not in preferred]
+    return frame[preferred + remainder].sort_values(["persona_id", "example_rank"]).reset_index(drop=True)
 
 
 def _build_cluster_stats_df(
     persona_source_df: pd.DataFrame,
     axis_names: list[str],
     total_labeled_records: int,
+    cluster_policy: dict[str, Any],
     cluster_audit_df: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """Build stable persona-cluster stats."""
@@ -338,6 +360,11 @@ def _build_cluster_stats_df(
                 "persona_id": persona_id,
                 "persona_size": persona_size,
                 "share_of_total": round_pct(persona_size, total_labeled_records),
+                "denominator_type": "labeled_episode_rows",
+                "denominator_value": total_labeled_records,
+                "min_cluster_size": int(cluster_policy["min_cluster_size"]),
+                "promotion_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("status", "exploratory_bucket"),
+                "promotion_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("reason", ""),
                 "dominant_signature": axis_signature,
                 "dominant_bottleneck": _top_value(group, "bottleneck_type"),
                 "dominant_analysis_goal": _top_value(group, "analysis_goal"),
@@ -452,12 +479,13 @@ def _persona_name(role: str, workflow: str, goal: str) -> str:
     return " ".join(part for part in parts if part and part != "Unassigned").strip() or "Mixed Persona"
 
 
-def _one_line_summary(cluster_name: str, workflow: str, bottleneck: str, goal: str) -> str:
+def _one_line_summary(cluster_name: str, workflow: str, bottleneck: str, goal: str, output_mode: str = "", promotion_status: str = "") -> str:
     """Create a grounded one-line persona summary."""
+    prefix = "Promoted persona" if promotion_status == "promoted_persona" else "Exploratory residual group"
     return (
-        f"{cluster_name} in {_titleize(workflow, 'mixed workflow').lower()} workflows, "
-        f"where users are trying to {_titleize(goal, 'move analysis forward').lower()} "
-        f"but are repeatedly blocked by {_titleize(bottleneck, 'general friction').lower()}."
+        f"{prefix}: {cluster_name} repeatedly works in {_titleize(workflow, 'mixed workflow').lower()} "
+        f"to {_titleize(goal, 'move analysis forward').lower()}, but {_titleize(bottleneck, 'general friction').lower()} "
+        f"keeps blocking {_titleize(output_mode, 'usable output').lower()}."
     )
 
 
@@ -494,3 +522,61 @@ def _titleize(value: str, fallback: str = "unassigned") -> str:
     if not text or is_unknown_like(text):
         text = fallback
     return text.replace("_", " ").title()
+
+
+def _cluster_promotion_policy(persona_source_df: pd.DataFrame, total_labeled_records: int) -> dict[str, Any]:
+    """Classify clusters as promoted personas or exploratory residual buckets."""
+    sizes = persona_source_df.groupby("persona_id")["episode_id"].nunique().sort_values(ascending=False)
+    min_cluster_size = max(5, int(math.ceil(float(total_labeled_records) * 0.05)))
+    largest_share = round_pct(int(sizes.iloc[0]) if not sizes.empty else 0, total_labeled_records)
+    single_cluster_dominance = largest_share > 70.0
+    dominant_persona = str(sizes.index[0]) if not sizes.empty else ""
+    status_by_persona: dict[str, dict[str, str]] = {}
+    for persona_id, size in sizes.items():
+        persona_key = str(persona_id)
+        share = round_pct(int(size), total_labeled_records)
+        if int(size) < min_cluster_size:
+            status = "exploratory_bucket"
+            reason = f"sample size {int(size)} below min_cluster_size {min_cluster_size}"
+        elif single_cluster_dominance and persona_key != dominant_persona:
+            status = "exploratory_bucket"
+            reason = f"residual cluster under single_cluster_dominance; largest cluster share {largest_share}%"
+        else:
+            status = "promoted_persona"
+            reason = f"sample size {int(size)} meets min_cluster_size {min_cluster_size}"
+        status_by_persona[persona_key] = {"status": status, "reason": reason, "share": str(share)}
+    return {
+        "min_cluster_size": min_cluster_size,
+        "largest_share": largest_share,
+        "single_cluster_dominance": single_cluster_dominance,
+        "status_by_persona": status_by_persona,
+        "promoted_count": sum(1 for value in status_by_persona.values() if value["status"] == "promoted_persona"),
+        "exploratory_count": sum(1 for value in status_by_persona.values() if value["status"] != "promoted_persona"),
+    }
+
+
+def _archetype_name(role: str, workflow: str, bottleneck: str, goal: str, output_mode: str, promotion_status: str) -> str:
+    """Name personas as archetype plus recurring job plus blocker."""
+    role_word = {
+        "analyst": "Analyst",
+        "manager": "Operator",
+        "marketer": "Marketing Operator",
+        "business_user": "Business Operator",
+    }.get(str(role).strip().lower(), "Workflow Operator")
+    job_word = {
+        "reporting": "Reporting",
+        "validation": "Metric Validation",
+        "triage": "Dashboard Triage",
+        "automation": "Automation",
+    }.get(str(workflow).strip().lower(), _titleize(goal, "Workflow"))
+    blocker_word = {
+        "manual_reporting": "Blocked by Spreadsheet Rework",
+        "data_quality": "Blocked by Number Reconciliation",
+        "tool_limitation": "Blocked by Tool Limits",
+        "handoff_dependency": "Blocked by Explanation Gaps",
+        "general_friction": "Blocked by Workflow Friction",
+    }.get(str(bottleneck).strip().lower(), f"Blocked by {_titleize(bottleneck, 'Workflow Friction')}")
+    name = f"{role_word} {job_word} {blocker_word}"
+    if promotion_status != "promoted_persona":
+        return f"Exploratory {name}"
+    return name

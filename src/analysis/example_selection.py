@@ -154,6 +154,11 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
     negative_patterns = config.get("negative_patterns", {})
 
     score_breakdown = {
+        "explicit_workflow_pain_score": _pattern_score(text, positive_patterns.get("explicit_workflow_pain", [])),
+        "repeated_manual_workaround_score": _pattern_score(text, positive_patterns.get("repeated_manual_workaround", [])),
+        "explanation_burden_score": _pattern_score(text, positive_patterns.get("explanation_burden", [])),
+        "validation_pressure_score": _pattern_score(text, positive_patterns.get("validation_pressure", [])),
+        "non_genericness_score": _non_genericness_score(text),
         "bottleneck_specificity_score": _pattern_score(text, positive_patterns.get("bottleneck_specificity", [])),
         "workflow_context_score": _pattern_score(text, positive_patterns.get("workflow_context", [])),
         "business_context_score": _pattern_score(text, positive_patterns.get("business_context", [])),
@@ -168,10 +173,18 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
         "persona_fit_score": _persona_fit_score(row, dominant_axes, axis_names),
         "genericness_penalty": _pattern_score(text, negative_patterns.get("genericness", [])),
         "technical_noise_penalty": _pattern_score(text, negative_patterns.get("technical_noise", [])),
+        "generic_product_statement_penalty": _pattern_score(text, negative_patterns.get("generic_product_statement", [])),
+        "no_user_pain_context_penalty": _no_user_pain_context_penalty(text),
+        "short_no_workflow_evidence_penalty": _short_no_workflow_penalty(text),
         "duplicate_penalty": 0.0,
     }
     final_example_score = (
-        score_breakdown["bottleneck_specificity_score"] * float(weights.get("bottleneck_specificity", 1.0))
+        score_breakdown["explicit_workflow_pain_score"] * float(weights.get("explicit_workflow_pain", 1.8))
+        + score_breakdown["repeated_manual_workaround_score"] * float(weights.get("repeated_manual_workaround", 1.5))
+        + score_breakdown["explanation_burden_score"] * float(weights.get("explanation_burden", 1.4))
+        + score_breakdown["validation_pressure_score"] * float(weights.get("validation_pressure", 1.4))
+        + score_breakdown["non_genericness_score"] * float(weights.get("non_genericness", 0.8))
+        + score_breakdown["bottleneck_specificity_score"] * float(weights.get("bottleneck_specificity", 1.0))
         + score_breakdown["workflow_context_score"] * float(weights.get("workflow_context", 1.0))
         + score_breakdown["business_context_score"] * float(weights.get("business_context", 1.0))
         + score_breakdown["stakeholder_pressure_score"] * float(weights.get("stakeholder_pressure", 1.0))
@@ -185,6 +198,9 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
         + score_breakdown["persona_fit_score"] * float(weights.get("persona_fit", 1.0))
         - score_breakdown["genericness_penalty"] * float(weights.get("genericness_penalty", 1.0))
         - score_breakdown["technical_noise_penalty"] * float(weights.get("technical_noise_penalty", 1.0))
+        - score_breakdown["generic_product_statement_penalty"] * float(weights.get("generic_product_statement_penalty", 2.2))
+        - score_breakdown["no_user_pain_context_penalty"] * float(weights.get("no_user_pain_context_penalty", 2.0))
+        - score_breakdown["short_no_workflow_evidence_penalty"] * float(weights.get("short_no_workflow_evidence_penalty", 2.0))
     )
     quote_quality = _quote_quality(score_breakdown, final_example_score, config)
     cluster_fit_reason = _cluster_fit_reason(row, dominant_axes, axis_names)
@@ -206,6 +222,8 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
         "label_confidence": float(row.get("label_confidence", 0.0) or 0.0),
         "source_text_length": len(snippet),
         "reason_selected": " | ".join(top_positive_signals[:3]) if top_positive_signals else "borderline or weak evidence",
+        "why_selected": _why_selected(top_positive_signals, cluster_fit_reason),
+        "matched_axes": _matched_axes(cluster_fit_reason),
     }
 
 
@@ -312,16 +330,31 @@ def _quote_quality(score_breakdown: dict[str, float], final_score: float, config
     """Classify example quality."""
     thresholds = config.get("thresholds", {})
     has_bottleneck = score_breakdown["bottleneck_specificity_score"] > 0
-    has_context = score_breakdown["workflow_context_score"] > 0 or score_breakdown["business_context_score"] > 0
+    has_context = (
+        score_breakdown["workflow_context_score"] > 0
+        or score_breakdown["business_context_score"] > 0
+        or score_breakdown["explicit_workflow_pain_score"] > 0
+    )
     strong_work_context = (
-        score_breakdown["workflow_context_score"]
+        score_breakdown["explicit_workflow_pain_score"]
+        + score_breakdown["repeated_manual_workaround_score"]
+        + score_breakdown["explanation_burden_score"]
+        + score_breakdown["validation_pressure_score"]
+        + score_breakdown["workflow_context_score"]
         + score_breakdown["business_context_score"]
         + score_breakdown["output_need_score"]
         + score_breakdown["excel_rework_score"]
     ) >= 3
+    hard_penalty = (
+        score_breakdown["generic_product_statement_penalty"] >= 1
+        or score_breakdown["no_user_pain_context_penalty"] >= 1
+        or score_breakdown["short_no_workflow_evidence_penalty"] >= 1
+    )
     if score_breakdown["technical_noise_penalty"] >= 2 and not has_bottleneck:
         return "reject"
     if score_breakdown["genericness_penalty"] >= 2 and not has_context:
+        return "reject"
+    if hard_penalty and not (has_bottleneck and strong_work_context):
         return "reject"
     if final_score >= float(thresholds.get("strong_representative_min_score", 8.0)) and has_bottleneck and has_context:
         return "strong_representative"
@@ -338,6 +371,12 @@ def _rejection_reason(score_breakdown: dict[str, float], quality: str) -> str:
         return ""
     if score_breakdown["technical_noise_penalty"] >= 2:
         return "technical implementation/debugging dominates the text"
+    if score_breakdown["generic_product_statement_penalty"] >= 1:
+        return "generic product statement, not a grounded user pain example"
+    if score_breakdown["no_user_pain_context_penalty"] >= 1:
+        return "no clear user pain or workflow pressure"
+    if score_breakdown["short_no_workflow_evidence_penalty"] >= 1:
+        return "short answer with no workflow evidence"
     if score_breakdown["genericness_penalty"] >= 2:
         return "too generic or promotional to explain the workflow bottleneck"
     if score_breakdown["bottleneck_specificity_score"] <= 0:
@@ -352,6 +391,39 @@ def _pattern_score(text: str, patterns: list[str]) -> float:
         if str(pattern).lower() in text:
             hits += 1
     return min(float(hits), 3.0)
+
+
+def _non_genericness_score(text: str) -> float:
+    """Reward concrete workflow evidence."""
+    concrete_terms = ["because", "before", "after", "every", "weekly", "monthly", "stakeholder", "client", "manager", "leadership", "report", "dashboard", "spreadsheet", "reconcile", "export"]
+    return min(float(sum(1 for term in concrete_terms if term in text)), 3.0)
+
+
+def _no_user_pain_context_penalty(text: str) -> float:
+    """Penalize snippets without a user pain or pressure cue."""
+    pain_terms = ["can't", "cannot", "need", "problem", "issue", "wrong", "mismatch", "manual", "reconcile", "blocked", "not enough", "how do i", "why"]
+    return 0.0 if any(term in text for term in pain_terms) else 1.0
+
+
+def _short_no_workflow_penalty(text: str) -> float:
+    """Penalize short implementation answers with no workflow context."""
+    workflow_terms = ["report", "dashboard", "stakeholder", "weekly", "monthly", "excel", "spreadsheet", "campaign", "revenue", "conversion", "business"]
+    return 1.0 if len(text) < 120 and not any(term in text for term in workflow_terms) else 0.0
+
+
+def _why_selected(top_positive_signals: list[str], cluster_fit_reason: str) -> str:
+    """Explain representative example selection in human terms."""
+    signals = ", ".join(signal.replace("_score", "").replace("_", " ") for signal in top_positive_signals[:4])
+    if not signals:
+        signals = "weak but best available grounded evidence"
+    return f"Selected for {signals}. {cluster_fit_reason}"
+
+
+def _matched_axes(cluster_fit_reason: str) -> str:
+    """Extract matched axis text from the cluster fit reason."""
+    if "Matches persona on " not in cluster_fit_reason:
+        return ""
+    return cluster_fit_reason.split("Matches persona on ", 1)[1].split("; misses", 1)[0]
 
 
 def _top_signals(score_breakdown: dict[str, float], positive: bool) -> list[str]:

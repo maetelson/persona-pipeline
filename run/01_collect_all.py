@@ -72,7 +72,7 @@ def main() -> None:
     source_rows: list[dict[str, str | int]] = []
     page_rows: list[dict[str, str | int | float]] = []
     error_rows: list[dict[str, str | int | bool]] = []
-    for source_name, (config_path, collector_cls) in _extend_registry_with_source_groups().items():
+    for source_name, (config_path, collector_cls) in sorted(_extend_registry_with_source_groups().items(), key=_collection_order_key):
         if source_filter and source_name not in source_filter:
             LOGGER.info("Skipping source outside COLLECT_SOURCE_FILTER: %s", source_name)
             continue
@@ -137,6 +137,16 @@ def main() -> None:
 
     low_yield_df = build_low_yield_query_audit(matrix_df, low_yield_threshold=1)
     write_parquet(low_yield_df, ROOT / "data" / "analysis" / "raw_low_yield_queries.parquet")
+
+
+def _collection_order_key(item: tuple[str, tuple[Path, object]]) -> tuple[int, str]:
+    """Order slow Reddit sources last while keeping other sources deterministic."""
+    source_name, (config_path, _) = item
+    config = load_yaml(config_path)
+    collector_kind = str(config.get("collector_kind", "")).strip().lower()
+    source_group = str(config.get("source_group", "")).strip().lower()
+    is_reddit = source_name == "reddit" or collector_kind == "reddit" or source_group == "reddit"
+    return (1 if is_reddit else 0, source_name)
 
 
 def _write_business_collection_health(rows: list[dict[str, object]]) -> None:

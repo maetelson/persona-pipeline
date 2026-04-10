@@ -10,6 +10,11 @@ thresholds:
   duplicate_similarity_threshold: 0.72
 
 weights:
+  explicit_workflow_pain: 1.8
+  repeated_manual_workaround: 1.5
+  explanation_burden: 1.4
+  validation_pressure: 1.4
+  non_genericness: 0.8
   bottleneck_specificity: 1.5
   workflow_context: 1.1
   business_context: 1.0
@@ -24,9 +29,47 @@ weights:
   persona_fit: 1.2
   genericness_penalty: 1.4
   technical_noise_penalty: 1.6
+  generic_product_statement_penalty: 2.2
+  no_user_pain_context_penalty: 2.0
+  short_no_workflow_evidence_penalty: 2.0
   duplicate_penalty: 1.5
 
 positive_patterns:
+  explicit_workflow_pain:
+    - i have to
+    - we have to
+    - still need to
+    - manually
+    - every week
+    - every month
+    - before sending
+    - blocked by
+    - not enough for reporting
+  repeated_manual_workaround:
+    - manual spreadsheet
+    - copy paste
+    - copy into excel
+    - export to excel
+    - keep reconciling
+    - double check
+    - workaround
+    - still need manual
+  explanation_burden:
+    - can't explain
+    - cannot explain
+    - stakeholders ask why
+    - follow-up questions
+    - explain the numbers
+    - why numbers changed
+    - root cause
+  validation_pressure:
+    - validate numbers
+    - before sending
+    - before the report goes out
+    - numbers don't match
+    - reconcile numbers
+    - source of truth
+    - metric definition
   workflow_context:
     - export to excel
     - every week
@@ -114,6 +157,16 @@ negative_patterns:
     - feature request
     - asset class
     - position overview
+  generic_product_statement:
+    - experimentation built in
+    - should be standard
+    - channel breadth
+    - what it does
+    - we offer
+    - introducing
+    - product overview
+    - feature list
+    - best practices
 
 subpatterns:
   reporting_prep:
