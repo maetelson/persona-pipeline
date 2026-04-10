@@ -122,6 +122,8 @@ class GitHubDiscussionsCollector(BaseCollector):
             return []
 
         per_page = int(os.getenv("GITHUB_COMMENTS_PER_ITEM", self.config.get("max_comments_per_item", 10)))
+        if per_page <= 0:
+            return []
         params = {"per_page": per_page}
         payload = self._fetch_rest_json(str(comments_url), params=params)
         if isinstance(payload, list):
@@ -405,7 +407,25 @@ class GitHubDiscussionsCollector(BaseCollector):
     def _issue_search_terms(self, query_seed: str) -> str:
         """Reduce long complaint phrasing to a few search-worthy tokens for GitHub."""
         tokens = self._query_tokens(query_seed)
-        return " ".join(tokens[:4])
+        preferred_terms = [
+            "dashboard",
+            "report",
+            "reporting",
+            "excel",
+            "export",
+            "metric",
+            "metrics",
+            "kpi",
+            "data",
+            "analytics",
+            "reconcile",
+            "segment",
+            "drill",
+        ]
+        for term in preferred_terms:
+            if term in tokens:
+                return term
+        return tokens[0] if tokens else str(query_seed).strip()
 
     def _query_tokens(self, query_seed: str) -> list[str]:
         """Extract compact non-trivial tokens from a query seed."""

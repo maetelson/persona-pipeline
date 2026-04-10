@@ -11,10 +11,13 @@ repositories:
   - apache/superset
   - metabase/metabase
   - getredash/redash
-max_queries_per_run: 8
-max_items_per_seed: 6
+  - grafana/grafana
+  - evidence-dev/evidence
+  - lightdash/lightdash
+max_queries_per_run: 12
+max_items_per_seed: 100
 max_pages_per_query: 2
 max_discussion_pages_per_query: 3
-max_comments_per_item: 10
+max_comments_per_item: 0
 max_replies_per_comment: 5
 sleep_seconds: 0.75

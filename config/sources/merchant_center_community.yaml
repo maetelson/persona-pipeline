@@ -10,12 +10,13 @@ check_robots: true
 query_mode: source_config
 seed_bank_path: config/seeds/business_communities/merchant_center_community.yaml
 max_query_count: 10
-max_threads_per_run: 18
-max_discovered_threads_per_url: 12
-sleep_seconds: 0.6
+max_threads_per_run: 800
+max_discovered_threads_per_url: 100
+discovery_page_count: 8
+sleep_seconds: 0.15
 filter_discovery_by_seed: true
 include_candidate_seed_pool_for_discovery: true
-min_seed_term_matches: 2
+min_seed_term_matches: 1
 drop_listing_only: true
 aliases:
   - merchant center

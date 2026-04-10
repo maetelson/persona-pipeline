@@ -37,6 +37,11 @@ from src.utils.run_helpers import load_dotenv, parse_csv_env_set
 from src.utils.source_registry import load_source_definitions
 
 LOGGER = get_logger("run.collect_all")
+MIN_RAW_EXEMPT_SOURCES = {"google_ads_community", "reddit", "stackoverflow"}
+
+
+class LowRawVolumeError(RuntimeError):
+    """Raised when a source finishes but does not meet the raw-volume floor."""
 
 COLLECTOR_REGISTRY: dict[str, tuple[Path, object]] = {
     "reddit": (ROOT / "config" / "sources" / "reddit.yaml", RedditCollector),
@@ -69,6 +74,8 @@ def main() -> None:
     """Collect raw JSONL for all enabled sources and write raw count audits."""
     load_dotenv(ROOT / ".env")
     source_filter = parse_csv_env_set("COLLECT_SOURCE_FILTER")
+    low_raw_warn_threshold = _int_env("COLLECT_MIN_RAW_RECORDS_WARN", 600)
+    fail_fast_on_low_raw = _bool_env("COLLECT_FAIL_FAST_ON_LOW_RAW", True)
     source_rows: list[dict[str, str | int]] = []
     page_rows: list[dict[str, str | int | float]] = []
     error_rows: list[dict[str, str | int | bool]] = []
@@ -86,6 +93,7 @@ def main() -> None:
             records = collector.collect()
             output_path = collector.save(records)
             LOGGER.info("Collected %s raw records for %s -> %s", len(records), source_name, output_path)
+            volume_status = _emit_source_raw_count(source_name, len(records), "ok", low_raw_warn_threshold)
             source_rows.append(
                 {
                     "source": source_name,
@@ -102,8 +110,14 @@ def main() -> None:
             business_health = getattr(collector, "business_health", None)
             if business_health:
                 _write_business_collection_health([business_health])
+            if _should_fail_low_raw(source_name, volume_status, fail_fast_on_low_raw):
+                _write_collection_audits(source_rows, page_rows, error_rows)
+                _raise_low_raw(source_name, len(records), low_raw_warn_threshold)
+        except LowRawVolumeError:
+            raise
         except Exception as exc:  # noqa: BLE001
             LOGGER.exception("Collector failed for source: %s", source_name)
+            volume_status = _emit_source_raw_count(source_name, 0, "error", low_raw_warn_threshold)
             source_rows.append(
                 {
                     "source": source_name,
@@ -117,7 +131,115 @@ def main() -> None:
             )
             page_rows.extend(collector.collection_stats)
             error_rows.extend(collector.error_stats)
+            business_health = getattr(collector, "business_health", None)
+            if business_health:
+                _write_business_collection_health([business_health])
+            if fail_fast_on_low_raw:
+                _write_collection_audits(source_rows, page_rows, error_rows)
+                raise RuntimeError(f"Collector failed for {source_name}; stopping collection.") from exc
 
+    _write_collection_audits(source_rows, page_rows, error_rows)
+    _emit_collection_summary(source_rows, low_raw_warn_threshold)
+
+
+def _collection_order_key(item: tuple[str, tuple[Path, object]]) -> tuple[int, str]:
+    """Order slow Reddit sources last while keeping other sources deterministic."""
+    source_name, (config_path, _) = item
+    config = load_yaml(config_path)
+    collector_kind = str(config.get("collector_kind", "")).strip().lower()
+    source_group = str(config.get("source_group", "")).strip().lower()
+    is_reddit = source_name == "reddit" or collector_kind == "reddit" or source_group == "reddit"
+    return (1 if is_reddit else 0, source_name)
+
+
+def _emit_source_raw_count(source_name: str, raw_count: int, status: str, low_raw_warn_threshold: int) -> str:
+    """Print a source-level raw count line immediately after collection."""
+    volume_status = _volume_status(raw_count, status, low_raw_warn_threshold)
+    message = f"RAW_COUNT source={source_name} count={raw_count} collection_status={status} volume_status={volume_status}"
+    print(message, flush=True)
+    if volume_status != "ok":
+        LOGGER.warning(
+            "Low or failed raw collection: source=%s raw_count=%s threshold=%s status=%s",
+            source_name,
+            raw_count,
+            low_raw_warn_threshold,
+            status,
+        )
+    return volume_status
+
+
+def _emit_collection_summary(source_rows: list[dict[str, str | int]], low_raw_warn_threshold: int) -> None:
+    """Print a compact final raw-count summary for all attempted sources."""
+    print("RAW_COUNT_SUMMARY", flush=True)
+    for row in source_rows:
+        source = str(row.get("source", ""))
+        count = int(row.get("raw_record_count", 0) or 0)
+        status = str(row.get("status", ""))
+        volume_status = _volume_status(count, status, low_raw_warn_threshold)
+        print(
+            f"RAW_COUNT_SUMMARY source={source} count={count} collection_status={status} volume_status={volume_status}",
+            flush=True,
+        )
+
+
+def _volume_status(raw_count: int, collection_status: str, low_raw_warn_threshold: int) -> str:
+    """Return the volume status independently from collector success."""
+    if collection_status != "ok":
+        return "failed"
+    if raw_count <= low_raw_warn_threshold:
+        return "low_raw"
+    return "ok"
+
+
+def _should_fail_low_raw(source_name: str, volume_status: str, fail_fast_on_low_raw: bool) -> bool:
+    """Return whether a source should fail the collection run for low raw volume."""
+    return fail_fast_on_low_raw and volume_status != "ok" and not _is_min_raw_exempt(source_name)
+
+
+def _raise_low_raw(
+    source_name: str,
+    raw_count: int,
+    low_raw_warn_threshold: int,
+) -> None:
+    """Stop collection when a non-exempt source fails the minimum raw-volume gate."""
+    raise LowRawVolumeError(
+        f"Raw collection volume gate failed for {source_name}: "
+        f"raw_count={raw_count}, required>{low_raw_warn_threshold}. "
+        "Increase source discovery/query coverage before continuing."
+    )
+
+
+def _int_env(name: str, default: int) -> int:
+    """Read an integer environment variable with a safe fallback."""
+    raw_value = os.getenv(name, "").strip()
+    if not raw_value:
+        return default
+    try:
+        return int(raw_value)
+    except ValueError:
+        LOGGER.warning("Invalid integer env %s=%r; using default %s", name, raw_value, default)
+        return default
+
+
+def _bool_env(name: str, default: bool) -> bool:
+    """Read a boolean environment variable with a safe fallback."""
+    raw_value = os.getenv(name, "").strip().lower()
+    if not raw_value:
+        return default
+    return raw_value in {"1", "true", "yes", "y", "on"}
+
+
+def _is_min_raw_exempt(source_name: str) -> bool:
+    """Return whether a source is exempt from the non-core raw-volume gate."""
+    return source_name in MIN_RAW_EXEMPT_SOURCES or source_name.startswith("reddit_")
+
+
+def _write_collection_audits(
+    source_rows: list[dict[str, str | int]],
+    page_rows: list[dict[str, str | int | float]],
+    error_rows: list[dict[str, str | int | bool]],
+) -> None:
+    """Write raw collection audits, including partial results before fail-fast exits."""
     raw_audit_df = build_raw_audit_df(source_rows)
     write_parquet(raw_audit_df, ROOT / "data" / "analysis" / "raw_audit.parquet")
 
@@ -137,16 +259,6 @@ def main() -> None:
 
     low_yield_df = build_low_yield_query_audit(matrix_df, low_yield_threshold=1)
     write_parquet(low_yield_df, ROOT / "data" / "analysis" / "raw_low_yield_queries.parquet")
-
-
-def _collection_order_key(item: tuple[str, tuple[Path, object]]) -> tuple[int, str]:
-    """Order slow Reddit sources last while keeping other sources deterministic."""
-    source_name, (config_path, _) = item
-    config = load_yaml(config_path)
-    collector_kind = str(config.get("collector_kind", "")).strip().lower()
-    source_group = str(config.get("source_group", "")).strip().lower()
-    is_reddit = source_name == "reddit" or collector_kind == "reddit" or source_group == "reddit"
-    return (1 if is_reddit else 0, source_name)
 
 
 def _write_business_collection_health(rows: list[dict[str, object]]) -> None:

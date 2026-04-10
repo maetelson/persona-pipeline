@@ -10,10 +10,11 @@ check_robots: true
 query_mode: source_config
 seed_bank_path: config/seeds/business_communities/google_ads_community.yaml
 max_query_count: 10
-max_threads_per_run: 18
-max_discovered_threads_per_url: 12
-sleep_seconds: 0.6
-filter_discovery_by_seed: true
+max_threads_per_run: 800
+max_discovered_threads_per_url: 100
+discovery_page_count: 1
+sleep_seconds: 0.15
+filter_discovery_by_seed: false
 include_candidate_seed_pool_for_discovery: true
 min_seed_term_matches: 1
 drop_listing_only: false
@@ -26,8 +27,30 @@ discovery_urls:
   - url: https://support.google.com/google-ads/community?hl=en
     board: Google Ads Community
   - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_setup_and_basics)
-    board: Google Ads Community
+    board: Setup and basics
   - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_ad_approval_policy)
-    board: Google Ads Community
+    board: Ad approval policy
   - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_billing)
-    board: Google Ads Community
+    board: Billing
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_audience_targeting_remarketing)
+    board: Audience targeting and remarketing
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_google_shopping_merchant_center)
+    board: Shopping and Merchant Center
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_learn_with_community)
+    board: Learn with community
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_other_ads_questions)
+    board: Other Ads questions
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_performance_optimization)
+    board: Performance optimization
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_results_and_conversions_measurement)
+    board: Results and conversions measurement
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_shopping_actions)
+    board: Shopping actions
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_smart_campaigns)
+    board: Smart campaigns
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_partners)
+    board: Google Partners
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:merchant_center_product_page_crawl)
+    board: Product page crawl
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(pinned:true)
+    board: Featured posts

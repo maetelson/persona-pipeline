@@ -1,6 +1,6 @@
 source_id: github_discussions
 source_group: existing_forums
-max_query_count: 8
+max_query_count: 12
 source_notes: "GitHub discussions/issues are high-noise for this project, so only compact BI workflow complaint seeds are active."
 core_seeds:
   - seed: "dashboard numbers don't match source data"

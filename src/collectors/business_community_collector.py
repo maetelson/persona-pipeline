@@ -8,6 +8,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from src.collectors.base import BaseCollector, RawRecord
 from src.collectors.business_community_parser import (
@@ -44,6 +45,7 @@ class BusinessCommunityCollector(BaseCollector):
     def collect(self) -> list[RawRecord]:
         """Discover, fetch, and parse public community threads."""
         discovered = self._discover_threads()
+        self._fail_fast_on_low_discovery(discovered)
         records: list[RawRecord] = []
         seen_urls: set[str] = set()
         max_threads = int(os.getenv("BUSINESS_COMMUNITY_MAX_THREADS", self.config.get("max_threads_per_run", 20)))
@@ -97,7 +99,7 @@ class BusinessCommunityCollector(BaseCollector):
         max_per_url = int(os.getenv("BUSINESS_COMMUNITY_MAX_DISCOVERY_PER_URL", self.config.get("max_discovered_threads_per_url", 20)))
         seed_terms = self._seed_terms()
         discovered: dict[str, ThreadLink] = {}
-        for row in self.config.get("discovery_urls", []) or []:
+        for row in self._expanded_discovery_url_rows():
             url = str(row.get("url", "") if isinstance(row, dict) else row).strip()
             board = str(row.get("board", "") if isinstance(row, dict) else "").strip()
             if not url:
@@ -175,6 +177,20 @@ class BusinessCommunityCollector(BaseCollector):
             )
         self.business_health["discovered_thread_count"] = len(discovered)
         return list(discovered.values())
+
+    def _expanded_discovery_url_rows(self) -> list[dict[str, str]]:
+        """Expand listing URLs across simple public pagination patterns."""
+        page_count = int(os.getenv("BUSINESS_COMMUNITY_DISCOVERY_PAGE_COUNT", self.config.get("discovery_page_count", 1)))
+        rows: list[dict[str, str]] = []
+        for row in self.config.get("discovery_urls", []) or []:
+            url = str(row.get("url", "") if isinstance(row, dict) else row).strip()
+            board = str(row.get("board", "") if isinstance(row, dict) else "").strip()
+            if not url:
+                continue
+            rows.append({"url": url, "board": board})
+            for page_no in range(2, max(page_count, 1) + 1):
+                rows.append({"url": _paginate_listing_url(url, str(self.config.get("platform", "")), page_no), "board": board})
+        return rows
 
     def _build_record(self, parsed, link: ThreadLink) -> RawRecord:
         """Build a raw record preserving source identity and public metadata."""
@@ -325,6 +341,22 @@ class BusinessCommunityCollector(BaseCollector):
             "Mozilla/5.0 (compatible; persona-pipeline/0.1; public research)",
         )
 
+    def _fail_fast_on_low_discovery(self, discovered: list[ThreadLink]) -> None:
+        """Abort before thread fetch when listing discovery cannot satisfy the raw-volume gate."""
+        fail_fast = os.getenv("COLLECT_FAIL_FAST_ON_LOW_RAW", "true").strip().lower() in {"1", "true", "yes", "y", "on"}
+        if not fail_fast:
+            return
+        threshold = int(os.getenv("COLLECT_MIN_RAW_RECORDS_WARN", "600"))
+        discovered_count = len(discovered)
+        if discovered_count > threshold:
+            return
+        self._record_collection_summary(0)
+        raise RuntimeError(
+            f"{self.source_name} discovered only {discovered_count} unique public thread URLs; "
+            f"minimum raw volume requires more than {threshold}. "
+            "The configured public listing/category pages do not expose enough unique threads."
+        )
+
 
 def _safe_iso_datetime(value: str) -> str:
     """Return an ISO datetime only when the public page value is parseable."""
@@ -338,3 +370,15 @@ def _safe_iso_datetime(value: str) -> str:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=UTC)
     return parsed.astimezone(UTC).replace(microsecond=0).isoformat()
+
+
+def _paginate_listing_url(url: str, platform: str, page_no: int) -> str:
+    """Return a best-effort paginated listing URL for supported community platforms."""
+    parsed = urlparse(url)
+    path = parsed.path.rstrip("/")
+    if platform == "hubspot":
+        path = re.sub(r"/page/\d+$", "", path)
+        return urlunparse((parsed.scheme, parsed.netloc, f"{path}/page/{page_no}", "", parsed.query, ""))
+    query = dict(parse_qsl(parsed.query, keep_blank_values=False))
+    query["page"] = str(page_no)
+    return urlunparse((parsed.scheme, parsed.netloc, parsed.path, "", urlencode(query), ""))
