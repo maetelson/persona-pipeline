@@ -28,6 +28,7 @@ STEPS = [
     "04_build_episodes.py",
     "05_label_episodes.py",
     "06_1_discover_persona_axes.py",
+    "06_cluster_and_score.py",
     "07_export_xlsx.py",
 ]
 
