@@ -15,11 +15,9 @@ from src.normalizers.base import NORMALIZED_POST_COLUMNS
 from src.normalizers.business_community_normalizer import BusinessCommunityNormalizer
 from src.normalizers.discourse_normalizer import DiscourseNormalizer
 from src.normalizers.github_discussions_normalizer import GitHubDiscussionsNormalizer
-from src.normalizers.hackernews_normalizer import HackerNewsNormalizer
 from src.normalizers.reddit_normalizer import RedditNormalizer
 from src.normalizers.reddit_public_normalizer import RedditPublicNormalizer
 from src.normalizers.stackoverflow_normalizer import StackOverflowNormalizer
-from src.normalizers.youtube_normalizer import YouTubeNormalizer
 from src.utils.io import list_jsonl_files, read_jsonl, write_parquet
 from src.utils.logging import get_logger
 from src.utils.source_registry import load_source_definitions
@@ -31,8 +29,6 @@ NORMALIZER_REGISTRY = {
     "stackoverflow": StackOverflowNormalizer(),
     "github_discussions": GitHubDiscussionsNormalizer(),
     "discourse": DiscourseNormalizer(),
-    "hackernews": HackerNewsNormalizer(),
-    "youtube": YouTubeNormalizer(),
 }
 
 

@@ -27,11 +27,9 @@ from src.collectors.discourse_collector import DiscourseCollector
 from src.collectors.business_community_collector import BusinessCommunityCollector
 from src.collectors.github_discussions_collector import GitHubDiscussionsCollector
 from src.collectors.google_ads_help_community_collector import GoogleAdsHelpCommunityCollector
-from src.collectors.hackernews_collector import HackerNewsCollector
 from src.collectors.reddit_collector import RedditCollector
 from src.collectors.reddit_public_collector import RedditPublicCollector
 from src.collectors.stackoverflow_collector import StackOverflowCollector
-from src.collectors.youtube_collector import YouTubeCollector
 from src.utils.io import load_yaml, write_parquet
 from src.utils.logging import get_logger
 from src.utils.run_helpers import load_dotenv, parse_csv_env_set
@@ -49,8 +47,6 @@ COLLECTOR_REGISTRY: dict[str, tuple[Path, object]] = {
     "stackoverflow": (ROOT / "config" / "sources" / "stackoverflow.yaml", StackOverflowCollector),
     "github_discussions": (ROOT / "config" / "sources" / "github_discussions.yaml", GitHubDiscussionsCollector),
     "discourse": (ROOT / "config" / "sources" / "discourse.yaml", DiscourseCollector),
-    "hackernews": (ROOT / "config" / "sources" / "hackernews.yaml", HackerNewsCollector),
-    "youtube": (ROOT / "config" / "sources" / "youtube.yaml", YouTubeCollector),
 }
 
 
