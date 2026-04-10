@@ -15,7 +15,7 @@ max_discovered_threads_per_url: 12
 sleep_seconds: 0.6
 filter_discovery_by_seed: true
 include_candidate_seed_pool_for_discovery: true
-min_seed_term_matches: 2
+min_seed_term_matches: 1
 drop_listing_only: false
 aliases:
   - google ads
@@ -24,4 +24,10 @@ discovery_urls:
   - url: https://support.google.com/google-ads/threads?hl=en
     board: Google Ads Community
   - url: https://support.google.com/google-ads/community?hl=en
+    board: Google Ads Community
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_setup_and_basics)
+    board: Google Ads Community
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_ad_approval_policy)
+    board: Google Ads Community
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_billing)
     board: Google Ads Community
