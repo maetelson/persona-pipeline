@@ -1,0 +1,43 @@
+source_id: shopify_community
+source_name: Shopify Community
+source_group: business_communities
+collector_kind: business_communities
+normalizer_kind: business_communities
+enabled: true
+platform: shopify
+product_or_tool: Shopify
+check_robots: false
+query_mode: source_config
+seed_bank_path: config/seeds/business_communities/shopify_community.yaml
+max_query_count: 10
+max_threads_per_run: 18
+max_discovered_threads_per_url: 12
+sleep_seconds: 0.4
+filter_discovery_by_seed: true
+include_candidate_seed_pool_for_discovery: true
+discovery_exclude_title_patterns:
+  - "^about the .* category$"
+  - "^what to measure in your first"
+  - "^year-end reporting"
+  - "^agentic shopping"
+  - "community guidelines"
+  - "store feedback$"
+discovery_exclude_url_patterns:
+  - "/t/about-the-.*-category/"
+aliases:
+  - shopify
+  - shopify community
+discovery_urls:
+  - url: https://community.shopify.com/c/data-analytics/293
+    board: Data and Analytics
+  - url: https://community.shopify.com/c/shopify-discussion/95
+    board: Shopify Discussion
+  - url: https://community.shopify.com/c/email-marketing/292
+    board: Email Marketing
+  - url: https://community.shopify.com/c/store-feedback/125
+    board: Store Feedback
+rss_discovery_urls:
+  - url: https://community.shopify.com/c/data-analytics/293.rss
+    board: Data and Analytics
+  - url: https://community.shopify.com/posts.rss
+    board: Recent Posts

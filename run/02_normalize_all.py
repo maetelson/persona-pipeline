@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 import pandas as pd
 
 from src.normalizers.base import NORMALIZED_POST_COLUMNS
+from src.normalizers.business_community_normalizer import BusinessCommunityNormalizer
 from src.normalizers.discourse_normalizer import DiscourseNormalizer
 from src.normalizers.github_discussions_normalizer import GitHubDiscussionsNormalizer
 from src.normalizers.hackernews_normalizer import HackerNewsNormalizer
@@ -39,6 +40,7 @@ def _extend_registry_with_source_groups():
     """Attach config-driven source-group normalizers to the registry."""
     registry = dict(NORMALIZER_REGISTRY)
     normalizer_map = {
+        "business_communities": BusinessCommunityNormalizer,
         "reddit": RedditPublicNormalizer,
     }
     for definition in load_source_definitions(ROOT, include_disabled=True):

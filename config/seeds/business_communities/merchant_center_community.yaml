@@ -1,0 +1,76 @@
+source_id: merchant_center_community
+source_group: business_communities
+max_query_count: 10
+source_notes: "Merchant Center uses merchant/operator language around suspensions, price mismatch, shipping, feed sync, inventory, product approval, app sync, and review failures."
+candidate_seed_pool:
+  - misrepresentation suspension
+  - price mismatch
+  - mismatched product price
+  - missing shipping costs
+  - shipping tax issues
+  - products not syncing
+  - 0 products active
+  - inventory data missing
+  - incorrect price
+  - product disapproved
+  - store not approved
+  - free shipping mismatch
+  - shipping weight missing
+  - feed sync issue
+  - shopify app not syncing
+  - manual review failed
+  - account suspended
+  - sale of services issue
+  - currency shipping mismatch
+  - local feed not syncing
+active_core_seeds:
+  - seed: misrepresentation suspension
+    reason: Captures dominant policy suspension and appeal blocker.
+  - seed: sale of services issue
+    reason: Adds policy/category issue coverage from collected Merchant Center rows.
+  - seed: store not approved
+    reason: Restores approval failure coverage from candidate evidence.
+  - seed: account suspended
+    reason: Captures collected suspension and appeal troubleshooting language.
+  - seed: local feed not syncing
+    reason: Adds local inventory/feed sync coverage for merchant operations.
+  - seed: products not syncing
+    reason: Targets Shopify/feed sync failure language.
+  - seed: shopify app not syncing
+    reason: High-scoring phrase from collected Shopify connector issue language.
+  - seed: feed sync issue
+    reason: Targets feed ingestion and catalog sync friction.
+  - seed: product disapproved
+    reason: Pulls item-level approval blockers.
+  - seed: price mismatch
+    reason: Finds price and landing-page data mismatch issues.
+optional_templates:
+  - template: local feed not syncing
+    reason: Extra local inventory feed phrase.
+  - template: currency shipping mismatch
+    reason: Extra regional shipping/price mismatch phrase.
+  - template: store not approved
+    reason: Extra store approval failure phrase.
+negative_terms:
+  - api integration
+  - api
+  - script
+  - crawler
+  - commission rates
+  - creators
+  - metadata
+  - custom code
+  - code
+  - plugin
+  - developer
+  - agency hiring
+  - resume
+  - job
+  - career
+  - certification
+  - agency
+  - help center
+  - guided help
+  - community guide
+  - phone support
+  - contact support

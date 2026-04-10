@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 
 import pandas as pd
 
+from src.collectors.business_community_collector import BusinessCommunityCollector
 from src.collectors.reddit_public_collector import RedditPublicCollector
 from src.filters.relevance import (
     apply_relevance_prefilter,
@@ -23,6 +24,7 @@ from src.filters.relevance import (
     build_top_negative_signal_report,
 )
 from src.normalizers.base import NORMALIZED_POST_COLUMNS
+from src.normalizers.business_community_normalizer import BusinessCommunityNormalizer
 from src.normalizers.reddit_public_normalizer import RedditPublicNormalizer
 from src.utils.io import ensure_dir, list_jsonl_files, load_yaml, read_jsonl, read_parquet, write_parquet
 from src.utils.logging import get_logger
@@ -49,7 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _add_target_args(parser: argparse.ArgumentParser) -> None:
     """Add common target args to a parser."""
-    parser.add_argument("--source-group", choices=["reddit", "existing_forums"], default=None)
+    parser.add_argument("--source-group", choices=["reddit", "business_communities", "existing_forums"], default=None)
     parser.add_argument("--source", default=None)
     parser.add_argument("--include-disabled", action="store_true")
 
@@ -279,7 +281,7 @@ def validate_seeds(selected: list[SourceDefinition]) -> None:
     """Validate compact seed banks and write audit artifacts."""
     artifacts = export_seed_artifacts(ROOT, selected)
     error_count = 0
-    seed_bank_groups = {"reddit"}
+    seed_bank_groups = {"reddit", "business_communities"}
     for definition in selected:
         seed_bank = load_seed_bank(ROOT, definition.source_group, definition.source_id)
         if seed_bank is None:
@@ -312,6 +314,8 @@ def export_seed_summary(selected: list[SourceDefinition]) -> None:
 def _build_collector(definition: SourceDefinition, config: dict[str, object]):
     """Return the collector instance for one source definition."""
     data_dir = ROOT / "data"
+    if definition.collector_kind == "business_communities":
+        return BusinessCommunityCollector(definition.source_id, config=config, data_dir=data_dir)
     if definition.collector_kind == "reddit":
         return RedditPublicCollector(definition.source_id, config=config, data_dir=data_dir)
     raise ValueError(f"Unsupported collector kind: {definition.collector_kind}")
@@ -319,6 +323,8 @@ def _build_collector(definition: SourceDefinition, config: dict[str, object]):
 
 def _build_normalizer(definition: SourceDefinition):
     """Return the normalizer instance for one source definition."""
+    if definition.normalizer_kind == "business_communities":
+        return BusinessCommunityNormalizer()
     if definition.normalizer_kind == "reddit":
         return RedditPublicNormalizer()
     if definition.normalizer_kind == "existing_forums":

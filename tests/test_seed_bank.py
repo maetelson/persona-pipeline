@@ -23,6 +23,11 @@ class SeedBankTests(unittest.TestCase):
 
     def test_seed_banks_validate_without_errors(self) -> None:
         targets = [
+            ("business_communities", "shopify_community"),
+            ("business_communities", "hubspot_community"),
+            ("business_communities", "klaviyo_community"),
+            ("business_communities", "google_ads_community"),
+            ("business_communities", "merchant_center_community"),
             ("reddit", "reddit_r_excel"),
             ("reddit", "reddit_analytics"),
             ("reddit", "reddit_business_intelligence"),
@@ -33,6 +38,16 @@ class SeedBankTests(unittest.TestCase):
             assert seed_bank is not None
             findings = validate_seed_bank(seed_bank)
             self.assertFalse([item for item in findings if item["level"] == "error"], msg=f"{source_id}: {findings}")
+
+    def test_business_community_candidate_pool_is_not_active_by_default(self) -> None:
+        seed_bank = load_seed_bank(ROOT, "business_communities", "hubspot_community")
+        self.assertIsNotNone(seed_bank)
+        assert seed_bank is not None
+        self.assertEqual(len(seed_bank.candidate_seed_pool), 20)
+        self.assertEqual(len(seed_bank.core_seeds), 10)
+        self.assertEqual(len(seed_bank.active_queries), 10)
+        self.assertIn("custom report help", seed_bank.candidate_seed_pool)
+        self.assertNotIn("custom report help", seed_bank.active_queries)
 
 
 if __name__ == "__main__":

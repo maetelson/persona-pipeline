@@ -22,7 +22,9 @@ from src.utils.source_registry import load_source_definitions
 
 DEFAULT_SOURCE_FILTER = (
     "reddit,stackoverflow,github_discussions,"
-    "reddit_r_excel,reddit_analytics,reddit_business_intelligence,reddit_marketing_analytics"
+    "reddit_r_excel,reddit_analytics,reddit_business_intelligence,reddit_marketing_analytics,"
+    "shopify_community,hubspot_community,klaviyo_community,"
+    "google_ads_community,merchant_center_community"
 )
 
 DEFAULT_LIMIT_ENV = {
@@ -43,6 +45,8 @@ DEFAULT_LIMIT_ENV = {
     "LLM_DRY_RUN": "true",
     "ENABLE_BATCH_LABELING": "false",
     "PRESERVE_RAW_ON_EMPTY": "true",
+    "BUSINESS_COMMUNITY_MAX_THREADS": "1",
+    "BUSINESS_COMMUNITY_MAX_DISCOVERY_PER_URL": "2",
 }
 
 PIPELINE_STEPS = [

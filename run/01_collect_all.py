@@ -24,6 +24,7 @@ from src.analysis.raw_audit import (
     build_summary_df,
 )
 from src.collectors.discourse_collector import DiscourseCollector
+from src.collectors.business_community_collector import BusinessCommunityCollector
 from src.collectors.github_discussions_collector import GitHubDiscussionsCollector
 from src.collectors.hackernews_collector import HackerNewsCollector
 from src.collectors.reddit_collector import RedditCollector
@@ -51,6 +52,7 @@ def _extend_registry_with_source_groups() -> dict[str, tuple[Path, object]]:
     """Add config-driven source-group collectors to the legacy registry."""
     registry = dict(COLLECTOR_REGISTRY)
     collector_map = {
+        "business_communities": BusinessCommunityCollector,
         "reddit": RedditPublicCollector,
     }
     for definition in load_source_definitions(ROOT, include_disabled=True):
@@ -97,6 +99,9 @@ def main() -> None:
             )
             page_rows.extend(collector.collection_stats)
             error_rows.extend(collector.error_stats)
+            business_health = getattr(collector, "business_health", None)
+            if business_health:
+                _write_business_collection_health([business_health])
         except Exception as exc:  # noqa: BLE001
             LOGGER.exception("Collector failed for source: %s", source_name)
             source_rows.append(
@@ -132,6 +137,17 @@ def main() -> None:
 
     low_yield_df = build_low_yield_query_audit(matrix_df, low_yield_threshold=1)
     write_parquet(low_yield_df, ROOT / "data" / "analysis" / "raw_low_yield_queries.parquet")
+
+
+def _write_business_collection_health(rows: list[dict[str, object]]) -> None:
+    """Append business community collection diagnostics."""
+    path = ROOT / "data" / "analysis" / "business_community_collection_health.csv"
+    existing = pd.read_csv(path) if path.exists() else pd.DataFrame()
+    updated = pd.concat([existing, pd.DataFrame(rows)], ignore_index=True)
+    if not updated.empty and "source_id" in updated.columns:
+        updated = updated.drop_duplicates("source_id", keep="last").sort_values("source_id").reset_index(drop=True)
+    updated.to_csv(path, index=False)
+    write_parquet(updated, ROOT / "data" / "analysis" / "business_community_collection_health.parquet")
 
 
 if __name__ == "__main__":

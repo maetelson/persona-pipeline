@@ -1,0 +1,72 @@
+source_id: shopify_community
+source_group: business_communities
+max_query_count: 10
+source_notes: "Shopify uses merchant/operator language around store analytics, sales reports, conversion tracking, product performance, and channel reporting friction."
+candidate_seed_pool:
+  - analytics not working
+  - wrong analytics data
+  - sessions not tracking
+  - conversion rate wrong
+  - sales report wrong
+  - dashboard inconsistency
+  - ga4 revenue discrepancy
+  - shopify ga4 mismatch
+  - marketing channels report
+  - product conversion rate
+  - sessions by product
+  - reached checkout rate
+  - added to cart tracking
+  - missing sales tracking
+  - underreported sessions
+  - underreported conversions
+  - top marketing channels
+  - shopify reporting issue
+  - shopify analytics discrepancy
+  - sales down sessions up
+active_core_seeds:
+  - seed: reached checkout rate
+    reason: Adds funnel-stage coverage shown by collected Shopify conversion titles.
+  - seed: wrong analytics data
+    reason: Captures merchant complaints that Shopify analytics numbers are inaccurate.
+  - seed: shopify reporting issue
+    reason: Broad Shopify-native reporting phrase with distinct collected coverage.
+  - seed: shopify analytics discrepancy
+    reason: Scored highest against collected Shopify analytics titles and board language.
+  - seed: sessions by product
+    reason: Restores product/session breakdown coverage found in collected titles.
+  - seed: analytics not working
+    reason: Broadly captures merchant reports that store analytics are broken or unreliable.
+  - seed: product conversion rate
+    reason: Captures product-level performance analysis needs.
+  - seed: sessions not tracking
+    reason: Captures session-count tracking and traffic quality complaints.
+  - seed: sales report wrong
+    reason: Pulls concrete sales reporting pain.
+  - seed: added to cart tracking
+    reason: Restores cart-event tracking coverage for Shopify funnel analysis.
+optional_templates:
+  - template: days on hand report
+    reason: Extra inventory reporting phrase from fetched titles.
+  - template: product analysis report
+    reason: Extra Shopify product analytics phrasing.
+  - template: sales channel report
+    reason: Extra channel reporting phrase.
+  - template: shopify reporting issue
+    reason: Broad Shopify reporting phrase kept for future promotion.
+negative_terms:
+  - about category
+  - community guidelines
+  - liquid
+  - theme code
+  - cart js
+  - custom css
+  - app development
+  - developer
+  - checkout code
+  - pricing
+  - partner program
+  - certification
+  - job
+  - career
+  - product announcement
+  - ai search

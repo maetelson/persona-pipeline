@@ -11,10 +11,12 @@ import pandas as pd
 from src.utils.io import ensure_dir, load_yaml
 
 CORE_SEED_COUNTS: dict[str, int] = {
+    "business_communities": 10,
     "reddit": 8,
 }
 
 OPTIONAL_TEMPLATE_CAPS: dict[str, int] = {
+    "business_communities": 4,
     "reddit": 4,
 }
 
@@ -43,6 +45,31 @@ DEV_HEAVY_TERMS = {
 }
 
 SEED_STYLE_TERMS: dict[str, tuple[str, ...]] = {
+    "business_communities": (
+        "report",
+        "conversion",
+        "campaign",
+        "segment",
+        "syncing",
+        "products",
+        "orders",
+        "customers",
+        "revenue",
+        "tracking",
+        "attribution",
+        "dashboard",
+        "email",
+        "ads",
+        "analytics",
+        "impressions",
+        "disapproved",
+        "billing",
+        "misrepresentation",
+        "shipping",
+        "feed",
+        "inventory",
+        "approval",
+    ),
     "reddit": (
         "every week",
         "takes too long",
@@ -83,6 +110,7 @@ class SeedBank:
     max_query_count: int
     source_notes: str
     core_seeds: list[SeedItem]
+    candidate_seed_pool: list[str]
     optional_templates: list[SeedTemplate]
     negative_terms: list[str]
     shared_negative_terms: list[str]
@@ -125,11 +153,7 @@ def load_seed_bank(root_dir: Path, source_group: str, source_id: str) -> SeedBan
     if not path.exists():
         return None
     payload = load_yaml(path)
-    core_seeds = [
-        SeedItem(seed=str(item.get("seed", "")).strip(), reason=str(item.get("reason", "")).strip())
-        for item in payload.get("core_seeds", []) or []
-        if str(item.get("seed", "")).strip()
-    ]
+    core_seeds = _load_active_seed_items(payload)
     optional_templates = [
         SeedTemplate(template=str(item.get("template", "")).strip(), reason=str(item.get("reason", "")).strip())
         for item in payload.get("optional_templates", []) or []
@@ -143,6 +167,7 @@ def load_seed_bank(root_dir: Path, source_group: str, source_id: str) -> SeedBan
         max_query_count=int(payload.get("max_query_count", len(core_seeds) or 0)),
         source_notes=str(payload.get("source_notes", "") or "").strip(),
         core_seeds=core_seeds,
+        candidate_seed_pool=_load_candidate_seed_pool(payload),
         optional_templates=optional_templates,
         negative_terms=negative_terms,
         shared_negative_terms=_get_group_negative_terms(root_dir, source_group),
@@ -158,13 +183,12 @@ def resolve_seed_queries(root_dir: Path, config: dict[str, Any], source_id: str,
         seed_bank = SeedBank(
             source_id=str(payload.get("source_id", source_id)),
             source_group=str(payload.get("source_group", source_group)),
-            max_query_count=int(payload.get("max_query_count", len(payload.get("core_seeds", []) or []))),
+            max_query_count=int(
+                payload.get("max_query_count", len(payload.get("active_core_seeds", payload.get("core_seeds", [])) or []))
+            ),
             source_notes=str(payload.get("source_notes", "") or "").strip(),
-            core_seeds=[
-                SeedItem(seed=str(item.get("seed", "")).strip(), reason=str(item.get("reason", "")).strip())
-                for item in payload.get("core_seeds", []) or []
-                if str(item.get("seed", "")).strip()
-            ],
+            core_seeds=_load_active_seed_items(payload),
+            candidate_seed_pool=_load_candidate_seed_pool(payload),
             optional_templates=[
                 SeedTemplate(template=str(item.get("template", "")).strip(), reason=str(item.get("reason", "")).strip())
                 for item in payload.get("optional_templates", []) or []
@@ -179,6 +203,29 @@ def resolve_seed_queries(root_dir: Path, config: dict[str, Any], source_id: str,
     if seed_bank is None:
         return []
     return seed_bank.active_queries
+
+
+def _load_active_seed_items(payload: dict[str, Any]) -> list[SeedItem]:
+    """Load promoted active seeds, falling back to the legacy core_seeds key."""
+    rows = payload.get("active_core_seeds", None)
+    if rows is None:
+        rows = payload.get("core_seeds", []) or []
+    return [
+        SeedItem(seed=str(item.get("seed", "")).strip(), reason=str(item.get("reason", "")).strip())
+        for item in rows or []
+        if str(item.get("seed", "")).strip()
+    ]
+
+
+def _load_candidate_seed_pool(payload: dict[str, Any]) -> list[str]:
+    """Load broad discovery vocabulary stored for future seed promotion."""
+    values = payload.get("candidate_seed_pool", []) or []
+    candidates: list[str] = []
+    for item in values:
+        seed = str(item.get("seed", "") if isinstance(item, dict) else item).strip()
+        if seed and seed not in candidates:
+            candidates.append(seed)
+    return candidates
 
 
 def render_optional_queries(seed_bank: SeedBank) -> list[str]:
@@ -274,6 +321,7 @@ def build_seed_summary(root_dir: Path, definitions: list[Any]) -> pd.DataFrame:
                 "source_name": definition.source_name,
                 "source_group": definition.source_group,
                 "core_seed_count": len(seed_bank.core_seeds),
+                "candidate_seed_count": len(seed_bank.candidate_seed_pool),
                 "optional_template_count": len(seed_bank.optional_templates),
                 "negative_term_count": len(seed_bank.all_negative_terms),
                 "max_query_count": seed_bank.max_query_count,
@@ -299,6 +347,7 @@ def build_seed_audit_markdown(root_dir: Path, definitions: list[Any]) -> str:
         lines.append(f"- Source group: `{definition.source_group}`")
         lines.append(f"- Max query count: `{seed_bank.max_query_count}`")
         lines.append(f"- Active query count: `{len(seed_bank.active_queries)}`")
+        lines.append(f"- Candidate seed pool count: `{len(seed_bank.candidate_seed_pool)}`")
         lines.append(f"- Notes: {seed_bank.source_notes}")
         lines.append("- Core seeds:")
         for item in seed_bank.core_seeds:
@@ -333,6 +382,7 @@ def build_before_after_seed_diff(root_dir: Path, definitions: list[Any]) -> str:
         lines.append("")
         lines.append(f"- Legacy dedicated seed count: `{legacy_count}`")
         lines.append(f"- New compact core seed count: `{len(seed_bank.core_seeds)}`")
+        lines.append(f"- Candidate seed pool count: `{len(seed_bank.candidate_seed_pool)}`")
         lines.append(f"- Optional template count: `{len(seed_bank.optional_templates)}`")
         if legacy_count:
             delta = len(seed_bank.core_seeds) - legacy_count

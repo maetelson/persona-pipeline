@@ -1,0 +1,72 @@
+source_id: klaviyo_community
+source_group: business_communities
+max_query_count: 10
+source_notes: "Klaviyo uses marketer/operator language around campaigns, flows, segments, deliverability, open rates, unsubscribe rates, list sync, and sending-domain issues."
+candidate_seed_pool:
+  - flow or campaign
+  - engaged segments
+  - emails going spam
+  - email deliverability
+  - open rate dropped
+  - low open rates
+  - high unsubscribe rates
+  - campaign not sending
+  - flows not sending
+  - email frequency preferences
+  - list segment sync
+  - dynamic content segment
+  - branded sending domain
+  - sending domain warmup
+  - spam complaint rate
+  - gmail promotions tab
+  - click rate spike
+  - resend non openers
+  - segment engagement
+  - deliverability best practices
+active_core_seeds:
+  - seed: flow or campaign
+    reason: Broadens discovery across Klaviyo's main marketer workflow split.
+  - seed: dynamic content segment
+    reason: Adds distinct segmentation and personalization coverage from collected rows.
+  - seed: flows not sending
+    reason: Captures automation execution failures.
+  - seed: open rate dropped
+    reason: Targets marketer triage when engagement falls.
+  - seed: campaign not sending
+    reason: Captures campaign execution failures.
+  - seed: low open rates
+    reason: Captures common deliverability and engagement underperformance language.
+  - seed: high unsubscribe rates
+    reason: Finds list fatigue and message-frequency pain.
+  - seed: email deliverability
+    reason: Restores source-native deliverability coverage and style alignment.
+  - seed: segment engagement
+    reason: Adds audience engagement coverage without career/advice phrasing.
+  - seed: spam complaint rate
+    reason: Keeps deliverability-risk coverage while broader samples mature.
+optional_templates:
+  - template: sending domain warmup
+    reason: Sender reputation phrase kept for future promotion if stronger samples appear.
+  - template: resend non openers
+    reason: Extra campaign follow-up workflow phrase.
+  - template: gmail promotions tab
+    reason: Extra deliverability placement phrase.
+negative_terms:
+  - email marketer career
+  - position myself
+  - no experience
+  - give advice
+  - resume
+  - job
+  - career
+  - course
+  - certification
+  - agency
+  - developer
+  - api
+  - webhook
+  - custom code
+  - social auto replies
+  - auto-replies
+  - dms
+  - comments not working

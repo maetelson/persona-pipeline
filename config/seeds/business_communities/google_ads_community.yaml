@@ -1,0 +1,76 @@
+source_id: google_ads_community
+source_group: business_communities
+max_query_count: 10
+source_notes: "Google Ads uses advertiser/operator language around delivery, impressions, eligibility, disapproval, conversion tracking, billing, verification, budgets, and policy limits."
+candidate_seed_pool:
+  - google ads not running
+  - 0 impressions
+  - low impressions
+  - eligible not showing
+  - campaign not serving
+  - ads disapproved
+  - keyword disapproved
+  - conversion tracking
+  - conversion not recording
+  - billing problem ads
+  - advertiser verification
+  - ad strength low
+  - limited by budget
+  - bid strategy learning
+  - search terms irrelevant
+  - campaign stopped spending
+  - asset disapproved
+  - policy violation ads
+  - remarketing not working
+  - not eligible limited
+active_core_seeds:
+  - seed: google ads not running
+    reason: Captures advertiser delivery failures in community language.
+  - seed: advertiser verification
+    reason: Mirrors fetched verification failure language.
+  - seed: 0 impressions
+    reason: Pulls zero-impression campaign issues.
+  - seed: low impressions
+    reason: Captures under-delivery and weak reach problems.
+  - seed: eligible not showing
+    reason: Targets ads marked eligible but not visible or serving.
+  - seed: campaign not serving
+    reason: Captures campaigns that are live but not delivering.
+  - seed: ads disapproved
+    reason: Targets broad policy disapproval blockers.
+  - seed: conversion not recording
+    reason: Finds operator measurement failures.
+  - seed: billing problem ads
+    reason: High-scoring candidate for delivery blocked by billing friction.
+  - seed: limited by budget
+    reason: Captures spend and delivery constraint questions.
+optional_templates:
+  - template: keyword disapproved
+    reason: Extra keyword-level policy blocker phrase.
+  - template: campaign stopped spending
+    reason: Extra delivery stoppage phrase.
+  - template: policy violation ads
+    reason: Extra policy blocker phrase.
+  - template: not eligible limited
+    reason: Extra eligibility status phrase.
+negative_terms:
+  - account hacked
+  - google ads experts
+  - call me
+  - contact number
+  - agency hiring
+  - resume
+  - career
+  - job
+  - certification
+  - api
+  - script
+  - crawler
+  - developer
+  - code
+  - plugin
+  - help center
+  - post a question
+  - account access
+  - phone support
+  - ad account access

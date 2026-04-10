@@ -34,6 +34,36 @@ business_signal_keywords:
   - validation
   - reconciliation
   - manual reporting
+  - campaign
+  - campaigns
+  - conversion
+  - attribution
+  - revenue
+  - orders
+  - customers
+  - products
+  - forms
+  - contacts
+  - segment
+  - segments
+  - profiles
+  - deliverability
+  - flow
+  - flows
+  - sync
+  - syncing
+  - impressions
+  - disapproved
+  - disapproval
+  - billing
+  - verification
+  - suspended
+  - suspension
+  - merchant center
+  - product feed
+  - shipping
+  - inventory
+  - free listings
 pain_signal_keywords:
   - manual
   - repetitive
@@ -53,6 +83,26 @@ pain_signal_keywords:
   - workaround
   - copy paste
   - duplicate work
+  - missing
+  - wrong
+  - drop
+  - delayed
+  - not syncing
+  - not synching
+  - not updating
+  - not working
+  - not receiving
+  - mismatch
+  - issue
+  - failed
+  - disapproved
+  - suspended
+  - failure
+  - not running
+  - no impressions
+  - not shown
+  - limited
+  - persists
 tutorial_keywords:
   - tutorial
   - beginner tutorial

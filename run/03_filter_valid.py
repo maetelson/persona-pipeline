@@ -60,6 +60,14 @@ def main() -> None:
     )
     write_parquet(source_health_df, ROOT / "data" / "analysis" / "source_health_after_fix.parquet")
     source_health_df.to_csv(ROOT / "data" / "analysis" / "source_health_after_fix.csv", index=False)
+    business_health_df = _build_business_community_health(
+        normalized_df=normalized_df,
+        valid_df=valid_df,
+        duplicate_invalid_df=duplicate_invalid_df,
+    )
+    if not business_health_df.empty:
+        write_parquet(business_health_df, ROOT / "data" / "analysis" / "business_community_source_health.parquet")
+        business_health_df.to_csv(ROOT / "data" / "analysis" / "business_community_source_health.csv", index=False)
 
     if invalid_df.empty:
         invalid_reason_audit_df = pd.DataFrame(columns=["source", "invalid_reason", "count"])
@@ -79,6 +87,43 @@ def main() -> None:
     LOGGER.info("Filter mode=%s", filter_mode)
     LOGGER.info("Wrote valid candidates: %s", len(valid_df))
     LOGGER.info("Wrote invalid candidates: %s", len(invalid_df))
+
+
+def _build_business_community_health(
+    normalized_df: pd.DataFrame,
+    valid_df: pd.DataFrame,
+    duplicate_invalid_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Build requested diagnostics for public business community sources."""
+    collection_path = ROOT / "data" / "analysis" / "business_community_collection_health.csv"
+    if not collection_path.exists():
+        return pd.DataFrame()
+    health_df = pd.read_csv(collection_path)
+    if health_df.empty or "source_id" not in health_df.columns:
+        return health_df
+    rows: list[dict[str, int | str]] = []
+    for _, row in health_df.iterrows():
+        source_id = str(row.get("source_id", "") or "")
+        rows.append(
+            {
+                "source_id": source_id,
+                "discovered_thread_count": int(row.get("discovered_thread_count", 0) or 0),
+                "fetched_thread_count": int(row.get("fetched_thread_count", 0) or 0),
+                "parse_success_count": int(row.get("parse_success_count", 0) or 0),
+                "parse_error_count": int(row.get("parse_error_count", 0) or 0),
+                "deduped_count": _count_source(duplicate_invalid_df, source_id),
+                "normalized_count": _count_source(normalized_df, source_id),
+                "valid_count": _count_source(valid_df, source_id),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _count_source(df: pd.DataFrame, source_id: str) -> int:
+    """Count rows for one source in a dataframe."""
+    if df.empty or "source" not in df.columns:
+        return 0
+    return int((df["source"].astype(str) == source_id).sum())
 
 
 if __name__ == "__main__":

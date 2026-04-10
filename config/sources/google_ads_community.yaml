@@ -1,0 +1,27 @@
+source_id: google_ads_community
+source_name: Google Ads Community
+source_group: business_communities
+collector_kind: business_communities
+normalizer_kind: business_communities
+enabled: true
+platform: google_support
+product_or_tool: Google Ads
+check_robots: true
+query_mode: source_config
+seed_bank_path: config/seeds/business_communities/google_ads_community.yaml
+max_query_count: 10
+max_threads_per_run: 18
+max_discovered_threads_per_url: 12
+sleep_seconds: 0.6
+filter_discovery_by_seed: true
+include_candidate_seed_pool_for_discovery: true
+min_seed_term_matches: 2
+drop_listing_only: true
+aliases:
+  - google ads
+  - google ads community
+discovery_urls:
+  - url: https://support.google.com/google-ads/threads?hl=en
+    board: Google Ads Community
+  - url: https://support.google.com/google-ads/community?hl=en
+    board: Google Ads Community

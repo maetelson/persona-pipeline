@@ -1,0 +1,29 @@
+source_id: klaviyo_community
+source_name: Klaviyo Community
+source_group: business_communities
+collector_kind: business_communities
+normalizer_kind: business_communities
+enabled: true
+platform: klaviyo
+product_or_tool: Klaviyo
+check_robots: true
+query_mode: source_config
+seed_bank_path: config/seeds/business_communities/klaviyo_community.yaml
+max_query_count: 10
+max_threads_per_run: 18
+max_discovered_threads_per_url: 12
+sleep_seconds: 0.4
+filter_discovery_by_seed: true
+include_candidate_seed_pool_for_discovery: true
+aliases:
+  - klaviyo
+  - klaviyo community
+discovery_urls:
+  - url: https://community.klaviyo.com/marketing-30
+    board: Marketing
+  - url: https://community.klaviyo.com/analytics-72
+    board: Analytics
+  - url: https://community.klaviyo.com/campaigns-77
+    board: Campaigns
+  - url: https://community.klaviyo.com/flows-31
+    board: Flows

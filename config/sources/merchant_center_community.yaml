@@ -1,0 +1,28 @@
+source_id: merchant_center_community
+source_name: Merchant Center Community
+source_group: business_communities
+collector_kind: business_communities
+normalizer_kind: business_communities
+enabled: true
+platform: google_support
+product_or_tool: Merchant Center
+check_robots: true
+query_mode: source_config
+seed_bank_path: config/seeds/business_communities/merchant_center_community.yaml
+max_query_count: 10
+max_threads_per_run: 18
+max_discovered_threads_per_url: 12
+sleep_seconds: 0.6
+filter_discovery_by_seed: true
+include_candidate_seed_pool_for_discovery: true
+min_seed_term_matches: 2
+drop_listing_only: true
+aliases:
+  - merchant center
+  - google merchant center
+  - merchant center community
+discovery_urls:
+  - url: https://support.google.com/merchants/threads?hl=en
+    board: Merchant Center Community
+  - url: https://support.google.com/merchants/community?hl=en
+    board: Merchant Center Community
