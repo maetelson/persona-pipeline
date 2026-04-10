@@ -34,6 +34,7 @@ class BusinessCommunityCollector(BaseCollector):
     def __init__(self, source_name: str, config: dict[str, Any], data_dir: Path) -> None:
         self.source_name = source_name
         super().__init__(config=config, data_dir=data_dir)
+        self._robots_cache: dict[str, bool] = {}
         self.business_health: dict[str, int | str] = {
             "source_id": self.source_name,
             "discovered_thread_count": 0,
@@ -290,7 +291,11 @@ class BusinessCommunityCollector(BaseCollector):
         """Honor robots.txt unless explicitly disabled in source config."""
         if not bool(self.config.get("check_robots", True)):
             return True
+        cache_key = _robots_cache_key(url)
+        if cache_key in self._robots_cache:
+            return self._robots_cache[cache_key]
         allowed, reason = check_robots_allowed(url, user_agent=user_agent)
+        self._robots_cache[cache_key] = allowed
         if allowed:
             return True
         self._record_error(url, "robots", "", reason)
@@ -346,7 +351,9 @@ class BusinessCommunityCollector(BaseCollector):
         fail_fast = os.getenv("COLLECT_FAIL_FAST_ON_LOW_RAW", "true").strip().lower() in {"1", "true", "yes", "y", "on"}
         if not fail_fast:
             return
-        threshold = int(os.getenv("COLLECT_MIN_RAW_RECORDS_WARN", "600"))
+        threshold = int(self.config.get("min_raw_records_warn", os.getenv("COLLECT_MIN_RAW_RECORDS_WARN", "600")))
+        if threshold <= 0:
+            return
         discovered_count = len(discovered)
         if discovered_count > threshold:
             return
@@ -382,3 +389,18 @@ def _paginate_listing_url(url: str, platform: str, page_no: int) -> str:
     query = dict(parse_qsl(parsed.query, keep_blank_values=False))
     query["page"] = str(page_no)
     return urlunparse((parsed.scheme, parsed.netloc, parsed.path, "", urlencode(query), ""))
+
+
+def _robots_cache_key(url: str) -> str:
+    """Group repeated robots checks by stable public path family."""
+    parsed = urlparse(url)
+    path = parsed.path
+    if "/google-ads/thread/" in path:
+        path = "/google-ads/thread"
+    elif "/merchants/thread/" in path:
+        path = "/merchants/thread"
+    elif path.endswith("/threads"):
+        path = path.rsplit("/", 1)[0] + "/threads"
+    elif path.endswith("/community"):
+        path = path.rsplit("/", 1)[0] + "/community"
+    return f"{parsed.scheme}://{parsed.netloc}{path}"

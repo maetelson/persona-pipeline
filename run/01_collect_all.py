@@ -26,6 +26,7 @@ from src.analysis.raw_audit import (
 from src.collectors.discourse_collector import DiscourseCollector
 from src.collectors.business_community_collector import BusinessCommunityCollector
 from src.collectors.github_discussions_collector import GitHubDiscussionsCollector
+from src.collectors.google_ads_help_community_collector import GoogleAdsHelpCommunityCollector
 from src.collectors.hackernews_collector import HackerNewsCollector
 from src.collectors.reddit_collector import RedditCollector
 from src.collectors.reddit_public_collector import RedditPublicCollector
@@ -58,11 +59,18 @@ def _extend_registry_with_source_groups() -> dict[str, tuple[Path, object]]:
     registry = dict(COLLECTOR_REGISTRY)
     collector_map = {
         "business_communities": BusinessCommunityCollector,
+        "google_ads_help_community": GoogleAdsHelpCommunityCollector,
         "reddit": RedditPublicCollector,
     }
     for definition in load_source_definitions(ROOT, include_disabled=True):
         collector_cls = collector_map.get(definition.collector_kind)
         if collector_cls is None:
+            continue
+        if definition.collector_kind == "google_ads_help_community":
+            registry[definition.source_id] = (
+                definition.config_path,
+                lambda config, cls=collector_cls: cls(config=config, data_dir=ROOT / "data"),
+            )
             continue
         registry[definition.source_id] = (
             definition.config_path,
@@ -88,12 +96,13 @@ def main() -> None:
             LOGGER.info("Skipping disabled source: %s", source_name)
             continue
 
+        source_raw_threshold = _source_raw_threshold(config, low_raw_warn_threshold)
         collector = collector_cls(config=config, data_dir=ROOT / "data") if isinstance(collector_cls, type) else collector_cls(config)
         try:
             records = collector.collect()
             output_path = collector.save(records)
             LOGGER.info("Collected %s raw records for %s -> %s", len(records), source_name, output_path)
-            volume_status = _emit_source_raw_count(source_name, len(records), "ok", low_raw_warn_threshold)
+            volume_status = _emit_source_raw_count(source_name, len(records), "ok", source_raw_threshold)
             source_rows.append(
                 {
                     "source": source_name,
@@ -103,6 +112,7 @@ def main() -> None:
                     "status": "ok",
                     "error_message": "",
                     "page_error_count": len(collector.error_stats),
+                    "raw_threshold": source_raw_threshold,
                 }
             )
             page_rows.extend(collector.collection_stats)
@@ -112,12 +122,12 @@ def main() -> None:
                 _write_business_collection_health([business_health])
             if _should_fail_low_raw(source_name, volume_status, fail_fast_on_low_raw):
                 _write_collection_audits(source_rows, page_rows, error_rows)
-                _raise_low_raw(source_name, len(records), low_raw_warn_threshold)
+                _raise_low_raw(source_name, len(records), source_raw_threshold)
         except LowRawVolumeError:
             raise
         except Exception as exc:  # noqa: BLE001
             LOGGER.exception("Collector failed for source: %s", source_name)
-            volume_status = _emit_source_raw_count(source_name, 0, "error", low_raw_warn_threshold)
+            volume_status = _emit_source_raw_count(source_name, 0, "error", source_raw_threshold)
             source_rows.append(
                 {
                     "source": source_name,
@@ -127,6 +137,7 @@ def main() -> None:
                     "status": "error",
                     "error_message": str(exc),
                     "page_error_count": len(collector.error_stats),
+                    "raw_threshold": source_raw_threshold,
                 }
             )
             page_rows.extend(collector.collection_stats)
@@ -175,7 +186,9 @@ def _emit_collection_summary(source_rows: list[dict[str, str | int]], low_raw_wa
         source = str(row.get("source", ""))
         count = int(row.get("raw_record_count", 0) or 0)
         status = str(row.get("status", ""))
-        volume_status = _volume_status(count, status, low_raw_warn_threshold)
+        raw_threshold = row.get("raw_threshold")
+        threshold = low_raw_warn_threshold if raw_threshold is None else int(raw_threshold)
+        volume_status = _volume_status(count, status, threshold)
         print(
             f"RAW_COUNT_SUMMARY source={source} count={count} collection_status={status} volume_status={volume_status}",
             flush=True,
@@ -218,6 +231,16 @@ def _int_env(name: str, default: int) -> int:
         return int(raw_value)
     except ValueError:
         LOGGER.warning("Invalid integer env %s=%r; using default %s", name, raw_value, default)
+        return default
+
+
+def _source_raw_threshold(config: dict[str, object], default: int) -> int:
+    """Return the source-specific raw count floor when configured."""
+    value = config.get("min_raw_records_warn", default)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        LOGGER.warning("Invalid min_raw_records_warn=%r; using default %s", value, default)
         return default
 
 

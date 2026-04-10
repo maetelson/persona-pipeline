@@ -4,6 +4,7 @@ source_group: business_communities
 collector_kind: business_communities
 normalizer_kind: business_communities
 enabled: true
+min_raw_records_warn: 0
 platform: google_support
 product_or_tool: Google Ads
 check_robots: true
@@ -14,6 +15,7 @@ max_threads_per_run: 800
 max_discovered_threads_per_url: 100
 discovery_page_count: 1
 sleep_seconds: 0.15
+timeout_seconds: 4
 filter_discovery_by_seed: false
 include_candidate_seed_pool_for_discovery: true
 min_seed_term_matches: 1

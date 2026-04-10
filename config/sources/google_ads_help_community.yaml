@@ -1,0 +1,44 @@
+source_id: google_ads_help_community
+source_name: Google Ads Help Community
+source_group: business_communities
+collector_kind: google_ads_help_community
+normalizer_kind: business_communities
+enabled: false
+platform: google_support
+product_or_tool: Google Ads
+check_robots: true
+max_threads_per_run: 1200
+max_discovered_threads_per_url: 120
+max_fetch_workers: 4
+min_raw_records_warn: 1000
+sleep_seconds: 0.0
+timeout_seconds: 20
+aliases:
+  - google ads help community
+  - google ads help
+  - google ads community
+home_urls:
+  - url: https://support.google.com/google-ads/community?hl=en
+    board: Google Ads Help Community
+discovery_urls:
+  - url: https://support.google.com/google-ads/threads?hl=en
+    board: Google Ads Help Community
+  - url: https://support.google.com/google-ads/community?hl=en
+    board: Google Ads Help Community
+additional_thread_filters:
+  - pinned:true
+  - trending:true
+category_boards:
+  google_ads_setup_and_basics: Setup and basics
+  google_ads_ad_approval_policy: Ad approval policy
+  google_ads_billing: Billing
+  google_ads_audience_targeting_remarketing: Audience targeting and remarketing
+  google_ads_google_shopping_merchant_center: Shopping and Merchant Center
+  google_ads_learn_with_community: Learn with community
+  google_ads_other_ads_questions: Other Ads questions
+  google_ads_performance_optimization: Performance optimization
+  google_ads_results_and_conversions_measurement: Results and conversions measurement
+  google_ads_shopping_actions: Shopping actions
+  google_ads_smart_campaigns: Smart campaigns
+  google_partners: Google Partners
+  merchant_center_product_page_crawl: Merchant Center product page crawl

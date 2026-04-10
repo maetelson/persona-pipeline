@@ -77,3 +77,13 @@ def fetch_text(url: str, user_agent: str, timeout_seconds: int = 20) -> FetchRes
             crawl_status="network_error",
             error_message=str(exc.reason),
         )
+    except TimeoutError as exc:
+        return FetchResponse(
+            url=url,
+            ok=False,
+            status_code=0,
+            body_text="",
+            content_type="",
+            crawl_status="network_timeout",
+            error_message=str(exc),
+        )
