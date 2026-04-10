@@ -150,3 +150,16 @@ career_advice_keywords:
   - resume feedback
   - applying to jobs
   - blunt critiques
+source_signal_overrides:
+  google_ads_community:
+    business_signal_keywords:
+      - ads
+      - ad group
+      - tagging
+      - conversion tracking
+    pain_signal_keywords:
+      - doesn't record
+      - doesnt record
+      - dosn't record
+      - not record
+      - not recording

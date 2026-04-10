@@ -16,7 +16,7 @@ sleep_seconds: 0.6
 filter_discovery_by_seed: true
 include_candidate_seed_pool_for_discovery: true
 min_seed_term_matches: 2
-drop_listing_only: true
+drop_listing_only: false
 aliases:
   - google ads
   - google ads community

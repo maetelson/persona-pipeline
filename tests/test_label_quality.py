@@ -14,6 +14,7 @@ import pandas as pd
 from src.labeling.labelability import build_labelability_table
 from src.labeling.prompt_builder import build_label_prompt
 from src.labeling.repair import apply_label_repairs, build_axis_label_details
+from src.labeling.rule_labeler import prelabel_episodes
 from src.utils.io import load_yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,6 +53,62 @@ class LabelQualityTests(unittest.TestCase):
         )
         self.assertIn("reddit", payload["prompt"])
         self.assertIn("few_shot:", payload["prompt"])
+
+    def test_business_community_operator_pain_is_labelable(self) -> None:
+        policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
+        episodes = pd.DataFrame(
+            [
+                {
+                    "episode_id": "biz-1",
+                    "source": "klaviyo_community",
+                    "normalized_episode": "Campaigns are not sending and open rates dropped after sending domain warmup.",
+                    "evidence_snippet": "",
+                    "business_question": "",
+                    "bottleneck_text": "",
+                    "workaround_text": "",
+                    "desired_output": "",
+                }
+            ]
+        )
+        result = build_labelability_table(episodes, policy)
+        self.assertNotEqual(result.loc[0, "labelability_status"], "low_signal")
+
+    def test_business_community_terms_map_to_broad_labels(self) -> None:
+        codebook = load_yaml(ROOT / "config" / "codebook.yaml")
+        episodes = pd.DataFrame(
+            [
+                {
+                    "episode_id": "biz-2",
+                    "source": "merchant_center_community",
+                    "normalized_episode": "Merchant Center account suspended after misrepresentation suspension and price mismatch in the feed sync.",
+                    "business_question": "",
+                    "bottleneck_text": "",
+                    "tool_env": "",
+                    "workaround_text": "",
+                    "desired_output": "",
+                    "role_clue": "",
+                    "work_moment": "",
+                    "product_fit": "",
+                    "segmentation_note": "",
+                }
+            ]
+        )
+        labeled = prelabel_episodes(episodes, codebook)
+        self.assertIn("Q_DIAGNOSE_ISSUE", labeled.loc[0, "question_codes"])
+        self.assertIn("P_DATA_QUALITY", labeled.loc[0, "pain_codes"])
+
+    def test_business_community_prompt_uses_group_guidance(self) -> None:
+        policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
+        payload = build_label_prompt(
+            episode_row=pd.Series({"source": "hubspot_community", "normalized_episode": "dashboard filters hide revenue attribution"}),
+            labeled_row=pd.Series({"question_codes": "unknown", "pain_codes": "unknown"}),
+            requested_families=["question_codes", "pain_codes"],
+            target_reason="unknown",
+            codebook=load_yaml(ROOT / "config" / "codebook.yaml"),
+            policy=policy,
+        )
+        self.assertIn("src=business_communities", payload["prompt"])
+        self.assertIn("Operator support/community language", payload["prompt"])
 
     def test_repair_and_details_fill_broad_labels(self) -> None:
         policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")

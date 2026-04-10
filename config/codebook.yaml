@@ -13,6 +13,8 @@ role_keywords:
     - dashboard
     - report
     - reporting
+    - analytics
+    - report builder
     - sql
   R_MANAGER:
     - manager
@@ -23,6 +25,12 @@ role_keywords:
     - board report
     - monthly business review
     - finance review
+    - merchant
+    - store owner
+    - ecommerce owner
+    - account owner
+    - small business owner
+    - client
   R_MARKETER:
     - media buyer
     - campaign
@@ -32,6 +40,13 @@ role_keywords:
     - channel
     - roas
     - conversion
+    - advertiser
+    - email
+    - deliverability
+    - flow
+    - segment
+    - klaviyo
+    - google ads
 
 moment_keywords:
   M_REPORTING:
@@ -43,6 +58,10 @@ moment_keywords:
     - weekly
     - board report
     - business review
+    - sales report
+    - form submissions report
+    - revenue target
+    - dashboard filters
   M_VALIDATION:
     - qa
     - validation
@@ -52,6 +71,14 @@ moment_keywords:
     - trust
     - numbers do not match
     - numbers don't match
+    - mismatch
+    - discrepancy
+    - wrong analytics data
+    - analytics discrepancy
+    - price mismatch
+    - shipping mismatch
+    - ga4 mismatch
+    - not syncing
   M_TRIAGE:
     - investigate
     - debug
@@ -61,6 +88,17 @@ moment_keywords:
     - explain
     - drill down
     - segment
+    - dropped
+    - not working
+    - not showing
+    - not serving
+    - not sending
+    - not recording
+    - disapproved
+    - suspension
+    - misrepresentation
+    - deliverability
+    - no impressions
   M_AUTOMATION:
     - automate
     - automation
@@ -68,6 +106,10 @@ moment_keywords:
     - script
     - scheduled
     - template
+    - flow
+    - flows
+    - sync
+    - feed sync
 
 question_codes:
   Q_REPORT_SPEED:
@@ -79,6 +121,11 @@ question_codes:
     - export to excel every week
     - report for leadership
     - presentation ready
+    - sales report
+    - form submissions report
+    - revenue target report
+    - dashboard filters
+    - report frequency
   Q_VALIDATE_NUMBERS:
     - validate and reconcile
     - reconcile reported numbers
@@ -88,6 +135,14 @@ question_codes:
     - source of truth
     - metric definition
     - reconcile dashboard with source data
+    - wrong analytics data
+    - analytics discrepancy
+    - shopify ga4 mismatch
+    - price mismatch
+    - shipping mismatch
+    - sales report wrong
+    - conversion rate wrong
+    - sessions not tracking
   Q_DIAGNOSE_ISSUE:
     - diagnose
     - resolve analytics issues
@@ -97,6 +152,40 @@ question_codes:
     - can't explain kpi change
     - breakdown by segment
     - breakdown by channel
+    - conversion rate dropped
+    - sales have dropped
+    - open rate dropped
+    - low open rates
+    - emails going spam
+    - google ads not running
+    - no impressions
+    - campaign not serving
+    - not spending
+    - ads disapproved
+    - product disapproved
+    - misrepresentation suspension
+    - account suspended
+    - manual review failed
+    - store not approved
+    - advertiser verification failure
+    - single impression
+    - no products visible
+    - not approved
+    - products not being approved
+    - free listings
+    - limited
+    - products from showing
+    - no physical stores
+    - incorrect pricing
+    - duplicate listings
+    - live visitors
+    - third party tracking
+    - profile filter
+    - added to cart
+    - no physical stores found
+    - countries of sale
+    - manual reviews
+    - no specific feedback
   Q_AUTOMATE_WORKFLOW:
     - automate
     - automation
@@ -105,6 +194,13 @@ question_codes:
     - repeated manual steps
     - scheduled report
     - template this workflow
+    - flows not sending
+    - campaign not sending
+    - list segment sync
+    - feed sync issue
+    - products not syncing
+    - profiles not syncing
+    - shopify app not syncing
 
 pain_codes:
   P_MANUAL_REPORTING:
@@ -117,6 +213,10 @@ pain_codes:
     - spreadsheet rework
     - presentation ready
     - still using spreadsheets
+    - report frequency
+    - sales report
+    - form submissions report
+    - dashboard organization
   P_DATA_QUALITY:
     - mismatch
     - wrong number
@@ -127,6 +227,23 @@ pain_codes:
     - metric definition
     - numbers don't match
     - finance definition
+    - discrepancy
+    - wrong analytics data
+    - analytics discrepancy
+    - conversion rate wrong
+    - sessions not tracking
+    - price mismatch
+    - shipping mismatch
+    - incorrect price
+    - feed sync
+    - products not syncing
+    - incorrect pricing
+    - duplicate listings
+    - inventory feed
+    - data feed
+    - live visitors
+    - incorrect data
+    - third party tracking
   P_TOOL_LIMITATION:
     - limitation
     - missing feature
@@ -137,6 +254,30 @@ pain_codes:
     - cannot explain
     - can't explain
     - drill down
+    - not working
+    - not showing
+    - not serving
+    - not sending
+    - not recording
+    - disapproved
+    - misrepresentation
+    - suspension
+    - manual review failed
+    - store not approved
+    - limited by budget
+    - deliverability
+    - advertiser verification failure
+    - no impressions
+    - not spending
+    - not approved
+    - products not being approved
+    - free listings
+    - products from showing
+    - no physical stores
+    - profile filter
+    - added to cart
+    - no physical stores found
+    - countries of sale
   P_HANDOFF:
     - stakeholder
     - handoff
@@ -146,6 +287,9 @@ pain_codes:
     - follow-up
     - leadership wants
     - ad hoc request
+    - support team
+    - client seeing this
+    - customer filling
 
 env_codes:
   E_SPREADSHEET:
@@ -168,6 +312,8 @@ env_codes:
     - sigma
     - domo
     - thoughtspot
+    - hubspot
+    - shopify analytics
   E_PYTHON:
     - python
     - pandas
@@ -214,18 +360,58 @@ output_codes:
     - dashboard
     - chart
     - visualization
+    - dashboard filters
+    - pipeline dashboard
+    - analytics report
+    - impressions
+    - clicks
+    - campaigns
+    - advertising account
+    - products section
+    - product status
+    - diagnostics
+    - free listings
+    - advertiser verification
+    - verification failure
+    - manual reviews
+    - no physical stores found
+    - countries of sale
+    - profile filter
   O_VALIDATED_DATASET:
     - validated dataset
     - reconciled data
     - clean dataset
     - source of truth
     - trusted dataset
+    - analytics discrepancy
+    - wrong analytics data
+    - price mismatch
+    - shipping mismatch
+    - feed sync
+    - products not syncing
+    - sessions not tracking
+    - inventory feed
+    - data feed
+    - incorrect pricing
+    - duplicate listings
+    - products visible
+    - tracking
+    - third party tracking
+    - lead tracking
+    - manual reviews
+    - no specific feedback
+    - verification failure
   O_AUTOMATION_JOB:
     - automation
     - pipeline
     - scheduled
     - template
     - recurring job
+    - flow
+    - flows
+    - sync
+    - campaign not sending
+    - feed sync
 
 fit_keywords:
   F_STRONG:
@@ -236,6 +422,13 @@ fit_keywords:
     - reporting burden
     - dashboard trust
     - manual reporting
+    - analytics discrepancy
+    - conversion rate
+    - deliverability
+    - disapproved
+    - misrepresentation
+    - feed sync
+    - price mismatch
   F_REVIEW:
     - review
     - pros

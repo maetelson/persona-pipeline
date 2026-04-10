@@ -25,6 +25,16 @@ def _match_keywords(text: str, keywords: list[str]) -> list[str]:
     return [keyword for keyword in keywords if keyword.lower() in lowered]
 
 
+def _keywords_for_row(rules: dict[str, Any], row: pd.Series, key: str) -> list[str]:
+    """Return global plus optional source-specific keywords for one row."""
+    keywords = [str(item) for item in rules.get(key, []) or []]
+    source_id = str(row.get("source", "") or "")
+    overrides = rules.get("source_signal_overrides", {}) or {}
+    source_overrides = overrides.get(source_id, {}) if isinstance(overrides, dict) else {}
+    extra_keywords = [str(item) for item in source_overrides.get(key, []) or []]
+    return list(dict.fromkeys([*keywords, *extra_keywords]))
+
+
 def _evaluate_row(row: pd.Series, rules: dict[str, Any]) -> FilterEvaluation:
     """Evaluate one normalized row against invalid and signal rules."""
     reasons: list[str] = []
@@ -60,8 +70,8 @@ def _evaluate_row(row: pd.Series, rules: dict[str, Any]) -> FilterEvaluation:
     if career_hits:
         reasons.append("career_advice")
 
-    business_hits = _match_keywords(combined_text, rules.get("business_signal_keywords", []))
-    pain_hits = _match_keywords(combined_text, rules.get("pain_signal_keywords", []))
+    business_hits = _match_keywords(combined_text, _keywords_for_row(rules, row, "business_signal_keywords"))
+    pain_hits = _match_keywords(combined_text, _keywords_for_row(rules, row, "pain_signal_keywords"))
     mode_name = str(rules.get("_active_mode", "") or "")
     mode_profiles = rules.get("mode_profiles", {}) or {}
     mode = mode_profiles.get(mode_name, {}) if isinstance(mode_profiles, dict) else {}

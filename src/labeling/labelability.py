@@ -18,11 +18,20 @@ SIGNAL_COLUMNS = [
     "desired_output",
 ]
 
+BUSINESS_COMMUNITY_SOURCES = {
+    "shopify_community",
+    "hubspot_community",
+    "klaviyo_community",
+    "google_ads_community",
+    "merchant_center_community",
+}
+
 
 def build_labelability_table(episodes_df: pd.DataFrame, policy: dict[str, Any]) -> pd.DataFrame:
     """Score each episode for labelability before full LLM labeling."""
     cfg = dict(policy.get("labelability", {}) or {})
     positive_terms = [str(item) for item in cfg.get("positive_terms", []) or []]
+    business_positive_terms = [str(item) for item in cfg.get("business_community_positive_terms", []) or []]
     negative_terms = [str(item) for item in cfg.get("negative_terms", []) or []]
     min_text_length = int(cfg.get("low_signal_min_text_length", 80))
     strong_threshold = int(cfg.get("strong_signal_threshold", 5))
@@ -34,6 +43,8 @@ def build_labelability_table(episodes_df: pd.DataFrame, policy: dict[str, Any]) 
         source = get_record_source(row)
         lowered = text.lower()
         positive_hits = [term for term in positive_terms if term.lower() in lowered]
+        if source in BUSINESS_COMMUNITY_SOURCES:
+            positive_hits.extend(term for term in business_positive_terms if term.lower() in lowered)
         negative_hits = [term for term in negative_terms if term.lower() in lowered]
         score = len(set(positive_hits)) - min(len(set(negative_hits)), 3)
         if len(text.strip()) < min_text_length:
@@ -44,9 +55,10 @@ def build_labelability_table(episodes_df: pd.DataFrame, policy: dict[str, Any]) 
             score += 1
 
         positive_count = len(set(positive_hits))
+        business_directional_signal = source in BUSINESS_COMMUNITY_SOURCES and positive_count >= 2 and len(text.strip()) >= min_text_length
         if score >= strong_threshold or (positive_count >= max(strong_threshold - 1, 1) and len(text.strip()) >= min_text_length):
             status = "labelable"
-        elif score >= borderline_threshold:
+        elif score >= borderline_threshold or business_directional_signal:
             status = "borderline"
         else:
             status = "low_signal"

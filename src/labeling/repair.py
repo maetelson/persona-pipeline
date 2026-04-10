@@ -145,11 +145,57 @@ def _repair_role(text: str, repair_cfg: dict[str, list[str]]) -> str:
 def _repair_output(text: str) -> str:
     if any(term in text for term in ["excel", "spreadsheet", "board report", "business review", "presentation-ready", "presentation ready"]):
         return "O_XLSX"
-    if any(term in text for term in ["dashboard", "monitoring", "chart"]):
+    if any(
+        term in text
+        for term in [
+            "dashboard",
+            "monitoring",
+            "chart",
+            "impressions",
+            "clicks",
+            "campaigns",
+            "advertising account",
+            "products section",
+            "product status",
+            "diagnostics",
+            "free listings",
+            "advertiser verification",
+            "verification failure",
+            "manual reviews",
+            "no physical stores found",
+            "countries of sale",
+            "profile filter",
+        ]
+    ):
         return "O_DASHBOARD"
-    if any(term in text for term in ["reconciled dataset", "validated dataset", "source of truth"]):
+    if any(
+        term in text
+        for term in [
+            "reconciled dataset",
+            "validated dataset",
+            "source of truth",
+            "analytics discrepancy",
+            "wrong analytics data",
+            "price mismatch",
+            "shipping mismatch",
+            "feed sync",
+            "products not syncing",
+            "sessions not tracking",
+            "inventory feed",
+            "data feed",
+            "incorrect pricing",
+            "duplicate listings",
+            "products visible",
+            "tracking",
+            "third party tracking",
+            "lead tracking",
+            "manual reviews",
+            "no specific feedback",
+            "verification failure",
+        ]
+    ):
         return "O_VALIDATED_DATASET"
-    if any(term in text for term in ["scheduled", "automate", "automation", "template"]):
+    if any(term in text for term in ["scheduled", "automate", "automation", "template", "flow", "flows", "campaign not sending"]):
         return "O_AUTOMATION_JOB"
     return ""
 
@@ -157,9 +203,65 @@ def _repair_output(text: str) -> str:
 def _repair_pain(text: str) -> str:
     if any(term in text for term in ["manual reporting", "export to excel", "spreadsheet", "copy paste", "every week"]):
         return "P_MANUAL_REPORTING"
-    if any(term in text for term in ["numbers don't match", "source of truth", "reconcile", "definition", "metric mismatch"]):
+    if any(
+        term in text
+        for term in [
+            "numbers don't match",
+            "source of truth",
+            "reconcile",
+            "definition",
+            "metric mismatch",
+            "analytics discrepancy",
+            "wrong analytics data",
+            "price mismatch",
+            "shipping mismatch",
+            "feed sync",
+            "products not syncing",
+            "sessions not tracking",
+            "incorrect pricing",
+            "duplicate listings",
+            "inventory feed",
+            "data feed",
+            "live visitors",
+            "incorrect data",
+            "third party tracking",
+        ]
+    ):
         return "P_DATA_QUALITY"
-    if any(term in text for term in ["not enough", "tool limitation", "can't drill", "cannot explain", "calc issue"]):
+    if any(
+        term in text
+        for term in [
+            "not enough",
+            "tool limitation",
+            "can't drill",
+            "cannot explain",
+            "calc issue",
+            "not working",
+            "not showing",
+            "not serving",
+            "not sending",
+            "not recording",
+            "disapproved",
+            "misrepresentation",
+            "suspension",
+            "manual review",
+            "store not approved",
+            "limited by budget",
+            "deliverability",
+            "advertiser verification failure",
+            "no impressions",
+            "not spending",
+            "not approved",
+            "products not being approved",
+            "free listings",
+            "products from showing",
+            "no physical stores",
+            "profile filter",
+            "added to cart",
+            "no physical stores found",
+            "countries of sale",
+        ]
+    ):
         return "P_TOOL_LIMITATION"
     if any(term in text for term in ["stakeholders keep asking", "follow-up", "follow up", "leadership wants", "handoff"]):
         return "P_HANDOFF"
@@ -167,13 +269,80 @@ def _repair_pain(text: str) -> str:
 
 
 def _repair_question(text: str) -> str:
-    if any(term in text for term in ["manual reporting", "every week", "presentation-ready", "report for leadership", "monthly report"]):
+    if any(
+        term in text
+        for term in [
+            "manual reporting",
+            "every week",
+            "presentation-ready",
+            "report for leadership",
+            "monthly report",
+            "sales report",
+            "form submissions report",
+            "revenue target report",
+        ]
+    ):
         return "Q_REPORT_SPEED"
-    if any(term in text for term in ["numbers don't match", "reconcile", "source of truth", "metric definition"]):
+    if any(
+        term in text
+        for term in [
+            "numbers don't match",
+            "reconcile",
+            "source of truth",
+            "metric definition",
+            "analytics discrepancy",
+            "wrong analytics data",
+            "price mismatch",
+            "shipping mismatch",
+            "sessions not tracking",
+        ]
+    ):
         return "Q_VALIDATE_NUMBERS"
-    if any(term in text for term in ["why did", "can't explain", "root cause", "segment", "channel", "device"]):
+    if any(
+        term in text
+        for term in [
+            "why did",
+            "can't explain",
+            "root cause",
+            "segment",
+            "channel",
+            "device",
+            "conversion rate",
+            "sales have dropped",
+            "open rate",
+            "no impressions",
+            "not spending",
+            "not serving",
+            "not showing",
+            "disapproved",
+            "misrepresentation",
+            "account suspended",
+            "manual review",
+            "store not approved",
+            "deliverability",
+            "advertiser verification failure",
+            "single impression",
+            "no products visible",
+            "not approved",
+            "products not being approved",
+            "free listings",
+            "limited",
+            "products from showing",
+            "no physical stores",
+            "incorrect pricing",
+            "duplicate listings",
+            "live visitors",
+            "third party tracking",
+            "profile filter",
+            "added to cart",
+            "no physical stores found",
+            "countries of sale",
+            "manual reviews",
+            "no specific feedback",
+        ]
+    ):
         return "Q_DIAGNOSE_ISSUE"
-    if any(term in text for term in ["automate", "scheduled", "template away", "repeated steps"]):
+    if any(term in text for term in ["automate", "scheduled", "template away", "repeated steps", "flow", "flows", "sync", "not syncing", "not sending"]):
         return "Q_AUTOMATE_WORKFLOW"
     return ""
 

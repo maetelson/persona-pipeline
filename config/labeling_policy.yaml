@@ -10,6 +10,7 @@ llm_labeling:
   source_guidance:
     reddit: "Complaint-style natural language. Focus on repeated reporting pain, follow-up requests, trust issues, and spreadsheet workarounds."
     stackoverflow: "May look technical, but keep reporting, dashboard trust, spreadsheet output, KPI mismatch, and explanation pain if present."
+    business_communities: "Operator support/community language. Treat reporting, attribution, deliverability, campaign delivery, product/feed approval, price/shipping mismatch, and platform analytics friction as persona evidence when the text shows business workflow pain."
   families:
     role_codes:
       definition: "Who is carrying the work or answer burden."
@@ -122,6 +123,17 @@ llm_labeling:
       choose_when: "F_STRONG for recurring workflow bottleneck evidence. F_REVIEW for softer but still relevant review-style pain."
       unknown_when: "Only when the row is low-signal or clearly outside persona mining scope."
 few_shot_examples:
+  business_communities:
+    - text: "Shopify analytics shows conversion rate down and sessions not tracking after our GA4 change."
+      labels:
+        question_codes: Q_VALIDATE_NUMBERS
+        pain_codes: P_DATA_QUALITY
+        output_codes: O_VALIDATED_DATASET
+    - text: "Klaviyo campaigns are not sending and open rates dropped after the domain warmup."
+      labels:
+        question_codes: Q_DIAGNOSE_ISSUE
+        pain_codes: P_TOOL_LIMITATION
+        output_codes: O_AUTOMATION_JOB
   reddit:
     - text: "Stakeholders keep asking follow-ups after every dashboard review, so I export to Excel and rebuild the cuts manually."
       labels:
@@ -171,6 +183,86 @@ labelability:
     - source of truth
     - numbers don't match
     - presentation-ready
+  business_community_positive_terms:
+    - analytics data
+    - analytics discrepancy
+    - conversion rate
+    - sales funnel
+    - sales report
+    - sessions
+    - checkout
+    - shipping
+    - price mismatch
+    - free shipping
+    - form tracking
+    - form submissions
+    - pipeline
+    - dashboard filters
+    - revenue
+    - attribution
+    - utm
+    - campaign
+    - campaigns
+    - email
+    - flow
+    - flows
+    - deliverability
+    - open rate
+    - open rates
+    - unsubscribe
+    - spam
+    - profiles
+    - not syncing
+    - not sending
+    - not showing
+    - not serving
+    - not recording
+    - no impressions
+    - disapproved
+    - verification
+    - limited by budget
+    - misrepresentation
+    - manual review
+    - account suspended
+    - product disapproved
+    - feed sync
+    - products not syncing
+    - syncing
+    - store not approved
+    - product approved
+    - not approved
+    - approved
+    - limited
+    - free listings
+    - incorrect pricing
+    - duplicate listings
+    - products showing
+    - products visible
+    - products section
+    - inventory feed
+    - data feed
+    - physical store
+    - google merchant center
+    - merchant center
+    - google ads
+    - impressions
+    - clicks
+    - not spending
+    - advertising account
+    - account active
+    - form
+    - tracking
+    - missing field
+    - consent management
+    - live visitors
+    - incorrect data
+    - third party tracking
+    - profile filter
+    - added to cart
+    - no physical stores found
+    - countries of sale
+    - manual reviews
+    - no specific feedback
   negative_terms:
     - sdk
     - oauth
@@ -204,12 +296,20 @@ repair:
       - executive
       - board report
       - finance review
+      - merchant
+      - store owner
+      - business owner
     marketer:
       - campaign
       - attribution
       - channel
       - media buyer
       - marketing
+      - advertiser
+      - ads
+      - email
+      - deliverability
+      - flows
 audit:
   reported_baseline_unknown_ratio: 0.717116
   reported_baseline_quality_flag: LOW_QUALITY
