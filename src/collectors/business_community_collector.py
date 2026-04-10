@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import os
+import json
 import re
 import time
 from datetime import UTC, datetime
+from html import unescape
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
 
 from src.collectors.base import BaseCollector, RawRecord
 from src.collectors.business_community_parser import (
@@ -45,6 +47,13 @@ class BusinessCommunityCollector(BaseCollector):
 
     def collect(self) -> list[RawRecord]:
         """Discover, fetch, and parse public community threads."""
+        if bool((self.config.get("api_discovery", {}) or {}).get("enabled", False)):
+            records = self._collect_api_records()
+            if records:
+                self._record_collection_summary(len(records))
+                LOGGER.info("Collected %s business community API rows for %s", len(records), self.source_name)
+                return records
+
         discovered = self._discover_threads()
         self._fail_fast_on_low_discovery(discovered)
         records: list[RawRecord] = []
@@ -92,6 +101,115 @@ class BusinessCommunityCollector(BaseCollector):
         self._record_collection_summary(len(records))
         LOGGER.info("Collected %s business community rows for %s", len(records), self.source_name)
         return records
+
+    def _collect_api_records(self) -> list[RawRecord]:
+        """Collect records from public community APIs when listing pages are capped."""
+        api_cfg = dict(self.config.get("api_discovery", {}) or {})
+        api_kind = str(api_cfg.get("kind", "")).strip().lower()
+        if api_kind != "khoros_search":
+            return []
+        records = self._collect_khoros_search_records(api_cfg)
+        self.business_health["discovered_thread_count"] = len(records)
+        self.business_health["fetched_thread_count"] = len(records)
+        self.business_health["parse_success_count"] = len(records)
+        return records
+
+    def _collect_khoros_search_records(self, api_cfg: dict[str, Any]) -> list[RawRecord]:
+        """Collect public Khoros message rows through the unauthenticated search API."""
+        base_url = str(api_cfg.get("base_url", "")).rstrip("/")
+        board_ids = [str(board).strip() for board in api_cfg.get("board_ids", []) if str(board).strip()]
+        if not base_url or not board_ids:
+            return []
+        max_items = int(api_cfg.get("max_items_per_board", 200))
+        page_size = min(max(int(api_cfg.get("page_size", 100)), 1), 100)
+        user_agent = self._user_agent()
+        records: list[RawRecord] = []
+        seen_ids: set[str] = set()
+        for board_id in board_ids:
+            fetched_for_board = 0
+            for offset in range(0, max_items, page_size):
+                limit = min(page_size, max_items - offset)
+                query = f"SELECT * FROM messages WHERE board.id='{board_id}' LIMIT {limit} OFFSET {offset}"
+                url = f"{base_url}/api/2.0/search?q={quote(query)}"
+                response = fetch_text(url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
+                if not response.ok:
+                    self._record_error(url, "api_fetch", str(response.status_code), response.error_message or response.crawl_status)
+                    break
+                items = _khoros_items(response.body_text)
+                accepted = 0
+                for item in items:
+                    raw_id = str(item.get("id", "") or "").strip()
+                    if not raw_id or raw_id in seen_ids:
+                        continue
+                    seen_ids.add(raw_id)
+                    records.append(self._build_khoros_record(item, board_id=board_id))
+                    accepted += 1
+                fetched_for_board += accepted
+                self.collection_stats.append(
+                    {
+                        "source": self.source_name,
+                        "query_id": "khoros_api_search",
+                        "query_text": board_id,
+                        "window_id": "",
+                        "window_start": "",
+                        "window_end": "",
+                        "page_no": int(offset / page_size) + 1,
+                        "page_raw_count": accepted,
+                        "page_raw_count_before_dedupe": len(items),
+                        "duplicate_count": max(0, len(items) - accepted),
+                        "duplicate_ratio": round((max(0, len(items) - accepted) / max(len(items), 1)), 4),
+                        "stop_reason": "ok" if items else "empty_results",
+                    }
+                )
+                if len(items) < limit:
+                    break
+            LOGGER.info("Khoros API discovery for %s board=%s accepted=%s", self.source_name, board_id, fetched_for_board)
+        return records[: int(self.config.get("max_threads_per_run", len(records)))]
+
+    def _build_khoros_record(self, item: dict[str, Any], board_id: str) -> RawRecord:
+        """Build a raw record from one public Khoros API message item."""
+        fetched_at = utc_now_iso()
+        url = str(item.get("view_href", "") or "")
+        title = _clean_khoros_title(str(item.get("subject", "") or ""))
+        body_text = _strip_html(str(item.get("body", "") or ""))
+        created_at = _safe_iso_datetime(str(item.get("post_time", "") or "")) or fetched_at
+        author = item.get("author", {}) if isinstance(item.get("author"), dict) else {}
+        raw_id = str(item.get("id", "") or make_hash_id(self.source_name, url, title))
+        return RawRecord(
+            source=self.source_name,
+            source_group=str(self.config.get("source_group", "business_communities")),
+            source_name=str(self.config.get("source_name", self.source_name)),
+            source_type="community_message",
+            raw_id=raw_id,
+            raw_source_id=raw_id,
+            url=url,
+            canonical_url=url,
+            title=title,
+            body=body_text,
+            body_text=body_text,
+            comments_text="",
+            created_at=created_at,
+            fetched_at=fetched_at,
+            retrieved_at=fetched_at,
+            query_seed=board_id,
+            query_id="khoros_api_search",
+            query_text=board_id,
+            author_hint=str(author.get("login", "") or author.get("id", "") or ""),
+            author_name=str(author.get("login", "") or ""),
+            product_or_tool=str(self.config.get("product_or_tool", "")),
+            subreddit_or_forum=board_id,
+            thread_title=title,
+            crawl_method="public_khoros_api",
+            crawl_status="ok",
+            parse_version="business_community_khoros_api_v1",
+            hash_id=make_hash_id(self.source_name, raw_id, url),
+            source_meta={
+                "platform": self.config.get("platform", ""),
+                "product_or_tool": self.config.get("product_or_tool", ""),
+                "board_id": board_id,
+                "api_item": item,
+            },
+        )
 
     def _discover_threads(self) -> list[ThreadLink]:
         """Discover candidate thread URLs from configured public listing pages."""
@@ -377,6 +495,30 @@ def _safe_iso_datetime(value: str) -> str:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=UTC)
     return parsed.astimezone(UTC).replace(microsecond=0).isoformat()
+
+
+def _khoros_items(body_text: str) -> list[dict[str, Any]]:
+    """Return message items from a Khoros search response."""
+    try:
+        payload = json.loads(body_text)
+    except json.JSONDecodeError:
+        return []
+    items = payload.get("data", {}).get("items", []) if isinstance(payload, dict) else []
+    return [item for item in items if isinstance(item, dict)]
+
+
+def _clean_khoros_title(value: str) -> str:
+    """Normalize Khoros reply prefixes while preserving the public subject."""
+    return re.sub(r"^\s*Re:\s*", "", unescape(str(value or "")), flags=re.IGNORECASE).strip()
+
+
+def _strip_html(value: str) -> str:
+    """Convert simple HTML bodies from public APIs into plain raw text."""
+    text = unescape(str(value or ""))
+    text = re.sub(r"<br\s*/?>", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"</(?:p|div|li|ul|ol|blockquote)>", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def _paginate_listing_url(url: str, platform: str, page_no: int) -> str:

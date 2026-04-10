@@ -4,6 +4,7 @@ source_group: business_communities
 collector_kind: business_communities
 normalizer_kind: business_communities
 enabled: true
+min_raw_records_warn: 0
 platform: google_support
 product_or_tool: Merchant Center
 check_robots: true

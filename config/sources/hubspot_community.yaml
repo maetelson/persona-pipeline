@@ -16,6 +16,17 @@ discovery_page_count: 8
 sleep_seconds: 0.15
 filter_discovery_by_seed: true
 include_candidate_seed_pool_for_discovery: false
+api_discovery:
+  enabled: true
+  kind: khoros_search
+  base_url: https://community.hubspot.com
+  page_size: 100
+  max_items_per_board: 250
+  board_ids:
+    - marketing_reports
+    - marketing_lists
+    - marketing_conversion
+    - sales_CRM
 aliases:
   - hubspot
   - hubspot community

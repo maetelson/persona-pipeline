@@ -12,9 +12,9 @@ seed_bank_path: config/seeds/business_communities/shopify_community.yaml
 max_query_count: 10
 max_threads_per_run: 800
 max_discovered_threads_per_url: 100
-discovery_page_count: 8
+discovery_page_count: 25
 sleep_seconds: 0.15
-filter_discovery_by_seed: true
+filter_discovery_by_seed: false
 include_candidate_seed_pool_for_discovery: true
 discovery_exclude_title_patterns:
   - "^about the .* category$"
