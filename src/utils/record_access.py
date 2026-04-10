@@ -6,10 +6,13 @@ import json
 from typing import Any, Iterable
 
 from src.utils.pipeline_schema import (
+    EPISODE_ID_FIELD,
     LABEL_CODE_COLUMNS,
+    RAW_ID_FIELD,
     RECORD_ID_FIELDS,
     RECORD_SOURCE_TEXT_FIELDS,
     RECORD_TEXT_FIELDS,
+    SOURCE_FIELD,
     SOURCE_META_JSON_KEY,
     parse_json_dict,
     split_pipe_codes,
@@ -44,7 +47,17 @@ def get_record_id(record: Any) -> str:
 
 def get_record_source(record: Any) -> str:
     """Return record source when present."""
-    return str(get_record_value(record, "source", "") or "").strip()
+    return str(get_record_value(record, SOURCE_FIELD, "") or "").strip()
+
+
+def get_episode_id(record: Any) -> str:
+    """Return the episode identifier when present."""
+    return str(get_record_value(record, EPISODE_ID_FIELD, "") or "").strip()
+
+
+def get_raw_id(record: Any) -> str:
+    """Return the raw/source post identifier when present."""
+    return str(get_record_value(record, RAW_ID_FIELD, "") or "").strip()
 
 
 def get_record_text(record: Any, fields: Iterable[str] | None = None) -> str:
@@ -115,5 +128,5 @@ def serialize_source_meta(payload: dict[str, Any] | None, **extra_fields: Any) -
 
 def is_valid_record(record: Any, required_fields: Iterable[str] | None = None) -> bool:
     """Return whether a record has the minimum required identifiers."""
-    required = list(required_fields or ["episode_id"])
+    required = list(required_fields or [EPISODE_ID_FIELD])
     return all(str(get_record_value(record, field, "") or "").strip() for field in required)

@@ -11,7 +11,8 @@ import pandas as pd
 from src.utils.io import ensure_dir, load_yaml
 
 CORE_SEED_COUNTS: dict[str, int] = {
-    "business_communities": 10,
+    "business_communities": 15,
+    "discourse": 15,
     "reddit": 8,
 }
 
@@ -69,6 +70,27 @@ SEED_STYLE_TERMS: dict[str, tuple[str, ...]] = {
         "feed",
         "inventory",
         "approval",
+        "mismatch",
+        "wrong",
+        "issue",
+        "discrepancy",
+        "incorrect",
+        "not matching",
+        "not working",
+    ),
+    "discourse": (
+        "metabase",
+        "dashboard",
+        "query",
+        "aggregation",
+        "count",
+        "date filter",
+        "group by",
+        "wrong",
+        "mismatch",
+        "issue",
+        "csv",
+        "metric",
     ),
     "reddit": (
         "every week",

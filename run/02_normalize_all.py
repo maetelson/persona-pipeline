@@ -41,6 +41,7 @@ def _extend_registry_with_source_groups():
     registry = dict(NORMALIZER_REGISTRY)
     normalizer_map = {
         "business_communities": BusinessCommunityNormalizer,
+        "discourse": DiscourseNormalizer,
         "reddit": RedditPublicNormalizer,
     }
     for definition in load_source_definitions(ROOT, include_disabled=True):

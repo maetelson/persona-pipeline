@@ -1,74 +1,47 @@
 source_id: hubspot_community
 source_group: business_communities
-max_query_count: 10
-source_notes: "HubSpot uses RevOps/operator language around reports, forms, dashboards, pipeline views, date ranges, revenue goals, lists, and attribution."
-candidate_seed_pool:
-  - form submissions report
-  - forms filled by month
-  - custom rolling date
-  - rolling date range
-  - pipeline dashboard
-  - dashboard filters
-  - custom report help
-  - analytics tools report
-  - revenue target report
-  - sales goal revenue
-  - lifecycle stage report
-  - funnel report filters
-  - report not refreshing
-  - dashboard organization
-  - missed call reporting
-  - company name report
-  - date property reporting
-  - segment revenue report
-  - list segment chart
-  - report frequency day week month
+max_query_count: 15
+source_notes: "Source-specific HubSpot reporting seeds only; no shared seed expansion."
+candidate_seed_pool: []
 active_core_seeds:
-  - seed: forms filled by month
-    reason: Adds distinct collected coverage for form reporting cadence.
-  - seed: funnel report filters
-    reason: Targets funnel analysis and filter friction.
-  - seed: form submissions report
-    reason: Captures lead-capture reporting gaps.
-  - seed: segment revenue report
-    reason: Broadens active discovery toward segmented revenue reporting.
-  - seed: dashboard filters
-    reason: Targets dashboard interpretation and filter issues.
-  - seed: list segment chart
-    reason: Adds list/chart reporting coverage from candidate evidence.
-  - seed: revenue target report
-    reason: Pulls revenue goal and forecast reporting needs.
-  - seed: report not refreshing
-    reason: Finds stale report and dashboard trust issues.
-  - seed: report frequency day week month
-    reason: Captures source-native reporting cadence language.
-  - seed: pipeline dashboard
-    reason: Captures sales pipeline dashboard workflow language.
-optional_templates:
-  - template: custom rolling date
-    reason: Extra rolling date wording.
-  - template: segment revenue report
-    reason: Extra segmentation and revenue analysis phrase.
-  - template: list segment chart
-    reason: Extra list/chart reporting phrase.
-  - template: rolling date range
-    reason: Date-window reporting phrase kept for future promotion.
+  - seed: hubspot report not matching
+    reason: Targets report mismatch pain in HubSpot wording.
+  - seed: hubspot dashboard numbers wrong
+    reason: Captures dashboard trust failures.
+  - seed: hubspot custom report issue
+    reason: Finds custom reporting blockers.
+  - seed: hubspot attribution report wrong
+    reason: Targets attribution/reporting discrepancies.
+  - seed: hubspot lifecycle stage issue
+    reason: Captures lifecycle reporting mismatches.
+  - seed: hubspot contact property mismatch
+    reason: Targets property-level metric mismatch.
+  - seed: hubspot revenue report incorrect
+    reason: Finds revenue reporting trust issues.
+  - seed: hubspot report filter issue
+    reason: Captures filter-related workflow pain.
+  - seed: hubspot deal data mismatch
+    reason: Targets deal/report reconciliation.
+  - seed: hubspot marketing report confusion
+    reason: Captures marketing reporting interpretation issues.
+  - seed: hubspot export report excel
+    reason: Finds spreadsheet export workflow pain.
+  - seed: reporting limitation hubspot
+    reason: Targets explicit HubSpot reporting limits.
+  - seed: hubspot cannot build report
+    reason: Captures report construction blockers.
+  - seed: hubspot dashboard issue
+    reason: Finds dashboard workflow failures.
+  - seed: hubspot report discrepancy
+    reason: Targets discrepancy language directly.
+optional_templates: []
 negative_terms:
-  - jira integration
-  - call performance
-  - outbound calls
-  - audio quality
-  - developer docs
   - api
   - sdk
   - oauth
   - webhook
   - certification
   - academy
-  - job listings
-  - partner program
-  - pricing
+  - job
   - career
   - resume
-  - support ticket
-  - integration call

@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import json
+import math
 from typing import Iterable
 
 UNKNOWN_VALUES = {"", "unknown", "null", "none", "nan", "other", "unspecified", "unspecified_output", "unassigned"}
+
+EPISODE_ID_FIELD = "episode_id"
+RAW_ID_FIELD = "raw_id"
+SOURCE_FIELD = "source"
 
 RECORD_ID_FIELDS = ["episode_id", "raw_id", "raw_source_id", "id"]
 RECORD_TEXT_FIELDS = [
@@ -60,6 +65,27 @@ QUALITY_FLAG_LOW = "LOW QUALITY"
 QUALITY_FLAG_EXPLORATORY = "EXPLORATORY"
 QUALITY_FLAG_UNSTABLE = "UNSTABLE"
 QUALITY_UNKNOWN_RATIO_THRESHOLD = 0.30
+MIN_LABELED_SOURCE_COUNT = 3
+CLUSTER_DOMINANCE_SHARE_PCT = 70.0
+MIN_CLUSTER_SIZE_ABSOLUTE = 5
+MIN_CLUSTER_SIZE_RATIO = 0.05
+
+QUALITY_THRESHOLDS = {
+    "unknown_ratio": QUALITY_UNKNOWN_RATIO_THRESHOLD,
+    "cluster_count": 2,
+    "labeled_source_count": MIN_LABELED_SOURCE_COUNT,
+    "largest_cluster_share": CLUSTER_DOMINANCE_SHARE_PCT,
+}
+
+LABELABLE_STATUSES = {"labelable", "borderline"}
+RAW_WITHOUT_LABEL_FAILURE_SOURCES = {
+    "github_discussions",
+    "google_ads_community",
+    "hubspot_community",
+    "klaviyo_community",
+    "merchant_center_community",
+    "shopify_community",
+}
 
 FINAL_WORKBOOK_SHEET_NAMES = [
     "overview",
@@ -192,6 +218,16 @@ def round_pct(count: int | float, total: int | float, digits: int = 1) -> float:
     return round((float(count) / denominator) * 100, digits)
 
 
+def persona_min_cluster_size(labeled_count: int | float) -> int:
+    """Return the default floor for promoting a cluster into a persona."""
+    return max(MIN_CLUSTER_SIZE_ABSOLUTE, int(math.ceil(float(labeled_count) * MIN_CLUSTER_SIZE_RATIO)))
+
+
+def is_single_cluster_dominant(largest_share: int | float) -> bool:
+    """Return whether one cluster exceeds the dominance gate."""
+    return float(largest_share) > CLUSTER_DOMINANCE_SHARE_PCT
+
+
 def compute_quality_flag(unknown_ratio: float) -> str:
     """Return the workbook-level quality flag from deterministic thresholds."""
     return QUALITY_FLAG_LOW if float(unknown_ratio) > QUALITY_UNKNOWN_RATIO_THRESHOLD else QUALITY_FLAG_OK
@@ -230,6 +266,57 @@ def round_frame_ratios(sheet_name: str, df):
 def row_has_unknown_labels(values: Iterable[object]) -> bool:
     """Return whether any label-family value remains unresolved."""
     return any(is_unknown_like(value) for value in values)
+
+
+def source_row_count(df, source: str, source_column: str = SOURCE_FIELD) -> int:
+    """Return row count for one source from a dataframe-like table."""
+    import pandas as pd
+
+    if df is None or df.empty or source_column not in df.columns:
+        return 0
+    return int((df[source_column].astype(str) == str(source)).sum())
+
+
+def aggregated_source_count(df, source: str, count_column: str, source_column: str = SOURCE_FIELD) -> int:
+    """Return a numeric count for one source in a pre-aggregated dataframe."""
+    import pandas as pd
+
+    if df is None or df.empty or source_column not in df.columns or count_column not in df.columns:
+        return 0
+    match = df[df[source_column].astype(str) == str(source)]
+    return int(pd.to_numeric(match[count_column], errors="coerce").fillna(0).sum()) if not match.empty else 0
+
+
+def unique_record_count(df, column: str = EPISODE_ID_FIELD) -> int:
+    """Return unique non-empty values for an identifier column."""
+    if df is None or df.empty or column not in df.columns:
+        return 0
+    values = df[column].fillna("").astype(str).str.strip()
+    return int(values[values != ""].nunique())
+
+
+def top_non_unknown_value(df, column: str, fallback: str = "unassigned") -> str:
+    """Return the dominant non-unknown value for one dataframe column."""
+    if df is None or df.empty or column not in df.columns:
+        return fallback
+    series = df[column].astype(str).str.strip()
+    series = series[~series.map(is_unknown_like)]
+    if series.empty:
+        return fallback
+    return str(series.value_counts().idxmax())
+
+
+def collect_pipe_codes_from_frame(df, columns: Iterable[str]) -> list[str]:
+    """Collect split pipe-delimited codes across selected dataframe columns."""
+    import pandas as pd
+
+    if df is None or df.empty:
+        return []
+    values: list[str] = []
+    for column in columns:
+        for raw_value in df.get(column, pd.Series(dtype=str)):
+            values.extend(split_pipe_codes(raw_value))
+    return values
 
 
 def contains_any_term(value: object, terms: Iterable[object]) -> bool:

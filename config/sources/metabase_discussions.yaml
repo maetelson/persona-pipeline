@@ -1,0 +1,25 @@
+source_id: metabase_discussions
+source_name: Metabase Discussions
+source_group: discourse
+collector_kind: discourse
+normalizer_kind: discourse
+enabled: true
+use_stub: false
+source_type: forum
+base_url: https://discourse.metabase.com
+forum_name: Metabase Discussion
+product_or_tool: Metabase
+max_latest_pages: 25
+max_search_pages: 2
+max_topics_per_run: 800
+max_fetch_workers: 2
+allow_listing_fallback: true
+min_raw_records_warn: 600
+sleep_seconds: 0.05
+timeout_seconds: 20
+query_mode: source_config
+seed_bank_path: config/seeds/discourse/metabase_discussions.yaml
+aliases:
+  - metabase
+  - metabase discussion
+  - metabase discussions

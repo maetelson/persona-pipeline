@@ -59,6 +59,7 @@ def _extend_registry_with_source_groups() -> dict[str, tuple[Path, object]]:
     registry = dict(COLLECTOR_REGISTRY)
     collector_map = {
         "business_communities": BusinessCommunityCollector,
+        "discourse": DiscourseCollector,
         "google_ads_help_community": GoogleAdsHelpCommunityCollector,
         "reddit": RedditPublicCollector,
     }
@@ -66,10 +67,16 @@ def _extend_registry_with_source_groups() -> dict[str, tuple[Path, object]]:
         collector_cls = collector_map.get(definition.collector_kind)
         if collector_cls is None:
             continue
-        if definition.collector_kind == "google_ads_help_community":
+        if definition.collector_kind in {"discourse", "google_ads_help_community"}:
             registry[definition.source_id] = (
                 definition.config_path,
-                lambda config, cls=collector_cls: cls(config=config, data_dir=ROOT / "data"),
+                lambda config, source_id=definition.source_id, cls=collector_cls, kind=definition.collector_kind: cls(
+                    config=config,
+                    data_dir=ROOT / "data",
+                    source_name=source_id,
+                )
+                if kind == "discourse"
+                else cls(config=config, data_dir=ROOT / "data"),
             )
             continue
         registry[definition.source_id] = (

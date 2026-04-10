@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import math
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -18,9 +17,14 @@ from src.analysis.persona_axes import build_axis_assignments
 from src.analysis.summary import build_quality_checks_df
 from src.utils.pipeline_schema import (
     THEME_COLUMNS,
+    collect_pipe_codes_from_frame,
+    is_single_cluster_dominant,
     is_unknown_like,
+    persona_min_cluster_size,
     round_pct,
     split_pipe_codes,
+    top_non_unknown_value,
+    unique_record_count,
 )
 from src.utils.io import ensure_dir
 
@@ -228,14 +232,14 @@ def _build_persona_summary_df(
     """Build top-level persona summary sheet."""
     rows: list[dict[str, Any]] = []
     for persona_id, group in persona_source_df.groupby("persona_id", dropna=False):
-        persona_size = int(group["episode_id"].nunique())
-        role = _top_value(group, "user_role")
-        workflow = _top_value(group, "workflow_stage")
-        goal = _top_value(group, "analysis_goal")
-        bottleneck = _top_value(group, "bottleneck_type")
-        trust = _top_value(group, "trust_validation_need")
-        tool_mode = _top_value(group, "tool_dependency_mode")
-        output_mode = _top_value(group, "output_expectation")
+        persona_size = unique_record_count(group)
+        role = top_non_unknown_value(group, "user_role")
+        workflow = top_non_unknown_value(group, "workflow_stage")
+        goal = top_non_unknown_value(group, "analysis_goal")
+        bottleneck = top_non_unknown_value(group, "bottleneck_type")
+        trust = top_non_unknown_value(group, "trust_validation_need")
+        tool_mode = top_non_unknown_value(group, "tool_dependency_mode")
+        output_mode = top_non_unknown_value(group, "output_expectation")
         cluster_name = naming_lookup.get(str(persona_id), str(group.get("cluster_name", pd.Series([persona_id])).iloc[0]))
         promotion = cluster_policy["status_by_persona"].get(str(persona_id), {})
         persona_name = _archetype_name(role, workflow, bottleneck, goal, output_mode, promotion.get("status", "exploratory_bucket"))
@@ -350,9 +354,9 @@ def _build_cluster_stats_df(
     """Build stable persona-cluster stats."""
     rows: list[dict[str, Any]] = []
     for persona_id, group in persona_source_df.groupby("persona_id", dropna=False):
-        persona_size = int(group["episode_id"].nunique())
+        persona_size = unique_record_count(group)
         axis_signature = " | ".join(
-            f"{axis}={_top_value(group, axis)}"
+            f"{axis}={top_non_unknown_value(group, axis)}"
             for axis in axis_names
         )
         rows.append(
@@ -366,8 +370,8 @@ def _build_cluster_stats_df(
                 "promotion_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("status", "exploratory_bucket"),
                 "promotion_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("reason", ""),
                 "dominant_signature": axis_signature,
-                "dominant_bottleneck": _top_value(group, "bottleneck_type"),
-                "dominant_analysis_goal": _top_value(group, "analysis_goal"),
+                "dominant_bottleneck": top_non_unknown_value(group, "bottleneck_type"),
+                "dominant_analysis_goal": top_non_unknown_value(group, "analysis_goal"),
             }
         )
     return pd.DataFrame(rows).sort_values(["persona_size", "persona_id"], ascending=[False, True]).reset_index(drop=True)
@@ -439,24 +443,9 @@ def _nearest_anchor(signature: str, anchors: list[str], axis_names: list[str]) -
     return best_anchor
 
 
-def _top_value(group: pd.DataFrame, column: str) -> str:
-    """Return the dominant non-unknown value for one column."""
-    if column not in group.columns:
-        return "unassigned"
-    series = group[column].astype(str).str.strip()
-    series = series[~series.map(is_unknown_like)]
-    if series.empty:
-        return "unassigned"
-    return str(series.value_counts().idxmax())
-
-
 def _theme_values(group: pd.DataFrame, columns: list[str]) -> list[str]:
     """Collect repeated theme values from labeled columns."""
-    values: list[str] = []
-    for column in columns:
-        for raw_value in group.get(column, pd.Series(dtype=str)):
-            values.extend(split_pipe_codes(raw_value))
-    return values
+    return collect_pipe_codes_from_frame(group, columns)
 
 
 def _row_theme_values(row: pd.Series) -> list[str]:
@@ -491,7 +480,7 @@ def _one_line_summary(cluster_name: str, workflow: str, bottleneck: str, goal: s
 
 def _why_persona_matters(group: pd.DataFrame, bottleneck: str, goal: str, output_mode: str) -> str:
     """Summarize why this persona matters using computed stats only."""
-    size = int(group["episode_id"].nunique()) if "episode_id" in group.columns else int(len(group))
+    size = unique_record_count(group) or int(len(group))
     return (
         f"{size} labeled records repeatedly combine {_titleize(goal).lower()}, "
         f"{_titleize(bottleneck).lower()}, and {_titleize(output_mode).lower()} expectations."
@@ -527,9 +516,9 @@ def _titleize(value: str, fallback: str = "unassigned") -> str:
 def _cluster_promotion_policy(persona_source_df: pd.DataFrame, total_labeled_records: int) -> dict[str, Any]:
     """Classify clusters as promoted personas or exploratory residual buckets."""
     sizes = persona_source_df.groupby("persona_id")["episode_id"].nunique().sort_values(ascending=False)
-    min_cluster_size = max(5, int(math.ceil(float(total_labeled_records) * 0.05)))
+    min_cluster_size = persona_min_cluster_size(total_labeled_records)
     largest_share = round_pct(int(sizes.iloc[0]) if not sizes.empty else 0, total_labeled_records)
-    single_cluster_dominance = largest_share > 70.0
+    single_cluster_dominance = is_single_cluster_dominant(largest_share)
     dominant_persona = str(sizes.index[0]) if not sizes.empty else ""
     status_by_persona: dict[str, dict[str, str]] = {}
     for persona_id, size in sizes.items():

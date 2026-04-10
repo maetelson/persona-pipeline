@@ -8,24 +8,29 @@ import pandas as pd
 from src.analysis.diagnostics import count_raw_jsonl_by_source
 from src.utils.pipeline_schema import (
     CORE_LABEL_COLUMNS,
-    LABEL_CODE_COLUMNS,
+    QUALITY_FLAG_OK,
+    QUALITY_FLAG_UNSTABLE,
+    QUALITY_THRESHOLDS,
+    SOURCE_FIELD,
+    aggregated_source_count,
     compute_quality_flag,
     row_has_unknown_labels,
     round_pct,
+    source_row_count,
 )
 
 
 def build_source_summary(normalized_df: pd.DataFrame, valid_df: pd.DataFrame, episodes_df: pd.DataFrame) -> pd.DataFrame:
     """Summarize counts by source across core stages."""
-    sources = sorted(set(normalized_df.get("source", pd.Series(dtype=str)).tolist()))
+    sources = sorted(set(normalized_df.get(SOURCE_FIELD, pd.Series(dtype=str)).tolist()))
     rows: list[dict[str, int | str]] = []
     for source in sources:
         rows.append(
             {
                 "source": source,
-                "normalized_count": int((normalized_df["source"] == source).sum()) if not normalized_df.empty else 0,
-                "valid_count": int((valid_df["source"] == source).sum()) if not valid_df.empty else 0,
-                "episode_count": int((episodes_df["source"] == source).sum()) if not episodes_df.empty else 0,
+                "normalized_count": source_row_count(normalized_df, source),
+                "valid_count": source_row_count(valid_df, source),
+                "episode_count": source_row_count(episodes_df, source),
             }
         )
     return pd.DataFrame(rows, columns=["source", "normalized_count", "valid_count", "episode_count"])
@@ -98,13 +103,13 @@ def build_final_source_distribution(
         rows.append(
             {
                 "source": source,
-                "raw_count": _aggregated_source_count(raw_counts_df, source, "raw_count"),
-                "normalized_count": int((normalized_df["source"] == source).sum()) if not normalized_df.empty else 0,
-                "valid_count": int((valid_df["source"] == source).sum()) if not valid_df.empty else 0,
-                "prefiltered_valid_count": int((prefiltered_df["source"] == source).sum()) if not prefiltered_df.empty and "source" in prefiltered_df.columns else 0,
-                "episode_count": int((episodes_df["source"] == source).sum()) if not episodes_df.empty else 0,
-                "labeled_count": int((labeled_with_source["source"] == source).sum()) if not labeled_with_source.empty else 0,
-                "share_of_labeled": round_pct(int((labeled_with_source["source"] == source).sum()) if not labeled_with_source.empty else 0, total_labeled),
+                "raw_count": aggregated_source_count(raw_counts_df, source, "raw_count"),
+                "normalized_count": source_row_count(normalized_df, source),
+                "valid_count": source_row_count(valid_df, source),
+                "prefiltered_valid_count": source_row_count(prefiltered_df, source),
+                "episode_count": source_row_count(episodes_df, source),
+                "labeled_count": source_row_count(labeled_with_source, source),
+                "share_of_labeled": round_pct(source_row_count(labeled_with_source, source), total_labeled),
                 "denominator_type": "labeled_episode_rows",
                 "denominator_value": total_labeled,
             }
@@ -133,12 +138,7 @@ def build_taxonomy_summary(final_axis_schema: list[dict[str, object]]) -> pd.Dat
 
 def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
     """Convert deterministic quality metrics into workbook rows."""
-    thresholds = {
-        "unknown_ratio": 0.30,
-        "cluster_count": 2,
-        "labeled_source_count": 3,
-        "largest_cluster_share": 70.0,
-    }
+    thresholds = QUALITY_THRESHOLDS
     rows: list[dict[str, object]] = []
     for metric, value in quality_checks.items():
         if metric == "cluster_distribution":
@@ -159,25 +159,25 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
         status = "pass"
         level = "pass"
         notes = ""
-        if metric == "unknown_ratio" and float(value) > 0.30:
+        if metric == "unknown_ratio" and float(value) > float(thresholds["unknown_ratio"]):
             status = "warn"
             level = "warning"
             notes = "unknown ratio above recommended threshold"
-        elif metric == "cluster_count" and int(value) < 2:
+        elif metric == "cluster_count" and int(value) < int(thresholds["cluster_count"]):
             status = "warn"
             level = "warning"
             notes = "too few clusters for robust persona comparison"
-        elif metric == "labeled_source_count" and int(value) < 3:
+        elif metric == "labeled_source_count" and int(value) < int(thresholds["labeled_source_count"]):
             status = "fail"
             level = "hard_fail"
             notes = "fewer than 3 labeled sources"
-        elif metric == "largest_cluster_share" and float(value) > 70.0:
+        elif metric == "largest_cluster_share" and float(value) > float(thresholds["largest_cluster_share"]):
             status = "fail"
             level = "hard_fail"
             notes = "largest cluster exceeds 70% of denominator"
         elif metric == "quality_flag":
-            status = "pass" if str(value) == "OK" else "fail" if str(value) == "UNSTABLE" else "warn"
-            level = "pass" if str(value) == "OK" else "hard_fail" if str(value) == "UNSTABLE" else "soft_fail"
+            status = "pass" if str(value) == QUALITY_FLAG_OK else "fail" if str(value) == QUALITY_FLAG_UNSTABLE else "warn"
+            level = "pass" if str(value) == QUALITY_FLAG_OK else "hard_fail" if str(value) == QUALITY_FLAG_UNSTABLE else "soft_fail"
             notes = "derived from source diversity, cluster dominance, persona promotion, example grounding, and denominator gates"
         rows.append(
             {
@@ -260,14 +260,6 @@ def _count_row(metric: str, count: int, denominator_type: str, denominator_value
         "denominator_value": denominator_value,
         "definition": definition,
     }
-
-
-def _aggregated_source_count(df: pd.DataFrame, source: str, column: str) -> int:
-    """Return a source count from an aggregated source table."""
-    if df.empty or "source" not in df.columns or column not in df.columns:
-        return 0
-    match = df[df["source"].astype(str) == source]
-    return int(pd.to_numeric(match[column], errors="coerce").fillna(0).sum()) if not match.empty else 0
 
 
 def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) -> str:

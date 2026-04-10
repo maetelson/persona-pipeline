@@ -9,7 +9,8 @@ from typing import Any
 import pandas as pd
 from src.analysis.example_selection import select_cluster_representative_texts
 from src.utils.io import load_yaml
-from src.utils.pipeline_schema import LABEL_CODE_COLUMNS, split_pipe_codes
+from src.utils.pipeline_schema import LABEL_CODE_COLUMNS, split_pipe_codes, unique_record_count
+from src.utils.record_access import get_record_codes
 
 
 LABEL_COLUMNS = LABEL_CODE_COLUMNS
@@ -47,7 +48,7 @@ def build_cluster_profiles(
 
     exploded_rows: list[dict[str, Any]] = []
     for _, row in merged.iterrows():
-        row_codes = {code for column in LABEL_COLUMNS for code in split_pipe_codes(row.get(column, "unknown"))}
+        row_codes = {code for codes in get_record_codes(row, columns=LABEL_COLUMNS).values() for code in codes}
         cluster_ids = sorted({code_to_cluster[code] for code in row_codes if code in code_to_cluster})
         for cluster_id in cluster_ids:
             cluster_codes = cluster_code_lookup.get(cluster_id, set())
@@ -67,7 +68,7 @@ def build_cluster_profiles(
     cluster_df = pd.DataFrame(exploded_rows)
     example_config = load_yaml(Path(__file__).resolve().parents[2] / "config" / "example_selection.yaml")
     profiles: list[dict[str, Any]] = []
-    total_rows = max(cluster_df["episode_id"].nunique(), 1)
+    total_rows = max(unique_record_count(cluster_df), 1)
     for cluster_id, cluster_rows in cluster_df.groupby("cluster_id", dropna=False):
         summary = cluster_summary_lookup.get(str(cluster_id), {})
         cluster_codes = cluster_code_lookup.get(str(cluster_id), set())
@@ -77,8 +78,8 @@ def build_cluster_profiles(
         profiles.append(
             {
                 "cluster_id": str(cluster_id),
-                "size": int(cluster_rows["episode_id"].nunique()),
-                "share_of_total": round(cluster_rows["episode_id"].nunique() / total_rows, 6),
+                "size": unique_record_count(cluster_rows),
+                "share_of_total": round(unique_record_count(cluster_rows) / total_rows, 6),
                 "top_demographics": top_demographics,
                 "top_need_codes": top_need_codes,
                 "top_outputs": _top_codes(cluster_rows, "output_codes", limit=5, allowed_codes=cluster_codes),

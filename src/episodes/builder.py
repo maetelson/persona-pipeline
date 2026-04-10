@@ -120,6 +120,8 @@ def build_post_episodes(row: pd.Series, rules: dict[str, Any]) -> list[EpisodeRe
     episodes: list[EpisodeRecord] = []
     for index, segment in enumerate(grouped, start=1):
         normalized_episode = clean_text(segment.text)
+        if not _passes_episode_quality_filter(normalized_episode, rules):
+            continue
         episodes.append(
             EpisodeRecord(
                 episode_id=f"{row['source']}::{row['raw_id']}::{index:02d}",
@@ -373,12 +375,32 @@ def _segmentation_note(segment: SegmentState, rules: dict[str, Any]) -> str:
     """Build a compact trace note for auditing why this became an episode."""
     return (
         f"strategy={rules.get('default_strategy', 'conservative_signature_split')};"
+        f"quality_gate=passed;"
         f"q={segment.question_type};"
         f"b={segment.bottleneck_text};"
         f"tool={segment.tool_env};"
         f"collab={segment.collaborator};"
         f"out={segment.desired_output}"
     )
+
+
+def _passes_episode_quality_filter(text: str, rules: dict[str, Any]) -> bool:
+    """Return whether text has enough workflow and metric pain to become an episode."""
+    quality_cfg = rules.get("quality_filter", {}) or {}
+    if not bool(quality_cfg.get("enabled", False)):
+        return True
+    lowered = clean_text(text).lower()
+    if not lowered:
+        return False
+    workflow_terms = [str(term).lower() for term in quality_cfg.get("workflow_pain_terms", [])]
+    metric_terms = [str(term).lower() for term in quality_cfg.get("metric_problem_terms", [])]
+    required_terms = [str(term).lower() for term in quality_cfg.get("required_problem_terms", [])]
+    usage_patterns = [str(term).lower() for term in quality_cfg.get("usage_only_patterns", [])]
+    has_workflow_pain = any(term in lowered for term in workflow_terms)
+    has_metric_problem = any(term in lowered for term in metric_terms)
+    has_required_problem = any(term in lowered for term in required_terms)
+    usage_only = any(lowered.startswith(pattern) for pattern in usage_patterns) and not has_required_problem
+    return has_workflow_pain and has_metric_problem and has_required_problem and not usage_only
 
 
 def _prefer_signal(left: str, right: str) -> str:

@@ -2,23 +2,26 @@
 
 from __future__ import annotations
 
-import math
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
 from src.utils.io import load_yaml, read_parquet
-
-LABELABLE_STATUSES = {"labelable", "borderline"}
-RAW_FAILURE_SOURCES = {
-    "github_discussions",
-    "google_ads_community",
-    "hubspot_community",
-    "klaviyo_community",
-    "merchant_center_community",
-    "shopify_community",
-}
+from src.utils.pipeline_schema import (
+    CLUSTER_DOMINANCE_SHARE_PCT,
+    LABELABLE_STATUSES,
+    MIN_LABELED_SOURCE_COUNT,
+    QUALITY_FLAG_EXPLORATORY,
+    QUALITY_FLAG_OK,
+    QUALITY_FLAG_UNSTABLE,
+    RAW_WITHOUT_LABEL_FAILURE_SOURCES,
+    SOURCE_FIELD,
+    aggregated_source_count,
+    is_single_cluster_dominant,
+    persona_min_cluster_size,
+    source_row_count,
+)
 
 
 def count_raw_jsonl_by_source(root_dir: Path) -> pd.DataFrame:
@@ -94,13 +97,13 @@ def build_source_diagnostics(
     rows: list[dict[str, Any]] = []
     for source in sources:
         raw_count = _source_count(raw_counts_df, source, "raw_count")
-        normalized_count = _count_source_rows(normalized_df, source)
-        valid_count = _count_source_rows(valid_df, source)
-        prefiltered_count = _count_source_rows(prefiltered_df, source)
-        episode_count = _count_source_rows(episodes_df, source)
-        labelable_count = _count_source_rows(labelable_df, source)
-        labeled_count = _count_source_rows(labeled_with_source, source)
-        promoted_count = _count_source_rows(promoted_with_source, source)
+        normalized_count = source_row_count(normalized_df, source)
+        valid_count = source_row_count(valid_df, source)
+        prefiltered_count = source_row_count(prefiltered_df, source)
+        episode_count = source_row_count(episodes_df, source)
+        labelable_count = source_row_count(labelable_df, source)
+        labeled_count = source_row_count(labeled_with_source, source)
+        promoted_count = source_row_count(promoted_with_source, source)
         reason = _source_failure_reason(
             source=source,
             raw_count=raw_count,
@@ -147,8 +150,8 @@ def build_quality_failures(
     example_failures = _example_failure_count(persona_examples_df)
 
     rows = [
-        _gate_row("source_diversity_gate", "hard_fail" if labeled_sources < 3 else "pass", labeled_sources, ">= 3 labeled sources"),
-        _gate_row("cluster_dominance_gate", "hard_fail" if largest_share > 70.0 else "pass", largest_share, "<= 70% largest promoted/core cluster share"),
+        _gate_row("source_diversity_gate", "hard_fail" if labeled_sources < MIN_LABELED_SOURCE_COUNT else "pass", labeled_sources, ">= 3 labeled sources"),
+        _gate_row("cluster_dominance_gate", "hard_fail" if largest_share > CLUSTER_DOMINANCE_SHARE_PCT else "pass", largest_share, "<= 70% largest promoted/core cluster share"),
         _gate_row("persona_promotion_gate", "hard_fail" if small_promoted else "pass", small_promoted, f"0 promoted personas below min_cluster_size={min_cluster_size}"),
         _gate_row("raw_to_labeled_source_gate", "hard_fail" if raw_sources >= 3 and labeled_sources <= 2 else "pass", f"raw={raw_sources}, labeled={labeled_sources}", "avoid raw coverage collapsing to <=2 labeled sources"),
         _gate_row("example_grounding_gate", "soft_fail" if example_failures else "pass", example_failures, "0 selected examples with grounding failures"),
@@ -167,7 +170,7 @@ def finalize_quality_checks(
     checks = dict(base_checks)
     labeled_sources = int((source_diagnostics_df.get("labeled_count", pd.Series(dtype=int)) > 0).sum()) if not source_diagnostics_df.empty else 0
     raw_sources = int((source_diagnostics_df.get("raw_count", pd.Series(dtype=int)) > 0).sum()) if not source_diagnostics_df.empty else 0
-    min_cluster_size = _min_cluster_size(int(checks.get("labeled_count", 0)))
+    min_cluster_size = persona_min_cluster_size(int(checks.get("labeled_count", 0)))
     largest_share = _largest_cluster_share(cluster_stats_df)
     checks.update(
         {
@@ -175,20 +178,20 @@ def finalize_quality_checks(
             "raw_source_count": raw_sources,
             "min_cluster_size": min_cluster_size,
             "largest_cluster_share": largest_share,
-            "single_cluster_dominance": bool(largest_share > 70.0),
+            "single_cluster_dominance": is_single_cluster_dominant(largest_share),
             "small_promoted_persona_count": _small_promoted_count(cluster_stats_df, min_cluster_size),
             "example_grounding_failure_count": _example_failure_count(persona_examples_df),
             "denominator_consistency": "explicit",
         }
     )
     hard_fail = (
-        labeled_sources < 3
-        or largest_share > 70.0
+        labeled_sources < MIN_LABELED_SOURCE_COUNT
+        or is_single_cluster_dominant(largest_share)
         or checks["small_promoted_persona_count"] > 0
         or (raw_sources >= 3 and labeled_sources <= 2)
     )
     soft_fail = checks["example_grounding_failure_count"] > 0
-    checks["quality_flag"] = "UNSTABLE" if hard_fail else "EXPLORATORY" if soft_fail else "OK"
+    checks["quality_flag"] = QUALITY_FLAG_UNSTABLE if hard_fail else QUALITY_FLAG_EXPLORATORY if soft_fail else QUALITY_FLAG_OK
     return checks
 
 
@@ -222,17 +225,7 @@ def _with_episode_source(df: pd.DataFrame, episode_source: pd.DataFrame) -> pd.D
 
 def _source_count(df: pd.DataFrame, source: str, column: str) -> int:
     """Return a numeric count for one source in a pre-aggregated table."""
-    if df.empty or column not in df.columns or "source" not in df.columns:
-        return 0
-    match = df[df["source"].astype(str) == source]
-    return int(pd.to_numeric(match[column], errors="coerce").fillna(0).sum()) if not match.empty else 0
-
-
-def _count_source_rows(df: pd.DataFrame, source: str) -> int:
-    """Return row count for one source."""
-    if df.empty or "source" not in df.columns:
-        return 0
-    return int((df["source"].astype(str) == source).sum())
+    return aggregated_source_count(df, source, column)
 
 
 def _source_failure_reason(
@@ -267,9 +260,9 @@ def _source_failure_reason(
 
 def _top_reason(df: pd.DataFrame, source: str, column: str) -> str:
     """Return top reason text for one source."""
-    if df.empty or column not in df.columns or "source" not in df.columns:
+    if df.empty or column not in df.columns or SOURCE_FIELD not in df.columns:
         return "reason_unavailable"
-    subset = df[df["source"].astype(str) == source]
+    subset = df[df[SOURCE_FIELD].astype(str) == source]
     if subset.empty:
         return "reason_unavailable"
     return str(subset[column].fillna("unknown").astype(str).value_counts().idxmax())
@@ -279,7 +272,7 @@ def _failure_level(source: str, raw_count: int, labeled_count: int) -> str:
     """Treat raw-without-labeled source coverage as a failure."""
     if raw_count > 0 and labeled_count <= 0:
         return "failure"
-    if source in RAW_FAILURE_SOURCES and raw_count <= 0:
+    if source in RAW_WITHOUT_LABEL_FAILURE_SOURCES and raw_count <= 0:
         return "warning"
     return "pass"
 
@@ -313,11 +306,6 @@ def _seed_path(root_dir: Path, source: str) -> Path | None:
         if path.exists():
             return path
     return None
-
-
-def _min_cluster_size(labeled_count: int) -> int:
-    """Return the default persona promotion floor."""
-    return max(5, int(math.ceil(float(labeled_count) * 0.05)))
 
 
 def _largest_cluster_share(cluster_stats_df: pd.DataFrame) -> float:

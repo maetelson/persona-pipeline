@@ -1,76 +1,46 @@
 source_id: google_ads_community
 source_group: business_communities
-max_query_count: 10
-source_notes: "Google Ads uses advertiser/operator language around delivery, impressions, eligibility, disapproval, conversion tracking, billing, verification, budgets, and policy limits."
-candidate_seed_pool:
-  - google ads not running
-  - 0 impressions
-  - low impressions
-  - eligible not showing
-  - campaign not serving
-  - ads disapproved
-  - keyword disapproved
-  - conversion tracking
-  - conversion not recording
-  - billing problem ads
-  - advertiser verification
-  - ad strength low
-  - limited by budget
-  - bid strategy learning
-  - search terms irrelevant
-  - campaign stopped spending
-  - asset disapproved
-  - policy violation ads
-  - remarketing not working
-  - not eligible limited
+max_query_count: 15
+source_notes: "Source-specific Google Ads measurement and reporting seeds only; no shared seed expansion."
+candidate_seed_pool: []
 active_core_seeds:
-  - seed: google ads not running
-    reason: Captures advertiser delivery failures in community language.
-  - seed: advertiser verification
-    reason: Mirrors fetched verification failure language.
-  - seed: 0 impressions
-    reason: Pulls zero-impression campaign issues.
-  - seed: low impressions
-    reason: Captures under-delivery and weak reach problems.
-  - seed: eligible not showing
-    reason: Targets ads marked eligible but not visible or serving.
-  - seed: campaign not serving
-    reason: Captures campaigns that are live but not delivering.
-  - seed: ads disapproved
-    reason: Targets broad policy disapproval blockers.
-  - seed: conversion not recording
-    reason: Finds operator measurement failures.
-  - seed: billing problem ads
-    reason: High-scoring candidate for delivery blocked by billing friction.
-  - seed: limited by budget
-    reason: Captures spend and delivery constraint questions.
-optional_templates:
-  - template: keyword disapproved
-    reason: Extra keyword-level policy blocker phrase.
-  - template: campaign stopped spending
-    reason: Extra delivery stoppage phrase.
-  - template: policy violation ads
-    reason: Extra policy blocker phrase.
-  - template: not eligible limited
-    reason: Extra eligibility status phrase.
+  - seed: google ads conversion tracking issue
+    reason: Targets conversion tracking workflow pain.
+  - seed: google ads conversion not showing
+    reason: Finds missing conversion reports.
+  - seed: google ads reporting wrong
+    reason: Captures reporting trust failures.
+  - seed: google ads performance drop
+    reason: Targets campaign performance triage.
+  - seed: google ads campaign data mismatch
+    reason: Finds campaign-level metric mismatch.
+  - seed: attribution issue google ads
+    reason: Captures attribution confusion.
+  - seed: google ads conversion delay confusion
+    reason: Targets delayed conversion interpretation.
+  - seed: google ads dashboard issue
+    reason: Finds dashboard workflow blockers.
+  - seed: google ads metrics discrepancy
+    reason: Captures discrepancy language directly.
+  - seed: google ads click conversion mismatch
+    reason: Targets click/conversion reconciliation.
+  - seed: reporting issue google ads
+    reason: Broad Google Ads reporting issue seed.
+  - seed: google ads merchant center mismatch
+    reason: Captures Ads and Merchant Center mismatch.
+  - seed: google ads conversion action issue
+    reason: Targets conversion action configuration pain.
+  - seed: google ads cannot see conversions
+    reason: Finds missing conversion visibility.
+  - seed: google ads data not matching
+    reason: Captures data mismatch directly.
+optional_templates: []
 negative_terms:
-  - account hacked
-  - google ads experts
-  - call me
-  - contact number
-  - agency hiring
-  - resume
-  - career
-  - job
-  - certification
   - api
   - script
   - crawler
   - developer
-  - code
-  - plugin
-  - help center
-  - post a question
-  - account access
+  - certification
+  - job
+  - career
   - phone support
-  - ad account access

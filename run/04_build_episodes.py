@@ -19,6 +19,8 @@ from src.analysis.pipeline_thresholds import (
 )
 from src.utils.io import load_yaml, read_parquet, write_parquet
 from src.utils.logging import get_logger
+from src.utils.pipeline_schema import RAW_ID_FIELD, SOURCE_FIELD, source_row_count
+from src.utils.record_access import get_raw_id, get_record_source
 
 LOGGER = get_logger("run.build_episodes")
 
@@ -76,9 +78,9 @@ def _build_episode_audit(valid_df, episodes_df):
             "avg_episodes_per_post": round(total_episodes / total_posts, 2) if total_posts else 0.0,
         }
     )
-    for source in sorted(valid_df.get("source", pd.Series(dtype=str)).unique().tolist()):
-        source_posts = int((valid_df["source"] == source).sum())
-        source_episodes = int((episodes_df["source"] == source).sum()) if not episodes_df.empty else 0
+    for source in sorted(valid_df.get(SOURCE_FIELD, pd.Series(dtype=str)).unique().tolist()):
+        source_posts = source_row_count(valid_df, source)
+        source_episodes = source_row_count(episodes_df, source)
         source_rows.append(
             {
                 "audit_level": "source_summary",
@@ -92,15 +94,18 @@ def _build_episode_audit(valid_df, episodes_df):
 
     per_post_rows: list[dict[str, str | int | float]] = []
     episode_counts = (
-        episodes_df.groupby(["source", "raw_id"]).size().reset_index(name="episode_count")
+        episodes_df.groupby([SOURCE_FIELD, RAW_ID_FIELD]).size().reset_index(name="episode_count")
         if not episodes_df.empty
-        else pd.DataFrame(columns=["source", "raw_id", "episode_count"])
+        else pd.DataFrame(columns=[SOURCE_FIELD, RAW_ID_FIELD, "episode_count"])
     )
+    episode_count_lookup = {
+        (str(row[SOURCE_FIELD]), str(row[RAW_ID_FIELD])): int(row["episode_count"])
+        for _, row in episode_counts.iterrows()
+    }
     for _, row in valid_df.iterrows():
-        source = str(row.get("source", ""))
-        raw_id = str(row.get("raw_id", ""))
-        match = episode_counts[(episode_counts["source"] == source) & (episode_counts["raw_id"] == raw_id)]
-        episode_count = int(match["episode_count"].iloc[0]) if not match.empty else 0
+        source = get_record_source(row)
+        raw_id = get_raw_id(row)
+        episode_count = episode_count_lookup.get((source, raw_id), 0)
         per_post_rows.append(
             {
                 "audit_level": "post_detail",

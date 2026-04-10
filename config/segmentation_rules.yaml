@@ -65,3 +65,54 @@ repeat_phrases:
   - manual reporting
   - stakeholder report
   - root cause
+
+quality_filter:
+  enabled: true
+  workflow_pain_terms:
+    - wrong
+    - mismatch
+    - not matching
+    - not working
+    - discrepancy
+    - incorrect
+    - different
+    - cannot
+    - issue
+    - confusion
+    - limitation
+    - delay
+    - drop
+    - trust
+  metric_problem_terms:
+    - number
+    - numbers
+    - report
+    - reporting
+    - metric
+    - metrics
+    - dashboard
+    - conversion
+    - attribution
+    - revenue
+    - campaign
+    - performance
+    - count
+    - aggregation
+    - query
+    - export
+    - csv
+    - data
+  required_problem_terms:
+    - why
+    - wrong
+    - mismatch
+    - not matching
+    - not working
+    - discrepancy
+    - incorrect
+    - different
+  usage_only_patterns:
+    - how do i
+    - how to
+    - can i
+    - is it possible

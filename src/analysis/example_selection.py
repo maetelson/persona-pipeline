@@ -10,7 +10,7 @@ from typing import Any
 import pandas as pd
 
 from src.utils.io import ensure_dir, load_yaml
-from src.utils.record_access import get_record_text
+from src.utils.record_access import get_episode_id, get_record_source, get_record_text, get_record_value
 from src.utils.text import clean_text, make_dedupe_key
 
 HTML_TAG_RE = re.compile(r"<[^>]+>")
@@ -208,8 +208,8 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
     top_negative_signals = _top_signals(score_breakdown, positive=False)
     rejection_reason = _rejection_reason(score_breakdown, quote_quality)
     return {
-        "episode_id": str(row.get("episode_id", "")),
-        "source": str(row.get("source", "")),
+        "episode_id": get_episode_id(row),
+        "source": get_record_source(row),
         "grounded_text": snippet,
         "quote_quality": quote_quality,
         "top_positive_signals": json.dumps(top_positive_signals, ensure_ascii=False),
@@ -219,7 +219,7 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
         "rejection_reason": rejection_reason,
         "subpattern_label": _subpattern_label(text, config),
         "final_example_score": round(float(final_example_score), 4),
-        "label_confidence": float(row.get("label_confidence", 0.0) or 0.0),
+        "label_confidence": float(get_record_value(row, "label_confidence", 0.0) or 0.0),
         "source_text_length": len(snippet),
         "reason_selected": " | ".join(top_positive_signals[:3]) if top_positive_signals else "borderline or weak evidence",
         "why_selected": _why_selected(top_positive_signals, cluster_fit_reason),

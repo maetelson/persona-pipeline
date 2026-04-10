@@ -6,6 +6,8 @@ import hashlib
 
 import pandas as pd
 
+from src.utils.pipeline_schema import LABEL_CODE_COLUMNS
+
 
 def build_cluster_summary(labeled_df: pd.DataFrame) -> pd.DataFrame:
     """Build exploratory cluster summaries from label signatures.
@@ -30,11 +32,11 @@ def build_cluster_summary(labeled_df: pd.DataFrame) -> pd.DataFrame:
     if labeled_df.empty:
         return pd.DataFrame(columns=columns)
 
+    signature_columns = [column for column in LABEL_CODE_COLUMNS if column in labeled_df.columns]
+    if not signature_columns:
+        return pd.DataFrame(columns=columns)
     grouped = (
-        labeled_df.groupby(
-            ["role_codes", "moment_codes", "question_codes", "pain_codes", "env_codes", "output_codes", "fit_code"],
-            dropna=False,
-        )
+        labeled_df.groupby(signature_columns, dropna=False)
         .size()
         .reset_index(name="episode_count")
         .sort_values("episode_count", ascending=False)
@@ -51,15 +53,7 @@ def _cluster_key(row: pd.Series) -> str:
     """Create a stable hash key from cluster dimensions."""
     raw = "||".join(
         str(row.get(column, ""))
-        for column in [
-            "role_codes",
-            "moment_codes",
-            "question_codes",
-            "pain_codes",
-            "env_codes",
-            "output_codes",
-            "fit_code",
-        ]
+        for column in LABEL_CODE_COLUMNS
     )
     return hashlib.sha1(raw.encode("utf-8")).hexdigest()
 

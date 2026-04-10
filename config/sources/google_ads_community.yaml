@@ -10,14 +10,14 @@ product_or_tool: Google Ads
 check_robots: true
 query_mode: source_config
 seed_bank_path: config/seeds/business_communities/google_ads_community.yaml
-max_query_count: 10
+max_query_count: 15
 max_threads_per_run: 800
 max_discovered_threads_per_url: 100
 discovery_page_count: 1
 sleep_seconds: 0.15
 timeout_seconds: 4
-filter_discovery_by_seed: false
-include_candidate_seed_pool_for_discovery: true
+filter_discovery_by_seed: true
+include_candidate_seed_pool_for_discovery: false
 min_seed_term_matches: 1
 drop_listing_only: false
 aliases:
