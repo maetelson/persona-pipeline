@@ -184,6 +184,18 @@ labelability:
     - numbers don't match
     - presentation-ready
   business_community_positive_terms:
+    - report not matching
+    - performance not matching
+    - metrics discrepancy
+    - data discrepancy
+    - conversion tracking
+    - conversion action
+    - zero impressions
+    - not generating impressions
+    - google shopping
+    - shopping campaign
+    - campaign performance
+    - leads
     - analytics data
     - analytics discrepancy
     - conversion rate

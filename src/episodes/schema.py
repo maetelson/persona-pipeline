@@ -20,6 +20,10 @@ EPISODE_COLUMNS = [
     "workaround_text",
     "desired_output",
     "product_fit",
+    "quality_score",
+    "quality_bucket",
+    "quality_fail_reason",
+    "rescue_reason",
     "segmentation_note",
 ]
 
@@ -56,6 +60,10 @@ class EpisodeRecord:
     workaround_text: str
     desired_output: str
     product_fit: str
+    quality_score: float
+    quality_bucket: str
+    quality_fail_reason: str
+    rescue_reason: str
     segmentation_note: str
 
     def to_dict(self) -> dict[str, str]:

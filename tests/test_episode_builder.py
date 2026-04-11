@@ -76,6 +76,76 @@ class EpisodeBuilderTests(unittest.TestCase):
         self.assertEqual(len(episodes_df), 0)
         self.assertEqual(str(debug_df.iloc[0]["drop_reason"]), "title_body_merge_failure")
 
+    def test_shopify_funnel_drop_can_promote_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "shopify_community",
+                    "raw_id": "shopify-1",
+                    "url": "https://example.com/thread/shopify-1",
+                    "source_type": "thread",
+                    "title": "Sales Funnel Feedback",
+                    "body": "My conversion rate dropped from 2% to 0.5% and checkout drop-off is high. I am analyzing sessions, sales, and funnel stages to figure out what changed.",
+                    "comments_text": "",
+                    "thread_title": "Sales Funnel Feedback",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "shopify"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertEqual(int(debug_df.iloc[0]["episode_count"]), 1)
+        self.assertEqual(str(debug_df.iloc[0]["drop_reason"]), "")
+        self.assertIn(str(episodes_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_shopify_discussion_style_can_be_borderline(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "shopify_community",
+                    "raw_id": "shopify-2",
+                    "url": "https://example.com/thread/shopify-2",
+                    "source_type": "thread",
+                    "title": "How do you handle monthly sales comparison?",
+                    "body": "I am curious how other store owners interpret weekly and monthly sales trends when analytics looks off.",
+                    "comments_text": "",
+                    "thread_title": "How do you handle monthly sales comparison?",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "shopify"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(episodes_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_google_ads_help_impression_issue_can_pass_quality_gate(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "google_ads_help_community",
+                    "raw_id": "gah-1",
+                    "url": "https://example.com/thread/gah-1",
+                    "source_type": "thread",
+                    "title": "Campaign not generating impressions despite full setup",
+                    "body": "Our Google Ads search campaign has zero impressions, clicks, and conversions even after setup. Reporting is not matching what we expect, and we need help identifying what is preventing the campaign from serving.",
+                    "comments_text": "",
+                    "thread_title": "Campaign not generating impressions despite full setup",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "google_support"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertEqual(int(debug_df.iloc[0]["episode_count"]), 1)
+        self.assertIn(str(episodes_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -40,7 +40,9 @@ def main() -> None:
     write_parquet(audit_df, ROOT / "data" / "episodes" / "episode_audit.parquet")
     drop_breakdown_df = _build_episode_drop_breakdown(debug_df)
     write_parquet(drop_breakdown_df, ROOT / "data" / "episodes" / "episode_drop_breakdown.parquet")
-    _write_hubspot_before_after_sample(valid_df, debug_df, episodes_df)
+    _write_source_before_after_sample(valid_df, debug_df, episodes_df, "hubspot_community", "hubspot_episode_before_after_sample.parquet")
+    _write_source_before_after_sample(valid_df, debug_df, episodes_df, "shopify_community", "shopify_episode_before_after_sample.parquet")
+    _write_shopify_quality_outputs(valid_df, debug_df, episodes_df)
     profile, profile_cfg = load_threshold_profile(ROOT / "config" / "pipeline_thresholds.yaml")
     threshold_df = evaluate_episode_thresholds(valid_df, episodes_df, profile, profile_cfg)
     combined_threshold_df = upsert_threshold_audit(ROOT, threshold_df)
@@ -144,14 +146,14 @@ def _build_episode_drop_breakdown(debug_df):
     )
 
 
-def _write_hubspot_before_after_sample(valid_df, debug_df, episodes_df) -> None:
-    """Write a small before/after sample for HubSpot episode debugging."""
+def _write_source_before_after_sample(valid_df, debug_df, episodes_df, source: str, output_name: str) -> None:
+    """Write a small before/after sample for one source episode debugging."""
     import pandas as pd
 
-    hubspot_valid = valid_df[valid_df[SOURCE_FIELD].astype(str) == "hubspot_community"].copy()
-    if hubspot_valid.empty:
+    source_valid = valid_df[valid_df[SOURCE_FIELD].astype(str) == str(source)].copy()
+    if source_valid.empty:
         return
-    sample = hubspot_valid.head(20).copy()
+    sample = source_valid.head(20).copy()
     debug_cols = [
         "raw_id",
         "source_schema_type",
@@ -165,14 +167,54 @@ def _write_hubspot_before_after_sample(valid_df, debug_df, episodes_df) -> None:
     sample = sample.merge(debug_df[debug_cols], on="raw_id", how="left")
     sample["before_episode_count"] = 0
     actual_counts = (
-        episodes_df[episodes_df[SOURCE_FIELD].astype(str) == "hubspot_community"]
+        episodes_df[episodes_df[SOURCE_FIELD].astype(str) == str(source)]
         .groupby("raw_id")
         .size()
         .reset_index(name="after_episode_count")
     )
     sample = sample.merge(actual_counts, on="raw_id", how="left")
     sample["after_episode_count"] = sample["after_episode_count"].fillna(0).astype(int)
-    write_parquet(sample, ROOT / "data" / "episodes" / "hubspot_episode_before_after_sample.parquet")
+    write_parquet(sample, ROOT / "data" / "episodes" / output_name)
+
+
+def _write_shopify_quality_outputs(valid_df, debug_df, episodes_df) -> None:
+    """Write Shopify-specific borderline and false-negative audit outputs."""
+    import pandas as pd
+
+    source = "shopify_community"
+    shop_valid = valid_df[valid_df[SOURCE_FIELD].astype(str) == source].copy()
+    if shop_valid.empty:
+        return
+    shop_debug = debug_df[debug_df["source"].astype(str) == source].copy()
+    if shop_debug.empty:
+        return
+    merged = shop_valid.merge(
+        shop_debug[
+            [
+                "raw_id",
+                "episode_count",
+                "drop_reason",
+                "drop_detail",
+                "quality_score",
+                "quality_bucket",
+                "quality_fail_reason",
+                "rescue_reason",
+                "passes_combined_quality",
+            ]
+        ],
+        on="raw_id",
+        how="left",
+    )
+    failed = merged[merged["episode_count"].fillna(0).astype(int) == 0].copy()
+    audit_sample = failed.head(100).copy()
+    write_parquet(audit_sample, ROOT / "data" / "episodes" / "shopify_quality_false_negative_audit.parquet")
+    audit_sample.to_csv(ROOT / "data" / "episodes" / "shopify_quality_false_negative_audit.csv", index=False)
+
+    borderline = episodes_df[
+        (episodes_df[SOURCE_FIELD].astype(str) == source) & (episodes_df.get("quality_bucket", pd.Series(dtype=str)).astype(str) == "borderline")
+    ].copy()
+    write_parquet(borderline, ROOT / "data" / "episodes" / "shopify_episode_borderline_review.parquet")
+    borderline.to_csv(ROOT / "data" / "episodes" / "shopify_episode_borderline_review.csv", index=False)
 
 
 if __name__ == "__main__":

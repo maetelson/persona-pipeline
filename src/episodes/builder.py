@@ -113,6 +113,10 @@ class EpisodeBuildDebug:
     missing_required_fields: bool
     reply_like_schema: bool
     passes_combined_quality: bool
+    quality_score: float
+    quality_bucket: str
+    quality_fail_reason: str
+    rescue_reason: str
     top_level_meta_keys: str
     nested_meta_keys: str
 
@@ -140,9 +144,24 @@ class EpisodeBuildDebug:
             "missing_required_fields": self.missing_required_fields,
             "reply_like_schema": self.reply_like_schema,
             "passes_combined_quality": self.passes_combined_quality,
+            "quality_score": self.quality_score,
+            "quality_bucket": self.quality_bucket,
+            "quality_fail_reason": self.quality_fail_reason,
+            "rescue_reason": self.rescue_reason,
             "top_level_meta_keys": self.top_level_meta_keys,
             "nested_meta_keys": self.nested_meta_keys,
         }
+
+
+@dataclass(slots=True)
+class QualityAssessment:
+    """Deterministic episode quality scoring outcome."""
+
+    score: float
+    bucket: str
+    fail_reason: str
+    rescue_reason: str
+    passes: bool
 
 
 def build_episode_table(valid_df: pd.DataFrame, rules: dict[str, Any]) -> pd.DataFrame:
@@ -177,7 +196,8 @@ def build_episode_outputs(valid_df: pd.DataFrame, rules: dict[str, Any]) -> tupl
 
 def build_post_episodes(row: pd.Series, rules: dict[str, Any]) -> tuple[list[EpisodeRecord], EpisodeBuildDebug]:
     """Build one or more conservative episodes from a single valid post."""
-    diagnostics = _build_episode_row_diagnostics(row, rules)
+    source = str(row.get("source", "") or "")
+    diagnostics = _build_episode_row_diagnostics(row, rules, source=source)
     candidate_units = _build_units_from_row(row, rules, diagnostics)
     min_episode_len = int(rules.get("min_episode_len", 120))
     if not candidate_units:
@@ -196,9 +216,12 @@ def build_post_episodes(row: pd.Series, rules: dict[str, Any]) -> tuple[list[Epi
         grouped = [_derive_segment_state(diagnostics["combined_text"])]
 
     episodes: list[EpisodeRecord] = []
+    quality_assessments: list[QualityAssessment] = []
     for index, segment in enumerate(grouped, start=1):
         normalized_episode = clean_text(segment.text)
-        if not _passes_episode_quality_filter(normalized_episode, rules):
+        quality = _assess_episode_quality(normalized_episode, rules, source=source)
+        quality_assessments.append(quality)
+        if not quality.passes:
             continue
         episodes.append(
             EpisodeRecord(
@@ -216,11 +239,22 @@ def build_post_episodes(row: pd.Series, rules: dict[str, Any]) -> tuple[list[Epi
                 workaround_text=_extract_workaround(normalized_episode),
                 desired_output=segment.desired_output,
                 product_fit=_score_product_fit(segment, normalized_episode),
+                quality_score=quality.score,
+                quality_bucket=quality.bucket,
+                quality_fail_reason=quality.fail_reason,
+                rescue_reason=quality.rescue_reason,
                 segmentation_note=_segmentation_note(segment, rules),
             )
         )
-    drop_reason = "" if episodes else _derive_drop_reason(diagnostics, grouped_segments=grouped)
-    return episodes, _build_debug_record(row, diagnostics, episode_count=len(episodes), drop_reason=drop_reason)
+    chosen_quality = quality_assessments[0] if quality_assessments else _assess_episode_quality(diagnostics["combined_text"], rules, source=source)
+    drop_reason = "" if episodes else _derive_drop_reason(diagnostics, grouped_segments=grouped, quality=chosen_quality)
+    return episodes, _build_debug_record(
+        row,
+        diagnostics,
+        episode_count=len(episodes),
+        drop_reason=drop_reason,
+        quality=chosen_quality,
+    )
 
 
 def _build_units_from_row(row: pd.Series, rules: dict[str, Any], diagnostics: dict[str, Any] | None = None) -> list[str]:
@@ -476,17 +510,58 @@ def _segmentation_note(segment: SegmentState, rules: dict[str, Any]) -> str:
     )
 
 
-def _passes_episode_quality_filter(text: str, rules: dict[str, Any]) -> bool:
+def _passes_episode_quality_filter(text: str, rules: dict[str, Any], source: str = "") -> bool:
     """Return whether text has enough workflow and metric pain to become an episode."""
+    return _assess_episode_quality(text, rules, source=source).passes
+
+
+def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") -> QualityAssessment:
+    """Return hard-pass, borderline, or fail quality decision with source-aware reasons."""
     quality_cfg = rules.get("quality_filter", {}) or {}
     if not bool(quality_cfg.get("enabled", False)):
-        return True
+        return QualityAssessment(score=1.0, bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
     lowered = clean_text(text).lower()
     if not lowered:
-        return False
+        return QualityAssessment(score=0.0, bucket="fail", fail_reason="short_text_no_workflow_signal", rescue_reason="", passes=False)
     workflow_terms = [str(term).lower() for term in quality_cfg.get("workflow_pain_terms", [])]
     metric_terms = [str(term).lower() for term in quality_cfg.get("metric_problem_terms", [])]
     required_terms = [str(term).lower() for term in quality_cfg.get("required_problem_terms", [])]
+    if source == "shopify_community":
+        workflow_terms = [
+            *workflow_terms,
+            "troubleshoot",
+            "troubleshooting",
+            "debugging session",
+            "figure out",
+            "feedback",
+            "escalation",
+            "analysis",
+            "funnel",
+            "price mismatch",
+            "showing nothing",
+        ]
+        metric_terms = [
+            *metric_terms,
+            "sessions",
+            "orders",
+            "sales",
+            "checkout",
+            "ga4",
+            "inventory",
+            "merchant center",
+            "feed",
+        ]
+        required_terms = [
+            *required_terms,
+            "drop",
+            "dropped",
+            "plummeting",
+            "low",
+            "off by",
+            "showing nothing",
+            "disappeared",
+            "missing",
+        ]
     usage_patterns = [str(term).lower() for term in quality_cfg.get("usage_only_patterns", [])]
     has_workflow_pain = any(term in lowered for term in workflow_terms)
     has_metric_problem = any(term in lowered for term in metric_terms)
@@ -497,7 +572,239 @@ def _passes_episode_quality_filter(text: str, rules: dict[str, Any]) -> bool:
     if not has_required_problem and structural_pain:
         has_required_problem = True
     usage_only = any(lowered.startswith(pattern) for pattern in usage_patterns) and not has_required_problem
-    return has_workflow_pain and has_metric_problem and has_required_problem and not usage_only
+    if source not in {"shopify_community", "google_ads_help_community"}:
+        passed = has_workflow_pain and has_metric_problem and has_required_problem and not usage_only
+        return QualityAssessment(
+            score=1.0 if passed else 0.0,
+            bucket="hard_pass" if passed else "fail",
+            fail_reason="" if passed else "quality_filter_failed",
+            rescue_reason="",
+            passes=passed,
+        )
+
+    if source == "google_ads_help_community":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "conversion",
+                "conversions",
+                "conversion action",
+                "click",
+                "clicks",
+                "impressions",
+                "report",
+                "reporting",
+                "metrics",
+                "campaign",
+                "performance",
+            ]
+        )
+        discrepancy_presence = any(
+            term in lowered
+            for term in [
+                "mismatch",
+                "discrepancy",
+                "not matching",
+                "not showing",
+                "wrong",
+                "delay",
+                "zero impressions",
+                "not generating impressions",
+            ]
+        )
+        analysis_context = any(
+            term in lowered
+            for term in [
+                "campaign",
+                "performance",
+                "reporting",
+                "conversion action",
+                "merchant center",
+                "attribution",
+                "ad preview",
+                "diagnosis",
+                "search campaign",
+            ]
+        )
+        explanation_burden = any(
+            term in lowered
+            for term in [
+                "what could be the issue",
+                "preventing",
+                "help identify",
+                "why",
+                "cannot see",
+                "not showing",
+                "could this be related",
+            ]
+        )
+        discussion_style = any(
+            term in lowered
+            for term in [
+                "hi everyone",
+                "could you please review",
+                "i would really appreciate it",
+                "thanks in advance",
+                "can anyone help",
+            ]
+        )
+        account_support_only = any(
+            term in lowered
+            for term in [
+                "identity verification",
+                "payment verification",
+                "suspended account",
+                "billing issue",
+                "under review",
+                "wrong google account",
+            ]
+        ) and not metric_presence
+        low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
+
+        score = 0.0
+        score += 1.2 if metric_presence else 0.0
+        score += 1.1 if discrepancy_presence or has_required_problem else 0.0
+        score += 0.9 if analysis_context else 0.0
+        score += 0.8 if explanation_burden else 0.0
+        score += 0.7 if has_workflow_pain else 0.0
+        score += 0.5 if discussion_style and (metric_presence or analysis_context) else 0.0
+        score -= 1.2 if usage_only else 0.0
+
+        signal_count = sum(
+            int(flag)
+            for flag in [
+                metric_presence,
+                discrepancy_presence or has_required_problem,
+                analysis_context,
+                explanation_burden,
+                discussion_style and (metric_presence or analysis_context),
+            ]
+        )
+        if account_support_only:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="support_case_without_analysis_context",
+                rescue_reason="",
+                passes=False,
+            )
+        if len(lowered) < 140 and not discrepancy_presence and not explanation_burden:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="short_text_help_stub",
+                rescue_reason="",
+                passes=False,
+            )
+        if low_signal:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="complaint_without_operational_context",
+                rescue_reason="",
+                passes=False,
+            )
+        if signal_count >= 3 and (discrepancy_presence or has_required_problem or explanation_burden):
+            return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
+        if signal_count >= 2:
+            if metric_presence and not (discrepancy_presence or has_required_problem):
+                return QualityAssessment(
+                    score=round(score, 3),
+                    bucket="borderline",
+                    fail_reason="metric_present_but_no_explicit_blocker",
+                    rescue_reason="google_ads_help_metric_context_rescue",
+                    passes=True,
+                )
+            if not has_workflow_pain and (metric_presence or analysis_context):
+                return QualityAssessment(
+                    score=round(score, 3),
+                    bucket="borderline",
+                    fail_reason="weak_workflow_signal",
+                    rescue_reason="google_ads_help_reporting_interpretation_rescue",
+                    passes=True,
+                )
+            if discussion_style and (metric_presence or analysis_context):
+                return QualityAssessment(
+                    score=round(score, 3),
+                    bucket="borderline",
+                    fail_reason="discussion_style_but_relevant",
+                    rescue_reason="google_ads_help_support_style_rescue",
+                    passes=True,
+                )
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="borderline",
+                fail_reason="weak_problem_phrasing",
+                rescue_reason="google_ads_help_problem_phrasing_rescue",
+                passes=True,
+            )
+        return QualityAssessment(
+            score=round(score, 3),
+            bucket="fail",
+            fail_reason="impression_problem_without_reporting_context" if metric_presence else "complaint_without_operational_context",
+            rescue_reason="",
+            passes=False,
+        )
+
+    metric_presence = any(term in lowered for term in ["metric", "metrics", "report", "reporting", "analytics", "dashboard", "export", "csv"])
+    discrepancy_presence = any(term in lowered for term in ["discrepancy", "mismatch", "not matching", "wrong", "confusion", "off by"])
+    business_metric_presence = any(term in lowered for term in ["sales", "revenue", "orders", "sessions", "conversion", "aov", "roas", "checkout"])
+    analysis_context = any(term in lowered for term in ["compare", "comparison", "trend", "weekly", "monthly", "performance", "ga4", "merchant center"])
+    explanation_burden = any(term in lowered for term in ["figure out", "cannot explain", "explain", "why", "interpret", "understand", "what changed"])
+    discussion_style = any(term in lowered for term in ["feedback", "curious", "anyone else", "what do you check first", "how do you handle", "looking for advice"])
+    operational_context = any(term in lowered for term in ["store", "campaign", "product", "inventory", "checkout", "merchant center", "report", "dashboard"])
+    pure_feature_request = any(term in lowered for term in ["feature request", "would be nice", "idea:"]) and not metric_presence and not business_metric_presence
+    generic_tips = any(term in lowered for term in ["tips", "best apps", "inspiration", "advice"]) and not metric_presence and not discrepancy_presence
+    low_signal = not any([metric_presence, discrepancy_presence, business_metric_presence, analysis_context, explanation_burden])
+
+    score = 0.0
+    score += 1.3 if metric_presence else 0.0
+    score += 1.1 if discrepancy_presence else 0.0
+    score += 1.0 if business_metric_presence else 0.0
+    score += 0.9 if analysis_context else 0.0
+    score += 0.8 if explanation_burden else 0.0
+    score += 0.7 if has_workflow_pain else 0.0
+    score += 0.6 if discussion_style and (metric_presence or business_metric_presence or analysis_context) else 0.0
+    score += 0.5 if operational_context else 0.0
+    score -= 1.5 if pure_feature_request else 0.0
+    score -= 1.2 if generic_tips else 0.0
+    score -= 0.8 if usage_only else 0.0
+
+    signal_count = sum(
+        int(flag)
+        for flag in [
+            metric_presence,
+            discrepancy_presence or has_required_problem,
+            business_metric_presence,
+            analysis_context,
+            explanation_burden,
+            discussion_style and (metric_presence or business_metric_presence or analysis_context),
+        ]
+    )
+    if pure_feature_request:
+        return QualityAssessment(score=round(score, 3), bucket="fail", fail_reason="complaint_without_operational_context", rescue_reason="", passes=False)
+    if generic_tips or low_signal:
+        return QualityAssessment(score=round(score, 3), bucket="fail", fail_reason="truly_weak_low_signal", rescue_reason="", passes=False)
+    if signal_count >= 3 and (discrepancy_presence or has_required_problem or explanation_burden):
+        return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
+    if signal_count >= 2:
+        fail_reason = ""
+        rescue_reason = "shopify_quality_rescue"
+        if discussion_style and (metric_presence or business_metric_presence or analysis_context):
+            fail_reason = "discussion_style_but_relevant"
+            rescue_reason = "shopify_discussion_style_rescue"
+        elif metric_presence and not (discrepancy_presence or has_required_problem):
+            fail_reason = "metric_present_but_no_explicit_blocker"
+            rescue_reason = "shopify_metric_context_rescue"
+        elif not has_workflow_pain and (metric_presence or analysis_context):
+            fail_reason = "weak_workflow_signal"
+            rescue_reason = "shopify_workflow_weak_rescue"
+        else:
+            fail_reason = "weak_problem_phrasing"
+            rescue_reason = "shopify_problem_phrasing_rescue"
+        return QualityAssessment(score=round(score, 3), bucket="borderline", fail_reason=fail_reason, rescue_reason=rescue_reason, passes=True)
+    fail_reason = "weak_problem_phrasing" if business_metric_presence or metric_presence else "complaint_without_operational_context"
+    return QualityAssessment(score=round(score, 3), bucket="fail", fail_reason=fail_reason, rescue_reason="", passes=False)
 
 
 def build_parser_schema_diff(valid_df: pd.DataFrame) -> pd.DataFrame:
@@ -621,7 +928,7 @@ def _text_similarity(left: str, right: str) -> float:
     return overlap / union if union else 0.0
 
 
-def _build_episode_row_diagnostics(row: pd.Series, rules: dict[str, Any]) -> dict[str, Any]:
+def _build_episode_row_diagnostics(row: pd.Series, rules: dict[str, Any], source: str = "") -> dict[str, Any]:
     """Derive schema and quality context used for episode diagnostics."""
     title = clean_text(str(row.get("title", "") or ""))
     body = clean_text(str(row.get("body", "") or ""))
@@ -631,6 +938,7 @@ def _build_episode_row_diagnostics(row: pd.Series, rules: dict[str, Any]) -> dic
     combined_text = combine_text(title, body, comments_text, parent_context)
     schema_flags = _schema_flags_from_row(row)
     combined_primary = combine_text(title, body, parent_context) if title and (body or parent_context) else combined_text
+    quality = _assess_episode_quality(combined_text, rules, source=source)
     return {
         **schema_flags,
         "title": title,
@@ -643,7 +951,11 @@ def _build_episode_row_diagnostics(row: pd.Series, rules: dict[str, Any]) -> dic
         "candidate_unit_count_raw": 0,
         "candidate_unit_count_cleaned": 0,
         "duplicate_collapse_count": 0,
-        "passes_combined_quality": _passes_episode_quality_filter(combined_text, rules),
+        "passes_combined_quality": quality.passes,
+        "quality_score": quality.score,
+        "quality_bucket": quality.bucket,
+        "quality_fail_reason": quality.fail_reason,
+        "rescue_reason": quality.rescue_reason,
     }
 
 
@@ -689,25 +1001,36 @@ def _schema_flags_from_row(row: pd.Series) -> dict[str, Any]:
     }
 
 
-def _derive_drop_reason(diagnostics: dict[str, Any], grouped_segments: list[SegmentState] | None = None) -> str:
+def _derive_drop_reason(
+    diagnostics: dict[str, Any],
+    grouped_segments: list[SegmentState] | None = None,
+    quality: QualityAssessment | None = None,
+) -> str:
     """Return a specific reason when a row fails episode promotion."""
     if diagnostics["missing_required_fields"]:
         return "missing_required_fields_for_episode_creation"
     if diagnostics["source_schema_type"] == "khoros_reply_message" and diagnostics["parent_context_len"] == 0:
         if diagnostics["passes_combined_quality"]:
             return "title_body_merge_failure"
-        return "unsupported_page_schema"
+            return "unsupported_page_schema"
     if diagnostics["combined_text_len"] < 120:
         return "text_too_short"
-    if diagnostics["duplicate_collapse_count"] > 0 and diagnostics["candidate_unit_count_cleaned"] <= 1:
-        return "duplicate_collapse_issue"
     if grouped_segments:
         lowered = clean_text(grouped_segments[0].text).lower() if grouped_segments else ""
         if lowered and not _passes_episode_quality_filter(lowered, {"quality_filter": {"enabled": True}}):
             pass
+    effective_quality = quality or QualityAssessment(
+        score=float(diagnostics.get("quality_score", 0.0) or 0.0),
+        bucket=str(diagnostics.get("quality_bucket", "fail") or "fail"),
+        fail_reason=str(diagnostics.get("quality_fail_reason", "") or ""),
+        rescue_reason=str(diagnostics.get("rescue_reason", "") or ""),
+        passes=bool(diagnostics.get("passes_combined_quality", False)),
+    )
     if diagnostics["passes_combined_quality"] and diagnostics["candidate_unit_count_cleaned"] > 0:
         return "title_body_merge_failure"
-    return "quality_filter_failed"
+    if diagnostics["duplicate_collapse_count"] > 0 and diagnostics["candidate_unit_count_cleaned"] <= 1 and diagnostics["passes_combined_quality"]:
+        return "duplicate_collapse_issue"
+    return effective_quality.fail_reason or "quality_filter_failed"
 
 
 def _build_debug_record(
@@ -715,6 +1038,7 @@ def _build_debug_record(
     diagnostics: dict[str, Any],
     episode_count: int,
     drop_reason: str,
+    quality: QualityAssessment | None = None,
 ) -> EpisodeBuildDebug:
     """Create one stable debug row for a source post."""
     drop_detail_map = {
@@ -725,6 +1049,13 @@ def _build_debug_record(
         "missing_required_fields_for_episode_creation": "missing_source_raw_id_or_text_fields",
         "quality_filter_failed": "quality_filter_removed_all_grouped_segments",
     }
+    effective_quality = quality or QualityAssessment(
+        score=float(diagnostics.get("quality_score", 0.0) or 0.0),
+        bucket=str(diagnostics.get("quality_bucket", "fail") or "fail"),
+        fail_reason=str(diagnostics.get("quality_fail_reason", "") or ""),
+        rescue_reason=str(diagnostics.get("rescue_reason", "") or ""),
+        passes=bool(diagnostics.get("passes_combined_quality", False)),
+    )
     return EpisodeBuildDebug(
         source=str(row.get("source", "") or ""),
         raw_id=str(row.get("raw_id", "") or ""),
@@ -747,6 +1078,10 @@ def _build_debug_record(
         missing_required_fields=bool(diagnostics["missing_required_fields"]),
         reply_like_schema=bool(diagnostics["reply_like_schema"]),
         passes_combined_quality=bool(diagnostics["passes_combined_quality"]),
+        quality_score=float(effective_quality.score),
+        quality_bucket=str(effective_quality.bucket),
+        quality_fail_reason=str(effective_quality.fail_reason),
+        rescue_reason=str(effective_quality.rescue_reason),
         top_level_meta_keys=str(diagnostics["top_level_meta_keys"]),
         nested_meta_keys=str(diagnostics["nested_meta_keys"]),
     )

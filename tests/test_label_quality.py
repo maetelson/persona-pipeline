@@ -73,6 +73,49 @@ class LabelQualityTests(unittest.TestCase):
         result = build_labelability_table(episodes, policy)
         self.assertNotEqual(result.loc[0, "labelability_status"], "low_signal")
 
+    def test_google_ads_help_reporting_issue_is_not_low_signal(self) -> None:
+        policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
+        episodes = pd.DataFrame(
+            [
+                {
+                    "episode_id": "gah-1",
+                    "source": "google_ads_help_community",
+                    "normalized_episode": "Campaign not generating impressions despite full setup. Google Ads reporting is not matching clicks and conversions, and we need help identifying the root cause.",
+                    "evidence_snippet": "",
+                    "business_question": "",
+                    "bottleneck_text": "",
+                    "workaround_text": "",
+                    "desired_output": "",
+                    "quality_bucket": "hard_pass",
+                    "quality_score": 5.2,
+                }
+            ]
+        )
+        result = build_labelability_table(episodes, policy)
+        self.assertNotEqual(result.loc[0, "labelability_status"], "low_signal")
+        self.assertTrue(bool(result.loc[0, "persona_core_eligible"]))
+
+    def test_google_ads_help_announcement_stays_low_signal(self) -> None:
+        policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
+        episodes = pd.DataFrame(
+            [
+                {
+                    "episode_id": "gah-2",
+                    "source": "google_ads_help_community",
+                    "normalized_episode": "Launched: Guided help article for Merchant Center shipping settings with new resources and videos.",
+                    "evidence_snippet": "",
+                    "business_question": "",
+                    "bottleneck_text": "",
+                    "workaround_text": "",
+                    "desired_output": "",
+                    "quality_bucket": "borderline",
+                    "quality_score": 2.7,
+                }
+            ]
+        )
+        result = build_labelability_table(episodes, policy)
+        self.assertEqual(result.loc[0, "labelability_status"], "low_signal")
+
     def test_business_community_terms_map_to_broad_labels(self) -> None:
         codebook = load_yaml(ROOT / "config" / "codebook.yaml")
         episodes = pd.DataFrame(
