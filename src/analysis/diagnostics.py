@@ -20,6 +20,7 @@ from src.utils.pipeline_schema import (
     aggregated_source_count,
     is_single_cluster_dominant,
     persona_min_cluster_size,
+    round_pct,
     source_row_count,
 )
 
@@ -104,6 +105,9 @@ def build_source_diagnostics(
         labelable_count = source_row_count(labelable_df, source)
         labeled_count = source_row_count(labeled_with_source, source)
         promoted_count = source_row_count(promoted_with_source, source)
+        prefilter_survival_rate = round_pct(prefiltered_count, valid_count) if valid_count else 0.0
+        episode_survival_rate = round_pct(episode_count, prefiltered_count) if prefiltered_count else 0.0
+        labeling_survival_rate = round_pct(labeled_count, episode_count) if episode_count else 0.0
         reason = _source_failure_reason(
             source=source,
             raw_count=raw_count,
@@ -123,9 +127,13 @@ def build_source_diagnostics(
                 "normalized_count": normalized_count,
                 "valid_count": valid_count,
                 "prefiltered_valid_count": prefiltered_count,
+                "prefilter_survival_rate": prefilter_survival_rate,
                 "episode_count": episode_count,
+                "episode_survival_rate": episode_survival_rate,
                 "labelable_count": labelable_count,
                 "labeled_count": labeled_count,
+                "labeling_survival_rate": labeling_survival_rate,
+                "effective_diversity_contribution": _effective_source_contribution(labeled_count),
                 "promoted_to_persona_count": promoted_count,
                 "failure_reason_top": reason,
                 "failure_level": _failure_level(source, raw_count, labeled_count),
@@ -143,6 +151,7 @@ def build_quality_failures(
 ) -> pd.DataFrame:
     """Build quality failures with hard/soft/warning levels."""
     labeled_sources = int((source_diagnostics_df.get("labeled_count", pd.Series(dtype=int)) > 0).sum()) if not source_diagnostics_df.empty else 0
+    effective_labeled_sources = _effective_labeled_source_count(source_diagnostics_df)
     raw_sources = int((source_diagnostics_df.get("raw_count", pd.Series(dtype=int)) > 0).sum()) if not source_diagnostics_df.empty else 0
     largest_share = _largest_cluster_share(cluster_stats_df)
     min_cluster_size = int(quality_checks.get("min_cluster_size", 0))
@@ -150,13 +159,31 @@ def build_quality_failures(
     example_failures = _example_failure_count(persona_examples_df)
 
     rows = [
-        _gate_row("source_diversity_gate", "hard_fail" if labeled_sources < MIN_LABELED_SOURCE_COUNT else "pass", labeled_sources, ">= 3 labeled sources"),
+        _gate_row(
+            "source_diversity_gate",
+            "soft_fail" if effective_labeled_sources < MIN_LABELED_SOURCE_COUNT else "pass",
+            round(float(effective_labeled_sources), 2),
+            ">= 4 effective labeled sources; sources with labeled_count < 5 contribute fractionally",
+        ),
         _gate_row("cluster_dominance_gate", "hard_fail" if largest_share > CLUSTER_DOMINANCE_SHARE_PCT else "pass", largest_share, "<= 70% largest promoted/core cluster share"),
         _gate_row("persona_promotion_gate", "hard_fail" if small_promoted else "pass", small_promoted, f"0 promoted personas below min_cluster_size={min_cluster_size}"),
-        _gate_row("raw_to_labeled_source_gate", "hard_fail" if raw_sources >= 3 and labeled_sources <= 2 else "pass", f"raw={raw_sources}, labeled={labeled_sources}", "avoid raw coverage collapsing to <=2 labeled sources"),
+        _gate_row("raw_to_labeled_source_gate", "soft_fail" if raw_sources >= 3 and labeled_sources <= 2 else "pass", f"raw={raw_sources}, labeled={labeled_sources}", "avoid raw coverage collapsing to <=2 labeled sources"),
         _gate_row("example_grounding_gate", "soft_fail" if example_failures else "pass", example_failures, "0 selected examples with grounding failures"),
         _gate_row("denominator_consistency_check", "pass", quality_checks.get("denominator_consistency", "explicit"), "all summary rows expose denominator_type/value"),
     ]
+    for _, row in source_diagnostics_df.iterrows():
+        raw_count = int(row.get("raw_count", 0) or 0)
+        labeled_count = int(row.get("labeled_count", 0) or 0)
+        source = str(row.get("source", "") or "")
+        if raw_count > 0 and labeled_count == 0:
+            rows.append(
+                _gate_row(
+                    f"source_failure:{source}",
+                    "soft_fail",
+                    labeled_count,
+                    "raw_count > 0 should produce labeled_count > 0",
+                )
+            )
     return pd.DataFrame(rows)
 
 
@@ -169,12 +196,22 @@ def finalize_quality_checks(
     """Apply workbook-level quality gates."""
     checks = dict(base_checks)
     labeled_sources = int((source_diagnostics_df.get("labeled_count", pd.Series(dtype=int)) > 0).sum()) if not source_diagnostics_df.empty else 0
+    effective_labeled_sources = _effective_labeled_source_count(source_diagnostics_df)
     raw_sources = int((source_diagnostics_df.get("raw_count", pd.Series(dtype=int)) > 0).sum()) if not source_diagnostics_df.empty else 0
     min_cluster_size = persona_min_cluster_size(int(checks.get("labeled_count", 0)))
     largest_share = _largest_cluster_share(cluster_stats_df)
+    failed_sources = (
+        source_diagnostics_df[
+            (pd.to_numeric(source_diagnostics_df.get("raw_count", pd.Series(dtype=int)), errors="coerce").fillna(0) > 0)
+            & (pd.to_numeric(source_diagnostics_df.get("labeled_count", pd.Series(dtype=int)), errors="coerce").fillna(0) <= 0)
+        ]["source"].astype(str).tolist()
+        if not source_diagnostics_df.empty
+        else []
+    )
     checks.update(
         {
             "labeled_source_count": labeled_sources,
+            "effective_labeled_source_count": round(float(effective_labeled_sources), 2),
             "raw_source_count": raw_sources,
             "min_cluster_size": min_cluster_size,
             "largest_cluster_share": largest_share,
@@ -182,17 +219,42 @@ def finalize_quality_checks(
             "small_promoted_persona_count": _small_promoted_count(cluster_stats_df, min_cluster_size),
             "example_grounding_failure_count": _example_failure_count(persona_examples_df),
             "denominator_consistency": "explicit",
+            "source_failures": " | ".join(failed_sources),
         }
     )
     hard_fail = (
-        labeled_sources < MIN_LABELED_SOURCE_COUNT
-        or is_single_cluster_dominant(largest_share)
+        is_single_cluster_dominant(largest_share)
         or checks["small_promoted_persona_count"] > 0
-        or (raw_sources >= 3 and labeled_sources <= 2)
     )
-    soft_fail = checks["example_grounding_failure_count"] > 0
-    checks["quality_flag"] = QUALITY_FLAG_UNSTABLE if hard_fail else QUALITY_FLAG_EXPLORATORY if soft_fail else QUALITY_FLAG_OK
+    exploratory_fail = (
+        effective_labeled_sources < MIN_LABELED_SOURCE_COUNT
+        or checks["example_grounding_failure_count"] > 0
+        or (raw_sources >= 3 and labeled_sources <= 2)
+        or bool(failed_sources)
+    )
+    checks["quality_flag"] = QUALITY_FLAG_UNSTABLE if hard_fail else QUALITY_FLAG_EXPLORATORY if exploratory_fail else QUALITY_FLAG_OK
     return checks
+
+
+def build_survival_funnel_by_source(source_diagnostics_df: pd.DataFrame) -> pd.DataFrame:
+    """Build a compact by-source funnel table from source diagnostics."""
+    if source_diagnostics_df.empty:
+        return pd.DataFrame()
+    return source_diagnostics_df[
+        [
+            "source",
+            "valid_count",
+            "prefiltered_valid_count",
+            "prefilter_survival_rate",
+            "episode_count",
+            "episode_survival_rate",
+            "labeled_count",
+            "labeling_survival_rate",
+            "effective_diversity_contribution",
+            "failure_reason_top",
+            "failure_level",
+        ]
+    ].copy()
 
 
 def _count_jsonl_lines(path: Path) -> int:
@@ -275,6 +337,21 @@ def _failure_level(source: str, raw_count: int, labeled_count: int) -> str:
     if source in RAW_WITHOUT_LABEL_FAILURE_SOURCES and raw_count <= 0:
         return "warning"
     return "pass"
+
+
+def _effective_source_contribution(labeled_count: int) -> float:
+    """Count low-volume labeled sources as fractional diversity contributors."""
+    if labeled_count <= 0:
+        return 0.0
+    return min(1.0, float(labeled_count) / 5.0)
+
+
+def _effective_labeled_source_count(source_diagnostics_df: pd.DataFrame) -> float:
+    """Return effective labeled source count using weak contributions below 5 labels."""
+    if source_diagnostics_df.empty or "labeled_count" not in source_diagnostics_df.columns:
+        return 0.0
+    counts = pd.to_numeric(source_diagnostics_df["labeled_count"], errors="coerce").fillna(0).astype(int)
+    return float(sum(_effective_source_contribution(int(count)) for count in counts.tolist()))
 
 
 def _recommended_seed_set(root_dir: Path, source: str, reason: str) -> str:

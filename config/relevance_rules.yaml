@@ -15,6 +15,76 @@ source_defaults:
   github_discussions:
     source_group: existing_forums
     source_weight: 0.72
+  hubspot_community:
+    source_group: business_communities
+    source_weight: 1.0
+  klaviyo_community:
+    source_group: business_communities
+    source_weight: 1.0
+  metabase_discussions:
+    source_group: discourse
+    source_weight: 1.0
+  google_ads_community:
+    source_group: business_communities
+    source_weight: 1.0
+  google_ads_help_community:
+    source_group: google_ads_help_community
+    source_weight: 1.0
+  merchant_center_community:
+    source_group: business_communities
+    source_weight: 1.0
+source_whitelist_terms:
+  hubspot_community:
+    - label: hubspot_report
+      terms: [report, reporting, report export, report mismatch]
+    - label: hubspot_dashboard
+      terms: [dashboard, wrong numbers, dashboard numbers]
+    - label: hubspot_attribution
+      terms: [attribution, lifecycle stage]
+    - label: hubspot_property_deal
+      terms: [property, deal, filter]
+  klaviyo_community:
+    - label: klaviyo_flow_campaign
+      terms: [flow, campaign, segment]
+    - label: klaviyo_reporting
+      terms: [revenue, attribution, reporting, analytics]
+    - label: klaviyo_conversion
+      terms: [conversion, metric mismatch]
+  metabase_discussions:
+    - label: metabase_dashboard_filter
+      terms: [dashboard, filter, drill down]
+    - label: metabase_query_logic
+      terms: [query, aggregation, group by, metric definition]
+    - label: metabase_export_numbers
+      terms: [export csv, wrong numbers]
+  google_ads_community:
+    - label: google_ads_conversion
+      terms: [conversion, conversion action, click]
+    - label: google_ads_reporting
+      terms: [attribution, campaign performance, reporting]
+    - label: google_ads_merchant_center
+      terms: [merchant center, metrics discrepancy]
+  google_ads_help_community:
+    - label: google_ads_help_conversion
+      terms: [conversion, conversion action, click]
+    - label: google_ads_help_reporting
+      terms: [attribution, campaign performance, reporting]
+    - label: google_ads_help_merchant_center
+      terms: [merchant center, metrics discrepancy]
+  merchant_center_community:
+    - label: merchant_center_disapproval
+      terms: [product disapproved, account suspended]
+    - label: merchant_center_feed_sync
+      terms: [feed sync, products not syncing, local feed]
+    - label: merchant_center_price
+      terms: [price mismatch]
+  github_discussions:
+    - label: github_export_excel
+      terms: [export to excel, manual reporting]
+    - label: github_report_mismatch
+      terms: [report mismatch, dashboard mismatch, cannot explain numbers]
+    - label: github_drill_metric
+      terms: [drill down, metric definition]
 reddit:
   relevant_subreddits:
     r/analytics: 2.2

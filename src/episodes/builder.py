@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -9,6 +10,7 @@ from typing import Any
 import pandas as pd
 
 from src.episodes.schema import EPISODE_COLUMNS, EpisodeRecord
+from src.utils.record_access import get_record_source_meta
 from src.utils.text import clean_text, combine_text
 
 
@@ -86,36 +88,112 @@ class SegmentState:
         )
 
 
+@dataclass(slots=True)
+class EpisodeBuildDebug:
+    """Per-row diagnostics for episode promotion and drop analysis."""
+
+    source: str
+    raw_id: str
+    url: str
+    source_schema_type: str
+    source_type: str
+    episode_count: int
+    drop_reason: str
+    drop_detail: str
+    title_len: int
+    body_len: int
+    comments_len: int
+    parent_context_len: int
+    thread_title_len: int
+    combined_text_len: int
+    candidate_unit_count_raw: int
+    candidate_unit_count_cleaned: int
+    duplicate_collapse_count: int
+    title_body_combined_used: bool
+    missing_required_fields: bool
+    reply_like_schema: bool
+    passes_combined_quality: bool
+    top_level_meta_keys: str
+    nested_meta_keys: str
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize one diagnostic row."""
+        return {
+            "source": self.source,
+            "raw_id": self.raw_id,
+            "url": self.url,
+            "source_schema_type": self.source_schema_type,
+            "source_type": self.source_type,
+            "episode_count": self.episode_count,
+            "drop_reason": self.drop_reason,
+            "drop_detail": self.drop_detail,
+            "title_len": self.title_len,
+            "body_len": self.body_len,
+            "comments_len": self.comments_len,
+            "parent_context_len": self.parent_context_len,
+            "thread_title_len": self.thread_title_len,
+            "combined_text_len": self.combined_text_len,
+            "candidate_unit_count_raw": self.candidate_unit_count_raw,
+            "candidate_unit_count_cleaned": self.candidate_unit_count_cleaned,
+            "duplicate_collapse_count": self.duplicate_collapse_count,
+            "title_body_combined_used": self.title_body_combined_used,
+            "missing_required_fields": self.missing_required_fields,
+            "reply_like_schema": self.reply_like_schema,
+            "passes_combined_quality": self.passes_combined_quality,
+            "top_level_meta_keys": self.top_level_meta_keys,
+            "nested_meta_keys": self.nested_meta_keys,
+        }
+
+
 def build_episode_table(valid_df: pd.DataFrame, rules: dict[str, Any]) -> pd.DataFrame:
     """Convert valid candidates into episode-level rows."""
+    episodes_df, _, _ = build_episode_outputs(valid_df, rules)
+    return episodes_df
+
+
+def build_episode_outputs(valid_df: pd.DataFrame, rules: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Convert valid candidates into episodes plus debug diagnostics."""
     if valid_df.empty:
-        return pd.DataFrame(columns=EPISODE_COLUMNS)
+        return (
+            pd.DataFrame(columns=EPISODE_COLUMNS),
+            pd.DataFrame(),
+            pd.DataFrame(),
+        )
 
-    rows: list[dict[str, str]] = []
+    episode_rows: list[dict[str, str]] = []
+    debug_rows: list[dict[str, Any]] = []
     for _, row in valid_df.iterrows():
-        episodes = build_post_episodes(row, rules)
-        rows.extend(episode.to_dict() for episode in episodes)
-    return pd.DataFrame(rows, columns=EPISODE_COLUMNS)
+        episodes, debug = build_post_episodes(row, rules)
+        episode_rows.extend(episode.to_dict() for episode in episodes)
+        debug_rows.append(debug.to_dict())
+    debug_df = pd.DataFrame(debug_rows)
+    schema_df = build_parser_schema_diff(valid_df)
+    return (
+        pd.DataFrame(episode_rows, columns=EPISODE_COLUMNS),
+        debug_df,
+        schema_df,
+    )
 
 
-def build_post_episodes(row: pd.Series, rules: dict[str, Any]) -> list[EpisodeRecord]:
+def build_post_episodes(row: pd.Series, rules: dict[str, Any]) -> tuple[list[EpisodeRecord], EpisodeBuildDebug]:
     """Build one or more conservative episodes from a single valid post."""
-    candidate_units = _build_units_from_row(row, rules)
+    diagnostics = _build_episode_row_diagnostics(row, rules)
+    candidate_units = _build_units_from_row(row, rules, diagnostics)
     min_episode_len = int(rules.get("min_episode_len", 120))
     if not candidate_units:
-        candidate_units = [combine_text(row.get("title", ""), row.get("body", ""), row.get("comments_text", ""))]
+        candidate_units = [diagnostics["combined_text"]]
 
     segments = [_derive_segment_state(unit) for unit in candidate_units if len(clean_text(unit)) >= min_episode_len // 2]
     segments = [segment for segment in segments if not _is_non_boundary_segment(segment.text, rules)]
     if not segments:
-        fallback = _derive_segment_state(combine_text(row.get("title", ""), row.get("body", ""), row.get("comments_text", "")))
+        fallback = _derive_segment_state(diagnostics["combined_text"])
         segments = [fallback] if len(fallback.text) >= min_episode_len else []
     if not segments:
-        return []
+        return [], _build_debug_record(row, diagnostics, episode_count=0, drop_reason=_derive_drop_reason(diagnostics))
 
     grouped = _group_segments(segments, rules)
     if not grouped:
-        grouped = [_derive_segment_state(combine_text(row.get("title", ""), row.get("body", ""), row.get("comments_text", "")))]
+        grouped = [_derive_segment_state(diagnostics["combined_text"])]
 
     episodes: list[EpisodeRecord] = []
     for index, segment in enumerate(grouped, start=1):
@@ -141,30 +219,44 @@ def build_post_episodes(row: pd.Series, rules: dict[str, Any]) -> list[EpisodeRe
                 segmentation_note=_segmentation_note(segment, rules),
             )
         )
-    return episodes
+    drop_reason = "" if episodes else _derive_drop_reason(diagnostics, grouped_segments=grouped)
+    return episodes, _build_debug_record(row, diagnostics, episode_count=len(episodes), drop_reason=drop_reason)
 
 
-def _build_units_from_row(row: pd.Series, rules: dict[str, Any]) -> list[str]:
+def _build_units_from_row(row: pd.Series, rules: dict[str, Any], diagnostics: dict[str, Any] | None = None) -> list[str]:
     """Build conservative segmentation units from title, body, and comment blocks."""
     units: list[str] = []
     title = clean_text(str(row.get("title", "") or ""))
     body = _normalize_bullets(str(row.get("body", "") or ""))
     comments_text = str(row.get("comments_text", "") or "")
+    parent_context = clean_text(str(row.get("parent_context", "") or ""))
+    if diagnostics is None:
+        diagnostics = _build_episode_row_diagnostics(row, rules)
 
-    if title:
+    combined_primary = diagnostics["combined_primary"]
+    if combined_primary:
+        units.append(combined_primary)
+    elif title:
         units.append(title)
+    if parent_context and parent_context not in units:
+        units.append(parent_context)
     units.extend(_split_body_into_units(body, rules))
     units.extend(_comment_blocks(comments_text, rules))
+    diagnostics["candidate_unit_count_raw"] = len([unit for unit in units if clean_text(unit)])
 
     cleaned_units: list[str] = []
+    duplicate_collapse_count = 0
     for unit in units:
         unit = clean_text(unit)
         if not unit:
             continue
         if cleaned_units and _text_similarity(cleaned_units[-1], unit) >= float(rules.get("similarity_merge_threshold", 0.62)):
             cleaned_units[-1] = combine_text(cleaned_units[-1], unit)
+            duplicate_collapse_count += 1
         else:
             cleaned_units.append(unit)
+    diagnostics["candidate_unit_count_cleaned"] = len(cleaned_units)
+    diagnostics["duplicate_collapse_count"] = duplicate_collapse_count
     return cleaned_units
 
 
@@ -399,8 +491,41 @@ def _passes_episode_quality_filter(text: str, rules: dict[str, Any]) -> bool:
     has_workflow_pain = any(term in lowered for term in workflow_terms)
     has_metric_problem = any(term in lowered for term in metric_terms)
     has_required_problem = any(term in lowered for term in required_terms)
+    structural_pain = _has_structural_reporting_pain(lowered)
+    if not has_workflow_pain and structural_pain:
+        has_workflow_pain = True
+    if not has_required_problem and structural_pain:
+        has_required_problem = True
     usage_only = any(lowered.startswith(pattern) for pattern in usage_patterns) and not has_required_problem
     return has_workflow_pain and has_metric_problem and has_required_problem and not usage_only
+
+
+def build_parser_schema_diff(valid_df: pd.DataFrame) -> pd.DataFrame:
+    """Summarize source parser output schemas visible to episode building."""
+    rows: list[dict[str, Any]] = []
+    if valid_df.empty:
+        return pd.DataFrame(rows)
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for _, row in valid_df.iterrows():
+        schema = _schema_flags_from_row(row)
+        grouped.setdefault((str(row.get("source", "")), schema["source_schema_type"]), []).append(schema)
+    for (source, schema_type), items in grouped.items():
+        total = max(len(items), 1)
+        rows.append(
+            {
+                "source": source,
+                "source_schema_type": schema_type,
+                "row_count": len(items),
+                "reply_like_ratio": round(sum(1 for item in items if item["reply_like_schema"]) / total, 4),
+                "missing_body_ratio": round(sum(1 for item in items if item["body_len"] == 0) / total, 4),
+                "comments_present_ratio": round(sum(1 for item in items if item["comments_len"] > 0) / total, 4),
+                "parent_context_ratio": round(sum(1 for item in items if item["parent_context_len"] > 0) / total, 4),
+                "thread_title_ratio": round(sum(1 for item in items if item["thread_title_len"] > 0) / total, 4),
+                "top_level_meta_keys": items[0]["top_level_meta_keys"],
+                "nested_meta_keys": items[0]["nested_meta_keys"],
+            }
+        )
+    return pd.DataFrame(rows).sort_values(["source", "row_count"], ascending=[True, False]).reset_index(drop=True)
 
 
 def _prefer_signal(left: str, right: str) -> str:
@@ -494,3 +619,152 @@ def _text_similarity(left: str, right: str) -> float:
     overlap = len(left_tokens & right_tokens)
     union = len(left_tokens | right_tokens)
     return overlap / union if union else 0.0
+
+
+def _build_episode_row_diagnostics(row: pd.Series, rules: dict[str, Any]) -> dict[str, Any]:
+    """Derive schema and quality context used for episode diagnostics."""
+    title = clean_text(str(row.get("title", "") or ""))
+    body = clean_text(str(row.get("body", "") or ""))
+    comments_text = clean_text(str(row.get("comments_text", "") or ""))
+    thread_title = clean_text(str(row.get("thread_title", "") or ""))
+    parent_context = clean_text(str(row.get("parent_context", "") or ""))
+    combined_text = combine_text(title, body, comments_text, parent_context)
+    schema_flags = _schema_flags_from_row(row)
+    combined_primary = combine_text(title, body, parent_context) if title and (body or parent_context) else combined_text
+    return {
+        **schema_flags,
+        "title": title,
+        "body": body,
+        "comments_text": comments_text,
+        "thread_title": thread_title,
+        "parent_context": parent_context,
+        "combined_text": combined_text,
+        "combined_primary": combined_primary,
+        "candidate_unit_count_raw": 0,
+        "candidate_unit_count_cleaned": 0,
+        "duplicate_collapse_count": 0,
+        "passes_combined_quality": _passes_episode_quality_filter(combined_text, rules),
+    }
+
+
+def _schema_flags_from_row(row: pd.Series) -> dict[str, Any]:
+    """Return parser/source schema hints visible in the normalized row."""
+    meta = get_record_source_meta(row)
+    nested_keys = sorted(meta.keys())
+    title = clean_text(str(row.get("title", "") or ""))
+    body = clean_text(str(row.get("body", "") or ""))
+    comments_text = clean_text(str(row.get("comments_text", "") or ""))
+    parent_context = clean_text(str(row.get("parent_context", "") or ""))
+    thread_title = clean_text(str(row.get("thread_title", "") or ""))
+    source_type = str(row.get("source_type", "") or "")
+    api_item = meta.get("api_item", {}) if isinstance(meta.get("api_item"), dict) else {}
+    raw_topic = meta.get("raw_topic", {}) if isinstance(meta.get("raw_topic"), dict) else {}
+    discovery_ref = meta.get("discovery_ref", {}) if isinstance(meta.get("discovery_ref"), dict) else {}
+    reply_like_schema = False
+    source_schema_type = source_type or "unknown"
+    if api_item:
+        depth = int(api_item.get("depth", 0) or 0)
+        reply_like_schema = depth > 0 or str(api_item.get("subject", "")).strip().lower().startswith("re:")
+        source_schema_type = "khoros_reply_message" if reply_like_schema else "khoros_thread_message"
+    elif raw_topic:
+        source_schema_type = "discourse_topic"
+    elif discovery_ref:
+        source_schema_type = "discourse_listing_fallback"
+    elif source_type == "thread":
+        source_schema_type = "html_thread"
+    missing_required_fields = not (str(row.get("source", "") or "").strip() and str(row.get("raw_id", "") or "").strip() and (title or body or comments_text))
+    return {
+        "source_schema_type": source_schema_type,
+        "source_type": source_type,
+        "reply_like_schema": reply_like_schema,
+        "missing_required_fields": missing_required_fields,
+        "title_len": len(title),
+        "body_len": len(body),
+        "comments_len": len(comments_text),
+        "parent_context_len": len(parent_context),
+        "thread_title_len": len(thread_title),
+        "combined_text_len": len(combine_text(title, body, comments_text, parent_context)),
+        "top_level_meta_keys": "json",
+        "nested_meta_keys": "|".join(nested_keys),
+    }
+
+
+def _derive_drop_reason(diagnostics: dict[str, Any], grouped_segments: list[SegmentState] | None = None) -> str:
+    """Return a specific reason when a row fails episode promotion."""
+    if diagnostics["missing_required_fields"]:
+        return "missing_required_fields_for_episode_creation"
+    if diagnostics["source_schema_type"] == "khoros_reply_message" and diagnostics["parent_context_len"] == 0:
+        if diagnostics["passes_combined_quality"]:
+            return "title_body_merge_failure"
+        return "unsupported_page_schema"
+    if diagnostics["combined_text_len"] < 120:
+        return "text_too_short"
+    if diagnostics["duplicate_collapse_count"] > 0 and diagnostics["candidate_unit_count_cleaned"] <= 1:
+        return "duplicate_collapse_issue"
+    if grouped_segments:
+        lowered = clean_text(grouped_segments[0].text).lower() if grouped_segments else ""
+        if lowered and not _passes_episode_quality_filter(lowered, {"quality_filter": {"enabled": True}}):
+            pass
+    if diagnostics["passes_combined_quality"] and diagnostics["candidate_unit_count_cleaned"] > 0:
+        return "title_body_merge_failure"
+    return "quality_filter_failed"
+
+
+def _build_debug_record(
+    row: pd.Series,
+    diagnostics: dict[str, Any],
+    episode_count: int,
+    drop_reason: str,
+) -> EpisodeBuildDebug:
+    """Create one stable debug row for a source post."""
+    drop_detail_map = {
+        "text_too_short": "combined_title_body_comments_below_min_episode_len",
+        "unsupported_page_schema": "reply_message_schema_without_root_problem_context",
+        "title_body_merge_failure": "problem_signal_in_title_not_carried_into_episode_unit",
+        "duplicate_collapse_issue": "duplicate_unit_merge_left_no_distinct_episode_candidate",
+        "missing_required_fields_for_episode_creation": "missing_source_raw_id_or_text_fields",
+        "quality_filter_failed": "quality_filter_removed_all_grouped_segments",
+    }
+    return EpisodeBuildDebug(
+        source=str(row.get("source", "") or ""),
+        raw_id=str(row.get("raw_id", "") or ""),
+        url=str(row.get("url", "") or ""),
+        source_schema_type=str(diagnostics["source_schema_type"]),
+        source_type=str(diagnostics["source_type"]),
+        episode_count=int(episode_count),
+        drop_reason="" if episode_count else drop_reason,
+        drop_detail="" if episode_count else drop_detail_map.get(drop_reason, ""),
+        title_len=int(diagnostics["title_len"]),
+        body_len=int(diagnostics["body_len"]),
+        comments_len=int(diagnostics["comments_len"]),
+        parent_context_len=int(diagnostics["parent_context_len"]),
+        thread_title_len=int(diagnostics["thread_title_len"]),
+        combined_text_len=int(diagnostics["combined_text_len"]),
+        candidate_unit_count_raw=int(diagnostics["candidate_unit_count_raw"]),
+        candidate_unit_count_cleaned=int(diagnostics["candidate_unit_count_cleaned"]),
+        duplicate_collapse_count=int(diagnostics["duplicate_collapse_count"]),
+        title_body_combined_used=bool(diagnostics["combined_primary"]),
+        missing_required_fields=bool(diagnostics["missing_required_fields"]),
+        reply_like_schema=bool(diagnostics["reply_like_schema"]),
+        passes_combined_quality=bool(diagnostics["passes_combined_quality"]),
+        top_level_meta_keys=str(diagnostics["top_level_meta_keys"]),
+        nested_meta_keys=str(diagnostics["nested_meta_keys"]),
+    )
+
+
+def _has_structural_reporting_pain(lowered: str) -> bool:
+    """Recognize structural reporting pain that lacks classic why/wrong phrasing."""
+    structural_terms = [
+        "instead of",
+        "offline source",
+        "not able",
+        "unable to",
+        "doesn't show",
+        "not showing",
+        "cannot use",
+        "can t use",
+        "summary",
+        "summarized",
+        "workaround",
+    ]
+    return any(term in lowered for term in structural_terms)

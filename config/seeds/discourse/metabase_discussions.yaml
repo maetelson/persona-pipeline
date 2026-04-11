@@ -1,39 +1,25 @@
 source_id: metabase_discussions
 source_group: discourse
-max_query_count: 15
-source_notes: "Source-specific Metabase discussion seeds only; no shared seed expansion."
+max_query_count: 8
+source_notes: "Metabase-only dashboard, filter, aggregation, and export pain seeds for Discourse search."
 candidate_seed_pool: []
 active_core_seeds:
-  - seed: metabase dashboard filter not working
-    reason: Targets dashboard filter workflow pain.
-  - seed: metabase query result mismatch
-    reason: Finds query result reconciliation issues.
-  - seed: aggregation issue metabase
-    reason: Captures aggregation logic blockers.
-  - seed: count incorrect metabase
-    reason: Targets incorrect count metrics.
-  - seed: metabase date filter issue
-    reason: Captures date filter reporting pain.
-  - seed: metabase group by issue
-    reason: Finds grouping and breakdown blockers.
-  - seed: metabase dashboard wrong numbers
-    reason: Targets dashboard trust failures.
+  - seed: metabase dashboard filter
+    reason: Finds dashboard filter failures.
+  - seed: metabase wrong numbers
+    reason: Captures dashboard trust and wrong-number threads.
+  - seed: metabase query mismatch
+    reason: Targets query result mismatch discussions.
+  - seed: metabase aggregation issue
+    reason: Finds aggregation logic blockers.
+  - seed: metabase group by
+    reason: Captures group-by breakdown issues.
   - seed: metabase export csv
-    reason: Captures CSV export workflow needs.
-  - seed: metabase query dashboard mismatch
-    reason: Finds query vs dashboard mismatch.
-  - seed: calculation error metabase
-    reason: Targets calculation-level metric errors.
-  - seed: metabase dashboard breakdown issue
-    reason: Captures breakdown/drilldown blockers.
-  - seed: metric definition metabase
-    reason: Finds metric definition confusion.
-  - seed: metabase sql result different
-    reason: Captures SQL/dashboard reconciliation.
-  - seed: metabase drill down issue
-    reason: Targets drilldown blockers.
-  - seed: data mismatch dashboard metabase
-    reason: Captures dashboard data mismatch language.
+    reason: Finds export workflow and validation pressure language.
+  - seed: metabase drill down
+    reason: Targets drill-down and breakdown blockers.
+  - seed: metabase metric definition
+    reason: Captures metric-definition confusion.
 optional_templates: []
 negative_terms:
   - docker

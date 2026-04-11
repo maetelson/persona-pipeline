@@ -53,6 +53,9 @@ class WorkbookExportTests(unittest.TestCase):
                         "persona_cooccurrence",
                         "persona_examples",
                         "quality_checks",
+                        "source_diagnostics",
+                        "quality_failures",
+                        "metric_glossary",
                     ],
                 )
             finally:
@@ -88,6 +91,9 @@ class WorkbookExportTests(unittest.TestCase):
             "persona_cooccurrence": pd.DataFrame(),
             "persona_examples": pd.DataFrame(),
             "quality_checks": pd.DataFrame({"metric": ["quality_flag"]}),
+            "source_diagnostics": pd.DataFrame(),
+            "quality_failures": pd.DataFrame(),
+            "metric_glossary": pd.DataFrame(),
         }
         messages = validate_workbook_frames(frames)
         self.assertTrue(any(msg == "missing optional column: overview.value" for msg in messages))

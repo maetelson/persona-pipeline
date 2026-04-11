@@ -17,6 +17,7 @@ from src.collectors.business_community_parser import ThreadLink, discover_thread
 from src.utils.dates import utc_now_iso
 from src.utils.http_fetch import check_robots_allowed, fetch_text
 from src.utils.logging import get_logger
+from src.utils.seed_bank import DiscoveryQuery, build_discovery_queries
 from src.utils.text import make_hash_id
 
 LOGGER = get_logger("collectors.google_ads_help_community")
@@ -88,6 +89,7 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
         """Extract thread links from each public Help Community listing page."""
         platform = str(self.config.get("platform", "google_support"))
         max_per_url = int(os.getenv("GOOGLE_ADS_HELP_MAX_DISCOVERY_PER_URL", self.config.get("max_discovered_threads_per_url", 100)))
+        discovery_queries = self._discovery_queries()
         discovered: dict[str, ThreadLink] = {}
         for row in listing_rows:
             url = str(row.get("url", "")).strip()
@@ -103,6 +105,8 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
             for link in links:
                 if link.url in discovered:
                     continue
+                if not self._accept_discovered_link(link, discovery_queries):
+                    continue
                 discovered[link.url] = link
                 accepted += 1
                 if accepted >= max_per_url:
@@ -116,7 +120,9 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
             )
 
         self.business_health["discovered_thread_count"] = len(discovered)
-        return list(discovered.values())
+        discovered_links = list(discovered.values())
+        self._record_seed_discovery_audit(discovery_queries, discovered_links)
+        return discovered_links
 
     def _fetch_thread_records(self, discovered: list[ThreadLink], user_agent: str) -> list[RawRecord]:
         """Fetch discovered thread pages and parse them into raw records."""
@@ -279,6 +285,9 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
                 "source": self.source_name,
                 "query_id": query_id,
                 "query_text": query_text,
+                "seed_used": "",
+                "expanded_query": "",
+                "discovered_url_count": raw_count,
                 "window_id": "",
                 "window_start": "",
                 "window_end": "",
@@ -298,6 +307,9 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
                 "source": self.source_name,
                 "query_id": "help_thread_fetch",
                 "query_text": "public_help_community_thread_pages",
+                "seed_used": "",
+                "expanded_query": "",
+                "discovered_url_count": record_count,
                 "window_id": "",
                 "window_start": "",
                 "window_end": "",
@@ -361,6 +373,58 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
             return True
         self._record_error(url, "robots", "", reason)
         return False
+
+    def _discovery_queries(self) -> list[DiscoveryQuery]:
+        """Return source-specific discovery queries for listing-title filtering and audit."""
+        return build_discovery_queries(
+            self.root_dir,
+            config=self.config,
+            source_id=self.source_name,
+            source_group=str(self.config.get("source_group", "")),
+        )
+
+    def _accept_discovered_link(self, link: ThreadLink, discovery_queries: list[DiscoveryQuery]) -> bool:
+        """Return whether a discovered link matches the active source-specific seed bank."""
+        if not bool(self.config.get("filter_discovery_by_seed", False)):
+            return True
+        if not discovery_queries:
+            return True
+        return any(self._matches_discovery_query(link.title, query) for query in discovery_queries)
+
+    def _matches_discovery_query(self, title: str, query: DiscoveryQuery) -> bool:
+        """Return whether a title aligns with one expanded query."""
+        lowered = title.lower()
+        if query.expanded_query and query.expanded_query in lowered:
+            return True
+        min_matches = int(self.config.get("min_seed_term_matches", 1) or 1)
+        token_hits = sum(1 for term in query.token_terms if term in lowered)
+        return token_hits >= min_matches
+
+    def _record_seed_discovery_audit(self, discovery_queries: list[DiscoveryQuery], links: list[ThreadLink]) -> None:
+        """Record how many discovered URLs each source-specific query retrieved."""
+        if not discovery_queries or not links:
+            return
+        for index, query in enumerate(discovery_queries, start=1):
+            discovered_count = sum(1 for link in links if self._matches_discovery_query(link.title, query))
+            self.collection_stats.append(
+                {
+                    "source": self.source_name,
+                    "query_id": f"help_seed_discovery_{index:03d}",
+                    "query_text": query.expanded_query,
+                    "seed_used": query.seed_used,
+                    "expanded_query": query.expanded_query,
+                    "discovered_url_count": discovered_count,
+                    "window_id": "",
+                    "window_start": "",
+                    "window_end": "",
+                    "page_no": 1,
+                    "page_raw_count": discovered_count,
+                    "page_raw_count_before_dedupe": len(links),
+                    "duplicate_count": 0,
+                    "duplicate_ratio": 0.0,
+                    "stop_reason": "seed_match_audit",
+                }
+            )
 
     def _user_agent(self) -> str:
         """Return a declared browser-like user agent."""

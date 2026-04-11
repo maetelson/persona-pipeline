@@ -1,39 +1,25 @@
 source_id: google_ads_community
 source_group: business_communities
-max_query_count: 15
-source_notes: "Source-specific Google Ads measurement and reporting seeds only; no shared seed expansion."
+max_query_count: 8
+source_notes: "Google Ads community seeds focused on conversion visibility, attribution, and reporting mismatch."
 candidate_seed_pool: []
 active_core_seeds:
-  - seed: google ads conversion tracking issue
-    reason: Targets conversion tracking workflow pain.
-  - seed: google ads conversion not showing
-    reason: Finds missing conversion reports.
+  - seed: google ads conversions
+    reason: Finds missing conversion reporting threads.
+  - seed: google ads tracking issue
+    reason: Captures conversion tracking blockers.
+  - seed: google ads click mismatch
+    reason: Targets click to conversion mismatch pain.
   - seed: google ads reporting wrong
-    reason: Captures reporting trust failures.
-  - seed: google ads performance drop
-    reason: Targets campaign performance triage.
-  - seed: google ads campaign data mismatch
-    reason: Finds campaign-level metric mismatch.
-  - seed: attribution issue google ads
-    reason: Captures attribution confusion.
-  - seed: google ads conversion delay confusion
-    reason: Targets delayed conversion interpretation.
-  - seed: google ads dashboard issue
-    reason: Finds dashboard workflow blockers.
+    reason: Broad reporting trust failure seed.
+  - seed: google ads campaign mismatch
+    reason: Captures campaign data reconciliation issues.
+  - seed: google ads attribution
+    reason: Finds attribution confusion in source language.
   - seed: google ads metrics discrepancy
-    reason: Captures discrepancy language directly.
-  - seed: google ads click conversion mismatch
-    reason: Targets click/conversion reconciliation.
-  - seed: reporting issue google ads
-    reason: Broad Google Ads reporting issue seed.
-  - seed: google ads merchant center mismatch
-    reason: Captures Ads and Merchant Center mismatch.
-  - seed: google ads conversion action issue
-    reason: Targets conversion action configuration pain.
-  - seed: google ads cannot see conversions
-    reason: Finds missing conversion visibility.
-  - seed: google ads data not matching
-    reason: Captures data mismatch directly.
+    reason: Targets discrepancy phrasing directly.
+  - seed: google ads not showing
+    reason: Captures cannot-see-conversions language.
 optional_templates: []
 negative_terms:
   - api

@@ -22,7 +22,7 @@ from src.collectors.business_community_parser import (
 from src.utils.dates import utc_now_iso
 from src.utils.http_fetch import check_robots_allowed, fetch_text
 from src.utils.logging import get_logger
-from src.utils.seed_bank import load_seed_bank, resolve_seed_queries
+from src.utils.seed_bank import DiscoveryQuery, build_discovery_queries, load_seed_bank, resolve_seed_queries
 from src.utils.text import make_hash_id
 
 LOGGER = get_logger("collectors.business_community")
@@ -112,6 +112,11 @@ class BusinessCommunityCollector(BaseCollector):
         self.business_health["discovered_thread_count"] = len(records)
         self.business_health["fetched_thread_count"] = len(records)
         self.business_health["parse_success_count"] = len(records)
+        self._record_seed_discovery_audit(
+            discovery_queries=self._discovery_queries(),
+            links=[],
+            records=records,
+        )
         return records
 
     def _collect_khoros_search_records(self, api_cfg: dict[str, Any]) -> list[RawRecord]:
@@ -216,7 +221,7 @@ class BusinessCommunityCollector(BaseCollector):
         platform = str(self.config.get("platform", ""))
         user_agent = self._user_agent()
         max_per_url = int(os.getenv("BUSINESS_COMMUNITY_MAX_DISCOVERY_PER_URL", self.config.get("max_discovered_threads_per_url", 20)))
-        seed_terms = self._seed_terms()
+        discovery_queries = self._discovery_queries()
         discovered: dict[str, ThreadLink] = {}
         for row in self._expanded_discovery_url_rows():
             url = str(row.get("url", "") if isinstance(row, dict) else row).strip()
@@ -234,7 +239,7 @@ class BusinessCommunityCollector(BaseCollector):
             for link in links:
                 if link.url in discovered:
                     continue
-                if not self._accept_discovered_link(link, seed_terms):
+                if not self._accept_discovered_link(link, discovery_queries):
                     continue
                 discovered[link.url] = link
                 accepted += 1
@@ -245,6 +250,9 @@ class BusinessCommunityCollector(BaseCollector):
                     "source": self.source_name,
                     "query_id": "thread_discovery",
                     "query_text": url,
+                    "seed_used": "",
+                    "expanded_query": "",
+                    "discovered_url_count": accepted,
                     "window_id": "",
                     "window_start": "",
                     "window_end": "",
@@ -272,7 +280,7 @@ class BusinessCommunityCollector(BaseCollector):
             for link in links:
                 if link.url in discovered:
                     continue
-                if not self._accept_discovered_link(link, seed_terms):
+                if not self._accept_discovered_link(link, discovery_queries):
                     continue
                 discovered[link.url] = link
                 accepted += 1
@@ -283,6 +291,9 @@ class BusinessCommunityCollector(BaseCollector):
                     "source": self.source_name,
                     "query_id": "rss_discovery",
                     "query_text": url,
+                    "seed_used": "",
+                    "expanded_query": "",
+                    "discovered_url_count": accepted,
                     "window_id": "",
                     "window_start": "",
                     "window_end": "",
@@ -295,7 +306,9 @@ class BusinessCommunityCollector(BaseCollector):
                 }
             )
         self.business_health["discovered_thread_count"] = len(discovered)
-        return list(discovered.values())
+        discovered_links = list(discovered.values())
+        self._record_seed_discovery_audit(discovery_queries=discovery_queries, links=discovered_links)
+        return discovered_links
 
     def _expanded_discovery_url_rows(self) -> list[dict[str, str]]:
         """Expand listing URLs across simple public pagination patterns."""
@@ -357,9 +370,15 @@ class BusinessCommunityCollector(BaseCollector):
         )
 
     def _seed_terms(self) -> list[str]:
-        """Return compact source seed terms for optional listing-title filtering."""
-        if not bool(self.config.get("filter_discovery_by_seed", False)):
-            return []
+        """Return compact token terms from source-specific discovery queries."""
+        discovery_queries = self._discovery_queries()
+        terms: list[str] = []
+        for query in discovery_queries:
+            for token in query.token_terms:
+                if token not in terms:
+                    terms.append(token)
+        if terms:
+            return terms
         seeds = resolve_seed_queries(
             self.root_dir,
             config=self.config,
@@ -381,17 +400,77 @@ class BusinessCommunityCollector(BaseCollector):
                     terms.append(token)
         return terms
 
+    def _discovery_queries(self) -> list[DiscoveryQuery]:
+        """Return source-specific discovery queries built from the local seed bank."""
+        return build_discovery_queries(
+            self.root_dir,
+            config=self.config,
+            source_id=self.source_name,
+            source_group=str(self.config.get("source_group", "")),
+        )
+
     def _matches_seed_terms(self, title: str, seed_terms: list[str]) -> bool:
         """Return whether a discovered title overlaps configured seed terms."""
         lowered = title.lower()
         minimum_matches = int(self.config.get("min_seed_term_matches", 1) or 1)
         return sum(1 for term in seed_terms if term in lowered) >= minimum_matches
 
-    def _accept_discovered_link(self, link: ThreadLink, seed_terms: list[str]) -> bool:
+    def _accept_discovered_link(self, link: ThreadLink, discovery_queries: list[DiscoveryQuery]) -> bool:
         """Return whether a discovered thread is worth fetching."""
         if self._matches_excluded_discovery_pattern(link):
             return False
-        return not seed_terms or self._matches_seed_terms(link.title, seed_terms)
+        if not bool(self.config.get("filter_discovery_by_seed", False)):
+            return True
+        if not discovery_queries:
+            return True
+        return any(self._matches_discovery_query(link.title, query) for query in discovery_queries)
+
+    def _matches_discovery_query(self, title: str, query: DiscoveryQuery) -> bool:
+        """Return whether a discovered title matches one expanded source query."""
+        lowered = title.lower()
+        if query.expanded_query and query.expanded_query in lowered:
+            return True
+        token_hits = sum(1 for term in query.token_terms if term in lowered)
+        minimum_matches = int(self.config.get("min_seed_term_matches", 1) or 1)
+        if token_hits >= minimum_matches:
+            return True
+        return False
+
+    def _record_seed_discovery_audit(
+        self,
+        discovery_queries: list[DiscoveryQuery],
+        links: list[ThreadLink],
+        records: list[RawRecord] | None = None,
+    ) -> None:
+        """Record source-seed discovery yield so low-recall seeds are visible immediately."""
+        if not discovery_queries:
+            return
+        titles = [link.title for link in links]
+        if records:
+            titles.extend(str(record.title) for record in records if str(record.title).strip())
+        if not titles:
+            return
+        for index, query in enumerate(discovery_queries, start=1):
+            discovered_count = sum(1 for title in titles if self._matches_discovery_query(title, query))
+            self.collection_stats.append(
+                {
+                    "source": self.source_name,
+                    "query_id": f"seed_discovery_{index:03d}",
+                    "query_text": query.expanded_query,
+                    "seed_used": query.seed_used,
+                    "expanded_query": query.expanded_query,
+                    "discovered_url_count": discovered_count,
+                    "window_id": "",
+                    "window_start": "",
+                    "window_end": "",
+                    "page_no": 1,
+                    "page_raw_count": discovered_count,
+                    "page_raw_count_before_dedupe": len(titles),
+                    "duplicate_count": 0,
+                    "duplicate_ratio": 0.0,
+                    "stop_reason": "seed_match_audit",
+                }
+            )
 
     def _matches_excluded_discovery_pattern(self, link: ThreadLink) -> bool:
         """Return whether a listing item is known boilerplate or off-scope."""

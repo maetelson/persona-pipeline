@@ -1,39 +1,25 @@
 source_id: klaviyo_community
 source_group: business_communities
-max_query_count: 15
-source_notes: "Source-specific Klaviyo reporting and metric-trust seeds only; no shared seed expansion."
+max_query_count: 8
+source_notes: "Klaviyo-only campaign, flow, segment, and reporting trust seeds."
 candidate_seed_pool: []
 active_core_seeds:
-  - seed: klaviyo campaign performance wrong
-    reason: Targets campaign performance trust failures.
-  - seed: klaviyo flow revenue mismatch
-    reason: Finds flow attribution and revenue mismatch pain.
-  - seed: klaviyo conversion tracking issue
-    reason: Captures conversion tracking blockers.
+  - seed: klaviyo flow revenue
+    reason: Finds flow revenue mismatch discussions.
+  - seed: klaviyo campaign mismatch
+    reason: Captures campaign data mismatch pain.
   - seed: klaviyo reporting issue
-    reason: Broad Klaviyo reporting pain seed.
-  - seed: klaviyo segment not updating
-    reason: Targets segment freshness workflow pain.
-  - seed: klaviyo revenue not matching
-    reason: Captures revenue reconciliation issues.
-  - seed: klaviyo email performance discrepancy
-    reason: Finds email metric discrepancy language.
-  - seed: attribution problem klaviyo
-    reason: Targets Klaviyo attribution confusion.
-  - seed: klaviyo analytics dashboard issue
-    reason: Captures dashboard analytics blockers.
-  - seed: klaviyo flow analytics confusion
-    reason: Finds flow analytics interpretation pain.
-  - seed: klaviyo segment definition issue
-    reason: Targets segment definition mismatch.
-  - seed: klaviyo campaign data mismatch
-    reason: Captures campaign/report reconciliation.
-  - seed: reporting limitation klaviyo
-    reason: Targets explicit reporting limitations.
-  - seed: klaviyo export data
-    reason: Finds export workflow issues.
-  - seed: klaviyo cannot trust metrics
-    reason: Captures metric trust pressure directly.
+    reason: Broad reporting workflow blocker seed.
+  - seed: klaviyo segment updating
+    reason: Targets segment freshness and update failures.
+  - seed: klaviyo conversion tracking
+    reason: Captures measurement setup and trust issues.
+  - seed: klaviyo attribution problem
+    reason: Finds attribution confusion in source language.
+  - seed: klaviyo revenue mismatch
+    reason: Targets revenue reconciliation issues.
+  - seed: klaviyo analytics dashboard
+    reason: Captures dashboard trust and explanation burden.
 optional_templates: []
 negative_terms:
   - api

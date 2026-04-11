@@ -1,0 +1,32 @@
+source_id: google_ads_help_community
+source_group: business_communities
+max_query_count: 8
+source_notes: "Google Ads Help Community seeds tuned to short help-style conversion and reporting complaints."
+candidate_seed_pool: []
+active_core_seeds:
+  - seed: google ads conversion
+    reason: Finds help threads where conversions are missing or not visible.
+  - seed: google ads not showing
+    reason: Captures not-showing phrasing common in Help Community titles.
+  - seed: google ads tracking
+    reason: Targets tracking setup and post-setup failures.
+  - seed: google ads reporting
+    reason: Broad reporting help request seed.
+  - seed: google ads click mismatch
+    reason: Captures click versus conversion mismatch threads.
+  - seed: google ads campaign mismatch
+    reason: Finds campaign data mismatch complaints.
+  - seed: google ads attribution
+    reason: Targets attribution and delayed-credit confusion.
+  - seed: google ads discrepancy
+    reason: Captures discrepancy and wrong-metrics language.
+optional_templates: []
+negative_terms:
+  - api
+  - script
+  - crawler
+  - developer
+  - certification
+  - job
+  - career
+  - phone support

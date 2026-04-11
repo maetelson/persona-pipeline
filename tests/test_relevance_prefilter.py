@@ -141,6 +141,46 @@ class RelevancePrefilterTests(unittest.TestCase):
         scored = keep_df if not keep_df.empty else borderline_df
         self.assertIn("github_discussions_workflow_context", scored.iloc[0]["source_specific_reason"])
 
+    def test_source_whitelist_rescues_metabase_borderline_drop(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "metabase_discussions",
+                    "raw_id": "mb-whitelist",
+                    "title": "Dashboard filter issue",
+                    "body": "The dashboard filter is not working and the wrong numbers appear after export csv.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        _, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(borderline_df), 1)
+        self.assertIn("metabase_dashboard_filter", borderline_df.iloc[0]["whitelist_hits"])
+        self.assertIn("rescued_by_source_whitelist", borderline_df.iloc[0]["rescue_reason"])
+
+    def test_source_whitelist_rescues_google_ads_reporting_row(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_ads_community",
+                    "raw_id": "ga-whitelist",
+                    "title": "Conversion tracking issue",
+                    "body": "Campaign performance reporting is wrong and conversions are not showing in the account.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        _, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(borderline_df), 1)
+        self.assertIn("google_ads_conversion", borderline_df.iloc[0]["whitelist_hits"])
+        self.assertEqual(borderline_df.iloc[0]["dropped_reason"], "")
+
     def test_prefilter_is_idempotent_for_scored_rows(self) -> None:
         frame = pd.DataFrame([_load_fixture("stackoverflow_relevant_reporting_mismatch.json")])
         keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)

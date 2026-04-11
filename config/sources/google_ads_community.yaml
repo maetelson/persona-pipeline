@@ -10,6 +10,8 @@ product_or_tool: Google Ads
 check_robots: true
 query_mode: source_config
 seed_bank_path: config/seeds/business_communities/google_ads_community.yaml
+seed_source_token: google ads
+seed_query_style: support_community
 max_query_count: 15
 max_threads_per_run: 800
 max_discovered_threads_per_url: 100

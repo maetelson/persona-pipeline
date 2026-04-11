@@ -7,12 +7,18 @@ enabled: false
 platform: google_support
 product_or_tool: Google Ads
 check_robots: true
+query_mode: source_config
+seed_bank_path: config/seeds/business_communities/google_ads_help_community.yaml
+seed_source_token: google ads
+seed_query_style: support_community
 max_threads_per_run: 1200
 max_discovered_threads_per_url: 120
 max_fetch_workers: 4
 min_raw_records_warn: 1000
 sleep_seconds: 0.0
 timeout_seconds: 20
+filter_discovery_by_seed: true
+min_seed_term_matches: 1
 aliases:
   - google ads help community
   - google ads help

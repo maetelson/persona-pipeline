@@ -53,6 +53,10 @@ class RelevanceEvaluation:
     top_negative_signals: str
     score_breakdown: str
     source_specific_reason: str
+    prefilter_score: float
+    whitelist_hits: str
+    rescue_reason: str
+    dropped_reason: str
 
 
 def apply_relevance_prefilter(
@@ -86,6 +90,10 @@ def apply_relevance_prefilter(
     result["score_breakdown"] = [item.score_breakdown for item in evaluations]
     result["source_specific_reason"] = [item.source_specific_reason for item in evaluations]
     result["prefilter_reason"] = result["source_specific_reason"]
+    result["prefilter_score"] = [item.prefilter_score for item in evaluations]
+    result["whitelist_hits"] = [item.whitelist_hits for item in evaluations]
+    result["rescue_reason"] = [item.rescue_reason for item in evaluations]
+    result["dropped_reason"] = [item.dropped_reason for item in evaluations]
     result = _apply_optional_llm_hook(result, rules, llm_hook)
 
     keep_df = result[result["relevance_decision"] == "keep"].copy().reset_index(drop=True)
@@ -374,12 +382,19 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
     weighted_positive = sum(scores[column] * float(score_weights.get(column, 1.0)) for column in POSITIVE_SCORE_COLUMNS)
     weighted_negative = sum(abs(scores[column]) * abs(float(score_weights.get(column, -1.0))) for column in NEGATIVE_SCORE_COLUMNS)
     scores["final_relevance_score"] = round(weighted_positive - weighted_negative, 4)
-
+    whitelist_labels = _source_whitelist_hits(source=source, text=text, rules=rules)
+    rescue_reason = ""
+    whitelist_hits = "|".join(whitelist_labels)
     decision = _classify_decision(scores, rules)
+    if decision == "drop" and whitelist_labels:
+        rescue_reason = f"rescued_by_source_whitelist={whitelist_labels[0]}"
+        decision = "borderline"
+        source_reasons.append(rescue_reason)
     top_positive_signals = "|".join(signal for signal, _ in sorted(positive_hits, key=lambda item: item[1], reverse=True)[:5])
     top_negative_signals = "|".join(signal for signal, _ in sorted(negative_hits, key=lambda item: item[1], reverse=True)[:5])
     source_specific_reason = "|".join(source_reasons) or f"{source}:generic"
     score_breakdown = json.dumps({column: round(scores[column], 4) for column in ALL_SCORE_COLUMNS}, ensure_ascii=False, sort_keys=True)
+    dropped_reason = "" if decision != "drop" else _derive_dropped_reason(source, scores, whitelist_labels, source_reasons)
     return RelevanceEvaluation(
         scores=scores,
         relevance_decision=decision,
@@ -387,7 +402,51 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
         top_negative_signals=top_negative_signals,
         score_breakdown=score_breakdown,
         source_specific_reason=source_specific_reason,
+        prefilter_score=float(scores["final_relevance_score"]),
+        whitelist_hits=whitelist_hits,
+        rescue_reason=rescue_reason,
+        dropped_reason=dropped_reason,
     )
+
+
+def _source_whitelist_hits(source: str, text: str, rules: dict[str, Any]) -> list[str]:
+    """Return matched source-specific whitelist labels for rescue-pass decisions."""
+    source_terms = (rules.get("source_whitelist_terms", {}) or {}).get(source, []) or []
+    hits: list[str] = []
+    lowered = str(text or "").lower()
+    for row in source_terms:
+        label = str(row.get("label", "") or "").strip()
+        terms = [str(term).lower().strip() for term in row.get("terms", []) or [] if str(term).strip()]
+        if not label or not terms:
+            continue
+        if any(term in lowered for term in terms):
+            hits.append(label)
+    return hits
+
+
+def _derive_dropped_reason(source: str, scores: dict[str, float], whitelist_labels: list[str], source_reasons: list[str]) -> str:
+    """Return a more specific dropped-reason string than generic source fallback."""
+    if whitelist_labels:
+        return f"drop_after_whitelist_no_rescue:{whitelist_labels[0]}"
+    positive_total = sum(scores[column] for column in POSITIVE_SCORE_COLUMNS)
+    negative_total = sum(scores[column] for column in NEGATIVE_SCORE_COLUMNS)
+    if source.startswith("google_ads"):
+        return "prefilter_missing_ads_reporting_terms"
+    if source == "hubspot_community":
+        return "prefilter_missing_hubspot_reporting_terms"
+    if source == "klaviyo_community":
+        return "prefilter_missing_klaviyo_reporting_terms"
+    if source == "merchant_center_community":
+        return "prefilter_missing_merchant_center_feed_terms"
+    if source == "metabase_discussions":
+        return "prefilter_missing_metabase_query_dashboard_terms"
+    if source == "github_discussions" and any("issue_template_downweight" in reason for reason in source_reasons):
+        return "prefilter_github_issue_template_penalty"
+    if positive_total <= 0.0:
+        return "prefilter_missing_source_language"
+    if negative_total >= 5.0:
+        return "prefilter_technical_only_drop"
+    return "prefilter_below_threshold"
 
 
 def _normalize_row_context(row: pd.Series, rules: dict[str, Any]) -> dict[str, Any]:
@@ -516,12 +575,16 @@ def _output_columns() -> list[str]:
         "relevance_decision",
         "prefilter_status",
         "relevance_score",
+        "prefilter_score",
         "biz_user_score",
         "top_positive_signals",
         "top_negative_signals",
         "score_breakdown",
         "source_specific_reason",
         "prefilter_reason",
+        "whitelist_hits",
+        "rescue_reason",
+        "dropped_reason",
     ]
 
 

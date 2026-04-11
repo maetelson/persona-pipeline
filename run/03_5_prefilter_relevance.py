@@ -21,6 +21,7 @@ from src.filters.relevance import (
     build_top_negative_signal_report,
 )
 from src.utils.io import ensure_dir, load_yaml, read_parquet, write_parquet
+from src.utils.io import write_jsonl
 from src.utils.logging import get_logger
 
 LOGGER = get_logger("run.prefilter_relevance")
@@ -72,6 +73,7 @@ def main() -> None:
     tag_df.to_csv(ROOT / "data" / "analysis" / "prefilter_stackoverflow_tag_summary.csv", index=False)
 
     _write_sample_exports(keep_df, borderline_df, drop_df)
+    _write_false_negative_audit(drop_df)
     _write_before_after_reports(valid_df, keep_df, borderline_df, valid_df, previous_invalid_df)
 
     LOGGER.info("Prefilter keep=%s borderline=%s drop=%s", len(keep_df), len(borderline_df), len(drop_df))
@@ -98,6 +100,38 @@ def _write_sample_exports(keep_df: pd.DataFrame, borderline_df: pd.DataFrame, dr
         sample_df = sample_df[sample_columns]
         write_parquet(sample_df, ROOT / "data" / "analysis" / f"prefilter_{name}_sample_rows.parquet")
         sample_df.to_csv(ROOT / "data" / "analysis" / f"prefilter_{name}_sample_rows.csv", index=False)
+
+
+def _write_false_negative_audit(drop_df: pd.DataFrame) -> None:
+    """Write top dropped rows per source for manual false-negative review."""
+    if drop_df.empty:
+        empty = pd.DataFrame(columns=["source", "raw_id", "title", "prefilter_score", "whitelist_hits", "rescue_reason", "dropped_reason"])
+        write_parquet(empty, ROOT / "data" / "analysis" / "prefilter_false_negative_audit.parquet")
+        write_jsonl(ROOT / "data" / "analysis" / "prefilter_false_negative_audit.jsonl", [])
+        return
+    audit_columns = [
+        "source",
+        "raw_id",
+        "title",
+        "prefilter_score",
+        "whitelist_hits",
+        "rescue_reason",
+        "dropped_reason",
+        "top_positive_signals",
+        "top_negative_signals",
+        "prefilter_reason",
+        "body",
+        "comments_text",
+    ]
+    frame = drop_df.copy()
+    for column in audit_columns:
+        if column not in frame.columns:
+            frame[column] = ""
+    ranked = frame.sort_values(["source", "prefilter_score", "raw_id"], ascending=[True, False, True])
+    audit_df = ranked.groupby("source", dropna=False).head(50).reset_index(drop=True)[audit_columns]
+    write_parquet(audit_df, ROOT / "data" / "analysis" / "prefilter_false_negative_audit.parquet")
+    audit_df.to_csv(ROOT / "data" / "analysis" / "prefilter_false_negative_audit.csv", index=False)
+    write_jsonl(ROOT / "data" / "analysis" / "prefilter_false_negative_audit.jsonl", audit_df.to_dict(orient="records"))
 
 
 def _write_before_after_reports(

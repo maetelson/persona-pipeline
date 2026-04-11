@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import re
 from typing import Any
 
 import pandas as pd
@@ -11,8 +12,6 @@ import pandas as pd
 from src.utils.io import ensure_dir, load_yaml
 
 CORE_SEED_COUNTS: dict[str, int] = {
-    "business_communities": 15,
-    "discourse": 15,
     "reddit": 8,
 }
 
@@ -154,6 +153,49 @@ class SeedBank:
         return merged
 
 
+@dataclass(slots=True)
+class DiscoveryQuery:
+    """One source-aware discovery query derived from a source seed."""
+
+    seed_used: str
+    expanded_query: str
+    source_id: str
+    source_group: str
+    token_terms: tuple[str, ...]
+
+
+PREFIX_RULES: dict[str, tuple[str, ...]] = {
+    "support_community": ("issue", "wrong", "mismatch", "not working", "not showing"),
+    "discussion_forum": ("cannot", "missing", "need", "wrong"),
+}
+
+PREFIX_SIGNAL_TERMS = {
+    "issue",
+    "wrong",
+    "mismatch",
+    "missing",
+    "need",
+    "cannot",
+    "not",
+    "discrepancy",
+    "problem",
+}
+
+DISCOVERY_STOPWORDS = {
+    "the",
+    "and",
+    "for",
+    "with",
+    "from",
+    "your",
+    "into",
+    "that",
+    "this",
+    "have",
+    "help",
+}
+
+
 def get_seed_bank_path(root_dir: Path, source_group: str, source_id: str) -> Path:
     """Return the canonical seed bank path for one source."""
     return root_dir / "config" / "seeds" / source_group / f"{source_id}.yaml"
@@ -227,6 +269,48 @@ def resolve_seed_queries(root_dir: Path, config: dict[str, Any], source_id: str,
     return seed_bank.active_queries
 
 
+def build_discovery_queries(
+    root_dir: Path,
+    config: dict[str, Any],
+    source_id: str,
+    source_group: str,
+) -> list[DiscoveryQuery]:
+    """Build source-specific discovery queries without falling back to shared query maps."""
+    seeds = resolve_seed_queries(
+        root_dir,
+        config=config,
+        source_id=source_id,
+        source_group=source_group,
+    )
+    source_token = _source_query_token(config=config, source_id=source_id)
+    style = _query_style(config=config, source_group=source_group)
+    prefix_choices = PREFIX_RULES.get(style, ())
+
+    queries: list[DiscoveryQuery] = []
+    seen_queries: set[str] = set()
+    for seed in seeds:
+        normalized_seed = _normalize_query_text(seed)
+        if not normalized_seed:
+            continue
+        canonical_query = normalized_seed
+        if source_token and source_token not in canonical_query:
+            canonical_query = f"{source_token} {canonical_query}".strip()
+        for expanded_query in _expand_query_variants(canonical_query, prefix_choices):
+            if expanded_query in seen_queries:
+                continue
+            seen_queries.add(expanded_query)
+            queries.append(
+                DiscoveryQuery(
+                    seed_used=normalized_seed,
+                    expanded_query=expanded_query,
+                    source_id=source_id,
+                    source_group=source_group,
+                    token_terms=_token_terms(expanded_query, source_token),
+                )
+            )
+    return queries
+
+
 def _load_active_seed_items(payload: dict[str, Any]) -> list[SeedItem]:
     """Load promoted active seeds, falling back to the legacy core_seeds key."""
     rows = payload.get("active_core_seeds", None)
@@ -237,6 +321,72 @@ def _load_active_seed_items(payload: dict[str, Any]) -> list[SeedItem]:
         for item in rows or []
         if str(item.get("seed", "")).strip()
     ]
+
+
+def _source_query_token(config: dict[str, Any], source_id: str) -> str:
+    """Return the short source token preferred in expanded queries."""
+    explicit = str(config.get("seed_source_token", "") or "").strip().lower()
+    if explicit:
+        return explicit
+    product = str(config.get("product_or_tool", "") or "").strip().lower()
+    if product:
+        return re.sub(r"\s+", " ", product)
+    source_name = str(config.get("source_name", source_id) or "").strip().lower()
+    source_name = source_name.replace(" community", "").replace(" discussions", "").replace(" discussion", "")
+    return re.sub(r"\s+", " ", source_name)
+
+
+def _query_style(config: dict[str, Any], source_group: str) -> str:
+    """Return which prefix family to use for discovery query expansion."""
+    explicit = str(config.get("seed_query_style", "") or "").strip().lower()
+    if explicit:
+        return explicit
+    collector_kind = str(config.get("collector_kind", "") or "").strip().lower()
+    if collector_kind in {"business_communities", "google_ads_help_community"}:
+        return "support_community"
+    if source_group in {"discourse", "existing_forums"}:
+        return "discussion_forum"
+    return "support_community"
+
+
+def _expand_query_variants(base_query: str, prefix_choices: tuple[str, ...]) -> list[str]:
+    """Expand one source seed into one or two short discovery queries."""
+    normalized = _normalize_query_text(base_query)
+    if not normalized:
+        return []
+    variants = [normalized]
+    if any(term in normalized for term in PREFIX_SIGNAL_TERMS):
+        return variants
+    if prefix_choices:
+        variants.append(_normalize_query_text(f"{prefix_choices[0]} {normalized}"))
+    deduped: list[str] = []
+    for query in variants:
+        if query and query not in deduped:
+            deduped.append(query)
+    return deduped
+
+
+def _normalize_query_text(value: str) -> str:
+    """Normalize a short source query while keeping operator language intact."""
+    normalized = re.sub(r"\s+", " ", str(value or "").strip().lower())
+    return normalized
+
+
+def _token_terms(expanded_query: str, source_token: str) -> tuple[str, ...]:
+    """Return meaningful token terms for title-level discovery matching."""
+    parts = re.findall(r"[a-z0-9]+", expanded_query.lower())
+    source_parts = set(re.findall(r"[a-z0-9]+", source_token.lower()))
+    tokens: list[str] = []
+    for part in parts:
+        if part in DISCOVERY_STOPWORDS:
+            continue
+        if len(part) < 3 and part not in {"bi"}:
+            continue
+        if part in source_parts and len(parts) > 2:
+            continue
+        if part not in tokens:
+            tokens.append(part)
+    return tuple(tokens)
 
 
 def _load_candidate_seed_pool(payload: dict[str, Any]) -> list[str]:

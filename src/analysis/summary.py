@@ -169,12 +169,20 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
             notes = "too few clusters for robust persona comparison"
         elif metric == "labeled_source_count" and int(value) < int(thresholds["labeled_source_count"]):
             status = "fail"
-            level = "hard_fail"
-            notes = "fewer than 3 labeled sources"
+            level = "soft_fail"
+            notes = "fewer than 4 labeled sources"
+        elif metric == "effective_labeled_source_count" and float(value) < float(thresholds["labeled_source_count"]):
+            status = "fail"
+            level = "soft_fail"
+            notes = "effective labeled source count below 4 after weak-contribution weighting"
         elif metric == "largest_cluster_share" and float(value) > float(thresholds["largest_cluster_share"]):
             status = "fail"
             level = "hard_fail"
             notes = "largest cluster exceeds 70% of denominator"
+        elif metric == "source_failures" and str(value).strip():
+            status = "fail"
+            level = "soft_fail"
+            notes = "raw-covered sources still missing labeled output"
         elif metric == "quality_flag":
             status = "pass" if str(value) == QUALITY_FLAG_OK else "fail" if str(value) == QUALITY_FLAG_UNSTABLE else "warn"
             level = "pass" if str(value) == QUALITY_FLAG_OK else "hard_fail" if str(value) == QUALITY_FLAG_UNSTABLE else "soft_fail"
@@ -192,6 +200,57 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(rows)
+
+
+def append_source_survival_rows(quality_checks_df: pd.DataFrame, source_diagnostics_df: pd.DataFrame) -> pd.DataFrame:
+    """Append source-level survival metrics to the quality checks sheet."""
+    if source_diagnostics_df.empty:
+        return quality_checks_df
+    rows: list[dict[str, object]] = []
+    for _, row in source_diagnostics_df.iterrows():
+        source = str(row.get("source", "") or "")
+        valid_count = int(row.get("valid_count", 0) or 0)
+        prefiltered_count = int(row.get("prefiltered_valid_count", 0) or 0)
+        episode_count = int(row.get("episode_count", 0) or 0)
+        labeled_count = int(row.get("labeled_count", 0) or 0)
+        rows.extend(
+            [
+                {
+                    "metric": f"prefilter_survival_rate:{source}",
+                    "value": row.get("prefilter_survival_rate", 0.0),
+                    "threshold": "",
+                    "status": "info",
+                    "level": "info",
+                    "denominator_type": "valid_candidate_rows",
+                    "denominator_value": valid_count,
+                    "notes": f"prefiltered_valid={prefiltered_count}",
+                },
+                {
+                    "metric": f"episode_survival_rate:{source}",
+                    "value": row.get("episode_survival_rate", 0.0),
+                    "threshold": "",
+                    "status": "info",
+                    "level": "info",
+                    "denominator_type": "prefiltered_valid_rows",
+                    "denominator_value": prefiltered_count,
+                    "notes": f"episode_count={episode_count}",
+                },
+                {
+                    "metric": f"labeling_survival_rate:{source}",
+                    "value": row.get("labeling_survival_rate", 0.0),
+                    "threshold": "",
+                    "status": "info",
+                    "level": "info",
+                    "denominator_type": "episode_rows",
+                    "denominator_value": episode_count,
+                    "notes": f"labeled_count={labeled_count}",
+                },
+            ]
+        )
+    survival_df = pd.DataFrame(rows)
+    if quality_checks_df.empty:
+        return survival_df
+    return pd.concat([quality_checks_df, survival_df], ignore_index=True)
 
 
 def build_quality_checks(
@@ -272,8 +331,10 @@ def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) ->
         return "valid_candidate_rows"
     if metric in {"total_raw_count", "raw_source_count"}:
         return "raw_jsonl_rows"
-    if metric == "labeled_source_count":
+    if metric in {"labeled_source_count", "effective_labeled_source_count"}:
         return "source_count"
+    if metric == "source_failures":
+        return "raw_covered_source_count"
     return str(quality_checks.get("denominator_type", "explicit_metric_value"))
 
 
@@ -287,6 +348,8 @@ def _quality_denominator_value(metric: str, quality_checks: dict[str, object]) -
         return quality_checks.get("cleaned_count", "")
     if metric in {"total_raw_count", "raw_source_count"}:
         return quality_checks.get("total_raw_count", "")
-    if metric == "labeled_source_count":
+    if metric in {"labeled_source_count", "effective_labeled_source_count"}:
+        return quality_checks.get("raw_source_count", "")
+    if metric == "source_failures":
         return quality_checks.get("raw_source_count", "")
     return ""

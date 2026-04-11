@@ -10,13 +10,15 @@ product_or_tool: Merchant Center
 check_robots: true
 query_mode: source_config
 seed_bank_path: config/seeds/business_communities/merchant_center_community.yaml
+seed_source_token: merchant center
+seed_query_style: support_community
 max_query_count: 10
 max_threads_per_run: 800
 max_discovered_threads_per_url: 100
 discovery_page_count: 8
 sleep_seconds: 0.15
-filter_discovery_by_seed: true
-include_candidate_seed_pool_for_discovery: true
+filter_discovery_by_seed: false
+include_candidate_seed_pool_for_discovery: false
 min_seed_term_matches: 1
 drop_listing_only: true
 aliases:
@@ -28,3 +30,19 @@ discovery_urls:
     board: Merchant Center Community
   - url: https://support.google.com/merchants/community?hl=en
     board: Merchant Center Community
+  - url: https://support.google.com/merchants/threads?hl=en&thread_filter=(category:GCR)
+    board: GCR
+  - url: https://support.google.com/merchants/threads?hl=en&thread_filter=(category:PPC)
+    board: PPC
+  - url: https://support.google.com/merchants/threads?hl=en&thread_filter=(category:misrep)
+    board: Misrepresentation
+  - url: https://support.google.com/merchants/threads?hl=en&thread_filter=(category:product_data)
+    board: Product Data
+  - url: https://support.google.com/merchants/threads?hl=en&thread_filter=(category:website_url)
+    board: Website URL
+  - url: https://support.google.com/merchants/threads?hl=en&thread_filter=(pinned:true)
+    board: Featured Posts
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:google_ads_google_shopping_merchant_center)
+    board: Google Ads Shopping and Merchant Center
+  - url: https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:merchant_center_product_page_crawl)
+    board: Merchant Center Product Page Crawl

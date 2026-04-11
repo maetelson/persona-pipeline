@@ -26,6 +26,7 @@ from src.analysis.diagnostics import (
     build_metric_glossary,
     build_quality_failures,
     build_source_diagnostics,
+    build_survival_funnel_by_source,
     finalize_quality_checks,
 )
 from src.analysis.pipeline_thresholds import evaluate_cluster_thresholds, load_threshold_profile, upsert_threshold_audit
@@ -35,6 +36,7 @@ from src.analysis.score import build_priority_scores
 from src.analysis.summary import (
     build_counts_table,
     build_final_source_distribution,
+    append_source_survival_rows,
     build_quality_checks,
     build_quality_checks_df,
     build_taxonomy_summary,
@@ -180,7 +182,11 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
         persona_examples_df=persona_service_outputs["persona_examples_df"],
     )
-    persona_service_outputs["quality_checks_df"] = build_quality_checks_df(quality_checks)
+    survival_funnel_df = build_survival_funnel_by_source(source_diagnostics_df)
+    persona_service_outputs["quality_checks_df"] = append_source_survival_rows(
+        build_quality_checks_df(quality_checks),
+        source_diagnostics_df,
+    )
     quality_failures_df = build_quality_failures(
         quality_checks=quality_checks,
         source_diagnostics_df=source_diagnostics_df,
@@ -244,6 +250,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         "source_distribution_df": source_distribution_df,
         "taxonomy_summary_df": taxonomy_summary_df,
         "source_diagnostics_df": source_diagnostics_df,
+        "survival_funnel_df": survival_funnel_df,
         "quality_failures_df": quality_failures_df,
         "metric_glossary_df": metric_glossary_df,
         "workbook_frames": workbook_frames,
@@ -321,14 +328,18 @@ def persist_analysis_outputs(
         deterministic_outputs["source_distribution_df"].to_csv(analysis_dir / "source_distribution.csv", index=False)
         deterministic_outputs["taxonomy_summary_df"].to_csv(analysis_dir / "taxonomy_summary.csv", index=False)
         deterministic_outputs["source_diagnostics_df"].to_csv(analysis_dir / "source_diagnostics.csv", index=False)
+        deterministic_outputs["survival_funnel_df"].to_csv(analysis_dir / "survival_funnel_by_source.csv", index=False)
         deterministic_outputs["quality_failures_df"].to_csv(analysis_dir / "quality_failures.csv", index=False)
         deterministic_outputs["metric_glossary_df"].to_csv(analysis_dir / "metric_glossary.csv", index=False)
+        write_parquet(deterministic_outputs["survival_funnel_df"], analysis_dir / "survival_funnel_by_source.parquet")
         debug_paths.update(
             {
                 "counts_csv": analysis_dir / "counts.csv",
                 "source_distribution_csv": analysis_dir / "source_distribution.csv",
                 "taxonomy_summary_csv": analysis_dir / "taxonomy_summary.csv",
                 "source_diagnostics_csv": analysis_dir / "source_diagnostics.csv",
+                "survival_funnel_csv": analysis_dir / "survival_funnel_by_source.csv",
+                "survival_funnel_parquet": analysis_dir / "survival_funnel_by_source.parquet",
                 "quality_failures_csv": analysis_dir / "quality_failures.csv",
                 "metric_glossary_csv": analysis_dir / "metric_glossary.csv",
             }

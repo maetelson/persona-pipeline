@@ -65,7 +65,7 @@ QUALITY_FLAG_LOW = "LOW QUALITY"
 QUALITY_FLAG_EXPLORATORY = "EXPLORATORY"
 QUALITY_FLAG_UNSTABLE = "UNSTABLE"
 QUALITY_UNKNOWN_RATIO_THRESHOLD = 0.30
-MIN_LABELED_SOURCE_COUNT = 3
+MIN_LABELED_SOURCE_COUNT = 4
 CLUSTER_DOMINANCE_SHARE_PCT = 70.0
 MIN_CLUSTER_SIZE_ABSOLUTE = 5
 MIN_CLUSTER_SIZE_RATIO = 0.05
@@ -166,9 +166,13 @@ WORKBOOK_COLUMN_ORDERS = {
         "normalized_count",
         "valid_count",
         "prefiltered_valid_count",
+        "prefilter_survival_rate",
         "episode_count",
+        "episode_survival_rate",
         "labelable_count",
         "labeled_count",
+        "labeling_survival_rate",
+        "effective_diversity_contribution",
         "promoted_to_persona_count",
         "failure_reason_top",
         "failure_level",
@@ -185,6 +189,12 @@ WORKBOOK_RATIO_COLUMNS = {
     "persona_axes": {"pct_of_persona": 1},
     "persona_needs": {"pct_of_persona": 1},
     "persona_cooccurrence": {"pct_of_persona": 1},
+    "source_diagnostics": {
+        "prefilter_survival_rate": 1,
+        "episode_survival_rate": 1,
+        "labeling_survival_rate": 1,
+        "effective_diversity_contribution": 2,
+    },
 }
 
 

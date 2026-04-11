@@ -1,39 +1,25 @@
 source_id: hubspot_community
 source_group: business_communities
-max_query_count: 15
-source_notes: "Source-specific HubSpot reporting seeds only; no shared seed expansion."
+max_query_count: 8
+source_notes: "HubSpot-only reporting and lifecycle troubleshooting seeds for community discovery."
 candidate_seed_pool: []
 active_core_seeds:
-  - seed: hubspot report not matching
-    reason: Targets report mismatch pain in HubSpot wording.
-  - seed: hubspot dashboard numbers wrong
-    reason: Captures dashboard trust failures.
-  - seed: hubspot custom report issue
-    reason: Finds custom reporting blockers.
-  - seed: hubspot attribution report wrong
-    reason: Targets attribution/reporting discrepancies.
-  - seed: hubspot lifecycle stage issue
-    reason: Captures lifecycle reporting mismatches.
-  - seed: hubspot contact property mismatch
-    reason: Targets property-level metric mismatch.
-  - seed: hubspot revenue report incorrect
-    reason: Finds revenue reporting trust issues.
-  - seed: hubspot report filter issue
-    reason: Captures filter-related workflow pain.
-  - seed: hubspot deal data mismatch
-    reason: Targets deal/report reconciliation.
-  - seed: hubspot marketing report confusion
-    reason: Captures marketing reporting interpretation issues.
-  - seed: hubspot export report excel
-    reason: Finds spreadsheet export workflow pain.
-  - seed: reporting limitation hubspot
-    reason: Targets explicit HubSpot reporting limits.
-  - seed: hubspot cannot build report
-    reason: Captures report construction blockers.
-  - seed: hubspot dashboard issue
-    reason: Finds dashboard workflow failures.
-  - seed: hubspot report discrepancy
-    reason: Targets discrepancy language directly.
+  - seed: hubspot report mismatch
+    reason: Finds report trust breakdowns with direct mismatch language.
+  - seed: hubspot wrong numbers
+    reason: Captures dashboard and report number disputes.
+  - seed: hubspot attribution issue
+    reason: Targets attribution-reporting confusion.
+  - seed: hubspot lifecycle stage
+    reason: Finds lifecycle-stage reporting mismatches.
+  - seed: hubspot report filter
+    reason: Captures filter logic and report slice failures.
+  - seed: hubspot property mismatch
+    reason: Targets contact and deal property reconciliation pain.
+  - seed: hubspot revenue report
+    reason: Finds revenue-report trust failures.
+  - seed: hubspot export excel
+    reason: Captures spreadsheet export workaround language.
 optional_templates: []
 negative_terms:
   - api

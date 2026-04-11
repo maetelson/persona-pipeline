@@ -19,6 +19,8 @@ sleep_seconds: 0.05
 timeout_seconds: 20
 query_mode: source_config
 seed_bank_path: config/seeds/discourse/metabase_discussions.yaml
+seed_source_token: metabase
+seed_query_style: discussion_forum
 aliases:
   - metabase
   - metabase discussion

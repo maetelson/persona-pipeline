@@ -15,7 +15,7 @@ from urllib.request import Request, urlopen
 
 from src.collectors.base import BaseCollector, RawRecord
 from src.utils.dates import utc_now_iso
-from src.utils.seed_bank import resolve_seed_queries
+from src.utils.seed_bank import DiscoveryQuery, build_discovery_queries, resolve_seed_queries
 from src.utils.text import clean_text, combine_text, make_hash_id
 
 
@@ -146,18 +146,28 @@ class DiscourseCollector(BaseCollector):
         """Fetch topic references from `/search.json` for configured seeds."""
         refs: list[dict[str, Any]] = []
         max_pages = int(os.getenv("DISCOURSE_SEARCH_PAGES", self.config.get("max_search_pages", 1)))
-        for query_index, seed in enumerate(self._query_seeds(), start=1):
+        for query_index, query in enumerate(self._discovery_queries(), start=1):
             query_id = f"discourse_search_{query_index:03d}"
             for page_no in range(max_pages):
-                url = self._api_url(f"/search.json?q={quote_plus(seed)}&page={page_no}")
-                payload = self._fetch_json(url, query_id=query_id, query_text=seed, page_no=page_no + 1)
+                url = self._api_url(f"/search.json?q={quote_plus(query.expanded_query)}&page={page_no}")
+                payload = self._fetch_json(url, query_id=query_id, query_text=query.expanded_query, page_no=page_no + 1)
                 topics = payload.get("topics", []) if payload else []
                 for topic in topics:
                     ref = dict(topic)
                     ref["discovery_query_id"] = query_id
-                    ref["discovery_query_text"] = seed
+                    ref["discovery_query_text"] = query.expanded_query
+                    ref["discovery_seed_used"] = query.seed_used
                     refs.append(ref)
-                self._record_page_stat(query_id, seed, page_no + 1, len(topics), len(topics), "ok" if topics else "empty_results")
+                self._record_page_stat(
+                    query_id,
+                    query.expanded_query,
+                    page_no + 1,
+                    len(topics),
+                    len(topics),
+                    "ok" if topics else "empty_results",
+                    seed_used=query.seed_used,
+                    expanded_query=query.expanded_query,
+                )
                 if not topics:
                     break
         return refs
@@ -217,6 +227,7 @@ class DiscourseCollector(BaseCollector):
             source_meta={
                 "raw_topic": topic,
                 "discovery_ref": discovery_ref,
+                "discovery_seed_used": discovery_ref.get("discovery_seed_used", ""),
                 "post_count_collected": len(visible_posts),
                 "reply_count": topic.get("reply_count", discovery_ref.get("reply_count")),
                 "views": topic.get("views", discovery_ref.get("views")),
@@ -268,6 +279,7 @@ class DiscourseCollector(BaseCollector):
             source_meta={
                 "raw_topic_ref": ref,
                 "fallback_reason": reason,
+                "discovery_seed_used": ref.get("discovery_seed_used", ""),
                 "reply_count": ref.get("reply_count"),
                 "views": ref.get("views"),
                 "category_id": ref.get("category_id"),
@@ -283,6 +295,15 @@ class DiscourseCollector(BaseCollector):
             source_group=str(self.config.get("source_group", "")),
         )
         return [str(seed).strip() for seed in raw_seeds if str(seed).strip()]
+
+    def _discovery_queries(self) -> list[DiscoveryQuery]:
+        """Return source-only discovery queries for Discourse search expansion."""
+        return build_discovery_queries(
+            self.root_dir,
+            config=self.config,
+            source_id=self.source_name,
+            source_group=str(self.config.get("source_group", "")),
+        )
 
     def _api_url(self, path: str) -> str:
         """Build a full Discourse API URL."""
@@ -336,6 +357,8 @@ class DiscourseCollector(BaseCollector):
         raw_count: int,
         before_dedupe: int,
         stop_reason: str,
+        seed_used: str = "",
+        expanded_query: str = "",
     ) -> None:
         """Record one Discourse discovery page audit row."""
         self.collection_stats.append(
@@ -343,6 +366,9 @@ class DiscourseCollector(BaseCollector):
                 "source": self.source_name,
                 "query_id": query_id,
                 "query_text": query_text,
+                "seed_used": seed_used,
+                "expanded_query": expanded_query or query_text,
+                "discovered_url_count": raw_count,
                 "window_id": "",
                 "window_start": "",
                 "window_end": "",
@@ -362,6 +388,9 @@ class DiscourseCollector(BaseCollector):
                 "source": self.source_name,
                 "query_id": "topic_fetch",
                 "query_text": "discourse_topic_json",
+                "seed_used": "",
+                "expanded_query": "",
+                "discovered_url_count": record_count,
                 "window_id": "",
                 "window_start": "",
                 "window_end": "",

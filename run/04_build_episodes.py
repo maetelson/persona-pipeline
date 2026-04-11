@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.episodes.builder import build_episode_table
+from src.episodes.builder import build_episode_outputs
 from src.analysis.pipeline_thresholds import (
     evaluate_episode_thresholds,
     load_threshold_profile,
@@ -31,11 +31,16 @@ def main() -> None:
     if valid_df.empty:
         valid_df = read_parquet(ROOT / "data" / "valid" / "valid_candidates.parquet")
     rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
-    episodes_df = build_episode_table(valid_df, rules)
+    episodes_df, debug_df, schema_df = build_episode_outputs(valid_df, rules)
     write_parquet(episodes_df, ROOT / "data" / "episodes" / "episode_table.parquet")
+    write_parquet(debug_df, ROOT / "data" / "episodes" / "episode_debug.parquet")
+    write_parquet(schema_df, ROOT / "data" / "episodes" / "parser_schema_diff.parquet")
 
     audit_df = _build_episode_audit(valid_df, episodes_df)
     write_parquet(audit_df, ROOT / "data" / "episodes" / "episode_audit.parquet")
+    drop_breakdown_df = _build_episode_drop_breakdown(debug_df)
+    write_parquet(drop_breakdown_df, ROOT / "data" / "episodes" / "episode_drop_breakdown.parquet")
+    _write_hubspot_before_after_sample(valid_df, debug_df, episodes_df)
     profile, profile_cfg = load_threshold_profile(ROOT / "config" / "pipeline_thresholds.yaml")
     threshold_df = evaluate_episode_thresholds(valid_df, episodes_df, profile, profile_cfg)
     combined_threshold_df = upsert_threshold_audit(ROOT, threshold_df)
@@ -54,6 +59,8 @@ def main() -> None:
     )
     if not audit_df.empty:
         LOGGER.info("Episode audit written with source-level and per-post episode counts")
+    if not drop_breakdown_df.empty:
+        LOGGER.info("Episode debug written with per-row drop reasons and parser schema diff")
     if stage_status in {"warn", "fail"}:
         LOGGER.warning("Episode threshold summary: %s", threshold_summary_message(combined_threshold_df, "episode"))
     gate_mode = str(profile_cfg.get("gate_mode", {}).get("episode_gate", "warn"))
@@ -117,6 +124,55 @@ def _build_episode_audit(valid_df, episodes_df):
             }
         )
     return pd.DataFrame(source_rows + per_post_rows, columns=["audit_level", "source", "raw_id", "post_count", "episode_count", "avg_episodes_per_post"])
+
+
+def _build_episode_drop_breakdown(debug_df):
+    """Aggregate episode drop reasons by source and schema type."""
+    import pandas as pd
+
+    if debug_df.empty:
+        return pd.DataFrame()
+    dropped = debug_df[debug_df["episode_count"].fillna(0).astype(int) == 0].copy()
+    if dropped.empty:
+        return pd.DataFrame(columns=["source", "source_schema_type", "drop_reason", "drop_count"])
+    return (
+        dropped.groupby(["source", "source_schema_type", "drop_reason"], dropna=False)
+        .size()
+        .reset_index(name="drop_count")
+        .sort_values(["source", "drop_count", "drop_reason"], ascending=[True, False, True])
+        .reset_index(drop=True)
+    )
+
+
+def _write_hubspot_before_after_sample(valid_df, debug_df, episodes_df) -> None:
+    """Write a small before/after sample for HubSpot episode debugging."""
+    import pandas as pd
+
+    hubspot_valid = valid_df[valid_df[SOURCE_FIELD].astype(str) == "hubspot_community"].copy()
+    if hubspot_valid.empty:
+        return
+    sample = hubspot_valid.head(20).copy()
+    debug_cols = [
+        "raw_id",
+        "source_schema_type",
+        "episode_count",
+        "drop_reason",
+        "drop_detail",
+        "title_body_combined_used",
+        "reply_like_schema",
+        "passes_combined_quality",
+    ]
+    sample = sample.merge(debug_df[debug_cols], on="raw_id", how="left")
+    sample["before_episode_count"] = 0
+    actual_counts = (
+        episodes_df[episodes_df[SOURCE_FIELD].astype(str) == "hubspot_community"]
+        .groupby("raw_id")
+        .size()
+        .reset_index(name="after_episode_count")
+    )
+    sample = sample.merge(actual_counts, on="raw_id", how="left")
+    sample["after_episode_count"] = sample["after_episode_count"].fillna(0).astype(int)
+    write_parquet(sample, ROOT / "data" / "episodes" / "hubspot_episode_before_after_sample.parquet")
 
 
 if __name__ == "__main__":
