@@ -11,8 +11,15 @@ from src.analysis.quality_status import flatten_quality_status_result
 from src.utils.io import load_yaml, read_parquet
 from src.utils.pipeline_schema import (
     CLUSTER_DOMINANCE_SHARE_PCT,
+    DENOMINATOR_EPISODE_ROWS,
+    DENOMINATOR_LABELED_EPISODE_ROWS,
+    DENOMINATOR_NORMALIZED_POST_ROWS,
     DENOMINATOR_PERSONA_CORE_LABELED_ROWS,
+    DENOMINATOR_PREFILTERED_VALID_ROWS,
+    DENOMINATOR_RAW_RECORD_ROWS,
+    DENOMINATOR_VALID_CANDIDATE_ROWS,
     LABELABLE_STATUSES,
+    PIPELINE_STAGE_DEFINITIONS,
     QUALITY_FLAG_EXPLORATORY,
     QUALITY_FLAG_OK,
     QUALITY_FLAG_UNSTABLE,
@@ -58,53 +65,61 @@ def count_raw_jsonl_by_source(root_dir: Path) -> pd.DataFrame:
 def build_metric_glossary() -> pd.DataFrame:
     """Build explicit metric definitions for workbook readers."""
     rows = [
-        ("total_labeled_records", "labeled_episode_rows", "All labeled episode rows in the final labeled stage, including rows outside persona-core clustering."),
-        ("persona_core_labeled_records", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Labeled episode rows with persona_core_eligible=true; this is the clustering denominator for persona shares."),
-        ("persona_count", "promoted_persona_rows", "Count of personas whose final promotion_status remains promoted_persona in the workbook."),
+        *[(metric, metric, str(payload.get("definition", "") or "")) for metric, payload in PIPELINE_STAGE_DEFINITIONS.items()],
+        ("persona_core_labeled_rows", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Labeled episode rows with persona_core_eligible=true; this is the clustering denominator for persona shares."),
+        ("promoted_candidate_persona_count", "persona_cluster_rows", "Count of clusters that passed the base size and dominance promotion gate before grounding review."),
+        ("promotion_visibility_persona_count", "persona_cluster_rows", "Count of promoted personas that remain visible in the workbook for reviewer inspection after grounding policy merge. Under the current flag policy this includes grounded, weakly grounded, and ungrounded promoted personas."),
+        ("final_usable_persona_count", "persona_cluster_rows", "Count of final usable personas for downstream reporting. Under the current policy this includes only promoted_and_grounded personas, not weakly grounded or ungrounded review-only personas."),
+        ("deck_ready_persona_count", "persona_cluster_rows", "Count of personas safe to present as deck-ready headline personas. Under the current policy this matches final_usable_persona_count."),
         ("exploratory_bucket_count", "exploratory_cluster_rows", "Count of non-promoted exploratory clusters shown for context."),
         ("persona_core_unknown_ratio", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Ratio of persona-core labeled rows that still contain unresolved core label families."),
-        ("overall_unknown_ratio", "labeled_episode_rows", "Ratio of all labeled rows with unresolved core label families, including rows outside persona-core clustering."),
-        ("persona_core_coverage_of_all_labeled_pct", "labeled_episode_rows", "Percentage of all labeled rows that remain inside the persona-core subset used for clustering."),
+        ("overall_unknown_ratio", DENOMINATOR_LABELED_EPISODE_ROWS, "Ratio of all labeled rows with unresolved core label families, including rows outside persona-core clustering."),
+        ("persona_core_coverage_of_all_labeled_pct", DENOMINATOR_LABELED_EPISODE_ROWS, "Percentage of all labeled rows that remain inside the persona-core subset used for clustering."),
+        ("effective_labeled_source_count", "effective_labeled_source_count", "Effective count of contributing labeled sources after fractional down-weighting for very small labeled-source volumes. This is a source-count metric, not a row-count metric."),
         ("largest_cluster_share_of_core_labeled", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Largest promoted or exploratory persona cluster share over persona-core labeled rows."),
-        ("largest_labeled_source_share_pct", "labeled_episode_rows", "Largest source contribution share over all labeled episode rows."),
+        ("largest_labeled_source_share_pct", DENOMINATOR_LABELED_EPISODE_ROWS, "Largest source contribution share over all labeled episode rows."),
         ("promoted_persona_example_coverage_pct", "promoted_persona_rows", "Percentage of promoted personas that have any accepted grounding state, including weakly grounded personas."),
-        ("promoted_persona_grounded_count", "promoted_persona_rows", "Count of promoted personas with at least one grounded representative example."),
+        ("promoted_persona_grounded_count", "promoted_persona_rows", "Count of promoted personas with at least one grounded representative example. Under the current policy this equals final_usable_persona_count and excludes weakly grounded review-only personas."),
         ("promoted_persona_weakly_grounded_count", "promoted_persona_rows", "Count of promoted personas whose evidence only meets weak fallback policy, not normal grounded selection."),
-        ("promoted_persona_ungrounded_count", "promoted_persona_rows", "Count of promoted personas with no acceptable grounding evidence under policy."),
+        ("promoted_persona_ungrounded_count", "promoted_persona_rows", "Count of promoted personas with no acceptable grounding evidence under policy. These can remain workbook-visible for review without counting as final usable personas."),
+        ("promoted_persona_grounding_failure_count", "promoted_persona_rows", "Count of promoted personas that are not fully grounded for downstream reporting. Under the current policy this equals promoted_persona_weakly_grounded_count + promoted_persona_ungrounded_count and should not be confused with example-row issue counts."),
         ("promoted_personas_missing_examples", "promoted_persona_rows", "Pipe-delimited promoted persona ids with no accepted selected example rows."),
         ("promoted_personas_weakly_grounded", "promoted_persona_rows", "Pipe-delimited promoted persona ids that remain visible only with weak grounding coverage."),
+        ("selected_example_grounding_issue_count", "persona_example_rows", "Count of selected example rows whose evidence is weak, fallback-only, reject-like, or otherwise degraded. This is example-level and can be zero even when persona-level grounding coverage fails."),
         ("promotion_status", "persona_cluster_row", "Final workbook promotion label after applying grounding policy merge. This can stay promoted while grounding_status is weak or ungrounded."),
-        ("base_promotion_status", "persona_cluster_row", "Size and dominance based promotion label before grounding policy is applied."),
+        ("base_promotion_status", "persona_cluster_row", "Size and dominance based promotion label before grounding policy is applied. Promoted candidates use the explicit term promoted_candidate_persona."),
+        ("promoted_candidate_persona", "persona_cluster_row", "Boolean flag showing whether a row passed the base promotion gate before grounding review."),
+        ("workbook_review_visible", "persona_cluster_row", "Boolean flag showing whether a row remains visible in the workbook's promoted persona set for review."),
+        ("final_usable_persona", "persona_cluster_row", "Boolean flag showing whether a persona is usable for downstream reporting under the current policy."),
+        ("deck_ready_persona", "persona_cluster_row", "Boolean flag showing whether a persona is safe for deck-ready headline reporting under the current policy."),
+        ("reporting_readiness_status", "persona_cluster_row", "Reviewer-facing readiness class: final_usable_persona, review_only_weakly_grounded, review_only_ungrounded, promotion_candidate_pending_review, or not_final_usable."),
         ("grounding_status", "persona_cluster_row", "Reviewer-facing grounding state for a persona: grounded, weakly_grounded, ungrounded, or not_applicable."),
         ("promotion_grounding_status", "persona_cluster_row", "Combined promotion-grounding state such as promoted_and_grounded or promoted_but_ungrounded."),
         ("selection_strength", "persona_example_row", "Workbook-facing selection label for an example row, distinguishing grounded selections from weak_grounding_fallback rows."),
         ("grounding_strength", "persona_example_row", "Policy bucket for one example candidate: strong, grounded, weak, or unacceptable."),
         ("coverage_selection_reason", "persona_example_row", "Why a row was selected: normal score_plus_diversity_policy or explicit minimum coverage policy."),
         ("grounding_fit_score", "persona_example_row", "Selection-time score component that rewards axis fit and penalizes mismatches for grounding quality."),
+        ("failure_reason_top", "source_diagnostic_reason", "Top ranked source_diagnostics bottleneck reason. Values identify the strongest source-specific issue after comparing stage retention, episode yield, labelability, promoted persona contribution, concentration risk, and diversity contribution."),
+        ("failure_level", "source_diagnostic_level", "Severity attached to failure_reason_top in source_diagnostics: failure, warning, or pass."),
+        ("recommended_seed_set", "source_diagnostic_intervention", "Optional source_diagnostics intervention payload. Populated only when the top issue is a relevance-prefilter bottleneck and an active local seed set exists for that source."),
         ("row_grain", "workbook_column_label", "Display-only export label for grain. In source_diagnostics this tells the reviewer whether a row is post-, episode-, or mixed-grain."),
-        ("raw_records", "raw_jsonl_rows", "Non-empty JSONL rows under data/raw/{source}/*.jsonl."),
-        ("normalized_records", "normalized_posts_rows", "Rows in data/normalized/normalized_posts.parquet after source normalizers."),
-        ("valid_records", "valid_candidate_rows", "Rows in data/valid/valid_candidates.parquet before relevance prefiltering."),
-        ("prefiltered_valid_records", "prefiltered_valid_rows", "Rows in data/valid/valid_candidates_prefiltered.parquet used by episode building when present."),
-        ("episodes", "episode_rows", "Rows in data/episodes/episode_table.parquet; one post can yield zero or more episodes."),
-        ("labeled_records", "labeled_episode_rows", "Rows in data/labeled/labeled_episodes.parquet joined to episodes by episode_id."),
         ("labelable_count", "labelability_rows", "Episode rows with labelability_status in labelable or borderline."),
         ("core_labeled", "persona_core_eligible_rows", "Labeled rows with persona_core_eligible=true, used for persona clustering."),
         ("promoted_to_persona_count", "promoted_cluster_rows", "Source rows assigned to clusters that pass persona promotion gates."),
-        ("raw_record_count", "raw_jsonl_rows", "Source-level raw JSONL record count in source_diagnostics; grain is raw record rows, not normalized post rows."),
-        ("normalized_post_count", "normalized_posts_rows", "Source-level normalized post count after source normalizers; grain is normalized post rows."),
-        ("valid_post_count", "normalized_posts_rows", "Source-level valid post count after invalid filtering; numerator grain and denominator grain are normalized post rows."),
-        ("prefiltered_valid_post_count", "valid_candidate_rows", "Source-level post count retained by the relevance prefilter; numerator grain and denominator grain are valid post rows."),
-        ("valid_posts_per_normalized_post_pct", "normalized_posts_rows", "Same-grain post funnel percentage: valid_post_count / normalized_post_count * 100."),
-        ("prefiltered_valid_posts_per_valid_post_pct", "valid_candidate_rows", "Same-grain post funnel percentage: prefiltered_valid_post_count / valid_post_count * 100."),
-        ("episode_count", "episode_rows", "Source-level episode count in episode_table.parquet; one prefiltered post can yield zero or more episodes."),
-        ("labeled_episode_count", "episode_rows", "Source-level episode count that appears in labeled_episodes.parquet; same grain as episode_count."),
-        ("labelable_episode_count", "labeled_episode_rows", "Source-level labeled episode count whose labelability_status is labelable or borderline; same grain as labeled_episode_count."),
-        ("labeled_episodes_per_episode_pct", "episode_rows", "Same-grain episode funnel percentage: labeled_episode_count / episode_count * 100."),
-        ("labelable_episodes_per_labeled_episode_pct", "labeled_episode_rows", "Same-grain episode funnel percentage: labelable_episode_count / labeled_episode_count * 100."),
-        ("episodes_per_prefiltered_valid_post", "prefiltered_valid_rows", "Cross-grain bridge metric: episode_count / prefiltered_valid_post_count. This can exceed 1.0 and is not a funnel rate."),
-        ("labeled_episodes_per_prefiltered_valid_post", "prefiltered_valid_rows", "Cross-grain bridge metric: labeled_episode_count / prefiltered_valid_post_count. This can exceed 1.0 and is not a funnel rate."),
-        ("labelable_episodes_per_prefiltered_valid_post", "prefiltered_valid_rows", "Cross-grain bridge metric: labelable_episode_count / prefiltered_valid_post_count. This can exceed 1.0 and is not a funnel rate."),
+        ("raw_record_count", DENOMINATOR_RAW_RECORD_ROWS, "Source-level raw JSONL record count in source_diagnostics; grain is raw record rows, not a count of sources and not normalized post rows."),
+        ("normalized_post_count", DENOMINATOR_NORMALIZED_POST_ROWS, "Source-level normalized post count after source normalizers; grain is normalized post rows."),
+        ("valid_post_count", DENOMINATOR_NORMALIZED_POST_ROWS, "Source-level valid post count after invalid filtering; numerator grain and denominator grain are normalized post rows."),
+        ("prefiltered_valid_post_count", DENOMINATOR_VALID_CANDIDATE_ROWS, "Source-level post count retained by the relevance prefilter; numerator grain and denominator grain are valid post rows."),
+        ("valid_posts_per_normalized_post_pct", DENOMINATOR_NORMALIZED_POST_ROWS, "Same-grain post funnel percentage: valid_post_count / normalized_post_count * 100."),
+        ("prefiltered_valid_posts_per_valid_post_pct", DENOMINATOR_VALID_CANDIDATE_ROWS, "Same-grain post funnel percentage: prefiltered_valid_post_count / valid_post_count * 100."),
+        ("episode_count", DENOMINATOR_EPISODE_ROWS, "Source-level episode count in episode_table.parquet; one prefiltered post can yield zero or more episodes."),
+        ("labeled_episode_count", DENOMINATOR_EPISODE_ROWS, "Source-level episode count that appears in labeled_episodes.parquet; same grain as episode_count."),
+        ("labelable_episode_count", DENOMINATOR_LABELED_EPISODE_ROWS, "Source-level labeled episode count whose labelability_status is labelable or borderline; same grain as labeled_episode_count."),
+        ("labeled_episodes_per_episode_pct", DENOMINATOR_EPISODE_ROWS, "Same-grain episode funnel percentage: labeled_episode_count / episode_count * 100."),
+        ("labelable_episodes_per_labeled_episode_pct", DENOMINATOR_LABELED_EPISODE_ROWS, "Same-grain episode funnel percentage: labelable_episode_count / labeled_episode_count * 100."),
+        ("episodes_per_prefiltered_valid_post", DENOMINATOR_PREFILTERED_VALID_ROWS, "Cross-grain bridge metric: episode_count / prefiltered_valid_post_count. This can exceed 1.0 and is not a funnel rate."),
+        ("labeled_episodes_per_prefiltered_valid_post", DENOMINATOR_PREFILTERED_VALID_ROWS, "Cross-grain bridge metric: labeled_episode_count / prefiltered_valid_post_count. This can exceed 1.0 and is not a funnel rate."),
+        ("labelable_episodes_per_prefiltered_valid_post", DENOMINATOR_PREFILTERED_VALID_ROWS, "Cross-grain bridge metric: labelable_episode_count / prefiltered_valid_post_count. This can exceed 1.0 and is not a funnel rate."),
         ("effective_diversity_contribution", "source_quality_score", "Weak source-diversity contribution capped at 1.0 from labeled episode volume; this is a source-quality score, not a funnel metric."),
         ("promoted_persona_episode_count", "promoted_cluster_rows", "Source-level episode count assigned to promoted personas; grain is promoted persona assignment rows."),
     ]
@@ -158,18 +173,6 @@ def build_source_stage_counts(
         labelable_count = source_row_count(labelable_with_source, source)
         labeled_count = source_row_count(labeled_with_source, source)
         promoted_count = source_row_count(promoted_with_source, source)
-        reason = _source_failure_reason(
-            source=source,
-            raw_count=raw_count,
-            normalized_count=normalized_count,
-            valid_count=valid_count,
-            prefiltered_count=prefiltered_count,
-            episode_count=episode_count,
-            labelable_count=labelable_count,
-            labeled_count=labeled_count,
-            relevance_drop_df=relevance_drop_df,
-            invalid_with_prefilter_df=invalid_with_prefilter_df,
-        )
         rows.append(
             {
                 "source": source,
@@ -182,13 +185,19 @@ def build_source_stage_counts(
                 "labelable_episode_count": labelable_count,
                 "effective_diversity_contribution": _effective_source_contribution(labeled_count),
                 "promoted_persona_episode_count": promoted_count,
-                "failure_reason_top": reason,
-                "failure_level": _failure_level(source, raw_count, labeled_count),
-                "recommended_seed_set": _recommended_seed_set(root_dir, source, reason),
+                "failure_reason_top": "",
+                "failure_level": "pass",
+                "recommended_seed_set": "",
                 "metric_glossary_note": "See metric_glossary for source_diagnostics metric definitions and row grains.",
             }
         )
     result = pd.DataFrame(rows)
+    result = _apply_source_diagnostic_rules(
+        result,
+        root_dir=root_dir,
+        relevance_drop_df=relevance_drop_df,
+        invalid_with_prefilter_df=invalid_with_prefilter_df,
+    )
     _validate_source_stage_counts(result)
     return result
 
@@ -403,7 +412,8 @@ def build_quality_failures(
         _gate_row("cluster_dominance_gate", _gate_level_from_status(str(quality_checks.get("largest_cluster_dominance_status", "OK"))), largest_share, str(quality_checks.get("largest_cluster_dominance_reason_keys", "") or "")),
         _gate_row("persona_promotion_gate", "hard_fail" if small_promoted else "pass", small_promoted, f"0 promoted personas below min_cluster_size={min_cluster_size}"),
         _gate_row("raw_to_labeled_source_gate", "soft_fail" if raw_sources >= 3 and labeled_sources <= 2 else "pass", f"raw={raw_sources}, labeled={labeled_sources}", "avoid raw coverage collapsing to <=2 labeled sources"),
-        _gate_row("example_grounding_gate", _gate_level_from_status(str(quality_checks.get("grounding_coverage_status", "OK"))), int(quality_checks.get("example_grounding_failure_count", 0) or 0), str(quality_checks.get("grounding_coverage_reason_keys", "") or "")),
+        _gate_row("promoted_persona_grounding_gate", _gate_level_from_status(str(quality_checks.get("grounding_coverage_status", "OK"))), int(quality_checks.get("promoted_persona_grounding_failure_count", 0) or 0), str(quality_checks.get("grounding_coverage_reason_keys", "") or "")),
+        _gate_row("selected_example_grounding_issue_gate", "soft_fail" if int(quality_checks.get("selected_example_grounding_issue_count", 0) or 0) > 0 else "pass", int(quality_checks.get("selected_example_grounding_issue_count", 0) or 0), "selected example rows with weak or degraded grounding evidence"),
         _gate_row("promoted_example_coverage_gate", _gate_level_from_status(str(quality_checks.get("grounding_coverage_status", "OK"))), float(quality_checks.get("promoted_persona_example_coverage_pct", 0.0) or 0.0), str(quality_checks.get("grounding_coverage_reason_keys", "") or "")),
         _gate_row("denominator_consistency_check", "pass", quality_checks.get("denominator_consistency", "explicit"), "all summary rows expose denominator_type/value"),
     ]
@@ -523,36 +533,6 @@ def _source_count(df: pd.DataFrame, source: str, column: str) -> int:
     return aggregated_source_count(df, source, column)
 
 
-def _source_failure_reason(
-    source: str,
-    raw_count: int,
-    normalized_count: int,
-    valid_count: int,
-    prefiltered_count: int,
-    episode_count: int,
-    labelable_count: int,
-    labeled_count: int,
-    relevance_drop_df: pd.DataFrame,
-    invalid_with_prefilter_df: pd.DataFrame,
-) -> str:
-    """Explain the dominant drop-off point for a source."""
-    if raw_count <= 0:
-        return "no_raw_records"
-    if normalized_count <= 0:
-        return "raw_not_normalized"
-    if valid_count <= 0:
-        return "invalid_filter_removed_all: " + _top_reason(invalid_with_prefilter_df, source, "invalid_reason")
-    if prefiltered_count <= 0:
-        return "relevance_prefilter_removed_all: " + _top_reason(relevance_drop_df, source, "prefilter_reason")
-    if episode_count <= 0:
-        return "episode_extraction_zero_from_prefiltered_candidates"
-    if labelable_count <= 0:
-        return "labelability_gate_removed_all"
-    if labeled_count <= 0:
-        return "label_output_missing_after_labelability"
-    return "labeled_output_present"
-
-
 def _top_reason(df: pd.DataFrame, source: str, column: str) -> str:
     """Return top reason text for one source."""
     if df.empty or column not in df.columns or SOURCE_FIELD not in df.columns:
@@ -563,13 +543,117 @@ def _top_reason(df: pd.DataFrame, source: str, column: str) -> str:
     return str(subset[column].fillna("unknown").astype(str).value_counts().idxmax())
 
 
-def _failure_level(source: str, raw_count: int, labeled_count: int) -> str:
-    """Treat raw-without-labeled source coverage as a failure."""
-    if raw_count > 0 and labeled_count <= 0:
-        return "failure"
-    if source in RAW_WITHOUT_LABEL_FAILURE_SOURCES and raw_count <= 0:
-        return "warning"
-    return "pass"
+def _apply_source_diagnostic_rules(
+    source_stage_counts_df: pd.DataFrame,
+    root_dir: Path,
+    relevance_drop_df: pd.DataFrame,
+    invalid_with_prefilter_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Assign one ranked diagnostic reason, severity, and intervention per source."""
+    if source_stage_counts_df.empty:
+        return source_stage_counts_df
+    result = source_stage_counts_df.copy()
+    total_labeled = int(pd.to_numeric(result.get("labeled_episode_count", pd.Series(dtype=int)), errors="coerce").fillna(0).sum())
+    total_promoted = int(pd.to_numeric(result.get("promoted_persona_episode_count", pd.Series(dtype=int)), errors="coerce").fillna(0).sum())
+    diagnoses = result.apply(
+        lambda row: _diagnose_source_row(
+            root_dir=root_dir,
+            source=str(row.get("source", "") or ""),
+            raw_count=int(row.get("raw_record_count", 0) or 0),
+            normalized_count=int(row.get("normalized_post_count", 0) or 0),
+            valid_count=int(row.get("valid_post_count", 0) or 0),
+            prefiltered_count=int(row.get("prefiltered_valid_post_count", 0) or 0),
+            episode_count=int(row.get("episode_count", 0) or 0),
+            labelable_count=int(row.get("labelable_episode_count", 0) or 0),
+            labeled_count=int(row.get("labeled_episode_count", 0) or 0),
+            promoted_count=int(row.get("promoted_persona_episode_count", 0) or 0),
+            effective_diversity_contribution=float(row.get("effective_diversity_contribution", 0.0) or 0.0),
+            total_labeled_count=total_labeled,
+            total_promoted_count=total_promoted,
+            relevance_drop_df=relevance_drop_df,
+            invalid_with_prefilter_df=invalid_with_prefilter_df,
+        ),
+        axis=1,
+        result_type="expand",
+    )
+    diagnoses.columns = ["failure_reason_top", "failure_level", "recommended_seed_set"]
+    for column in diagnoses.columns:
+        result[column] = diagnoses[column]
+    return result
+
+
+def _diagnose_source_row(
+    root_dir: Path,
+    source: str,
+    raw_count: int,
+    normalized_count: int,
+    valid_count: int,
+    prefiltered_count: int,
+    episode_count: int,
+    labelable_count: int,
+    labeled_count: int,
+    promoted_count: int,
+    effective_diversity_contribution: float,
+    total_labeled_count: int,
+    total_promoted_count: int,
+    relevance_drop_df: pd.DataFrame,
+    invalid_with_prefilter_df: pd.DataFrame,
+) -> tuple[str, str, str]:
+    """Return the strongest source-specific bottleneck and any supported intervention."""
+    if raw_count <= 0:
+        level = "warning" if source in RAW_WITHOUT_LABEL_FAILURE_SOURCES else "pass"
+        return ("no_raw_records", level, "")
+    if normalized_count <= 0:
+        return ("raw_not_normalized", "failure", "")
+
+    valid_retention_pct = round_pct(valid_count, normalized_count) if normalized_count else 0.0
+    prefilter_retention_pct = round_pct(prefiltered_count, valid_count) if valid_count else 0.0
+    episode_yield = round(float(episode_count) / float(prefiltered_count), 2) if prefiltered_count else 0.0
+    labelable_ratio_pct = round_pct(labelable_count, labeled_count) if labeled_count else 0.0
+    labeled_share_pct = round_pct(labeled_count, total_labeled_count) if total_labeled_count else 0.0
+    promoted_share_pct = round_pct(promoted_count, total_promoted_count) if total_promoted_count else 0.0
+    invalid_reason = _top_reason(invalid_with_prefilter_df, source, "invalid_reason")
+    prefilter_reason = _top_reason(relevance_drop_df, source, "prefilter_reason")
+
+    if valid_count <= 0:
+        return (f"low_valid_post_retention: {invalid_reason}", "failure", "")
+    if valid_retention_pct < 50.0:
+        level = "failure" if valid_retention_pct < 20.0 else "warning"
+        return (f"low_valid_post_retention: {invalid_reason}", level, "")
+
+    if prefiltered_count <= 0:
+        reason = f"low_prefilter_retention: {prefilter_reason}"
+        return (reason, "failure", _recommended_seed_set(root_dir, source, reason))
+    if prefilter_retention_pct < 30.0:
+        level = "failure" if prefilter_retention_pct < 10.0 else "warning"
+        reason = f"low_prefilter_retention: {prefilter_reason}"
+        return (reason, level, _recommended_seed_set(root_dir, source, reason))
+
+    if episode_count <= 0:
+        return ("low_episode_yield", "failure", "")
+    if episode_yield < 0.75:
+        level = "failure" if episode_yield < 0.25 else "warning"
+        return ("low_episode_yield", level, "")
+
+    if labeled_count <= 0:
+        return ("label_output_missing_after_episode_build", "failure", "")
+    if labelable_count <= 0:
+        return ("low_labelable_episode_ratio", "failure", "")
+    if labelable_ratio_pct < 50.0:
+        level = "failure" if labelable_ratio_pct < 25.0 else "warning"
+        return ("low_labelable_episode_ratio", level, "")
+
+    if promoted_count <= 0 and labeled_count >= 3:
+        return ("zero_promoted_persona_contribution", "warning", "")
+
+    if max(labeled_share_pct, promoted_share_pct) >= 50.0 and labeled_count >= 3:
+        level = "failure" if max(labeled_share_pct, promoted_share_pct) >= 70.0 else "warning"
+        return ("concentration_risk_contribution", level, "")
+
+    if labeled_count > 0 and effective_diversity_contribution < 1.0:
+        return ("weak_diversity_contribution", "warning", "")
+
+    return ("healthy_source_contribution", "pass", "")
 
 
 def _effective_source_contribution(labeled_count: int) -> float:
@@ -665,12 +749,12 @@ def _validate_source_diagnostics_frame(df: pd.DataFrame) -> None:
 
 
 def _recommended_seed_set(root_dir: Path, source: str, reason: str) -> str:
-    """Return active source-friendly seeds when relevance loss suggests seed mismatch."""
-    if "relevance_prefilter_removed_all" not in reason:
+    """Return active source-friendly seeds only for relevance-prefilter interventions."""
+    if not reason.startswith("low_prefilter_retention:"):
         return ""
     seed_path = _seed_path(root_dir, source)
     if seed_path is None:
-        return "review source-specific BI/reporting seed bank"
+        return ""
     data = load_yaml(seed_path)
     seeds = data.get("active_core_seeds") or data.get("core_seeds") or []
     values: list[str] = []

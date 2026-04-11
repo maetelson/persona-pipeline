@@ -9,6 +9,10 @@ import pandas as pd
 from src.utils.pipeline_schema import (
     CLUSTER_DOMINANCE_SHARE_PCT,
     CORE_LABEL_COLUMNS,
+    DENOMINATOR_LABELED_EPISODE_ROWS,
+    DENOMINATOR_RAW_RECORD_ROWS,
+    DENOMINATOR_VALID_CANDIDATE_ROWS,
+    PIPELINE_STAGE_METRIC_NAMES,
     QUALITY_FLAG_EXPLORATORY,
     QUALITY_FLAG_OK,
     QUALITY_FLAG_UNSTABLE,
@@ -87,8 +91,7 @@ QUALITY_STATUS_POLICY: dict[str, dict[str, object]] = {
 
 
 def build_quality_metrics(
-    total_raw_count: int,
-    cleaned_count: int,
+    stage_counts: dict[str, int],
     labeled_df: pd.DataFrame,
     source_stage_counts_df: pd.DataFrame,
     cluster_stats_df: pd.DataFrame,
@@ -106,8 +109,11 @@ def build_quality_metrics(
     largest_cluster_share = _largest_cluster_share(cluster_stats_df)
     largest_labeled_source_share = _largest_labeled_source_share(source_stage_counts_df, labeled_count)
     promoted_persona_count, promoted_with_examples, promoted_missing_examples, grounding_counts = _promoted_persona_example_counts(cluster_stats_df, persona_examples_df)
+    promotion_semantics = _persona_promotion_semantics(cluster_stats_df)
     promoted_persona_example_coverage_pct = round_pct(promoted_with_examples, promoted_persona_count) if promoted_persona_count else 100.0
     min_cluster_size = _persona_min_cluster_size(labeled_count)
+    selected_example_grounding_issue_count = _selected_example_grounding_issue_count(persona_examples_df)
+    promoted_persona_grounding_failure_count = int(grounding_counts.get("weakly_grounded", 0)) + int(grounding_counts.get("ungrounded", 0))
     cluster_distribution = [
         {
             "cluster_id": str(row.get("cluster_id", "")),
@@ -117,11 +123,8 @@ def build_quality_metrics(
         for row in cluster_profiles
     ]
     return {
-        "total_raw_count": int(total_raw_count),
-        "cleaned_count": int(cleaned_count),
-        "labeled_count": labeled_count,
-        "persona_core_labeled_count": persona_core_labeled_count,
-        "persona_core_labeled_records": persona_core_labeled_count,
+        **{metric: int(stage_counts.get(metric, 0) or 0) for metric in PIPELINE_STAGE_METRIC_NAMES},
+        "persona_core_labeled_rows": persona_core_labeled_count,
         "persona_core_unknown_ratio": round(_row_unknown_ratio(core_labeled_df), 6),
         "overall_unknown_ratio": round(_row_unknown_ratio(labeled_df), 6),
         "persona_core_coverage_of_all_labeled_pct": round_pct(persona_core_labeled_count, labeled_count) if labeled_count else 0.0,
@@ -135,7 +138,12 @@ def build_quality_metrics(
         "largest_labeled_source_share_pct": largest_labeled_source_share,
         "single_cluster_dominance": largest_cluster_share > CLUSTER_DOMINANCE_SHARE_PCT,
         "small_promoted_persona_count": _small_promoted_count(cluster_stats_df, min_cluster_size),
-        "example_grounding_failure_count": _example_failure_count(persona_examples_df),
+        "selected_example_grounding_issue_count": selected_example_grounding_issue_count,
+        "promoted_persona_grounding_failure_count": promoted_persona_grounding_failure_count,
+        "promoted_candidate_persona_count": int(promotion_semantics.get("promoted_candidate_persona_count", 0)),
+        "promotion_visibility_persona_count": int(promotion_semantics.get("promotion_visibility_persona_count", promoted_persona_count)),
+        "final_usable_persona_count": int(promotion_semantics.get("final_usable_persona_count", grounding_counts.get("grounded", 0))),
+        "deck_ready_persona_count": int(promotion_semantics.get("deck_ready_persona_count", grounding_counts.get("grounded", 0))),
         "promoted_persona_count": promoted_persona_count,
         "promoted_personas_with_examples": promoted_with_examples,
         "promoted_personas_missing_examples": " | ".join(promoted_missing_examples),
@@ -163,7 +171,7 @@ def evaluate_quality_status(metrics: dict[str, object]) -> dict[str, object]:
     )
     axes["grounding_coverage"] = _append_reason_if(
         axes["grounding_coverage"],
-        int(metrics.get("example_grounding_failure_count", 0) or 0) > 0,
+        int(metrics.get("selected_example_grounding_issue_count", 0) or 0) > 0,
         "selected_example_grounding_weak",
     )
     axes["grounding_coverage"] = _append_reason_if(
@@ -323,8 +331,31 @@ def _small_promoted_count(cluster_stats_df: pd.DataFrame, min_cluster_size: int)
     return int((sizes < min_cluster_size).sum())
 
 
-def _example_failure_count(persona_examples_df: pd.DataFrame) -> int:
-    """Count selected examples with weak grounding evidence."""
+def _persona_promotion_semantics(cluster_stats_df: pd.DataFrame) -> dict[str, int]:
+    """Return explicit promoted-vs-usable persona counts from cluster stats."""
+    if cluster_stats_df.empty:
+        return {
+            "promoted_candidate_persona_count": 0,
+            "promotion_visibility_persona_count": 0,
+            "final_usable_persona_count": 0,
+            "deck_ready_persona_count": 0,
+        }
+    base_status = cluster_stats_df.get("base_promotion_status", pd.Series(dtype=str)).astype(str)
+    promotion_status = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str)
+    grounding_status = cluster_stats_df.get("promotion_grounding_status", pd.Series(dtype=str)).astype(str)
+    promoted_candidate_count = int(base_status.isin({"promoted_candidate_persona", "promoted_persona"}).sum()) if not base_status.empty else int(promotion_status.eq("promoted_persona").sum())
+    promotion_visibility_count = int(promotion_status.eq("promoted_persona").sum())
+    final_usable_count = int(grounding_status.eq("promoted_and_grounded").sum())
+    return {
+        "promoted_candidate_persona_count": promoted_candidate_count,
+        "promotion_visibility_persona_count": promotion_visibility_count,
+        "final_usable_persona_count": final_usable_count,
+        "deck_ready_persona_count": final_usable_count,
+    }
+
+
+def _selected_example_grounding_issue_count(persona_examples_df: pd.DataFrame) -> int:
+    """Count selected example rows whose evidence is weak or otherwise degraded."""
     if persona_examples_df.empty:
         return 0
     selection_strength = persona_examples_df.get("selection_strength", pd.Series(dtype=str)).astype(str)

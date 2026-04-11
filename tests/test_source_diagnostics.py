@@ -16,6 +16,26 @@ from src.utils.io import write_jsonl, write_parquet
 class SourceDiagnosticsTests(unittest.TestCase):
     """Verify source diagnostics uses explicit grains and same-grain funnels only."""
 
+    def _write_source_fixture(
+        self,
+        root: Path,
+        *,
+        raw_counts: dict[str, int],
+        prefiltered_sources: list[str],
+        labelability_rows: list[dict[str, str]],
+        relevance_drop_rows: list[dict[str, str]] | None = None,
+        invalid_rows: list[dict[str, str]] | None = None,
+    ) -> None:
+        for source, count in raw_counts.items():
+            write_jsonl(
+                root / "data" / "raw" / source / "page_001.jsonl",
+                [{"id": f"{source}_{index}"} for index in range(count)],
+            )
+        write_parquet(pd.DataFrame({"source": prefiltered_sources}), root / "data" / "valid" / "valid_candidates_prefiltered.parquet")
+        write_parquet(pd.DataFrame(labelability_rows), root / "data" / "labeled" / "labelability_audit.parquet")
+        write_parquet(pd.DataFrame(relevance_drop_rows or []), root / "data" / "prefilter" / "relevance_drop.parquet")
+        write_parquet(pd.DataFrame(invalid_rows or []), root / "data" / "valid" / "invalid_candidates_with_prefilter.parquet")
+
     def test_build_source_diagnostics_separates_post_episode_and_bridge_metrics(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -89,10 +109,145 @@ class SourceDiagnosticsTests(unittest.TestCase):
                     cluster_stats_df=pd.DataFrame(),
                 )
 
+    def test_low_prefilter_retention_overrides_generic_source_reason_and_exposes_seed_intervention(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            self._write_source_fixture(
+                root,
+                raw_counts={"reddit": 10},
+                prefiltered_sources=["reddit"],
+                labelability_rows=[
+                    {"episode_id": "e1", "labelability_status": "labelable"},
+                    {"episode_id": "e2", "labelability_status": "labelable"},
+                ],
+                relevance_drop_rows=[{"source": "reddit", "prefilter_reason": "off_topic_query_match"}],
+            )
+            seed_dir = root / "config" / "seeds" / "reddit"
+            seed_dir.mkdir(parents=True, exist_ok=True)
+            (seed_dir / "reddit.yaml").write_text(
+                "active_core_seeds:\n  - finance dashboard\n  - kpi reporting\n",
+                encoding="utf-8",
+            )
+
+            stage_counts_df = build_source_stage_counts(
+                root_dir=root,
+                normalized_df=pd.DataFrame({"source": ["reddit"] * 10}),
+                valid_df=pd.DataFrame({"source": ["reddit"] * 10}),
+                episodes_df=pd.DataFrame({"episode_id": ["e1", "e2"], "source": ["reddit", "reddit"]}),
+                labeled_df=pd.DataFrame({"episode_id": ["e1", "e2"]}),
+                persona_assignments_df=pd.DataFrame({"episode_id": ["e1"], "persona_id": ["persona_01"]}),
+                cluster_stats_df=pd.DataFrame({"persona_id": ["persona_01"], "promotion_status": ["promoted_persona"]}),
+            )
+
+            row = stage_counts_df.iloc[0]
+            self.assertEqual(str(row["failure_reason_top"]), "low_prefilter_retention: off_topic_query_match")
+            self.assertEqual(str(row["failure_level"]), "warning")
+            self.assertIn("finance dashboard", str(row["recommended_seed_set"]))
+
+            diagnostics_df = build_source_diagnostics(stage_counts_df)
+            self.assertFalse(diagnostics_df["failure_reason_top"].astype(str).eq("labeled_output_present").any())
+
+    def test_low_episode_yield_overrides_generic_source_reason(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            self._write_source_fixture(
+                root,
+                raw_counts={"reddit": 10},
+                prefiltered_sources=["reddit"] * 10,
+                labelability_rows=[{"episode_id": "e1", "labelability_status": "labelable"}],
+            )
+
+            stage_counts_df = build_source_stage_counts(
+                root_dir=root,
+                normalized_df=pd.DataFrame({"source": ["reddit"] * 10}),
+                valid_df=pd.DataFrame({"source": ["reddit"] * 10}),
+                episodes_df=pd.DataFrame({"episode_id": ["e1"], "source": ["reddit"]}),
+                labeled_df=pd.DataFrame({"episode_id": ["e1"]}),
+                persona_assignments_df=pd.DataFrame({"episode_id": ["e1"], "persona_id": ["persona_01"]}),
+                cluster_stats_df=pd.DataFrame({"persona_id": ["persona_01"], "promotion_status": ["promoted_persona"]}),
+            )
+
+            row = stage_counts_df.iloc[0]
+            self.assertEqual(str(row["failure_reason_top"]), "low_episode_yield")
+            self.assertEqual(str(row["failure_level"]), "failure")
+
+    def test_zero_promoted_contribution_beats_generic_placeholder(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            self._write_source_fixture(
+                root,
+                raw_counts={"reddit": 6},
+                prefiltered_sources=["reddit"] * 6,
+                labelability_rows=[
+                    {"episode_id": f"e{index}", "labelability_status": "labelable"}
+                    for index in range(1, 7)
+                ],
+            )
+
+            stage_counts_df = build_source_stage_counts(
+                root_dir=root,
+                normalized_df=pd.DataFrame({"source": ["reddit"] * 6}),
+                valid_df=pd.DataFrame({"source": ["reddit"] * 6}),
+                episodes_df=pd.DataFrame({"episode_id": [f"e{index}" for index in range(1, 7)], "source": ["reddit"] * 6}),
+                labeled_df=pd.DataFrame({"episode_id": [f"e{index}" for index in range(1, 7)]}),
+                persona_assignments_df=pd.DataFrame(columns=["episode_id", "persona_id"]),
+                cluster_stats_df=pd.DataFrame(columns=["persona_id", "promotion_status"]),
+            )
+
+            row = stage_counts_df.iloc[0]
+            self.assertEqual(str(row["failure_reason_top"]), "zero_promoted_persona_contribution")
+            self.assertEqual(str(row["failure_level"]), "warning")
+            self.assertEqual(str(row["recommended_seed_set"]), "")
+
+    def test_source_diagnostics_surface_concentration_and_weak_diversity_reasons(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            self._write_source_fixture(
+                root,
+                raw_counts={"reddit": 8, "forums": 2},
+                prefiltered_sources=["reddit"] * 8 + ["forums"] * 2,
+                labelability_rows=[
+                    *[{"episode_id": f"r{index}", "labelability_status": "labelable"} for index in range(1, 9)],
+                    *[{"episode_id": f"f{index}", "labelability_status": "labelable"} for index in range(1, 3)],
+                ],
+            )
+
+            stage_counts_df = build_source_stage_counts(
+                root_dir=root,
+                normalized_df=pd.DataFrame({"source": ["reddit"] * 8 + ["forums"] * 2}),
+                valid_df=pd.DataFrame({"source": ["reddit"] * 8 + ["forums"] * 2}),
+                episodes_df=pd.DataFrame(
+                    {
+                        "episode_id": [*[f"r{index}" for index in range(1, 9)], *[f"f{index}" for index in range(1, 3)]],
+                        "source": ["reddit"] * 8 + ["forums"] * 2,
+                    }
+                ),
+                labeled_df=pd.DataFrame({"episode_id": [*[f"r{index}" for index in range(1, 9)], *[f"f{index}" for index in range(1, 3)]]}),
+                persona_assignments_df=pd.DataFrame(
+                    {
+                        "episode_id": [*[f"r{index}" for index in range(1, 7)], "f1"],
+                        "persona_id": ["persona_01"] * 6 + ["persona_02"],
+                    }
+                ),
+                cluster_stats_df=pd.DataFrame(
+                    {
+                        "persona_id": ["persona_01", "persona_02"],
+                        "promotion_status": ["promoted_persona", "promoted_persona"],
+                    }
+                ),
+            )
+
+            reddit_row = stage_counts_df.loc[stage_counts_df["source"] == "reddit"].iloc[0]
+            forums_row = stage_counts_df.loc[stage_counts_df["source"] == "forums"].iloc[0]
+            self.assertEqual(str(reddit_row["failure_reason_top"]), "concentration_risk_contribution")
+            self.assertEqual(str(reddit_row["failure_level"]), "failure")
+            self.assertEqual(str(forums_row["failure_reason_top"]), "weak_diversity_contribution")
+            self.assertEqual(str(forums_row["failure_level"]), "warning")
+
     def test_validate_workbook_frames_rejects_mixed_grain_rate_names(self) -> None:
         frames = {
             "overview": pd.DataFrame({"metric": ["x"], "value": ["y"]}),
-            "counts": pd.DataFrame({"metric": ["raw_records"], "count": [1]}),
+            "counts": pd.DataFrame({"metric": ["raw_record_rows"], "count": [1]}),
             "source_distribution": pd.DataFrame(),
             "taxonomy_summary": pd.DataFrame(),
             "cluster_stats": pd.DataFrame(),

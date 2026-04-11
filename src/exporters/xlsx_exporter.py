@@ -40,6 +40,103 @@ DISPLAY_HEADER_OVERRIDES = {
     "grounding_strength": "example_grounding_strength",
 }
 
+DISPLAY_TO_RAW_HEADER_OVERRIDES = {value: key for key, value in DISPLAY_HEADER_OVERRIDES.items()}
+DISPLAY_TO_RAW_HEADER_OVERRIDES.update(
+    {
+        "metric_key": "metric",
+        "metric_value": "value",
+        "threshold_rule": "threshold",
+        "workbook_label": "",
+        "display_label": "",
+        "row_count": "count",
+        "raw_record_rows_for_source": "raw_count",
+        "normalized_post_rows_for_source": "normalized_count",
+        "valid_candidate_rows_for_source": "valid_count",
+        "prefiltered_valid_post_rows_for_source": "prefiltered_valid_count",
+        "episode_rows_for_source": "episode_count",
+        "labeled_episode_rows_for_source": "labeled_count",
+        "share_of_labeled_episode_rows_pct": "share_of_labeled",
+    }
+)
+
+OVERVIEW_METRIC_LABELS = {
+    "overall_status": "Overall workbook status",
+    "quality_flag": "Quality flag derived from overall status",
+    "quality_flag_rule": "Quality flag decision rule",
+    "composite_reason_keys": "Combined reason keys for overall status",
+    "core_clustering_status": "Core clustering status",
+    "source_diversity_status": "Source diversity status",
+    "example_grounding_status": "Example grounding status",
+    "overall_unknown_status": "All labeled rows unknown-rate status",
+    "core_unknown_status": "Persona-core unknown-rate status",
+    "core_coverage_status": "Persona-core coverage status",
+    "effective_source_diversity_status": "Effective labeled-source diversity status",
+    "source_concentration_status": "Labeled-source concentration status",
+    "largest_cluster_dominance_status": "Largest cluster dominance status",
+    "grounding_coverage_status": "Promoted persona grounding coverage status",
+    "raw_record_rows": "Raw record row count (JSONL lines, not source count)",
+    "normalized_post_rows": "Normalized post row count",
+    "valid_candidate_rows": "Valid candidate post row count",
+    "prefiltered_valid_rows": "Prefilter-retained valid post row count",
+    "episode_rows": "Episode row count",
+    "labeled_episode_rows": "Labeled episode row count",
+    "persona_core_labeled_rows": "Persona-core labeled episode row count",
+    "persona_core_coverage_of_all_labeled_pct": "Persona-core coverage of labeled episode rows (%)",
+    "persona_core_unknown_ratio": "Persona-core unknown ratio",
+    "overall_unknown_ratio": "All labeled rows unknown ratio",
+    "effective_labeled_source_count": "Effective labeled-source count (source diversity score, not row count)",
+    "largest_cluster_share_of_core_labeled": "Largest cluster share of persona-core labeled rows (%)",
+    "largest_labeled_source_share_pct": "Largest labeled-source share of labeled episode rows (%)",
+    "promoted_candidate_persona_count": "Promoted candidate persona count before grounding review",
+    "promotion_visibility_persona_count": "Promotion-visibility persona count (review-visible promoted personas)",
+    "final_usable_persona_count": "Final usable persona count (grounded promoted personas only)",
+    "deck_ready_persona_count": "Deck-ready persona count",
+    "promoted_persona_example_coverage_pct": "Promoted persona grounding coverage (%)",
+    "promoted_persona_grounded_count": "Grounded promoted persona count",
+    "promoted_persona_weakly_grounded_count": "Weakly grounded review-only promoted persona count",
+    "promoted_persona_ungrounded_count": "Ungrounded review-only promoted persona count",
+    "promoted_personas_weakly_grounded": "Weakly grounded promoted persona ids",
+    "promoted_personas_missing_examples": "Promoted persona ids missing accepted grounding examples",
+    "exploratory_bucket_count": "Exploratory non-promoted cluster count",
+    "min_cluster_size": "Minimum cluster size for promotion review",
+    "selected_axes": "Selected persona analysis axes",
+    "clustering_mode": "Clustering mode",
+}
+
+QUALITY_CHECK_METRIC_LABELS = {
+    "persona_core_unknown_ratio": "Persona-core unknown ratio",
+    "overall_unknown_ratio": "All labeled rows unknown ratio",
+    "persona_core_coverage_of_all_labeled_pct": "Persona-core coverage of labeled episode rows (%)",
+    "effective_labeled_source_count": "Effective labeled-source count (source diversity score, not row count)",
+    "largest_labeled_source_share_pct": "Largest labeled-source share of labeled episode rows (%)",
+    "largest_cluster_share_of_core_labeled": "Largest cluster share of persona-core labeled rows (%)",
+    "promoted_persona_example_coverage_pct": "Promoted persona grounding coverage (%)",
+    "promoted_persona_grounding_failure_count": "Promoted persona count failing grounded-usable policy",
+    "selected_example_grounding_issue_count": "Selected representative example issue count (example rows)",
+    "source_failures": "Sources with raw coverage but no labeled episode output",
+    "quality_flag": "Quality flag derived from overall status",
+    "overall_status": "Overall workbook status",
+    "core_clustering_status": "Core clustering status",
+    "source_diversity_status": "Source diversity status",
+    "example_grounding_status": "Example grounding status",
+    "denominator_consistency": "Denominator consistency contract status",
+}
+
+SOURCE_DISTRIBUTION_HEADER_OVERRIDES = {
+    "raw_count": "raw_record_rows_for_source",
+    "normalized_count": "normalized_post_rows_for_source",
+    "valid_count": "valid_candidate_rows_for_source",
+    "prefiltered_valid_count": "prefiltered_valid_post_rows_for_source",
+    "episode_count": "episode_rows_for_source",
+    "labeled_count": "labeled_episode_rows_for_source",
+    "share_of_labeled": "share_of_labeled_episode_rows_pct",
+}
+
+COUNTS_HEADER_OVERRIDES = {
+    "metric": "metric_key",
+    "count": "row_count",
+}
+
 PERCENT_LIKE_COLUMNS = {
     "share_of_core_labeled",
     "share_of_all_labeled",
@@ -136,6 +233,11 @@ def _prepare_workbook_frames(frames: dict[str, pd.DataFrame]) -> dict[str, pd.Da
         or message.startswith("sheet frame is null:")
         or message.startswith("forbidden generic share column:")
         or message.startswith("share denominator mismatch:")
+        or message.startswith("legacy stage metric alias:")
+        or message.startswith("stage metric mismatch:")
+        or message.startswith("ambiguous persona count metric:")
+        or message.startswith("missing persona promotion metric:")
+        or message.startswith("persona promotion metric mismatch:")
         or message.startswith("ambiguous source_diagnostics column:")
         or message.startswith("missing source_diagnostics structure column:")
         or message.startswith("mixed-grain metric mislabeled as rate:")
@@ -147,6 +249,11 @@ def _prepare_workbook_frames(frames: dict[str, pd.DataFrame]) -> dict[str, pd.Da
             for message in messages
             if message.startswith("forbidden generic share column:")
             or message.startswith("share denominator mismatch:")
+            or message.startswith("legacy stage metric alias:")
+            or message.startswith("stage metric mismatch:")
+            or message.startswith("ambiguous persona count metric:")
+            or message.startswith("missing persona promotion metric:")
+            or message.startswith("persona promotion metric mismatch:")
             or message.startswith("ambiguous source_diagnostics column:")
             or message.startswith("missing source_diagnostics structure column:")
             or message.startswith("mixed-grain metric mislabeled as rate:")
@@ -172,11 +279,77 @@ def _display_frame(sheet_name: str, df: pd.DataFrame) -> pd.DataFrame:
     if df is None:
         return pd.DataFrame()
     frame = df.copy()
+    if sheet_name == "overview":
+        frame = _with_metric_display_label(frame, label_column="display_label", label_builder=lambda metric: _overview_metric_label(str(metric)))
+        if "metric" in frame.columns:
+            frame = frame.rename(columns={"metric": "metric_key", "value": "metric_value"})
+        return frame
+    if sheet_name == "quality_checks":
+        frame = _with_metric_display_label(frame, label_column="display_label", label_builder=lambda metric: _quality_check_metric_label(str(metric)))
+        rename_map = {
+            "metric": "metric_key",
+            "value": "metric_value",
+            "threshold": "threshold_rule",
+            "denominator_type": "denominator_type_key",
+            "denominator_value": "denominator_row_count",
+        }
+        return frame.rename(columns={key: value for key, value in rename_map.items() if key in frame.columns})
+    if sheet_name == "metric_glossary":
+        frame = _with_metric_display_label(frame, label_column="workbook_label", label_builder=lambda metric: _glossary_metric_label(str(metric)))
+        rename_map = {
+            "metric": "metric_key",
+            "denominator_type": "denominator_type_key",
+        }
+        return frame.rename(columns={key: value for key, value in rename_map.items() if key in frame.columns})
+    if sheet_name == "counts":
+        rename_map = {key: value for key, value in COUNTS_HEADER_OVERRIDES.items() if key in frame.columns}
+        return frame.rename(columns=rename_map)
+    if sheet_name == "source_distribution":
+        rename_map = {key: value for key, value in SOURCE_DISTRIBUTION_HEADER_OVERRIDES.items() if key in frame.columns}
+        return frame.rename(columns=rename_map)
     rename_map = {
         column: DISPLAY_HEADER_OVERRIDES.get(column, column)
         for column in frame.columns
     }
     return frame.rename(columns=rename_map)
+
+
+def _with_metric_display_label(df: pd.DataFrame, label_column: str, label_builder) -> pd.DataFrame:
+    """Insert an export-only display label next to a metric key column."""
+    if "metric" not in df.columns:
+        return df
+    frame = df.copy()
+    insert_at = list(frame.columns).index("metric") + 1
+    frame.insert(insert_at, label_column, frame["metric"].map(label_builder))
+    return frame
+
+
+def _overview_metric_label(metric: str) -> str:
+    """Return a reviewer-facing label for overview metric keys."""
+    return OVERVIEW_METRIC_LABELS.get(metric, metric.replace("_", " "))
+
+
+def _quality_check_metric_label(metric: str) -> str:
+    """Return a reviewer-facing label for quality check metric keys."""
+    if ":" in metric:
+        base_metric, source = metric.split(":", 1)
+        source = source.strip()
+        source_labels = {
+            "valid_posts_per_normalized_post_pct": f"Source {source}: valid-post retention from normalized posts (%)",
+            "prefiltered_valid_posts_per_valid_post_pct": f"Source {source}: relevance-prefilter retention from valid posts (%)",
+            "labeled_episodes_per_episode_pct": f"Source {source}: labeled-episode retention from episode rows (%)",
+            "labelable_episodes_per_labeled_episode_pct": f"Source {source}: labelable-episode retention from labeled episode rows (%)",
+            "episodes_per_prefiltered_valid_post": f"Source {source}: episode rows per prefiltered valid post row",
+            "labeled_episodes_per_prefiltered_valid_post": f"Source {source}: labeled episode rows per prefiltered valid post row",
+            "labelable_episodes_per_prefiltered_valid_post": f"Source {source}: labelable episode rows per prefiltered valid post row",
+        }
+        return source_labels.get(base_metric, f"Source {source}: {base_metric.replace('_', ' ')}")
+    return QUALITY_CHECK_METRIC_LABELS.get(metric, _overview_metric_label(metric))
+
+
+def _glossary_metric_label(metric: str) -> str:
+    """Return a reviewer-facing label for glossary rows."""
+    return QUALITY_CHECK_METRIC_LABELS.get(metric, OVERVIEW_METRIC_LABELS.get(metric, metric.replace("_", " ")))
 
 
 def _format_worksheet(worksheet, sheet_name: str, raw_frame: pd.DataFrame, export_frame: pd.DataFrame) -> None:
@@ -190,13 +363,17 @@ def _format_worksheet(worksheet, sheet_name: str, raw_frame: pd.DataFrame, expor
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     worksheet.sheet_view.showGridLines = True
 
-    original_columns = list(raw_frame.columns)
     display_columns = list(export_frame.columns)
     for index, display_column in enumerate(display_columns, start=1):
-        original_column = original_columns[index - 1] if index - 1 < len(original_columns) else display_column
+        original_column = _raw_column_for_display_column(display_column)
         width = _column_width(display_column, worksheet, index)
         worksheet.column_dimensions[get_column_letter(index)].width = width
         _apply_column_format(worksheet, index, sheet_name, original_column, raw_frame)
+
+
+def _raw_column_for_display_column(display_column: str) -> str:
+    """Map an export-only display column back to the raw frame column when possible."""
+    return DISPLAY_TO_RAW_HEADER_OVERRIDES.get(display_column, display_column)
 
 
 def _column_width(display_column: str, worksheet, column_index: int) -> float:
@@ -249,22 +426,33 @@ def _write_readme_sheet(workbook) -> None:
     rows = [
         ["Persona Workbook Guide", "Use this sheet first when reviewing denominators, grain, and grounding status."],
         ["", ""],
-        ["Traceability Summary", "Formula-backed links to the workbook overview metrics."],
-        ["All Labeled Rows", '=INDEX(overview!$B:$B,MATCH("total_labeled_records",overview!$A:$A,0))'],
-        ["Persona Core Rows", '=INDEX(overview!$B:$B,MATCH("persona_core_labeled_records",overview!$A:$A,0))'],
-        ["Promoted Persona Rows", '=INDEX(overview!$B:$B,MATCH("persona_count",overview!$A:$A,0))'],
-        ["Approx Unknown Rows", '=ROUND(INDEX(overview!$B:$B,MATCH("overall_unknown_ratio",overview!$A:$A,0))*INDEX(overview!$B:$B,MATCH("total_labeled_records",overview!$A:$A,0)),0)'],
+        ["Pipeline Stage Summary", "Formula-backed links to the canonical stage metrics in overview."],
+        ["Raw Record Row Count (JSONL lines, not sources)", '=INDEX(overview!$C:$C,MATCH("raw_record_rows",overview!$A:$A,0))'],
+        ["Normalized Post Row Count", '=INDEX(overview!$C:$C,MATCH("normalized_post_rows",overview!$A:$A,0))'],
+        ["Valid Candidate Post Row Count", '=INDEX(overview!$C:$C,MATCH("valid_candidate_rows",overview!$A:$A,0))'],
+        ["Prefilter-Retained Valid Post Row Count", '=INDEX(overview!$C:$C,MATCH("prefiltered_valid_rows",overview!$A:$A,0))'],
+        ["Episode Row Count", '=INDEX(overview!$C:$C,MATCH("episode_rows",overview!$A:$A,0))'],
+        ["Labeled Episode Row Count", '=INDEX(overview!$C:$C,MATCH("labeled_episode_rows",overview!$A:$A,0))'],
+        ["Persona-Core Labeled Episode Row Count", '=INDEX(overview!$C:$C,MATCH("persona_core_labeled_rows",overview!$A:$A,0))'],
+        ["Review-Visible Promoted Persona Count", '=INDEX(overview!$C:$C,MATCH("promotion_visibility_persona_count",overview!$A:$A,0))'],
+        ["Final Usable Persona Count (grounded promoted personas only)", '=INDEX(overview!$C:$C,MATCH("final_usable_persona_count",overview!$A:$A,0))'],
+        ["Deck-Ready Persona Count", '=INDEX(overview!$C:$C,MATCH("deck_ready_persona_count",overview!$A:$A,0))'],
+        ["Weakly Grounded Review-Only Promoted Persona Count", '=INDEX(overview!$C:$C,MATCH("promoted_persona_weakly_grounded_count",overview!$A:$A,0))'],
+        ["Ungrounded Review-Only Promoted Persona Count", '=INDEX(overview!$C:$C,MATCH("promoted_persona_ungrounded_count",overview!$A:$A,0))'],
+        ["Approximate Unknown Labeled Episode Rows", '=ROUND(INDEX(overview!$C:$C,MATCH("overall_unknown_ratio",overview!$A:$A,0))*INDEX(overview!$C:$C,MATCH("labeled_episode_rows",overview!$A:$A,0)),0)'],
         ["", ""],
         ["How To Read Denominators", ""],
-        ["share_of_persona_core_labeled_pct", "Percentage over persona_core_labeled_rows. Use this for persona clustering coverage."],
-        ["share_of_all_labeled_pct", "Percentage over all labeled_episode_rows. Use this for whole-workbook context."],
-        ["row_grain", "The entity counted by the row: post, episode, mixed_grain_bridge, or other."],
-        ["denominator_type_key", "The semantic denominator family. Cross-check this against metric_glossary."],
+        ["share_of_persona_core_labeled_pct", "Percentage over persona_core_labeled_rows. This denominator is persona-core labeled episode rows, not all labeled rows."],
+        ["share_of_all_labeled_pct", "Percentage over all labeled_episode_rows. Use this only for whole-workbook context, not persona-core clustering coverage."],
+        ["row_grain", "The entity counted by the row: post rows, episode rows, mixed_grain_bridge ratios, or other non-funnel metrics."],
+        ["denominator_type_key", "The semantic denominator family. Cross-check this against metric_glossary before comparing row counts, source counts, or persona counts."],
         ["", ""],
         ["Review Tips", ""],
-        ["Grounding states", "See persona_summary and cluster_stats for base_promotion_status, grounding_status, and promotion_grounding_status."],
-        ["Mixed-grain diagnostics", "source_diagnostics rows with row_grain=mixed_grain_bridge are ratios, not funnel percentages."],
-        ["Glossary", "See metric_glossary for metric definitions and denominator semantics."],
+        ["Grounding states", "See persona_summary and cluster_stats for base_promotion_status, grounding_status, promotion_grounding_status, and reporting_readiness_status. Review-visible promoted personas are not automatically final usable personas."],
+        ["Persona counts", "Use Final Usable Persona Count for headline or downstream persona totals. Use Review-Visible Promoted Persona Count only for workbook review coverage, because it can include weakly grounded or ungrounded promoted personas."],
+        ["Rows versus sources", "Raw Record Row Count is a count of JSONL rows. Effective labeled-source count and source_distribution rows describe sources, not post or episode rows."],
+        ["Mixed-grain diagnostics", "source_diagnostics rows with row_grain=mixed_grain_bridge are cross-grain ratios, not same-grain funnel percentages."],
+        ["Glossary", "See metric_glossary for metric keys, reviewer-facing workbook labels, and denominator semantics."],
     ]
     for row in rows:
         worksheet.append(row)
@@ -276,15 +464,15 @@ def _write_readme_sheet(workbook) -> None:
     worksheet["B3"].font = HEADER_FONT
     for cell in worksheet[3]:
         cell.fill = HEADER_FILL
-    for row_index in [9, 14]:
+    for row_index in [18, 24]:
         for cell in worksheet[row_index]:
             cell.font = HEADER_FONT
             cell.fill = SUBTLE_FILL
     for row in worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=2):
         for cell in row:
             cell.alignment = Alignment(vertical="top", wrap_text=True)
-    worksheet["B17"].hyperlink = "#metric_glossary!A1"
-    worksheet["B17"].style = "Hyperlink"
+    worksheet["B28"].hyperlink = "#metric_glossary!A1"
+    worksheet["B28"].style = "Hyperlink"
 
 
 def _excel_safe_value(value: object, max_len: int) -> object:

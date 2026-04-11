@@ -62,8 +62,8 @@ def build_persona_outputs(
         .fillna("")
         .drop_duplicates(subset=["episode_id"])
     )
-    total_labeled_records = int(quality_checks.get("labeled_count", len(labeled_df)))
-    persona_core_labeled_records = int(quality_checks.get("persona_core_labeled_count", len(labeled_df)))
+    total_labeled_records = int(quality_checks.get("labeled_episode_rows", len(labeled_df)))
+    persona_core_labeled_records = int(quality_checks.get("persona_core_labeled_rows", len(labeled_df)))
     example_config = load_example_selection_config(Path(__file__).resolve().parents[2])
     cluster_policy = _cluster_promotion_policy(persona_source_df, total_labeled_records)
     grounding_outputs = apply_promotion_grounding_policy(
@@ -263,6 +263,11 @@ def _build_persona_summary_df(
                 "denominator_value": persona_core_labeled_records,
                 "min_cluster_size": int(cluster_policy["min_cluster_size"]),
                 "base_promotion_status": promotion.get("base_promotion_status", promotion.get("status", "exploratory_bucket")),
+                "promoted_candidate_persona": _is_promoted_candidate_persona(promotion),
+                "workbook_review_visible": _is_workbook_review_visible(promotion),
+                "final_usable_persona": _is_final_usable_persona(promotion),
+                "deck_ready_persona": _is_final_usable_persona(promotion),
+                "reporting_readiness_status": _reporting_readiness_status(promotion),
                 "promotion_status": promotion.get("status", "exploratory_bucket"),
                 "grounding_status": promotion.get("grounding_status", "not_applicable"),
                 "promotion_grounding_status": promotion.get("promotion_grounding_status", "exploratory_bucket"),
@@ -414,6 +419,11 @@ def _build_cluster_stats_df(
                 "denominator_value": persona_core_labeled_records,
                 "min_cluster_size": int(cluster_policy["min_cluster_size"]),
                 "base_promotion_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("base_promotion_status", "exploratory_bucket"),
+                "promoted_candidate_persona": _is_promoted_candidate_persona(cluster_policy["status_by_persona"].get(str(persona_id), {})),
+                "workbook_review_visible": _is_workbook_review_visible(cluster_policy["status_by_persona"].get(str(persona_id), {})),
+                "final_usable_persona": _is_final_usable_persona(cluster_policy["status_by_persona"].get(str(persona_id), {})),
+                "deck_ready_persona": _is_final_usable_persona(cluster_policy["status_by_persona"].get(str(persona_id), {})),
+                "reporting_readiness_status": _reporting_readiness_status(cluster_policy["status_by_persona"].get(str(persona_id), {})),
                 "promotion_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("status", "exploratory_bucket"),
                 "promotion_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("reason", ""),
                 "grounding_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("grounding_status", "not_applicable"),
@@ -588,6 +598,37 @@ def _titleize(value: str, fallback: str = "unassigned") -> str:
     return text.replace("_", " ").title()
 
 
+def _is_promoted_candidate_persona(payload: dict[str, Any]) -> bool:
+    """Return whether a cluster passed the base promotion gate before grounding review."""
+    base_status = str(payload.get("base_promotion_status", payload.get("status", "")) or "")
+    return base_status in {"promoted_candidate_persona", "promoted_persona"}
+
+
+def _is_workbook_review_visible(payload: dict[str, Any]) -> bool:
+    """Return whether a persona remains visible in the workbook's promoted set."""
+    return str(payload.get("status", "") or "") == "promoted_persona"
+
+
+def _is_final_usable_persona(payload: dict[str, Any]) -> bool:
+    """Return whether a persona is usable for downstream reporting."""
+    return str(payload.get("promotion_grounding_status", "") or "") == "promoted_and_grounded"
+
+
+def _reporting_readiness_status(payload: dict[str, Any]) -> str:
+    """Return the downstream reporting readiness class for one persona."""
+    if _is_final_usable_persona(payload):
+        return "final_usable_persona"
+    if _is_workbook_review_visible(payload):
+        combined_status = str(payload.get("promotion_grounding_status", "") or "")
+        if combined_status == "promoted_but_weakly_grounded":
+            return "review_only_weakly_grounded"
+        if combined_status == "promoted_but_ungrounded":
+            return "review_only_ungrounded"
+    if _is_promoted_candidate_persona(payload):
+        return "promotion_candidate_pending_review"
+    return "not_final_usable"
+
+
 def _cluster_promotion_policy(persona_source_df: pd.DataFrame, total_labeled_records: int) -> dict[str, Any]:
     """Classify clusters as promoted personas or exploratory residual buckets."""
     sizes = persona_source_df.groupby("persona_id")["episode_id"].nunique().sort_values(ascending=False)
@@ -612,7 +653,7 @@ def _cluster_promotion_policy(persona_source_df: pd.DataFrame, total_labeled_rec
             "status": status,
             "reason": reason,
             "share": str(share),
-            "base_promotion_status": status,
+            "base_promotion_status": "promoted_candidate_persona" if status == "promoted_persona" else status,
             "grounding_status": "not_evaluated" if status == "promoted_persona" else "not_applicable",
             "promotion_grounding_status": status if status != "promoted_persona" else "promotion_pending_grounding_review",
             "grounding_reason": "",
@@ -645,7 +686,7 @@ def _merge_grounding_policy(
     for persona_id, payload in status_by_persona.items():
         base_status = str(payload.get("base_promotion_status", payload.get("status", exploratory_status)) or exploratory_status)
         grounding = dict(grounding_lookup.get(str(persona_id), {}) or {})
-        if base_status != "promoted_persona":
+        if base_status not in {"promoted_persona", "promoted_candidate_persona"}:
             payload["grounding_status"] = "not_applicable"
             payload["promotion_grounding_status"] = exploratory_status
             payload["grounding_reason"] = "grounding coverage is only enforced for promoted personas"

@@ -43,15 +43,16 @@ class PipelineSchemaTests(unittest.TestCase):
             labeled_df=labeled_df,
             cluster_profiles=[{"cluster_id": "c1", "size": 2, "share_of_total": 1.0}],
         )
-        self.assertEqual(result["total_raw_count"], 10)
+        self.assertEqual(result["raw_record_rows"], 10)
+        self.assertEqual(result["valid_candidate_rows"], 2)
         self.assertEqual(result["persona_core_unknown_ratio"], 0.5)
         self.assertEqual(result["overall_unknown_ratio"], 0.5)
         self.assertEqual(result["persona_core_coverage_of_all_labeled_pct"], 100.0)
 
     def test_finalize_quality_checks_uses_effective_source_diversity(self) -> None:
         base = {
-            "labeled_count": 12,
-            "persona_core_labeled_count": 12,
+            "labeled_episode_rows": 12,
+            "persona_core_labeled_rows": 12,
             "persona_core_unknown_ratio": 0.05,
             "overall_unknown_ratio": 0.10,
             "persona_core_coverage_of_all_labeled_pct": 100.0,
@@ -59,7 +60,8 @@ class PipelineSchemaTests(unittest.TestCase):
             "largest_labeled_source_share_pct": 33.3,
             "largest_cluster_share_of_core_labeled": 50.0,
             "promoted_persona_example_coverage_pct": 100.0,
-            "example_grounding_failure_count": 0,
+            "selected_example_grounding_issue_count": 0,
+            "promoted_persona_grounding_failure_count": 0,
             "source_failures": "",
         }
         result = finalize_quality_checks(evaluate_quality_status(base))
@@ -73,8 +75,8 @@ class PipelineSchemaTests(unittest.TestCase):
 
     def test_finalize_quality_checks_escalates_when_overall_uncertainty_is_high(self) -> None:
         base = {
-            "labeled_count": 472,
-            "persona_core_labeled_count": 289,
+            "labeled_episode_rows": 472,
+            "persona_core_labeled_rows": 289,
             "persona_core_unknown_ratio": 0.069204,
             "overall_unknown_ratio": 0.430085,
             "persona_core_coverage_of_all_labeled_pct": 61.2,
@@ -82,7 +84,8 @@ class PipelineSchemaTests(unittest.TestCase):
             "largest_labeled_source_share_pct": 42.4,
             "largest_cluster_share_of_core_labeled": 55.0,
             "promoted_persona_example_coverage_pct": 80.0,
-            "example_grounding_failure_count": 0,
+            "selected_example_grounding_issue_count": 0,
+            "promoted_persona_grounding_failure_count": 1,
             "source_failures": "",
         }
         result = finalize_quality_checks(evaluate_quality_status(base))
@@ -102,9 +105,10 @@ class PipelineSchemaTests(unittest.TestCase):
                         "largest_cluster_share_of_core_labeled": 50.0,
                         "promoted_persona_example_coverage_pct": 100.0,
                         "effective_labeled_source_count": 8.0,
-                        "example_grounding_failure_count": 0,
+                        "selected_example_grounding_issue_count": 0,
+                        "promoted_persona_grounding_failure_count": 0,
                         "source_failures": "",
-                        "labeled_count": 472,
+                        "labeled_episode_rows": 472,
                     }
                 )
             )
@@ -118,7 +122,7 @@ class PipelineSchemaTests(unittest.TestCase):
         quality_checks = {
             "min_cluster_size": 5,
             "denominator_consistency": "explicit",
-            "labeled_count": 8,
+            "labeled_episode_rows": 8,
             "overall_unknown_ratio": 0.10,
             "persona_core_coverage_of_all_labeled_pct": 100.0,
             "overall_unknown_status": "OK",
@@ -128,6 +132,8 @@ class PipelineSchemaTests(unittest.TestCase):
             "source_concentration_status": "OK",
             "largest_cluster_dominance_status": "OK",
             "grounding_coverage_status": "OK",
+            "promoted_persona_grounding_failure_count": 0,
+            "selected_example_grounding_issue_count": 0,
         }
         source_diagnostics_df = pd.DataFrame(
             [
@@ -165,17 +171,25 @@ class PipelineSchemaTests(unittest.TestCase):
                 "largest_cluster_share_of_core_labeled": 55.0,
                 "promoted_persona_example_coverage_pct": 80.0,
                 "effective_labeled_source_count": 9.6,
-                "example_grounding_failure_count": 0,
+                "selected_example_grounding_issue_count": 0,
+                "promoted_persona_grounding_failure_count": 1,
                 "source_failures": "",
-                "labeled_count": 472,
+                "labeled_episode_rows": 472,
             }
         )
         flattened = finalize_quality_checks(evaluated)
         overview_df = _build_final_overview_df(
             axis_names=[{"axis_name": "role"}],
             quality_checks=flattened,
-            total_labeled_records=472,
-            persona_core_labeled_records=289,
+            stage_counts={
+                "raw_record_rows": 7739,
+                "normalized_post_rows": 7739,
+                "valid_candidate_rows": 3438,
+                "prefiltered_valid_rows": 783,
+                "episode_rows": 472,
+                "labeled_episode_rows": 472,
+            },
+            persona_core_labeled_rows=289,
             cluster_stats_df=pd.DataFrame({"promotion_status": ["promoted_persona"]}),
         )
         quality_df = build_quality_checks_df(flattened)
@@ -194,17 +208,25 @@ class PipelineSchemaTests(unittest.TestCase):
                 "largest_cluster_share_of_core_labeled": 40.0,
                 "promoted_persona_example_coverage_pct": 100.0,
                 "effective_labeled_source_count": 8.0,
-                "example_grounding_failure_count": 0,
+                "selected_example_grounding_issue_count": 0,
+                "promoted_persona_grounding_failure_count": 0,
                 "source_failures": "",
-                "labeled_count": 100,
+                "labeled_episode_rows": 100,
             }
         )
         flattened = finalize_quality_checks(evaluated)
         overview_df = _build_final_overview_df(
             axis_names=[{"axis_name": "role"}],
             quality_checks=flattened,
-            total_labeled_records=100,
-            persona_core_labeled_records=88,
+            stage_counts={
+                "raw_record_rows": 100,
+                "normalized_post_rows": 100,
+                "valid_candidate_rows": 100,
+                "prefiltered_valid_rows": 88,
+                "episode_rows": 100,
+                "labeled_episode_rows": 100,
+            },
+            persona_core_labeled_rows=88,
             cluster_stats_df=pd.DataFrame({"promotion_status": ["promoted_persona"]}),
         )
         overview_lookup = dict(zip(overview_df["metric"], overview_df["value"]))
@@ -223,7 +245,8 @@ class PipelineSchemaTests(unittest.TestCase):
                 "largest_cluster_share_of_core_labeled": 40.0,
                 "promoted_persona_example_coverage_pct": 100.0,
                 "effective_labeled_source_count": 8.0,
-                "example_grounding_failure_count": 0,
+                "selected_example_grounding_issue_count": 0,
+                "promoted_persona_grounding_failure_count": 0,
                 "source_failures": "",
             }
         )
@@ -248,7 +271,8 @@ class PipelineSchemaTests(unittest.TestCase):
                         "largest_labeled_source_share_pct": 20.0,
                         "largest_cluster_share_of_core_labeled": 40.0,
                         "promoted_persona_example_coverage_pct": 100.0,
-                        "example_grounding_failure_count": 0,
+                        "selected_example_grounding_issue_count": 0,
+                        "promoted_persona_grounding_failure_count": 0,
                         "source_failures": "",
                     }
                 )
@@ -257,6 +281,34 @@ class PipelineSchemaTests(unittest.TestCase):
         row = quality_df.loc[quality_df["metric"] == "effective_labeled_source_count"].iloc[0]
         self.assertEqual(str(row["threshold"]), "fail<4.0")
         self.assertEqual(str(row["status"]), "fail")
+
+    def test_build_quality_failures_uses_persona_level_grounding_failure_count(self) -> None:
+        quality_checks = {
+            "min_cluster_size": 5,
+            "denominator_consistency": "explicit",
+            "grounding_coverage_status": "FAIL",
+            "grounding_coverage_reason_keys": "promoted_persona_examples_missing",
+            "promoted_persona_grounding_failure_count": 1,
+            "selected_example_grounding_issue_count": 0,
+            "promoted_persona_example_coverage_pct": 66.7,
+        }
+        failures_df = build_quality_failures(
+            quality_checks,
+            pd.DataFrame(),
+            pd.DataFrame(),
+            pd.DataFrame(),
+        )
+        persona_row = failures_df.loc[failures_df["metric"] == "promoted_persona_grounding_gate"].iloc[0]
+        example_row = failures_df.loc[failures_df["metric"] == "selected_example_grounding_issue_gate"].iloc[0]
+        self.assertEqual(persona_row["value"], 1)
+        self.assertEqual(example_row["value"], 0)
+        self.assertEqual(persona_row["level"], "hard_fail")
+        self.assertEqual(example_row["level"], "pass")
+
+        quality_df = build_quality_checks_df(quality_checks)
+        quality_row = quality_df.loc[quality_df["metric"] == "promoted_persona_grounding_failure_count"].iloc[0]
+        self.assertEqual(str(quality_row["status"]), "fail")
+        self.assertEqual(str(quality_row["level"]), "hard_fail")
 
     def test_policy_document_explicitly_describes_source_diversity_fail_rule(self) -> None:
         policy_doc = Path("docs/quality_status_policy.md").read_text(encoding="utf-8")

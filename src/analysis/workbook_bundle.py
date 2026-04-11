@@ -9,9 +9,12 @@ import pandas as pd
 
 from src.utils.io import ensure_dir, read_parquet, write_parquet
 from src.utils.pipeline_schema import (
+    PIPELINE_STAGE_METRIC_NAMES,
     WORKBOOK_COLUMN_ORDERS,
     WORKBOOK_RATIO_COLUMNS,
     WORKBOOK_SHEET_NAMES,
+    canonical_stage_metric_name,
+    LEGACY_STAGE_METRIC_ALIASES,
     reorder_frame_columns,
     round_frame_ratios,
     share_column_for_denominator,
@@ -121,6 +124,8 @@ def validate_workbook_frames(frames: dict[str, pd.DataFrame]) -> list[str]:
             messages.append(f"sparse data: empty {sheet_name} sheet")
         messages.extend(_validate_share_denominator_contract(sheet_name, frame))
         messages.extend(_validate_source_diagnostics_contract(sheet_name, frame))
+    messages.extend(_validate_stage_metric_contract(frames))
+    messages.extend(_validate_persona_promotion_contract(frames))
     return messages
 
 
@@ -192,4 +197,86 @@ def _validate_source_diagnostics_contract(sheet_name: str, frame: pd.DataFrame) 
             bad = mixed[mixed["metric_name"].astype(str).str.contains("rate|share|survival", case=False, regex=True)]
             for metric_name in sorted(bad.get("metric_name", pd.Series(dtype=str)).astype(str).unique().tolist()):
                 messages.append(f"mixed-grain metric mislabeled as rate: {sheet_name}.{metric_name}")
+    return messages
+
+
+def _validate_stage_metric_contract(frames: dict[str, pd.DataFrame]) -> list[str]:
+    """Require canonical stage names and consistent values across summary sheets."""
+    messages: list[str] = []
+    observed: dict[str, list[tuple[str, object]]] = {metric: [] for metric in PIPELINE_STAGE_METRIC_NAMES}
+    for sheet_name in ["counts", "overview", "quality_checks"]:
+        frame = frames.get(sheet_name, pd.DataFrame())
+        if frame is None or frame.empty or "metric" not in frame.columns:
+            continue
+        value_column = "count" if sheet_name == "counts" and "count" in frame.columns else "value" if "value" in frame.columns else ""
+        if not value_column:
+            continue
+        for _, row in frame.iterrows():
+            raw_metric = str(row.get("metric", "") or "").strip()
+            if raw_metric in LEGACY_STAGE_METRIC_ALIASES:
+                messages.append(f"legacy stage metric alias: {sheet_name}.{raw_metric}->{LEGACY_STAGE_METRIC_ALIASES[raw_metric]}")
+            metric = canonical_stage_metric_name(raw_metric)
+            if metric not in PIPELINE_STAGE_METRIC_NAMES:
+                continue
+            observed[metric].append((sheet_name, row.get(value_column, "")))
+    for metric, values in observed.items():
+        comparable = {_normalize_stage_metric_value(value) for _, value in values}
+        if len(comparable) > 1:
+            detail = ", ".join(f"{sheet}={value}" for sheet, value in values)
+            messages.append(f"stage metric mismatch: {metric} differs across sheets ({detail})")
+    return messages
+
+
+def _normalize_stage_metric_value(value: object) -> object:
+    """Normalize scalar workbook values for stage-count comparisons."""
+    numeric = pd.to_numeric(pd.Series([value]), errors="coerce").iloc[0]
+    if pd.notna(numeric):
+        return int(numeric)
+    return str(value)
+
+
+def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> list[str]:
+    """Reject ambiguous persona headline metrics and require explicit usable-vs-visible counts."""
+    messages: list[str] = []
+    for sheet_name in ["overview", "quality_checks", "metric_glossary"]:
+        frame = frames.get(sheet_name, pd.DataFrame())
+        if frame is None or frame.empty or "metric" not in frame.columns:
+            continue
+        metrics = frame["metric"].astype(str)
+        if metrics.eq("persona_count").any():
+            messages.append(f"ambiguous persona count metric: {sheet_name}.persona_count")
+
+    cluster_stats_df = frames.get("cluster_stats", pd.DataFrame())
+    if cluster_stats_df is None or cluster_stats_df.empty:
+        return messages
+
+    promotion_status = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str)
+    base_status = cluster_stats_df.get("base_promotion_status", pd.Series(dtype=str)).astype(str)
+    final_usable_series = cluster_stats_df.get("final_usable_persona", pd.Series(dtype=bool))
+    if final_usable_series.empty:
+        final_usable_count = int(cluster_stats_df.get("promotion_grounding_status", pd.Series(dtype=str)).astype(str).eq("promoted_and_grounded").sum())
+    else:
+        final_usable_count = int(final_usable_series.fillna(False).astype(bool).sum())
+    promoted_candidate_count = int(base_status.isin({"promoted_candidate_persona", "promoted_persona"}).sum()) if not base_status.empty else int(promotion_status.eq("promoted_persona").sum())
+    promotion_visibility_count = int(promotion_status.eq("promoted_persona").sum())
+
+    overview_df = frames.get("overview", pd.DataFrame())
+    if overview_df is None or overview_df.empty or "metric" not in overview_df.columns or "value" not in overview_df.columns:
+        return messages
+    overview_lookup = dict(zip(overview_df["metric"].astype(str), overview_df["value"]))
+    expected = {
+        "promoted_candidate_persona_count": promoted_candidate_count,
+        "promotion_visibility_persona_count": promotion_visibility_count,
+        "final_usable_persona_count": final_usable_count,
+        "deck_ready_persona_count": final_usable_count,
+    }
+    for metric, expected_value in expected.items():
+        if metric not in overview_lookup:
+            messages.append(f"missing persona promotion metric: overview.{metric}")
+            continue
+        actual_value = _normalize_stage_metric_value(overview_lookup.get(metric, ""))
+        if actual_value != int(expected_value):
+            messages.append(f"persona promotion metric mismatch: {metric} differs from cluster_stats (overview={actual_value}, cluster_stats={expected_value})")
+    if final_usable_count > promotion_visibility_count:
+        messages.append("persona promotion metric mismatch: final_usable_persona_count cannot exceed promotion_visibility_persona_count")
     return messages

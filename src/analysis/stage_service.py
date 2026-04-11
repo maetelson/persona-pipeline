@@ -35,6 +35,7 @@ from src.analysis.pipeline_thresholds import evaluate_cluster_thresholds, load_t
 from src.analysis.profiling import build_cluster_profiles
 from src.analysis.report_export import export_persona_reports
 from src.analysis.score import build_priority_scores
+from src.analysis.stage_counts import build_pipeline_stage_counts
 from src.analysis.summary import (
     build_counts_table,
     build_final_source_distribution,
@@ -152,11 +153,19 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         labeled_df=clustering_labeled_df,
         final_axis_schema=reduced_outputs["reduced_axis_schema"],
         quality_checks={
-            "labeled_count": int(len(labeled_df)),
-            "persona_core_labeled_count": int(len(clustering_labeled_df)),
+            "labeled_episode_rows": int(len(labeled_df)),
+            "persona_core_labeled_rows": int(len(clustering_labeled_df)),
         },
     )
     bottleneck_cluster_profiles = persona_service_outputs.get("cluster_profiles", [])
+    stage_counts = build_pipeline_stage_counts(
+        raw_audit_df=raw_audit_df,
+        normalized_df=normalized_df,
+        valid_df=valid_df,
+        episodes_df=episodes_df,
+        labeled_df=labeled_df,
+        root_dir=root_dir,
+    )
     source_stage_counts_df = build_source_stage_counts(
         root_dir=root_dir,
         normalized_df=normalized_df,
@@ -168,10 +177,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
     )
     source_diagnostics_df = build_source_diagnostics(source_stage_counts_df)
     quality_metrics = build_quality_metrics(
-        total_raw_count=int(
-            raw_audit_df.get("raw_record_count", pd.Series(dtype=int)).fillna(0).sum()
-        ) if not raw_audit_df.empty else 0,
-        cleaned_count=int(len(valid_df)),
+        stage_counts=stage_counts,
         labeled_df=labeled_df,
         source_stage_counts_df=source_stage_counts_df,
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
@@ -183,8 +189,8 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
     persona_service_outputs["overview_df"] = _build_final_overview_df(
         axis_names=reduced_outputs["reduced_axis_schema"],
         quality_checks=quality_checks,
-        total_labeled_records=int(len(labeled_df)),
-        persona_core_labeled_records=int(len(clustering_labeled_df)),
+        stage_counts=stage_counts,
+        persona_core_labeled_rows=int(len(clustering_labeled_df)),
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
     )
     survival_funnel_df = build_survival_funnel_by_source(source_stage_counts_df)
@@ -369,7 +375,8 @@ def persist_analysis_outputs(
         "axis_paths": deterministic_outputs["axis_paths"],
         "reduction_paths": deterministic_outputs["reduction_paths"],
         "quality_flag": deterministic_outputs["quality_checks"]["quality_flag"],
-        "persona_count": len(persona_service_outputs["persona_summary_df"]),
+        "promotion_visibility_persona_count": int(deterministic_outputs["quality_checks"].get("promotion_visibility_persona_count", 0) or 0),
+        "final_usable_persona_count": int(deterministic_outputs["quality_checks"].get("final_usable_persona_count", 0) or 0),
         "code_cluster_count": len(deterministic_outputs["cluster_summary_rows"]),
         "service_axis_count": len(deterministic_outputs["reduced_outputs"]["reduced_axis_schema"]),
         "generated_persona_count": len(optional_outputs["personas"]) if optional_outputs else 0,
@@ -431,13 +438,15 @@ def _persona_core_subset(labeled_df: pd.DataFrame) -> pd.DataFrame:
 def _build_final_overview_df(
     axis_names: list[dict[str, Any]],
     quality_checks: dict[str, Any],
-    total_labeled_records: int,
-    persona_core_labeled_records: int,
+    stage_counts: dict[str, int],
+    persona_core_labeled_rows: int,
     cluster_stats_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """Render overview directly from the evaluated quality result and stable report counts."""
     promoted_mask = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str).eq("promoted_persona") if not cluster_stats_df.empty else pd.Series(dtype=bool)
-    persona_count = int(promoted_mask.sum()) if not cluster_stats_df.empty else 0
+    promotion_grounding_status = cluster_stats_df.get("promotion_grounding_status", pd.Series(dtype=str)).astype(str) if not cluster_stats_df.empty else pd.Series(dtype=str)
+    promotion_visibility_persona_count = int(quality_checks.get("promotion_visibility_persona_count", int(promoted_mask.sum()) if not cluster_stats_df.empty else 0) or 0)
+    final_usable_persona_count = int(quality_checks.get("final_usable_persona_count", int(promotion_grounding_status.eq("promoted_and_grounded").sum()) if not cluster_stats_df.empty else 0) or 0)
     exploratory_bucket_count = int((~promoted_mask).sum()) if not cluster_stats_df.empty else 0
     selected_axes = " | ".join(
         str(row.get("axis_name", "")).strip()
@@ -459,21 +468,24 @@ def _build_final_overview_df(
         {"metric": "source_concentration_status", "value": quality_checks.get("source_concentration_status", "")},
         {"metric": "largest_cluster_dominance_status", "value": quality_checks.get("largest_cluster_dominance_status", "")},
         {"metric": "grounding_coverage_status", "value": quality_checks.get("grounding_coverage_status", "")},
-        {"metric": "total_labeled_records", "value": total_labeled_records},
-        {"metric": "persona_core_labeled_records", "value": persona_core_labeled_records},
+        *[{"metric": metric, "value": int(stage_counts.get(metric, 0) or 0)} for metric in stage_counts],
+        {"metric": "persona_core_labeled_rows", "value": persona_core_labeled_rows},
         {"metric": "persona_core_coverage_of_all_labeled_pct", "value": quality_checks.get("persona_core_coverage_of_all_labeled_pct", 0.0)},
         {"metric": "persona_core_unknown_ratio", "value": quality_checks.get("persona_core_unknown_ratio", 0.0)},
         {"metric": "overall_unknown_ratio", "value": quality_checks.get("overall_unknown_ratio", 0.0)},
         {"metric": "effective_labeled_source_count", "value": quality_checks.get("effective_labeled_source_count", 0.0)},
         {"metric": "largest_cluster_share_of_core_labeled", "value": quality_checks.get("largest_cluster_share_of_core_labeled", 0.0)},
         {"metric": "largest_labeled_source_share_pct", "value": quality_checks.get("largest_labeled_source_share_pct", 0.0)},
+        {"metric": "promoted_candidate_persona_count", "value": quality_checks.get("promoted_candidate_persona_count", promotion_visibility_persona_count)},
+        {"metric": "promotion_visibility_persona_count", "value": promotion_visibility_persona_count},
+        {"metric": "final_usable_persona_count", "value": final_usable_persona_count},
+        {"metric": "deck_ready_persona_count", "value": quality_checks.get("deck_ready_persona_count", final_usable_persona_count)},
         {"metric": "promoted_persona_example_coverage_pct", "value": quality_checks.get("promoted_persona_example_coverage_pct", 0.0)},
         {"metric": "promoted_persona_grounded_count", "value": quality_checks.get("promoted_persona_grounded_count", 0)},
         {"metric": "promoted_persona_weakly_grounded_count", "value": quality_checks.get("promoted_persona_weakly_grounded_count", 0)},
         {"metric": "promoted_persona_ungrounded_count", "value": quality_checks.get("promoted_persona_ungrounded_count", 0)},
         {"metric": "promoted_personas_weakly_grounded", "value": quality_checks.get("promoted_personas_weakly_grounded", "")},
         {"metric": "promoted_personas_missing_examples", "value": quality_checks.get("promoted_personas_missing_examples", "")},
-        {"metric": "persona_count", "value": persona_count},
         {"metric": "exploratory_bucket_count", "value": exploratory_bucket_count},
         {"metric": "min_cluster_size", "value": quality_checks.get("min_cluster_size", 0)},
         {"metric": "selected_axes", "value": selected_axes},

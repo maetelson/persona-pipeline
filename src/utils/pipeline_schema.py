@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections import OrderedDict
 import math
 from typing import Iterable
 
@@ -16,6 +17,11 @@ REDDIT_VARIANT_PREFIX = "reddit_"
 DENOMINATOR_LABELED_EPISODE_ROWS = "labeled_episode_rows"
 DENOMINATOR_PERSONA_CORE_LABELED_ROWS = "persona_core_labeled_rows"
 DENOMINATOR_PROMOTED_PERSONA_ROWS = "promoted_persona_rows"
+DENOMINATOR_RAW_RECORD_ROWS = "raw_record_rows"
+DENOMINATOR_NORMALIZED_POST_ROWS = "normalized_post_rows"
+DENOMINATOR_VALID_CANDIDATE_ROWS = "valid_candidate_rows"
+DENOMINATOR_PREFILTERED_VALID_ROWS = "prefiltered_valid_rows"
+DENOMINATOR_EPISODE_ROWS = "episode_rows"
 
 RECORD_ID_FIELDS = ["episode_id", "raw_id", "raw_source_id", "id"]
 RECORD_TEXT_FIELDS = [
@@ -131,6 +137,11 @@ WORKBOOK_COLUMN_ORDERS = {
         "denominator_value",
         "min_cluster_size",
         "base_promotion_status",
+        "promoted_candidate_persona",
+        "workbook_review_visible",
+        "final_usable_persona",
+        "deck_ready_persona",
+        "reporting_readiness_status",
         "promotion_status",
         "grounding_status",
         "promotion_grounding_status",
@@ -154,6 +165,11 @@ WORKBOOK_COLUMN_ORDERS = {
         "denominator_value",
         "min_cluster_size",
         "base_promotion_status",
+        "promoted_candidate_persona",
+        "workbook_review_visible",
+        "final_usable_persona",
+        "deck_ready_persona",
+        "reporting_readiness_status",
         "promotion_status",
         "grounding_status",
         "promotion_grounding_status",
@@ -226,6 +242,74 @@ WORKBOOK_RATIO_COLUMNS = {
     "persona_needs": {"pct_of_persona": 1},
     "persona_cooccurrence": {"pct_of_persona": 1},
     "source_diagnostics": {},
+}
+
+PIPELINE_STAGE_DEFINITIONS = OrderedDict(
+    [
+        (
+            DENOMINATOR_RAW_RECORD_ROWS,
+            {
+                "sheet_label": "Raw Record Rows",
+                "definition": "Non-empty JSONL rows under data/raw/{source}/*.jsonl.",
+                "artifact": "data/raw/{source}/*.jsonl",
+            },
+        ),
+        (
+            DENOMINATOR_NORMALIZED_POST_ROWS,
+            {
+                "sheet_label": "Normalized Post Rows",
+                "definition": "Rows in data/normalized/normalized_posts.parquet after source normalizers.",
+                "artifact": "data/normalized/normalized_posts.parquet",
+            },
+        ),
+        (
+            DENOMINATOR_VALID_CANDIDATE_ROWS,
+            {
+                "sheet_label": "Valid Candidate Rows",
+                "definition": "Rows in data/valid/valid_candidates.parquet after invalid filtering and before relevance prefiltering.",
+                "artifact": "data/valid/valid_candidates.parquet",
+            },
+        ),
+        (
+            DENOMINATOR_PREFILTERED_VALID_ROWS,
+            {
+                "sheet_label": "Prefiltered Valid Rows",
+                "definition": "Rows in data/valid/valid_candidates_prefiltered.parquet passed into episode building when present.",
+                "artifact": "data/valid/valid_candidates_prefiltered.parquet",
+            },
+        ),
+        (
+            DENOMINATOR_EPISODE_ROWS,
+            {
+                "sheet_label": "Episode Rows",
+                "definition": "Rows in data/episodes/episode_table.parquet.",
+                "artifact": "data/episodes/episode_table.parquet",
+            },
+        ),
+        (
+            DENOMINATOR_LABELED_EPISODE_ROWS,
+            {
+                "sheet_label": "Labeled Episode Rows",
+                "definition": "Rows in data/labeled/labeled_episodes.parquet.",
+                "artifact": "data/labeled/labeled_episodes.parquet",
+            },
+        ),
+    ]
+)
+
+PIPELINE_STAGE_METRIC_NAMES = tuple(PIPELINE_STAGE_DEFINITIONS.keys())
+
+LEGACY_STAGE_METRIC_ALIASES = {
+    "raw_records": DENOMINATOR_RAW_RECORD_ROWS,
+    "normalized_records": DENOMINATOR_NORMALIZED_POST_ROWS,
+    "valid_records": DENOMINATOR_VALID_CANDIDATE_ROWS,
+    "prefiltered_valid_records": DENOMINATOR_PREFILTERED_VALID_ROWS,
+    "episodes": DENOMINATOR_EPISODE_ROWS,
+    "labeled_records": DENOMINATOR_LABELED_EPISODE_ROWS,
+    "total_raw_count": DENOMINATOR_RAW_RECORD_ROWS,
+    "cleaned_count": DENOMINATOR_VALID_CANDIDATE_ROWS,
+    "labeled_count": DENOMINATOR_LABELED_EPISODE_ROWS,
+    "total_labeled_records": DENOMINATOR_LABELED_EPISODE_ROWS,
 }
 
 
@@ -315,6 +399,24 @@ def canonical_source_name(source: object) -> str:
     if value.startswith(REDDIT_VARIANT_PREFIX):
         return REDDIT_AGGREGATE_SOURCE
     return value
+
+
+def pipeline_stage_definition(metric: object) -> dict[str, str]:
+    """Return metadata for one canonical pipeline-stage metric."""
+    return dict(PIPELINE_STAGE_DEFINITIONS.get(str(metric or "").strip(), {}))
+
+
+def is_pipeline_stage_metric(metric: object) -> bool:
+    """Return whether a metric name is one canonical pipeline-stage count."""
+    return str(metric or "").strip() in PIPELINE_STAGE_DEFINITIONS
+
+
+def canonical_stage_metric_name(metric: object) -> str:
+    """Normalize legacy workbook aliases to the canonical stage metric name."""
+    value = str(metric or "").strip()
+    if value in PIPELINE_STAGE_DEFINITIONS:
+        return value
+    return LEGACY_STAGE_METRIC_ALIASES.get(value, value)
 
 
 def share_column_for_denominator(denominator_type: object) -> str:

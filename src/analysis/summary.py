@@ -6,10 +6,17 @@ from pathlib import Path
 
 import pandas as pd
 from src.analysis.diagnostics import count_raw_jsonl_by_source
+from src.analysis.stage_counts import build_pipeline_stage_counts, build_pipeline_stage_rows
 from src.analysis.quality_status import build_quality_metrics, quality_display_thresholds
 from src.utils.pipeline_schema import (
+    DENOMINATOR_EPISODE_ROWS,
     DENOMINATOR_LABELED_EPISODE_ROWS,
+    DENOMINATOR_NORMALIZED_POST_ROWS,
     DENOMINATOR_PERSONA_CORE_LABELED_ROWS,
+    DENOMINATOR_PREFILTERED_VALID_ROWS,
+    DENOMINATOR_RAW_RECORD_ROWS,
+    DENOMINATOR_VALID_CANDIDATE_ROWS,
+    PIPELINE_STAGE_METRIC_NAMES,
     QUALITY_FLAG_OK,
     QUALITY_FLAG_UNSTABLE,
     STATUS_FAIL,
@@ -46,24 +53,23 @@ def build_counts_table(
     root_dir: Path | None = None,
 ) -> pd.DataFrame:
     """Build deterministic top-line pipeline counts for the final report."""
-    raw_counts_df = count_raw_jsonl_by_source(root_dir) if root_dir is not None else pd.DataFrame()
-    total_raw_count = (
-        int(raw_counts_df.get("raw_count", pd.Series(dtype=int)).fillna(0).sum())
-        if not raw_counts_df.empty
-        else int(raw_audit_df.get("raw_record_count", pd.Series(dtype=int)).fillna(0).sum()) if not raw_audit_df.empty else 0
+    stage_counts = build_pipeline_stage_counts(
+        raw_audit_df=raw_audit_df,
+        normalized_df=normalized_df,
+        valid_df=valid_df,
+        episodes_df=episodes_df,
+        labeled_df=labeled_df,
+        root_dir=root_dir,
     )
-    prefiltered_df = pd.DataFrame()
-    if root_dir is not None:
-        from src.utils.io import read_parquet
-
-        prefiltered_df = read_parquet(root_dir / "data" / "valid" / "valid_candidates_prefiltered.parquet")
     rows = [
-        _count_row("raw_records", total_raw_count, "raw_jsonl_rows", total_raw_count, "Non-empty JSONL rows under data/raw/{source}/*.jsonl."),
-        _count_row("normalized_records", int(len(normalized_df)), "normalized_posts_rows", int(len(normalized_df)), "Rows in normalized_posts.parquet."),
-        _count_row("valid_records", int(len(valid_df)), "valid_candidate_rows", int(len(valid_df)), "Rows in valid_candidates.parquet before relevance prefiltering."),
-        _count_row("prefiltered_valid_records", int(len(prefiltered_df)), "prefiltered_valid_rows", int(len(prefiltered_df)), "Rows passed into episode building when the prefilter output exists."),
-        _count_row("episodes", int(len(episodes_df)), "episode_rows", int(len(episodes_df)), "Rows in episode_table.parquet."),
-        _count_row("labeled_records", int(len(labeled_df)), "labeled_episode_rows", int(len(labeled_df)), "Rows in labeled_episodes.parquet."),
+        _count_row(
+            metric=str(row["metric"]),
+            count=int(row["count"]),
+            denominator_type=str(row["denominator_type"]),
+            denominator_value=int(row["denominator_value"]),
+            definition=str(row["definition"]),
+        )
+        for row in build_pipeline_stage_rows(stage_counts)
     ]
     return pd.DataFrame(rows)
 
@@ -148,6 +154,7 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
         "largest_labeled_source_share_pct": ("source_concentration_status", "source_concentration_reason_keys"),
         "largest_cluster_share_of_core_labeled": ("largest_cluster_dominance_status", "largest_cluster_dominance_reason_keys"),
         "promoted_persona_example_coverage_pct": ("grounding_coverage_status", "grounding_coverage_reason_keys"),
+        "promoted_persona_grounding_failure_count": ("grounding_coverage_status", "grounding_coverage_reason_keys"),
         "overall_status": ("overall_status", "composite_reason_keys"),
         "core_clustering_status": ("core_clustering_status", "core_clustering_reason_keys"),
         "source_diversity_status": ("source_diversity_status", "source_diversity_reason_keys"),
@@ -164,7 +171,7 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
                     "status": "info",
                     "level": "info",
                     "denominator_type": "persona_core_labeled_rows",
-                    "denominator_value": quality_checks.get("persona_core_labeled_count", ""),
+                    "denominator_value": quality_checks.get("persona_core_labeled_rows", ""),
                     "notes": str(value)[:1000],
                 }
             )
@@ -183,6 +190,14 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
         elif metric == "source_failures" and str(value).strip():
             status, level = "fail", "soft_fail"
             notes = str(quality_checks.get("source_diversity_reason_keys", "") or "")
+        elif metric == "selected_example_grounding_issue_count":
+            issue_count = int(value or 0)
+            if issue_count > 0:
+                status, level = "warn", "warning"
+                notes = "example-level grounding issues among selected representative examples"
+            else:
+                status, level = "pass", "pass"
+                notes = "no selected representative examples were flagged with weak or degraded grounding evidence"
         elif metric == "denominator_consistency":
             status = "pass"
             level = "pass"
@@ -315,15 +330,16 @@ def build_quality_checks(
     root_dir: Path | None = None,
 ) -> dict[str, object]:
     """Build analysis quality checks for persona-report readiness."""
-    raw_counts_df = count_raw_jsonl_by_source(root_dir) if root_dir is not None else pd.DataFrame()
-    total_raw_count = (
-        int(raw_counts_df.get("raw_count", pd.Series(dtype=int)).fillna(0).sum())
-        if not raw_counts_df.empty
-        else int(raw_audit_df.get("raw_record_count", pd.Series(dtype=int)).fillna(0).sum()) if not raw_audit_df.empty else 0
+    stage_counts = build_pipeline_stage_counts(
+        raw_audit_df=raw_audit_df,
+        normalized_df=pd.DataFrame(),
+        valid_df=valid_df,
+        episodes_df=pd.DataFrame(),
+        labeled_df=labeled_df,
+        root_dir=root_dir,
     )
     return build_quality_metrics(
-        total_raw_count=total_raw_count,
-        cleaned_count=int(len(valid_df)),
+        stage_counts=stage_counts,
         labeled_df=labeled_df,
         source_stage_counts_df=pd.DataFrame(),
         cluster_stats_df=pd.DataFrame(),
@@ -345,16 +361,20 @@ def _count_row(metric: str, count: int, denominator_type: str, denominator_value
 
 def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) -> str:
     """Return denominator type for a quality metric."""
+    if metric in PIPELINE_STAGE_METRIC_NAMES:
+        return metric
     if metric in {"persona_core_unknown_ratio", "cluster_distribution", "cluster_count", "largest_cluster_share_of_core_labeled"}:
         return DENOMINATOR_PERSONA_CORE_LABELED_ROWS
-    if metric in {"overall_unknown_ratio", "labeled_count", "persona_core_coverage_of_all_labeled_pct", "largest_labeled_source_share_pct"}:
+    if metric in {"overall_unknown_ratio", DENOMINATOR_LABELED_EPISODE_ROWS, "persona_core_coverage_of_all_labeled_pct", "largest_labeled_source_share_pct"}:
         return DENOMINATOR_LABELED_EPISODE_ROWS
-    if metric in {"cleaned_count"}:
-        return "valid_candidate_rows"
     if metric in {"promoted_persona_example_coverage_pct"}:
         return "promoted_persona_rows"
-    if metric in {"total_raw_count", "raw_source_count"}:
-        return "raw_jsonl_rows"
+    if metric in {"promoted_candidate_persona_count", "promotion_visibility_persona_count", "final_usable_persona_count", "deck_ready_persona_count", "promoted_persona_count", "promoted_persona_grounded_count", "promoted_persona_weakly_grounded_count", "promoted_persona_ungrounded_count", "promoted_persona_grounding_failure_count"}:
+        return "persona_cluster_rows"
+    if metric in {"selected_example_grounding_issue_count"}:
+        return "persona_example_rows"
+    if metric in {"raw_source_count"}:
+        return DENOMINATOR_RAW_RECORD_ROWS
     if metric in {"labeled_source_count", "effective_labeled_source_count"}:
         return "source_count"
     if metric == "source_failures":
@@ -364,16 +384,22 @@ def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) ->
 
 def _quality_denominator_value(metric: str, quality_checks: dict[str, object]) -> object:
     """Return denominator value for a quality metric."""
+    if metric in PIPELINE_STAGE_METRIC_NAMES:
+        return quality_checks.get(metric, "")
     if metric in {"persona_core_unknown_ratio", "cluster_distribution", "cluster_count", "largest_cluster_share_of_core_labeled"}:
-        return quality_checks.get("persona_core_labeled_count", "")
-    if metric in {"overall_unknown_ratio", "labeled_count", "persona_core_coverage_of_all_labeled_pct", "largest_labeled_source_share_pct"}:
-        return quality_checks.get("labeled_count", "")
+        return quality_checks.get("persona_core_labeled_rows", quality_checks.get("persona_core_labeled_count", ""))
+    if metric in {"overall_unknown_ratio", DENOMINATOR_LABELED_EPISODE_ROWS, "persona_core_coverage_of_all_labeled_pct", "largest_labeled_source_share_pct"}:
+        return quality_checks.get(DENOMINATOR_LABELED_EPISODE_ROWS, quality_checks.get("labeled_count", ""))
     if metric == "promoted_persona_example_coverage_pct":
         return quality_checks.get("promoted_persona_count", "")
-    if metric == "cleaned_count":
-        return quality_checks.get("cleaned_count", "")
-    if metric in {"total_raw_count", "raw_source_count"}:
-        return quality_checks.get("total_raw_count", "")
+    if metric == "promoted_candidate_persona_count":
+        return quality_checks.get("cluster_count", "")
+    if metric in {"promotion_visibility_persona_count", "promoted_persona_count", "promoted_persona_grounded_count", "promoted_persona_weakly_grounded_count", "promoted_persona_ungrounded_count", "promoted_persona_grounding_failure_count", "final_usable_persona_count", "deck_ready_persona_count"}:
+        return quality_checks.get("promoted_candidate_persona_count", quality_checks.get("cluster_count", ""))
+    if metric == "selected_example_grounding_issue_count":
+        return quality_checks.get("promoted_personas_with_examples", "")
+    if metric == "raw_source_count":
+        return quality_checks.get(DENOMINATOR_RAW_RECORD_ROWS, "")
     if metric in {"labeled_source_count", "effective_labeled_source_count"}:
         return quality_checks.get("raw_source_count", "")
     if metric == "source_failures":
