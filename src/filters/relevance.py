@@ -382,6 +382,14 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
     weighted_positive = sum(scores[column] * float(score_weights.get(column, 1.0)) for column in POSITIVE_SCORE_COLUMNS)
     weighted_negative = sum(abs(scores[column]) * abs(float(score_weights.get(column, -1.0))) for column in NEGATIVE_SCORE_COLUMNS)
     scores["final_relevance_score"] = round(weighted_positive - weighted_negative, 4)
+    if source == "google_ads_help_community":
+        rescue_bonus, _ = _apply_google_ads_help_rescue_signals(text, scores, positive_hits, source_reasons)
+        if rescue_bonus:
+            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
+    if source == "shopify_community":
+        rescue_bonus, _ = _apply_shopify_rescue_signals(text, scores, positive_hits, source_reasons)
+        if rescue_bonus:
+            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
     whitelist_labels = _source_whitelist_hits(source=source, text=text, rules=rules)
     rescue_reason = ""
     whitelist_hits = "|".join(whitelist_labels)
@@ -394,7 +402,7 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
     top_negative_signals = "|".join(signal for signal, _ in sorted(negative_hits, key=lambda item: item[1], reverse=True)[:5])
     source_specific_reason = "|".join(source_reasons) or f"{source}:generic"
     score_breakdown = json.dumps({column: round(scores[column], 4) for column in ALL_SCORE_COLUMNS}, ensure_ascii=False, sort_keys=True)
-    dropped_reason = "" if decision != "drop" else _derive_dropped_reason(source, scores, whitelist_labels, source_reasons)
+    dropped_reason = "" if decision != "drop" else _derive_dropped_reason(source, text, scores, whitelist_labels, source_reasons)
     return RelevanceEvaluation(
         scores=scores,
         relevance_decision=decision,
@@ -414,23 +422,232 @@ def _source_whitelist_hits(source: str, text: str, rules: dict[str, Any]) -> lis
     source_terms = (rules.get("source_whitelist_terms", {}) or {}).get(source, []) or []
     hits: list[str] = []
     lowered = str(text or "").lower()
+    if source == "shopify_community":
+        return _shopify_whitelist_hits(lowered)
+    if source == "google_ads_help_community":
+        return _google_ads_help_whitelist_hits(lowered)
     for row in source_terms:
         label = str(row.get("label", "") or "").strip()
         terms = [str(term).lower().strip() for term in row.get("terms", []) or [] if str(term).strip()]
         if not label or not terms:
             continue
-        if any(term in lowered for term in terms):
+        if any(_text_contains_term(lowered, term) for term in terms):
             hits.append(label)
     return hits
 
 
-def _derive_dropped_reason(source: str, scores: dict[str, float], whitelist_labels: list[str], source_reasons: list[str]) -> str:
+def _shopify_whitelist_hits(lowered: str) -> list[str]:
+    """Return stricter Shopify rescue labels based on source-specific combos."""
+    analytics_terms = ["report", "reporting", "analytics", "dashboard"]
+    export_terms = ["export", "csv"]
+    metric_terms = ["conversion", "checkout", "sessions", "sales", "revenue", "aov", "roas"]
+    mismatch_terms = ["discrepancy", "mismatch", "wrong numbers", "not matching"]
+    trend_terms = ["compare periods", "weekly sales", "monthly sales", "trend", "cannot explain drop", "sales drop", "conversion drop"]
+
+    analytics_hit = any(_text_contains_term(lowered, term) for term in analytics_terms)
+    metric_hit = any(_text_contains_term(lowered, term) for term in metric_terms)
+    export_hit = any(_text_contains_term(lowered, term) for term in export_terms)
+    mismatch_hit = any(_text_contains_term(lowered, term) for term in mismatch_terms)
+    trend_hit = any(_text_contains_term(lowered, term) for term in trend_terms)
+
+    hits: list[str] = []
+    if analytics_hit and metric_hit:
+        hits.append("shopify_reporting_metrics_combo")
+    if mismatch_hit:
+        hits.append("shopify_discrepancy_terms")
+    if export_hit or _text_contains_term(lowered, "report"):
+        hits.append("shopify_export_report")
+    if trend_hit or (metric_hit and any(_text_contains_term(lowered, term) for term in ["drop", "down", "decline", "fell"])):
+        hits.append("shopify_conversion_sales_trend")
+    return hits
+
+
+def _google_ads_help_whitelist_hits(lowered: str) -> list[str]:
+    """Return Google Ads Help-specific whitelist hits using short support-language phrases."""
+    hits: list[str] = []
+    if any(
+        _text_contains_term(lowered, term)
+        for term in ["conversion not showing", "cannot see conversions", "conversion delay", "conversion action problem", "conversion action"]
+    ):
+        hits.append("google_ads_help_conversion")
+    if any(
+        _text_contains_term(lowered, term)
+        for term in ["google ads reporting wrong", "report not matching", "performance not matching", "metrics discrepancy", "data discrepancy ads"]
+    ):
+        hits.append("google_ads_help_reporting")
+    if any(
+        _text_contains_term(lowered, term)
+        for term in ["campaign performance drop", "no impressions", "zero impressions", "not generating impressions", "ads not showing"]
+    ):
+        hits.append("google_ads_help_performance")
+    if any(
+        _text_contains_term(lowered, term)
+        for term in ["click vs conversion mismatch", "mismatch", "not matching", "discrepancy"]
+    ):
+        hits.append("google_ads_help_click_mismatch")
+    if any(_text_contains_term(lowered, term) for term in ["attribution issue", "attribution"]):
+        hits.append("google_ads_help_attribution")
+    if any(_text_contains_term(lowered, term) for term in ["merchant center mismatch", "merchant center"]):
+        hits.append("google_ads_help_merchant_center")
+    return hits
+
+
+def _apply_shopify_rescue_signals(
+    text: str,
+    scores: dict[str, float],
+    positive_hits: list[tuple[str, float]],
+    source_reasons: list[str],
+) -> tuple[float, list[str]]:
+    """Apply Shopify-specific rescue scoring for reporting and performance language."""
+    lowered = str(text or "").lower()
+    analytics_terms = ["report", "reporting", "analytics", "dashboard"]
+    export_terms = ["export", "csv"]
+    metric_terms = ["conversion", "checkout", "sessions", "sales", "revenue", "aov", "roas"]
+    mismatch_terms = ["discrepancy", "mismatch", "wrong numbers", "not matching"]
+    trend_terms = ["compare periods", "weekly sales", "monthly sales", "trend", "sales drop", "conversion drop", "cannot explain drop"]
+    tracking_terms = ["attribution", "pixel", "tracking", "customer segment"]
+    performance_terms = ["product performance", "channel performance", "store performance"]
+
+    analytics_hit = any(_text_contains_term(lowered, term) for term in analytics_terms)
+    metric_hit = any(_text_contains_term(lowered, term) for term in metric_terms)
+    mismatch_hit = any(_text_contains_term(lowered, term) for term in mismatch_terms)
+    export_hit = any(_text_contains_term(lowered, term) for term in export_terms)
+    trend_hit = any(_text_contains_term(lowered, term) for term in trend_terms)
+    tracking_hit = any(_text_contains_term(lowered, term) for term in tracking_terms)
+    performance_hit = any(_text_contains_term(lowered, term) for term in performance_terms)
+
+    bonus = 0.0
+    labels: list[str] = []
+    if analytics_hit and metric_hit:
+        scores["reporting_pain_score"] += 1.2
+        bonus += 1.2
+        labels.append("shopify_analytics_metric_combo")
+    if mismatch_hit:
+        scores["dashboard_trust_score"] += 1.3
+        bonus += 1.3
+        labels.append("shopify_mismatch_discrepancy")
+    if export_hit or _text_contains_term(lowered, "report"):
+        scores["excel_rework_score"] += 0.9
+        bonus += 0.9
+        labels.append("shopify_export_report")
+    if trend_hit:
+        scores["root_cause_score"] += 1.0
+        bonus += 1.0
+        labels.append("shopify_conversion_sales_trend")
+    if tracking_hit:
+        scores["metric_definition_score"] += 0.8
+        bonus += 0.8
+        labels.append("shopify_attribution_tracking")
+    if performance_hit:
+        scores["segmentation_breakdown_score"] += 0.8
+        bonus += 0.8
+        labels.append("shopify_performance_views")
+    if labels:
+        unique_labels = list(dict.fromkeys(labels))
+        positive_hits.append(("shopify_source_whitelist_score", round(bonus, 2)))
+        source_reasons.append(f"shopify_rescue_candidate:{'|'.join(unique_labels)}")
+        return round(bonus, 4), unique_labels
+    return 0.0, []
+
+
+def _apply_google_ads_help_rescue_signals(
+    text: str,
+    scores: dict[str, float],
+    positive_hits: list[tuple[str, float]],
+    source_reasons: list[str],
+) -> tuple[float, list[str]]:
+    """Apply Google Ads Help-specific rescue scoring for reporting and performance complaints."""
+    lowered = str(text or "").lower()
+    conversion_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["conversion", "conversion action", "conversion delay", "cannot see conversions"]
+    )
+    reporting_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["report", "reporting", "metrics", "performance not matching", "report not matching"]
+    )
+    discrepancy_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["mismatch", "discrepancy", "wrong", "not matching", "not showing"]
+    )
+    performance_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["impressions", "clicks", "campaign", "performance drop", "zero impressions", "not generating impressions"]
+    )
+    attribution_hit = any(_text_contains_term(lowered, term) for term in ["attribution", "merchant center", "shopping"])
+    explanation_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["what could be the issue", "preventing", "help identify", "why", "cannot see", "not showing"]
+    )
+
+    bonus = 0.0
+    labels: list[str] = []
+    if conversion_hit and (reporting_hit or discrepancy_hit or performance_hit):
+        scores["reporting_pain_score"] += 1.1
+        bonus += 1.1
+        labels.append("google_ads_help_conversion_reporting_combo")
+    if performance_hit:
+        scores["root_cause_score"] += 1.0
+        bonus += 1.0
+        labels.append("google_ads_help_impression_performance")
+    if reporting_hit or discrepancy_hit:
+        scores["dashboard_trust_score"] += 1.0
+        bonus += 1.0
+        labels.append("google_ads_help_reporting_discrepancy")
+    if attribution_hit:
+        scores["metric_definition_score"] += 0.8
+        bonus += 0.8
+        labels.append("google_ads_help_attribution_context")
+    if explanation_hit:
+        scores["biz_workflow_score"] += 0.7
+        bonus += 0.7
+        labels.append("google_ads_help_explanation_burden")
+    if labels:
+        unique_labels = list(dict.fromkeys(labels))
+        positive_hits.append(("google_ads_help_source_whitelist_score", round(bonus, 2)))
+        source_reasons.append(f"google_ads_help_rescue_candidate:{'|'.join(unique_labels)}")
+        return round(bonus, 4), unique_labels
+    return 0.0, []
+
+
+def _text_contains_term(text: str, term: str) -> bool:
+    """Match a single word or phrase using token-aware boundaries."""
+    normalized_term = str(term or "").strip().lower()
+    if not normalized_term:
+        return False
+    pattern = r"\b" + r"\s+".join(re.escape(part) for part in normalized_term.split()) + r"\b"
+    return re.search(pattern, text, flags=re.IGNORECASE) is not None
+
+
+def _derive_dropped_reason(
+    source: str,
+    text: str,
+    scores: dict[str, float],
+    whitelist_labels: list[str],
+    source_reasons: list[str],
+) -> str:
     """Return a more specific dropped-reason string than generic source fallback."""
     if whitelist_labels:
         return f"drop_after_whitelist_no_rescue:{whitelist_labels[0]}"
     positive_total = sum(scores[column] for column in POSITIVE_SCORE_COLUMNS)
     negative_total = sum(scores[column] for column in NEGATIVE_SCORE_COLUMNS)
+    lowered = str(text or "").lower()
     if source.startswith("google_ads"):
+        if source == "google_ads_help_community":
+            if any(
+                _text_contains_term(lowered, term)
+                for term in ["identity verification", "payment verification", "billing", "under-review", "suspended account", "wrong google account"]
+            ):
+                return "too_generic_account_support_case"
+            if any(_text_contains_term(lowered, term) for term in ["impressions", "clicks", "campaign", "performance"]) and not any(
+                _text_contains_term(lowered, term) for term in ["report", "reporting", "conversion", "metrics", "discrepancy", "mismatch"]
+            ):
+                return "prefilter_missing_reporting_terms"
+            if any(_text_contains_term(lowered, term) for term in ["conversion", "conversion action", "attribution", "merchant center"]) and not any(
+                _text_contains_term(lowered, term) for term in ["mismatch", "not showing", "not matching", "delay", "wrong", "discrepancy"]
+            ):
+                return "prefilter_missing_discrepancy_language"
+            return "prefilter_missing_google_ads_help_language"
         return "prefilter_missing_ads_reporting_terms"
     if source == "hubspot_community":
         return "prefilter_missing_hubspot_reporting_terms"
@@ -440,6 +657,15 @@ def _derive_dropped_reason(source: str, scores: dict[str, float], whitelist_labe
         return "prefilter_missing_merchant_center_feed_terms"
     if source == "metabase_discussions":
         return "prefilter_missing_metabase_query_dashboard_terms"
+    if source == "shopify_community":
+        lowered_reasons = " ".join(source_reasons).lower()
+        if "shopify_export_report" in lowered_reasons or "shopify_analytics_metric_combo" in lowered_reasons:
+            return "missing_shopify_reporting_terms"
+        if "shopify_mismatch_discrepancy" in lowered_reasons:
+            return "missing_shopify_discrepancy_terms"
+        if "shopify_conversion_sales_trend" in lowered_reasons or "shopify_attribution_tracking" in lowered_reasons:
+            return "missing_shopify_performance_terms"
+        return "prefilter_missing_shopify_reporting_terms"
     if source == "github_discussions" and any("issue_template_downweight" in reason for reason in source_reasons):
         return "prefilter_github_issue_template_penalty"
     if positive_total <= 0.0:

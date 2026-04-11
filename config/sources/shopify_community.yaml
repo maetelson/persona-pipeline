@@ -9,13 +9,15 @@ product_or_tool: Shopify
 check_robots: false
 query_mode: source_config
 seed_bank_path: config/seeds/business_communities/shopify_community.yaml
-max_query_count: 10
+max_query_count: 20
 max_threads_per_run: 800
 max_discovered_threads_per_url: 100
 discovery_page_count: 25
 sleep_seconds: 0.15
 filter_discovery_by_seed: false
-include_candidate_seed_pool_for_discovery: true
+include_candidate_seed_pool_for_discovery: false
+seed_source_token: shopify
+seed_query_style: support_community
 discovery_exclude_title_patterns:
   - "^about the .* category$"
   - "^what to measure in your first"

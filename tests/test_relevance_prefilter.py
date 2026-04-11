@@ -181,6 +181,49 @@ class RelevancePrefilterTests(unittest.TestCase):
         self.assertIn("google_ads_conversion", borderline_df.iloc[0]["whitelist_hits"])
         self.assertEqual(borderline_df.iloc[0]["dropped_reason"], "")
 
+    def test_google_ads_help_whitelist_rescues_impression_reporting_row(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_ads_help_community",
+                    "raw_id": "gah-whitelist",
+                    "title": "Campaign not generating impressions despite full setup",
+                    "body": "Google Ads reporting looks wrong because conversions are not showing and performance is not matching clicks.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertIn("google_ads_help", str(scored.iloc[0]["whitelist_hits"]))
+        self.assertIn("rescued_by_source_whitelist", str(scored.iloc[0]["rescue_reason"]))
+
+    def test_shopify_source_whitelist_rescues_reporting_conversion_row(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "shopify_community",
+                    "raw_id": "shopify-whitelist",
+                    "title": "Shopify analytics report mismatch",
+                    "body": "Weekly sales and conversion dropped after checkout tracking stopped matching dashboard numbers in csv export.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertIn("shopify_reporting_metrics_combo", scored.iloc[0]["whitelist_hits"])
+        self.assertIn("rescued_by_source_whitelist", scored.iloc[0]["rescue_reason"])
+        self.assertGreater(float(scored.iloc[0]["prefilter_score"]), 0.0)
+
     def test_prefilter_is_idempotent_for_scored_rows(self) -> None:
         frame = pd.DataFrame([_load_fixture("stackoverflow_relevant_reporting_mismatch.json")])
         keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)

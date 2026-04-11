@@ -132,6 +132,17 @@ def _write_false_negative_audit(drop_df: pd.DataFrame) -> None:
     write_parquet(audit_df, ROOT / "data" / "analysis" / "prefilter_false_negative_audit.parquet")
     audit_df.to_csv(ROOT / "data" / "analysis" / "prefilter_false_negative_audit.csv", index=False)
     write_jsonl(ROOT / "data" / "analysis" / "prefilter_false_negative_audit.jsonl", audit_df.to_dict(orient="records"))
+    shopify_audit_df = audit_df[audit_df["source"].astype(str) == "shopify_community"].reset_index(drop=True)
+    write_parquet(shopify_audit_df, ROOT / "data" / "analysis" / "shopify_prefilter_audit_top50.parquet")
+    shopify_audit_df.to_csv(ROOT / "data" / "analysis" / "shopify_prefilter_audit_top50.csv", index=False)
+    write_jsonl(ROOT / "data" / "analysis" / "shopify_prefilter_audit_top50.jsonl", shopify_audit_df.to_dict(orient="records"))
+    google_ads_help_audit_df = audit_df[audit_df["source"].astype(str) == "google_ads_help_community"].reset_index(drop=True)
+    write_parquet(google_ads_help_audit_df, ROOT / "data" / "analysis" / "google_ads_help_prefilter_audit_top50.parquet")
+    google_ads_help_audit_df.to_csv(ROOT / "data" / "analysis" / "google_ads_help_prefilter_audit_top50.csv", index=False)
+    write_jsonl(
+        ROOT / "data" / "analysis" / "google_ads_help_prefilter_audit_top50.jsonl",
+        google_ads_help_audit_df.to_dict(orient="records"),
+    )
 
 
 def _write_before_after_reports(

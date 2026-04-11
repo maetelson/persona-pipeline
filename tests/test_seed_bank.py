@@ -76,6 +76,36 @@ class SeedBankTests(unittest.TestCase):
         self.assertIn("google ads metrics discrepancy", expanded)
         self.assertTrue(all(query.count("google ads") == 1 for query in expanded))
 
+    def test_shopify_queries_use_shopify_specific_seed_bank_only(self) -> None:
+        config = load_yaml(ROOT / "config" / "sources" / "shopify_community.yaml")
+        queries = build_discovery_queries(
+            ROOT,
+            config=config,
+            source_id="shopify_community",
+            source_group="business_communities",
+        )
+        expanded = [query.expanded_query for query in queries]
+        self.assertIn("shopify report mismatch", expanded)
+        self.assertIn("shopify analytics issue", expanded)
+        self.assertIn("shopify export csv", expanded)
+        self.assertNotIn("analytics not working", expanded)
+        self.assertNotIn("wrong analytics data", expanded)
+        self.assertTrue(all("shopify" in query for query in expanded))
+
+    def test_google_ads_help_queries_use_help_specific_seed_bank(self) -> None:
+        config = load_yaml(ROOT / "config" / "sources" / "google_ads_help_community.yaml")
+        queries = build_discovery_queries(
+            ROOT,
+            config=config,
+            source_id="google_ads_help_community",
+            source_group="business_communities",
+        )
+        expanded = [query.expanded_query for query in queries]
+        self.assertIn("google ads conversion not showing", expanded)
+        self.assertIn("google ads reporting wrong", expanded)
+        self.assertIn("google ads metrics discrepancy", expanded)
+        self.assertTrue(all(query.count("google ads") == 1 for query in expanded))
+
 
 if __name__ == "__main__":
     unittest.main()

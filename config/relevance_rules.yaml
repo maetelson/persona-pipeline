@@ -33,6 +33,9 @@ source_defaults:
   merchant_center_community:
     source_group: business_communities
     source_weight: 1.0
+  shopify_community:
+    source_group: business_communities
+    source_weight: 1.0
 source_whitelist_terms:
   hubspot_community:
     - label: hubspot_report
@@ -66,11 +69,17 @@ source_whitelist_terms:
       terms: [merchant center, metrics discrepancy]
   google_ads_help_community:
     - label: google_ads_help_conversion
-      terms: [conversion, conversion action, click]
+      terms: [conversion, conversion action, conversion not showing, cannot see conversions, conversion delay]
     - label: google_ads_help_reporting
-      terms: [attribution, campaign performance, reporting]
+      terms: [google ads reporting wrong, report not matching, performance not matching, data discrepancy ads]
+    - label: google_ads_help_performance
+      terms: [campaign performance drop, no impressions, zero impressions, not generating impressions]
+    - label: google_ads_help_click_mismatch
+      terms: [click vs conversion mismatch, metrics discrepancy]
+    - label: google_ads_help_attribution
+      terms: [attribution issue, conversion action problem]
     - label: google_ads_help_merchant_center
-      terms: [merchant center, metrics discrepancy]
+      terms: [merchant center mismatch, merchant center, shopping reporting]
   merchant_center_community:
     - label: merchant_center_disapproval
       terms: [product disapproved, account suspended]
@@ -78,6 +87,21 @@ source_whitelist_terms:
       terms: [feed sync, products not syncing, local feed]
     - label: merchant_center_price
       terms: [price mismatch]
+  shopify_community:
+    - label: shopify_reporting_analytics
+      terms: [report, reporting, analytics, dashboard, export, csv]
+    - label: shopify_conversion_metrics
+      terms: [conversion, checkout, sessions, orders, sales, revenue, aov, roas]
+    - label: shopify_attribution_tracking
+      terms: [attribution, pixel, tracking, customer segment]
+    - label: shopify_performance_views
+      terms: [product performance, channel performance, store performance]
+    - label: shopify_discrepancy_terms
+      terms: [discrepancy, mismatch, wrong numbers, not matching]
+    - label: shopify_period_comparison
+      terms: [compare periods, weekly sales, monthly sales, trend]
+    - label: shopify_drop_explanation
+      terms: [cannot explain drop, sales drop, conversion drop]
   github_discussions:
     - label: github_export_excel
       terms: [export to excel, manual reporting]
