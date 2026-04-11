@@ -7,6 +7,7 @@ from typing import Any
 
 import pandas as pd
 
+from src.labeling.unknown_reasons import build_unknown_reason_breakdown
 from src.utils.io import ensure_dir, write_parquet
 from src.utils.pipeline_schema import LABEL_CODE_COLUMNS, is_unknown_like
 from src.utils.record_access import get_record_text
@@ -73,9 +74,12 @@ def build_label_quality_audit(
 
     low_signal_df = merged[merged["labelability_status"] == "low_signal"].copy()
     borderline_df = merged[merged["labelability_status"] == "borderline"].copy()
+    unknown_reason_breakdown_df, unknown_rows_df = build_unknown_reason_breakdown(episodes_df, labeled_df, details_df)
     return {
         "unknown_by_axis_df": axis_df,
         "unknown_by_source_df": source_df,
+        "unknown_reason_breakdown_df": unknown_reason_breakdown_df,
+        "unknown_rows_df": unknown_rows_df,
         "low_signal_rows_df": _sample_rows(low_signal_df, 200),
         "borderline_rows_df": _sample_rows(borderline_df, 200),
         "top_unknown_examples_df": build_top_unknown_examples(merged, details_df, limit=50),
@@ -125,21 +129,27 @@ def write_label_quality_outputs(root_dir: Path, outputs: dict[str, pd.DataFrame]
     paths = {
         "unknown_by_axis_csv": analysis_dir / "unknown_by_axis.csv",
         "unknown_by_source_csv": analysis_dir / "unknown_by_source.csv",
+        "unknown_reason_breakdown_csv": analysis_dir / "unknown_reason_breakdown.csv",
+        "unknown_rows_csv": analysis_dir / "unknown_rows.csv",
         "low_signal_rows_csv": analysis_dir / "low_signal_rows.csv",
         "borderline_rows_csv": analysis_dir / "borderline_rows_for_review.csv",
         "repaired_labels_csv": analysis_dir / "repaired_labels.csv",
         "top_unknown_examples_csv": analysis_dir / "top_unknown_examples.csv",
+        "unknown_reason_audit_md": analysis_dir / "unknown_reason_audit.md",
         "label_quality_audit_md": analysis_dir / "label_quality_audit.md",
         "label_details_parquet": labeled_dir / "label_details.parquet",
     }
     outputs["unknown_by_axis_df"].to_csv(paths["unknown_by_axis_csv"], index=False)
     outputs["unknown_by_source_df"].to_csv(paths["unknown_by_source_csv"], index=False)
+    outputs["unknown_reason_breakdown_df"].to_csv(paths["unknown_reason_breakdown_csv"], index=False)
+    outputs["unknown_rows_df"].to_csv(paths["unknown_rows_csv"], index=False)
     outputs["low_signal_rows_df"].to_csv(paths["low_signal_rows_csv"], index=False)
     outputs["borderline_rows_df"].to_csv(paths["borderline_rows_csv"], index=False)
     repaired_df.to_csv(paths["repaired_labels_csv"], index=False)
     outputs["top_unknown_examples_df"].to_csv(paths["top_unknown_examples_csv"], index=False)
     write_parquet(details_df, paths["label_details_parquet"])
     paths["label_quality_audit_md"].write_text(_audit_markdown(outputs), encoding="utf-8")
+    paths["unknown_reason_audit_md"].write_text(_unknown_reason_markdown(outputs), encoding="utf-8")
     return paths
 
 
@@ -167,9 +177,9 @@ def _failure_explanation(row: pd.Series) -> str:
     text = str(row.get("normalized_episode", "") or "")
     if labelability == "low_signal":
         return "Row is too weak or too noisy for persona labeling and should not drive clustering."
-    if "conflicting_evidence" in reasons:
+    if "multi_axis_conflict" in reasons:
         return "The row contains mixed directional signals, so broad axes conflict and the current taxonomy cannot safely choose one."
-    if "taxonomy_gap" in reasons:
+    if "taxonomy_missing_multi_axis" in reasons or "analysis_goal_missing" in reasons or "bottleneck_axis_missing" in reasons:
         return "The row is relevant but the current label set does not cleanly capture the expressed problem."
     if len(text) < 80:
         return "The row has too little grounded evidence to support a reliable label."
@@ -179,6 +189,7 @@ def _failure_explanation(row: pd.Series) -> str:
 def _audit_markdown(outputs: dict[str, pd.DataFrame]) -> str:
     axis_df = outputs["unknown_by_axis_df"]
     source_df = outputs["unknown_by_source_df"]
+    reason_df = outputs.get("unknown_reason_breakdown_df", pd.DataFrame())
     lines = ["# Label Quality Audit", "", "## Worst Axes", ""]
     for _, row in axis_df.head(8).iterrows():
         lines.append(
@@ -191,5 +202,40 @@ def _audit_markdown(outputs: dict[str, pd.DataFrame]) -> str:
             f"- `{row['source']}`: low_signal_rate={row['low_signal_rate']}, "
             f"role_unknown={row.get('role_codes_unknown_rate', 0)}, output_unknown={row.get('output_codes_unknown_rate', 0)}"
         )
+    if not reason_df.empty:
+        lines.extend(["", "## Dominant Unknown Reasons", ""])
+        for _, row in reason_df.head(8).iterrows():
+            lines.append(
+                f"- `{row['unknown_reason']}`: count={row['count']}, share_of_unknown={row['share_of_unknown']}, remediation={row['likely_remediation_type']}"
+            )
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _unknown_reason_markdown(outputs: dict[str, pd.DataFrame]) -> str:
+    breakdown_df = outputs.get("unknown_reason_breakdown_df", pd.DataFrame())
+    unknown_rows_df = outputs.get("unknown_rows_df", pd.DataFrame())
+    lines = ["# Unknown Reason Audit", ""]
+    if breakdown_df.empty:
+        lines.append("No unresolved core-label rows were found.")
+        lines.append("")
+        return "\n".join(lines)
+
+    total_unknown = int(breakdown_df["count"].sum())
+    lines.append(f"Total unresolved core-label rows: {total_unknown}")
+    lines.extend(["", "## Top Reasons", ""])
+    for _, row in breakdown_df.head(10).iterrows():
+        lines.append(
+            f"- `{row['unknown_reason']}`: count={row['count']}, share_of_unknown={row['share_of_unknown']}, remediation={row['likely_remediation_type']}"
+        )
+        if str(row.get("sample_rows", "") or ""):
+            lines.append(f"  samples: {row['sample_rows']}")
+    if not unknown_rows_df.empty:
+        lines.extend(["", "## Sample Rows", ""])
+        for _, row in unknown_rows_df.head(12).iterrows():
+            lines.append(
+                f"- `{row['episode_id']}` [{row.get('unknown_reason', '')}] labelability={row.get('labelability_status', '')} missing={row.get('missing_core_axes', '')}"
+            )
+            lines.append(f"  excerpt: {row.get('text_excerpt', '')}")
     lines.append("")
     return "\n".join(lines)

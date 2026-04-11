@@ -13,6 +13,7 @@ import pandas as pd
 
 from src.labeling.labelability import build_labelability_table
 from src.labeling.prompt_builder import build_label_prompt
+from src.labeling.quality import build_label_quality_audit
 from src.labeling.repair import apply_label_repairs, build_axis_label_details
 from src.labeling.rule_labeler import prelabel_episodes
 from src.utils.io import load_yaml
@@ -196,6 +197,228 @@ class LabelQualityTests(unittest.TestCase):
         self.assertIn("confidence_score", details.columns)
         self.assertFalse(repairs.empty)
 
+    def test_contextual_repairs_fill_partial_unknowns(self) -> None:
+        policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
+        episodes = pd.DataFrame(
+            [
+                {
+                    "episode_id": "partial-1",
+                    "source": "google_ads_help_community",
+                    "normalized_episode": "Ads not showing despite no setup issues and product visibility tracking looks wrong in dashboard diagnostics.",
+                    "evidence_snippet": "",
+                    "business_question": "How can we diagnose and resolve analytics issues faster?",
+                    "bottleneck_text": "tool_limitation",
+                    "workaround_text": "",
+                    "desired_output": "",
+                },
+                {
+                    "episode_id": "partial-2",
+                    "source": "metabase_discussions",
+                    "normalized_episode": "Export API gives stale results and the reporting workflow still needs manual spreadsheet validation.",
+                    "evidence_snippet": "",
+                    "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+                    "bottleneck_text": "general_friction",
+                    "workaround_text": "manual export",
+                    "desired_output": "",
+                },
+            ]
+        )
+        labeled = pd.DataFrame(
+            [
+                {
+                    "episode_id": "partial-1",
+                    "role_codes": "R_MARKETER",
+                    "moment_codes": "unknown",
+                    "question_codes": "Q_DIAGNOSE_ISSUE",
+                    "pain_codes": "P_TOOL_LIMITATION",
+                    "env_codes": "unknown",
+                    "workaround_codes": "unknown",
+                    "output_codes": "unknown",
+                    "fit_code": "F_REVIEW",
+                    "label_confidence": 0.75,
+                    "label_reason": "rule",
+                },
+                {
+                    "episode_id": "partial-2",
+                    "role_codes": "unknown",
+                    "moment_codes": "unknown",
+                    "question_codes": "Q_REPORT_SPEED",
+                    "pain_codes": "P_MANUAL_REPORTING",
+                    "env_codes": "unknown",
+                    "workaround_codes": "unknown",
+                    "output_codes": "O_XLSX",
+                    "fit_code": "F_REVIEW",
+                    "label_confidence": 0.8,
+                    "label_reason": "rule",
+                },
+            ]
+        )
+        labelability = pd.DataFrame(
+            [
+                {"episode_id": "partial-1", "source": "google_ads_help_community", "labelability_status": "labelable", "labelability_score": 6, "labelability_reason": "positive", "persona_core_eligible": True},
+                {"episode_id": "partial-2", "source": "metabase_discussions", "labelability_status": "borderline", "labelability_score": 4, "labelability_reason": "positive", "persona_core_eligible": True},
+            ]
+        )
+        repaired, repairs = apply_label_repairs(episodes, labeled, labelability, policy)
+        self.assertEqual(repaired.loc[0, "output_codes"], "O_DASHBOARD")
+        self.assertNotEqual(repaired.loc[1, "role_codes"], "unknown")
+        self.assertFalse(repairs.empty)
+
+    def test_contextual_repairs_work_when_labeled_rows_already_have_labelability_columns(self) -> None:
+        policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
+        episodes = pd.DataFrame(
+            [
+                {
+                    "episode_id": "ep-question-gap",
+                    "source": "google_ads_help_community",
+                    "normalized_episode": "Ads not showing despite no issues and campaign is not serving.",
+                    "business_question": "Why are my ads not showing?",
+                    "evidence_snippet": "ads not showing",
+                    "bottleneck_text": "general_friction",
+                    "desired_output": "unspecified_output",
+                }
+            ]
+        )
+        labeled = pd.DataFrame(
+            [
+                {
+                    "episode_id": "ep-question-gap",
+                    "source": "google_ads_help_community",
+                    "role_codes": "R_MARKETER",
+                    "question_codes": "unknown",
+                    "pain_codes": "P_TOOL_LIMITATION",
+                    "output_codes": "O_AUTOMATION_JOB",
+                    "fit_code": "F_REVIEW",
+                    "label_confidence": 0.75,
+                    "label_reason": "question=unknown:no_match",
+                    "labelability_status": "labelable",
+                    "labelability_score": 6,
+                }
+            ]
+        )
+        labelability = pd.DataFrame(
+            [
+                {
+                    "episode_id": "ep-question-gap",
+                    "source": "google_ads_help_community",
+                    "labelability_status": "labelable",
+                    "labelability_score": 6,
+                }
+            ]
+        )
+
+        repaired, repairs = apply_label_repairs(episodes, labeled, labelability, policy)
+
+        self.assertEqual(repaired.loc[0, "question_codes"], "Q_DIAGNOSE_ISSUE")
+        self.assertEqual(repairs.shape[0], 1)
+
+    def test_unknown_reason_breakdown_accounts_for_low_signal_and_partial_gaps(self) -> None:
+        episodes = pd.DataFrame(
+            [
+                {
+                    "episode_id": "u1",
+                    "source": "metabase_discussions",
+                    "normalized_episode": "Database migration failed after upgrade and dashboard filters are broken.",
+                    "evidence_snippet": "",
+                    "business_question": "How can we diagnose and resolve analytics issues faster?",
+                    "bottleneck_text": "tool_limitation",
+                    "workaround_text": "",
+                    "desired_output": "",
+                },
+                {
+                    "episode_id": "u2",
+                    "source": "google_ads_help_community",
+                    "normalized_episode": "Ads not showing and diagnostics dashboard is the main place we monitor visibility.",
+                    "evidence_snippet": "",
+                    "business_question": "How can we diagnose and resolve analytics issues faster?",
+                    "bottleneck_text": "tool_limitation",
+                    "workaround_text": "",
+                    "desired_output": "",
+                },
+                {
+                    "episode_id": "u3",
+                    "source": "metabase_discussions",
+                    "normalized_episode": "Export workflow still needs manual spreadsheet work every week.",
+                    "evidence_snippet": "",
+                    "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+                    "bottleneck_text": "general_friction",
+                    "workaround_text": "manual export",
+                    "desired_output": "board report",
+                },
+            ]
+        )
+        labeled = pd.DataFrame(
+            [
+                {
+                    "episode_id": "u1",
+                    "role_codes": "unknown",
+                    "question_codes": "unknown",
+                    "pain_codes": "unknown",
+                    "output_codes": "unknown",
+                    "moment_codes": "unknown",
+                    "env_codes": "unknown",
+                    "workaround_codes": "unknown",
+                    "fit_code": "unknown",
+                    "label_confidence": 0.2,
+                    "label_reason": "unknown",
+                    "labelability_status": "low_signal",
+                    "labelability_score": 1,
+                    "labelability_reason": "weak_signal",
+                    "persona_core_eligible": False,
+                },
+                {
+                    "episode_id": "u2",
+                    "role_codes": "R_MARKETER",
+                    "question_codes": "Q_DIAGNOSE_ISSUE",
+                    "pain_codes": "P_TOOL_LIMITATION",
+                    "output_codes": "unknown",
+                    "moment_codes": "unknown",
+                    "env_codes": "unknown",
+                    "workaround_codes": "unknown",
+                    "fit_code": "F_REVIEW",
+                    "label_confidence": 0.8,
+                    "label_reason": "rule",
+                    "labelability_status": "labelable",
+                    "labelability_score": 6,
+                    "labelability_reason": "positive",
+                    "persona_core_eligible": True,
+                },
+                {
+                    "episode_id": "u3",
+                    "role_codes": "unknown",
+                    "question_codes": "Q_REPORT_SPEED",
+                    "pain_codes": "P_MANUAL_REPORTING",
+                    "output_codes": "O_XLSX",
+                    "moment_codes": "unknown",
+                    "env_codes": "unknown",
+                    "workaround_codes": "unknown",
+                    "fit_code": "F_REVIEW",
+                    "label_confidence": 0.8,
+                    "label_reason": "rule",
+                    "labelability_status": "borderline",
+                    "labelability_score": 4,
+                    "labelability_reason": "positive",
+                    "persona_core_eligible": True,
+                },
+            ]
+        )
+        labelability = pd.DataFrame(
+            [
+                {"episode_id": "u1", "source": "metabase_discussions", "labelability_status": "low_signal", "labelability_score": 1, "labelability_reason": "weak_signal", "persona_core_eligible": False},
+                {"episode_id": "u2", "source": "google_ads_help_community", "labelability_status": "labelable", "labelability_score": 6, "labelability_reason": "positive", "persona_core_eligible": True},
+                {"episode_id": "u3", "source": "metabase_discussions", "labelability_status": "borderline", "labelability_score": 4, "labelability_reason": "positive", "persona_core_eligible": True},
+            ]
+        )
+        details = build_axis_label_details(episodes, labeled, labelability)
+        outputs = build_label_quality_audit(episodes, labeled, details, labelability)
+        breakdown = outputs["unknown_reason_breakdown_df"]
+
+        self.assertEqual(int(breakdown.loc[breakdown["unknown_reason"] == "labelability_failure_product_support", "count"].iloc[0]), 1)
+        self.assertEqual(int(breakdown.loc[breakdown["unknown_reason"] == "workflow_stage_missing", "count"].iloc[0]), 1)
+        self.assertEqual(int(breakdown.loc[breakdown["unknown_reason"] == "role_missing", "count"].iloc[0]), 1)
+        self.assertIn("likely_remediation_type", breakdown.columns)
+        self.assertIn("sample_rows", breakdown.columns)
+
     def test_before_after_quality_report_includes_reported_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -221,6 +444,7 @@ class LabelQualityTests(unittest.TestCase):
                 labelability,
                 {"reported_baseline_unknown_ratio": 0.717116, "reported_baseline_quality_flag": "LOW_QUALITY"},
             )
+
             metrics = pd.read_csv(root / "data" / "analysis" / "before_after_label_metrics.csv")
             numeric_lookup = dict(zip(metrics["metric"], metrics["value_numeric"]))
             text_lookup = dict(zip(metrics["metric"], metrics["value_text"].fillna("")))

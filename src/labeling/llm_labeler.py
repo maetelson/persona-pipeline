@@ -5,10 +5,12 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from uuid import uuid4
 
 import pandas as pd
 from src.labeling.prompt_builder import build_label_prompt
@@ -25,9 +27,12 @@ from src.utils.llm_cache import (
     load_jsonl_cache,
     parse_responses_json,
 )
+from src.utils.logging import get_logger
 from src.utils.pipeline_schema import CORE_LABEL_COLUMNS, is_unknown_like as schema_is_unknown_like
 
 PROMPT_SYSTEM = "Label evidence. JSON only. Use schema keys exactly. Keep strongest supported codes only."
+DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
+LOGGER = get_logger("labeling.llm_labeler")
 
 FAMILY_CODEBOOK_MAP = {
     "role_codes": "role_keywords",
@@ -50,6 +55,118 @@ GENERIC_SINGLE_CODES = {
 _COMPACT_CODEBOOK_JSON_CACHE: dict[tuple[int, tuple[str, ...]], str] = {}
 
 
+class OpenAILabelerCallError(RuntimeError):
+    """Carry transport and response metadata for labeler OpenAI call failures."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        error_class: str,
+        call_correlation_id: str,
+        http_status: int | None = None,
+        request_id: str = "",
+        response_id: str = "",
+        duration_ms: int = 0,
+    ) -> None:
+        super().__init__(message)
+        self.error_class = error_class
+        self.call_correlation_id = call_correlation_id
+        self.http_status = http_status
+        self.request_id = request_id
+        self.response_id = response_id
+        self.duration_ms = duration_ms
+
+
+def llm_runtime_snapshot(runtime: dict[str, Any]) -> dict[str, Any]:
+    """Return a masked runtime snapshot suitable for logs and smoke tests."""
+    api_key = str(runtime.get("api_key", "") or "")
+    return {
+        "enabled": bool(runtime.get("enabled", False)),
+        "dry_run": bool(runtime.get("dry_run", False)),
+        "mode": str(runtime.get("mode", "") or ""),
+        "skip_reason": str(runtime.get("skip_reason", "") or ""),
+        "backend": str(runtime.get("backend", "") or ""),
+        "model_primary": str(runtime.get("model_primary", "") or ""),
+        "model_escalation": str(runtime.get("model_escalation", "") or ""),
+        "base_url": str(runtime.get("base_url", DEFAULT_OPENAI_BASE_URL) or DEFAULT_OPENAI_BASE_URL),
+        "responses_endpoint": _responses_endpoint(runtime),
+        "organization": str(runtime.get("organization", "") or ""),
+        "project": str(runtime.get("project", "") or ""),
+        "api_key_masked": _mask_api_key(api_key),
+        "api_key_project_scoped": api_key.startswith("sk-proj-"),
+        "cache_enabled": bool(runtime.get("cache_enabled", False)),
+        "cache_path": str(runtime.get("cache_path", "") or ""),
+        "force_llm_for_targeted": bool(runtime.get("force_llm_for_targeted", False)),
+        "only_uncached": bool(runtime.get("only_uncached", False)),
+        "prompt_cache_key": str(runtime.get("prompt_cache_key", "") or ""),
+        "target_unknown_only": bool(runtime.get("target_unknown_only", False)),
+        "job_id": str(runtime.get("job_id", "") or ""),
+        "audit_tag": str(runtime.get("audit_tag", "") or ""),
+        "has_openai_sdk": bool(importlib.util.find_spec("openai")),
+    }
+
+
+def debug_openai_labeler_call(config: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Run one minimal live call through the same labeler OpenAI client boundary."""
+    runtime = resolve_llm_runtime(config=config)
+    snapshot = llm_runtime_snapshot(runtime)
+    if runtime["skip_reason"] or runtime["mode"] in {"disabled", "dry_run", "batch"}:
+        return {
+            "success": False,
+            "runtime": snapshot,
+            "model": str(runtime.get("model_primary", "") or ""),
+            "error_class": "RuntimeConfigurationError",
+            "error": str(runtime.get("skip_reason", "") or f"runtime mode {runtime['mode']} does not permit a live direct call"),
+            "response_id": "",
+            "request_id": "",
+            "usage": {},
+            "usage_present": False,
+        }
+
+    prompt = (
+        "Return JSON only with keys confidence and reason. "
+        'Use exactly this object: {"confidence":0.0,"reason":"debug_smoke"}.'
+    )
+    try:
+        response = _call_llm_labeler(
+            prompt=prompt,
+            model=str(runtime["model_primary"]),
+            runtime=runtime,
+            prompt_cache_key=f"{runtime['prompt_cache_key']}:debug_smoke",
+            episode_id="debug_smoke",
+            llm_target_reason="debug_smoke",
+            call_purpose="debug_smoke",
+        )
+        return {
+            "success": True,
+            "runtime": snapshot,
+            "model": str(runtime.get("model_primary", "") or ""),
+            "response_id": str(response.get("response_id", "") or ""),
+            "request_id": str(response.get("request_id", "") or ""),
+            "usage": dict(response.get("usage", {}) or {}),
+            "usage_present": bool(response.get("usage_present", False)),
+            "endpoint_used": str(response.get("endpoint_used", "") or ""),
+            "duration_ms": int(response.get("duration_ms", 0) or 0),
+            "parsed": dict(response.get("parsed", {}) or {}),
+            "error_class": "",
+            "error": "",
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "success": False,
+            "runtime": snapshot,
+            "model": str(runtime.get("model_primary", "") or ""),
+            "response_id": str(getattr(exc, "response_id", "") or ""),
+            "request_id": str(getattr(exc, "request_id", "") or ""),
+            "usage": {},
+            "usage_present": False,
+            "error_class": str(getattr(exc, "error_class", type(exc).__name__) or type(exc).__name__),
+            "error": str(exc),
+            "duration_ms": int(getattr(exc, "duration_ms", 0) or 0),
+        }
+
+
 def enrich_with_llm_labels(
     episodes_df: pd.DataFrame,
     labeled_df: pd.DataFrame,
@@ -68,6 +185,26 @@ def enrich_with_llm_labels(
     )
     targeted_rows = _build_target_rows(result, runtime["threshold"], target_unknown_only=runtime["target_unknown_only"])
     cache_store = load_jsonl_cache(runtime["cache_path"]) if runtime["cache_enabled"] else {}
+    allow_cache_reuse = bool(runtime["cache_enabled"] and not runtime["force_llm_for_targeted"])
+    _log_llm_event(
+        "llm_labeler_runtime_resolved",
+        {
+            **llm_runtime_snapshot(runtime),
+            "cache_entries": len(cache_store),
+            "total_rows": int(len(result)),
+            "targeted_rows": int(len(targeted_rows)),
+        },
+    )
+    _log_llm_event(
+        "llm_labeler_targeting_summary",
+        {
+            "job_id": str(runtime["job_id"]),
+            "total_rows": int(len(result)),
+            "targeted_rows": int(len(targeted_rows)),
+            "not_targeted_rows": int(len(result) - len(targeted_rows)),
+            "target_reason_counts": _target_reason_counts(result, runtime["threshold"]),
+        },
+    )
 
     if runtime["mode"] == "batch":
         audit_df = _prepare_batch_mode(
@@ -94,10 +231,12 @@ def enrich_with_llm_labels(
             confidence_before=float(row.get("label_confidence", 0.0) or 0.0),
             unknown_before=_count_unknown_codes(row),
         )
+        _attach_runtime_audit_context(audit_row, runtime)
 
         if not target_meta:
             audit_row["llm_status"] = "not_targeted"
             audit_row["llm_reason"] = f"llm:not_targeted:{target_reason}"
+            audit_row["skip_category"] = "not_targeted"
             result.at[index, "label_reason"] = _append_reason(str(row.get("label_reason", "")), audit_row["llm_reason"])
             audit_rows.append(audit_row)
             continue
@@ -105,6 +244,18 @@ def enrich_with_llm_labels(
         if runtime["skip_reason"]:
             audit_row["llm_status"] = "disabled"
             audit_row["llm_reason"] = runtime["skip_reason"]
+            audit_row["skip_category"] = "runtime_disabled"
+            _log_llm_event(
+                "llm_labeler_call_skipped",
+                {
+                    "job_id": str(runtime["job_id"]),
+                    "episode_id": str(row["episode_id"]),
+                    "skip_category": "runtime_disabled",
+                    "reason": str(runtime["skip_reason"]),
+                    "target_reason": str(target_reason),
+                    "model": str(runtime["model_primary"]),
+                },
+            )
             result.at[index, "label_reason"] = _append_reason(str(row.get("label_reason", "")), runtime["skip_reason"])
             audit_rows.append(audit_row)
             continue
@@ -123,7 +274,48 @@ def enrich_with_llm_labels(
             requested_families=prompt_payload["requested_families"],
             prompt=prompt_payload["prompt"],
         )
-        if cache_key in response_cache:
+        audit_row["cache_key"] = cache_key
+        if runtime["only_uncached"] and cache_key in response_cache:
+            audit_row["llm_status"] = "only_uncached_filtered"
+            audit_row["llm_reason"] = "llm:only_uncached:run_reuse"
+            audit_row["cache_source"] = "run_reuse"
+            audit_row["skip_category"] = "only_uncached_filtered"
+            _log_llm_event(
+                "llm_labeler_call_skipped",
+                {
+                    "job_id": str(runtime["job_id"]),
+                    "episode_id": str(row["episode_id"]),
+                    "skip_category": "only_uncached_filtered",
+                    "reason": "llm:only_uncached:run_reuse",
+                    "target_reason": str(target_reason),
+                    "cache_key": cache_key,
+                    "cache_source": "run_reuse",
+                    "model": str(runtime["model_primary"]),
+                },
+            )
+            audit_rows.append(audit_row)
+            continue
+        if runtime["only_uncached"] and cache_key in cache_store:
+            audit_row["llm_status"] = "only_uncached_filtered"
+            audit_row["llm_reason"] = "llm:only_uncached:persistent_cache"
+            audit_row["cache_source"] = "persistent_cache"
+            audit_row["skip_category"] = "only_uncached_filtered"
+            _log_llm_event(
+                "llm_labeler_call_skipped",
+                {
+                    "job_id": str(runtime["job_id"]),
+                    "episode_id": str(row["episode_id"]),
+                    "skip_category": "only_uncached_filtered",
+                    "reason": "llm:only_uncached:persistent_cache",
+                    "target_reason": str(target_reason),
+                    "cache_key": cache_key,
+                    "cache_source": "persistent_cache",
+                    "model": str(runtime["model_primary"]),
+                },
+            )
+            audit_rows.append(audit_row)
+            continue
+        if allow_cache_reuse and cache_key in response_cache:
             cached = response_cache[cache_key]
             merged_any = _merge_llm_suggestion(result, index=index, suggestion=cached)
             result.at[index, "label_confidence"] = max(
@@ -136,13 +328,28 @@ def enrich_with_llm_labels(
             )
             audit_row["llm_status"] = "run_reuse"
             audit_row["llm_reason"] = "llm:run_reuse"
+            audit_row["cache_source"] = "run_reuse"
+            audit_row["skip_category"] = "run_reuse"
             audit_row["parse_success"] = True
             audit_row["unknown_after"] = _count_unknown_codes(result.loc[index])
             audit_row["label_confidence_after"] = float(result.at[index, "label_confidence"] or 0.0)
             audit_row["fallback_used"] = False
+            _log_llm_event(
+                "llm_labeler_call_skipped",
+                {
+                    "job_id": str(runtime["job_id"]),
+                    "episode_id": str(row["episode_id"]),
+                    "skip_category": "run_reuse",
+                    "reason": "response_cache_reuse",
+                    "target_reason": str(target_reason),
+                    "cache_key": cache_key,
+                    "cache_source": "run_reuse",
+                    "model": str(runtime["model_primary"]),
+                },
+            )
             audit_rows.append(audit_row)
             continue
-        if cache_key in cache_store:
+        if allow_cache_reuse and cache_key in cache_store:
             cached = cache_store[cache_key]
             merged_any = _merge_llm_suggestion(result, index=index, suggestion=cached)
             result.at[index, "label_confidence"] = max(
@@ -155,16 +362,44 @@ def enrich_with_llm_labels(
             )
             audit_row["llm_status"] = "cache_hit"
             audit_row["llm_reason"] = "llm:cache_hit"
+            audit_row["cache_source"] = "persistent_cache"
+            audit_row["skip_category"] = "cache_hit"
             audit_row["parse_success"] = True
             audit_row["unknown_after"] = _count_unknown_codes(result.loc[index])
             audit_row["label_confidence_after"] = float(result.at[index, "label_confidence"] or 0.0)
             audit_row["fallback_used"] = False
+            _log_llm_event(
+                "llm_labeler_call_skipped",
+                {
+                    "job_id": str(runtime["job_id"]),
+                    "episode_id": str(row["episode_id"]),
+                    "skip_category": "cache_hit",
+                    "reason": "persistent_cache_hit",
+                    "target_reason": str(target_reason),
+                    "cache_key": cache_key,
+                    "cache_source": "persistent_cache",
+                    "model": str(runtime["model_primary"]),
+                },
+            )
             audit_rows.append(audit_row)
             continue
 
         if runtime["dry_run"]:
             audit_row["llm_status"] = "dry_run"
             audit_row["llm_reason"] = "llm:disabled:dry_run"
+            audit_row["skip_category"] = "dry_run"
+            _log_llm_event(
+                "llm_labeler_call_skipped",
+                {
+                    "job_id": str(runtime["job_id"]),
+                    "episode_id": str(row["episode_id"]),
+                    "skip_category": "dry_run",
+                    "reason": "llm:disabled:dry_run",
+                    "target_reason": str(target_reason),
+                    "cache_key": cache_key,
+                    "model": str(runtime["model_primary"]),
+                },
+            )
             result.at[index, "label_reason"] = _append_reason(
                 str(row.get("label_reason", "")),
                 f"llm:disabled:dry_run:{target_meta['reason']}",
@@ -179,11 +414,11 @@ def enrich_with_llm_labels(
             llm_response = _call_llm_labeler(
                 prompt=prompt_payload["prompt"],
                 model=model_used,
-                api_key=runtime["api_key"],
-                timeout_seconds=runtime["timeout_seconds"],
-                backend=runtime["backend"],
-                max_output_tokens=runtime["max_output_tokens"],
+                runtime=runtime,
                 prompt_cache_key=runtime["prompt_cache_key"],
+                episode_id=str(row["episode_id"]),
+                llm_target_reason=str(target_reason),
+                call_purpose="labeler_row",
             )
             suggestion = _validate_llm_suggestion(llm_response["parsed"], runtime["codebook"], requested_families=prompt_payload["requested_families"])
             merged_any = _merge_llm_suggestion(result, index=index, suggestion=suggestion)
@@ -199,13 +434,28 @@ def enrich_with_llm_labels(
             audit_row["llm_reason"] = str(suggestion.get("label_reason", "llm:applied"))
             audit_row["parse_success"] = True
             _attach_usage(audit_row, llm_response["usage"])
+            audit_row["call_correlation_id"] = str(llm_response.get("call_correlation_id", "") or "")
+            audit_row["response_id"] = str(llm_response.get("response_id", "") or "")
+            audit_row["request_id"] = str(llm_response.get("request_id", "") or "")
+            audit_row["usage_present"] = bool(llm_response.get("usage_present", False))
+            audit_row["http_status"] = int(llm_response.get("http_status", 200) or 200)
+            audit_row["retry_count"] = int(llm_response.get("retry_count", 0) or 0)
+            audit_row["endpoint_used"] = str(llm_response.get("endpoint_used", "") or "")
+            audit_row["cache_source"] = "bypassed" if runtime["force_llm_for_targeted"] else "none"
             response_cache[cache_key] = suggestion
-            if runtime["cache_enabled"]:
+            if allow_cache_reuse:
                 cache_store[cache_key] = suggestion
                 append_jsonl_cache(runtime["cache_path"], cache_key, suggestion)
         except Exception as exc:  # noqa: BLE001
             audit_row["llm_status"] = "failed"
             audit_row["llm_reason"] = _error_reason_from_exception(exc)
+            audit_row["transport_error_class"] = str(getattr(exc, "error_class", type(exc).__name__) or type(exc).__name__)
+            audit_row["call_correlation_id"] = str(getattr(exc, "call_correlation_id", "") or "")
+            audit_row["request_id"] = str(getattr(exc, "request_id", "") or "")
+            audit_row["response_id"] = str(getattr(exc, "response_id", "") or "")
+            audit_row["http_status"] = int(getattr(exc, "http_status", 0) or 0)
+            audit_row["skip_category"] = "failed"
+            audit_row["cache_source"] = "bypassed" if runtime["force_llm_for_targeted"] else "none"
             result.at[index, "label_reason"] = _append_reason(
                 str(result.at[index, "label_reason"]),
                 audit_row["llm_reason"],
@@ -215,6 +465,17 @@ def enrich_with_llm_labels(
                 merged_any = _merge_llm_suggestion(result, index=index, suggestion=fallback)
                 if merged_any:
                     audit_row["fallback_used"] = True
+                    _log_llm_event(
+                        "llm_labeler_fallback_applied",
+                        {
+                            "job_id": str(runtime["job_id"]),
+                            "episode_id": str(row["episode_id"]),
+                            "call_correlation_id": str(audit_row.get("call_correlation_id", "") or ""),
+                            "fallback_reason": "llm:fallback_hint",
+                            "llm_reason": str(audit_row["llm_reason"]),
+                        },
+                        level="warning",
+                    )
                     result.at[index, "label_confidence"] = max(float(result.at[index, "label_confidence"] or 0.0), 0.65)
                     result.at[index, "label_reason"] = _append_reason(str(result.at[index, "label_reason"]), "llm:fallback_hint")
 
@@ -281,8 +542,21 @@ def resolve_llm_runtime(config: dict[str, Any] | None = None) -> dict[str, Any]:
     prompt_cache_retention = _first_non_empty("PROMPT_CACHE_RETENTION", default=str(cfg.get("prompt_cache_retention", "session")))
     batch_max_rows = int(_first_non_empty("BATCH_MAX_ROWS", default=str(cfg.get("batch_max_rows", 200))))
     target_unknown_only = _first_non_empty("LLM_TARGET_UNKNOWN_ONLY", default=str(cfg.get("target_unknown_only", "true"))).lower() == "true"
+    disable_cache = _first_non_empty("LLM_DISABLE_CACHE", default=str(cfg.get("disable_cache", "false"))).lower() == "true"
     cache_enabled = _first_non_empty("LLM_CACHE_ENABLED", default=str(cfg.get("cache_enabled", "true"))).lower() == "true"
+    cache_enabled = cache_enabled and not disable_cache
     cache_path = Path(str(cfg.get("cache_path", Path("data") / "labeled" / "llm_response_cache.jsonl")))
+    force_llm_for_targeted = _first_non_empty(
+        "LLM_FORCE_LLM_FOR_TARGETED",
+        "LLM_FORCE_TARGETED",
+        default=str(cfg.get("force_llm_for_targeted", "false")),
+    ).lower() == "true"
+    only_uncached = _first_non_empty("LLM_ONLY_UNCACHED", default=str(cfg.get("only_uncached", "false"))).lower() == "true"
+    organization = _first_non_empty("OPENAI_ORG", "OPENAI_ORGANIZATION", default=str(cfg.get("organization", ""))).strip()
+    project = _first_non_empty("OPENAI_PROJECT", default=str(cfg.get("project", ""))).strip()
+    base_url = _first_non_empty("OPENAI_BASE_URL", default=str(cfg.get("base_url", DEFAULT_OPENAI_BASE_URL))).strip().rstrip("/") or DEFAULT_OPENAI_BASE_URL
+    job_id = _first_non_empty("LLM_LABELER_JOB_ID", "RUN_ID", default=f"labeler-{uuid4().hex[:12]}")
+    audit_tag = _first_non_empty("LLM_AUDIT_TAG", "LLM_EXPERIMENT_AUDIT_TAG", default=str(cfg.get("audit_tag", ""))).strip()
     codebook = dict(cfg.get("codebook", {}) or {})
     policy = dict(cfg.get("policy", {}) or {})
 
@@ -326,6 +600,13 @@ def resolve_llm_runtime(config: dict[str, Any] | None = None) -> dict[str, Any]:
         "target_unknown_only": target_unknown_only,
         "cache_enabled": cache_enabled,
         "cache_path": cache_path,
+        "force_llm_for_targeted": force_llm_for_targeted,
+        "only_uncached": only_uncached,
+        "organization": organization,
+        "project": project,
+        "base_url": base_url,
+        "job_id": job_id,
+        "audit_tag": audit_tag,
     }
 
 
@@ -489,87 +770,218 @@ def _should_escalate(target_meta: dict[str, Any], runtime: dict[str, Any]) -> bo
 def _call_llm_labeler(
     prompt: str,
     model: str,
-    api_key: str,
-    timeout_seconds: int,
-    backend: str,
-    max_output_tokens: int,
+    runtime: dict[str, Any],
     prompt_cache_key: str,
+    episode_id: str,
+    llm_target_reason: str,
+    call_purpose: str,
 ) -> dict[str, Any]:
     """Call OpenAI and return parsed JSON plus usage."""
-    raw_response = (
-        _call_responses_sdk(prompt, model, api_key, timeout_seconds, max_output_tokens, prompt_cache_key)
-        if backend == "sdk"
-        else _call_responses_http(prompt, model, api_key, timeout_seconds, max_output_tokens, prompt_cache_key)
+    call_correlation_id = uuid4().hex[:16]
+    started_at = time.perf_counter()
+    endpoint_used = _responses_endpoint(runtime)
+    retry_count = 0
+    _log_llm_event(
+        "llm_labeler_request_started",
+        {
+            "job_id": str(runtime["job_id"]),
+            "call_correlation_id": call_correlation_id,
+            "episode_id": episode_id,
+            "call_purpose": call_purpose,
+            "target_reason": llm_target_reason,
+            "backend": str(runtime["backend"]),
+            "model": model,
+            "endpoint_used": endpoint_used,
+            "organization": str(runtime.get("organization", "") or ""),
+            "project": str(runtime.get("project", "") or ""),
+            "api_key_masked": _mask_api_key(str(runtime.get("api_key", "") or "")),
+            "prompt_chars": len(prompt),
+            "prompt_cache_key": prompt_cache_key,
+            "retry_count": retry_count,
+        },
     )
-    return {
-        "parsed": parse_responses_json(raw_response),
-        "usage": extract_responses_usage(raw_response),
-    }
+    try:
+        transport_payload = (
+            _call_responses_sdk(prompt, model, runtime, prompt_cache_key, call_correlation_id, call_purpose)
+            if runtime["backend"] == "sdk"
+            else _call_responses_http(prompt, model, runtime, prompt_cache_key, call_correlation_id, call_purpose)
+        )
+        raw_response = dict(transport_payload.get("response", {}) or {})
+        duration_ms = int((time.perf_counter() - started_at) * 1000)
+        parsed = parse_responses_json(raw_response)
+        usage = extract_responses_usage(raw_response)
+        usage_present = bool(raw_response.get("usage"))
+        response_id = str(raw_response.get("id", "") or "")
+        request_id = str(transport_payload.get("request_id", "") or "")
+        http_status = int(transport_payload.get("http_status", 200) or 200)
+        _log_llm_event(
+            "llm_labeler_request_finished",
+            {
+                "job_id": str(runtime["job_id"]),
+                "call_correlation_id": call_correlation_id,
+                "episode_id": episode_id,
+                "call_purpose": call_purpose,
+                "target_reason": llm_target_reason,
+                "backend": str(runtime["backend"]),
+                "model": model,
+                "endpoint_used": endpoint_used,
+                "response_id": response_id,
+                "request_id": request_id,
+                "http_status": http_status,
+                "duration_ms": duration_ms,
+                "usage_present": usage_present,
+                **usage,
+                "retry_count": retry_count,
+            },
+        )
+        return {
+            "parsed": parsed,
+            "usage": usage,
+            "usage_present": usage_present,
+            "response_id": response_id,
+            "request_id": request_id,
+            "http_status": http_status,
+            "duration_ms": duration_ms,
+            "endpoint_used": endpoint_used,
+            "call_correlation_id": call_correlation_id,
+            "retry_count": retry_count,
+        }
+    except Exception as exc:  # noqa: BLE001
+        duration_ms = int((time.perf_counter() - started_at) * 1000)
+        error = exc if isinstance(exc, OpenAILabelerCallError) else OpenAILabelerCallError(
+            str(exc),
+            error_class=type(exc).__name__,
+            call_correlation_id=call_correlation_id,
+            duration_ms=duration_ms,
+        )
+        _log_llm_event(
+            "llm_labeler_request_failed",
+            {
+                "job_id": str(runtime["job_id"]),
+                "call_correlation_id": error.call_correlation_id,
+                "episode_id": episode_id,
+                "call_purpose": call_purpose,
+                "target_reason": llm_target_reason,
+                "backend": str(runtime["backend"]),
+                "model": model,
+                "endpoint_used": endpoint_used,
+                "request_id": error.request_id,
+                "response_id": error.response_id,
+                "http_status": int(error.http_status or 0),
+                "duration_ms": int(error.duration_ms or duration_ms),
+                "error_class": error.error_class,
+                "error_message": str(error),
+                "retry_count": retry_count,
+            },
+            level="error",
+        )
+        raise error
 
 
 def _call_responses_http(
     prompt: str,
     model: str,
-    api_key: str,
-    timeout_seconds: int,
-    max_output_tokens: int,
+    runtime: dict[str, Any],
     prompt_cache_key: str,
+    call_correlation_id: str,
+    call_purpose: str,
 ) -> dict[str, Any]:
     """Call the Responses API over HTTP with a compact JSON contract."""
     payload = {
         "model": model,
         "input": prompt,
         "temperature": 0.1,
-        "max_output_tokens": max_output_tokens,
+        "max_output_tokens": int(runtime["max_output_tokens"]),
         "text": {"format": {"type": "json_object"}},
         "metadata": {
             "prompt_cache_key": prompt_cache_key,
+            "labeler_job_id": str(runtime["job_id"]),
+            "labeler_call_id": call_correlation_id,
+            "call_purpose": call_purpose,
         },
     }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {runtime['api_key']}",
+    }
+    if runtime.get("organization"):
+        headers["OpenAI-Organization"] = str(runtime["organization"])
+    if runtime.get("project"):
+        headers["OpenAI-Project"] = str(runtime["project"])
     request = Request(
-        "https://api.openai.com/v1/responses",
+        _responses_endpoint(runtime),
         data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
+        headers=headers,
         method="POST",
     )
     try:
-        with urlopen(request, timeout=timeout_seconds) as response:
-            return json.load(response)
+        with urlopen(request, timeout=int(runtime["timeout_seconds"])) as response:
+            return {
+                "response": json.load(response),
+                "request_id": str(response.headers.get("x-request-id", "") or ""),
+                "http_status": int(getattr(response, "status", 200) or 200),
+            }
     except HTTPError as exc:
         error_body = ""
         try:
             error_body = exc.read().decode("utf-8", errors="ignore")
         except Exception:  # noqa: BLE001
             error_body = ""
-        raise RuntimeError(f"OpenAI request failed with HTTP {exc.code}: {error_body or 'no response body'}") from exc
+        raise OpenAILabelerCallError(
+            f"OpenAI request failed with HTTP {exc.code}: {truncate_text(error_body or 'no response body', 240)}",
+            error_class=type(exc).__name__,
+            call_correlation_id=call_correlation_id,
+            http_status=int(exc.code),
+            request_id=str(exc.headers.get("x-request-id", "") if exc.headers else ""),
+        ) from exc
     except URLError as exc:
-        raise RuntimeError("OpenAI network request failed") from exc
+        raise OpenAILabelerCallError(
+            "OpenAI network request failed",
+            error_class=type(exc).__name__,
+            call_correlation_id=call_correlation_id,
+        ) from exc
 
 
 def _call_responses_sdk(
     prompt: str,
     model: str,
-    api_key: str,
-    timeout_seconds: int,
-    max_output_tokens: int,
+    runtime: dict[str, Any],
     prompt_cache_key: str,
+    call_correlation_id: str,
+    call_purpose: str,
 ) -> dict[str, Any]:
     """Call the Responses API via SDK when available."""
     from openai import OpenAI
 
-    client = OpenAI(api_key=api_key, timeout=timeout_seconds)
-    response = client.responses.create(
-        model=model,
-        input=prompt,
-        temperature=0.1,
-        max_output_tokens=max_output_tokens,
-        text={"format": {"type": "json_object"}},
-        metadata={"prompt_cache_key": prompt_cache_key},
+    client = OpenAI(
+        api_key=runtime["api_key"],
+        timeout=int(runtime["timeout_seconds"]),
+        base_url=str(runtime.get("base_url", DEFAULT_OPENAI_BASE_URL) or DEFAULT_OPENAI_BASE_URL),
+        organization=str(runtime.get("organization", "") or None),
+        project=str(runtime.get("project", "") or None),
+        max_retries=0,
     )
-    return response.model_dump()
+    try:
+        response = client.responses.create(
+            model=model,
+            input=prompt,
+            temperature=0.1,
+            max_output_tokens=int(runtime["max_output_tokens"]),
+            text={"format": {"type": "json_object"}},
+            metadata={
+                "prompt_cache_key": prompt_cache_key,
+                "labeler_job_id": str(runtime["job_id"]),
+                "labeler_call_id": call_correlation_id,
+                "call_purpose": call_purpose,
+            },
+        )
+        return {"response": response.model_dump(), "request_id": "", "http_status": 200}
+    except Exception as exc:  # noqa: BLE001
+        raise OpenAILabelerCallError(
+            f"OpenAI SDK request failed: {truncate_text(str(exc), 240)}",
+            error_class=type(exc).__name__,
+            call_correlation_id=call_correlation_id,
+        ) from exc
 
 
 def _validate_llm_suggestion(
@@ -643,6 +1055,7 @@ def _attach_usage(audit_row: dict[str, Any], usage: dict[str, int]) -> None:
     audit_row["usage_input_tokens"] = int(usage.get("usage_input_tokens", 0))
     audit_row["usage_output_tokens"] = int(usage.get("usage_output_tokens", 0))
     audit_row["usage_total_tokens"] = int(usage.get("usage_total_tokens", 0))
+    audit_row["usage_present"] = bool(sum(int(usage.get(key, 0) or 0) for key in usage))
 
 
 def _estimate_cost_optional(audit_row: dict[str, Any]) -> float:
@@ -663,6 +1076,58 @@ def _error_reason_from_exception(exc: Exception) -> str:
     if "network request failed" in message.lower():
         return "llm:failed:network_error"
     return f"llm:failed:{type(exc).__name__}"
+
+
+def _responses_endpoint(runtime: dict[str, Any]) -> str:
+    """Return the resolved Responses API endpoint for the labeler runtime."""
+    return f"{str(runtime.get('base_url', DEFAULT_OPENAI_BASE_URL) or DEFAULT_OPENAI_BASE_URL).rstrip('/')}/responses"
+
+
+def _mask_api_key(api_key: str) -> str:
+    """Mask a secret API key for logs."""
+    if not api_key:
+        return ""
+    if len(api_key) <= 12:
+        return "set"
+    return f"{api_key[:7]}...{api_key[-4:]}"
+
+
+def _target_reason_counts(df: pd.DataFrame, threshold: float) -> dict[str, int]:
+    """Count row-routing reasons for one labeling run."""
+    counts: dict[str, int] = {}
+    for _, row in df.iterrows():
+        _, reason = should_send_to_llm(row=row, threshold=threshold)
+        counts[reason] = counts.get(reason, 0) + 1
+    return counts
+
+
+def _log_llm_event(event: str, payload: dict[str, Any], level: str = "info") -> None:
+    """Emit a structured JSON log entry for labeler LLM diagnostics."""
+    safe_payload = {key: _json_safe_log_value(value) for key, value in payload.items()}
+    logger_method = getattr(LOGGER, level, LOGGER.info)
+    logger_method(json.dumps({"event": event, **safe_payload}, ensure_ascii=False, sort_keys=True))
+
+
+def _json_safe_log_value(value: Any) -> Any:
+    """Convert values to JSON-safe primitives for structured logs."""
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(key): _json_safe_log_value(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_safe_log_value(item) for item in value]
+    return value
+
+
+def _attach_runtime_audit_context(audit_row: dict[str, Any], runtime: dict[str, Any]) -> None:
+    """Attach static runtime metadata to one audit row."""
+    audit_row["llm_job_id"] = str(runtime.get("job_id", "") or "")
+    audit_row["audit_tag"] = str(runtime.get("audit_tag", "") or "")
+    audit_row["endpoint_used"] = _responses_endpoint(runtime)
+    audit_row["api_base_url"] = str(runtime.get("base_url", DEFAULT_OPENAI_BASE_URL) or DEFAULT_OPENAI_BASE_URL)
+    audit_row["openai_organization"] = str(runtime.get("organization", "") or "")
+    audit_row["openai_project"] = str(runtime.get("project", "") or "")
+    audit_row["api_key_masked"] = _mask_api_key(str(runtime.get("api_key", "") or ""))
 
 
 def _count_unknown_codes(row: pd.Series) -> int:
@@ -751,6 +1216,8 @@ def _audit_columns() -> list[str]:
     """Return the full row-level audit schema."""
     return [
         "episode_id",
+        "audit_tag",
+        "llm_job_id",
         "was_rule_labeled",
         "was_llm_targeted",
         "was_llm_called",
@@ -758,19 +1225,34 @@ def _audit_columns() -> list[str]:
         "llm_target_reason",
         "llm_reason",
         "llm_status",
+        "skip_category",
         "model_used",
+        "endpoint_used",
+        "api_base_url",
+        "openai_organization",
+        "openai_project",
+        "api_key_masked",
+        "call_correlation_id",
+        "response_id",
+        "request_id",
+        "http_status",
+        "transport_error_class",
+        "retry_count",
+        "usage_present",
         "usage_input_tokens",
         "usage_output_tokens",
         "usage_total_tokens",
         "cost_estimate_optional",
         "parse_success",
         "fallback_used",
+        "cache_source",
         "label_confidence_before",
         "label_confidence_after",
         "unknown_before",
         "unknown_after",
         "prompt_chars",
         "prompt_cache_key",
+        "cache_key",
         "batch_request_path",
     ]
 
@@ -788,6 +1270,8 @@ def _base_audit_row(
     """Build the default row-level audit structure."""
     return {
         "episode_id": episode_id,
+        "audit_tag": "",
+        "llm_job_id": "",
         "was_rule_labeled": was_rule_labeled,
         "was_llm_targeted": was_llm_targeted,
         "was_llm_called": False,
@@ -795,19 +1279,34 @@ def _base_audit_row(
         "llm_target_reason": llm_target_reason,
         "llm_reason": "",
         "llm_status": "",
+        "skip_category": "",
         "model_used": model_used,
+        "endpoint_used": "",
+        "api_base_url": "",
+        "openai_organization": "",
+        "openai_project": "",
+        "api_key_masked": "",
+        "call_correlation_id": "",
+        "response_id": "",
+        "request_id": "",
+        "http_status": 0,
+        "transport_error_class": "",
+        "retry_count": 0,
+        "usage_present": False,
         "usage_input_tokens": 0,
         "usage_output_tokens": 0,
         "usage_total_tokens": 0,
         "cost_estimate_optional": 0.0,
         "parse_success": False,
         "fallback_used": False,
+        "cache_source": "",
         "label_confidence_before": confidence_before,
         "label_confidence_after": confidence_before,
         "unknown_before": unknown_before,
         "unknown_after": unknown_before,
         "prompt_chars": 0,
         "prompt_cache_key": "",
+        "cache_key": "",
         "batch_request_path": "",
     }
 

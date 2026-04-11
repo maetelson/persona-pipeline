@@ -13,6 +13,9 @@ import pandas as pd
 from src.utils.pipeline_schema import is_unknown_like, split_pipe_codes
 from src.utils.record_access import get_record_demo, get_record_id, get_record_text, get_record_value, is_valid_record
 
+PRIMARY_PERSONA_CORE_AXES = ("bottleneck_type", "workflow_stage", "analysis_goal")
+SUPPORTED_LOW_SIGNAL_CORE_REASONS = {"labelability_failure_product_support"}
+
 
 @dataclass(frozen=True)
 class AxisCandidate:
@@ -299,7 +302,22 @@ def _workflow_values(row: pd.Series) -> list[str]:
         "automation": "automation",
         "validation": "validation",
     }
-    return [value for token, value in fallback_map.items() if token in text][:1]
+    fallback_values = [value for token, value in fallback_map.items() if token in text][:1]
+    if fallback_values:
+        return fallback_values
+
+    question_codes = set(split_pipe_codes(get_record_value(row, "question_codes", "")))
+    output_codes = set(split_pipe_codes(get_record_value(row, "output_codes", "")))
+    pain_codes = set(split_pipe_codes(get_record_value(row, "pain_codes", "")))
+    if "Q_AUTOMATE_WORKFLOW" in question_codes or "O_AUTOMATION_JOB" in output_codes:
+        return ["automation"]
+    if "Q_VALIDATE_NUMBERS" in question_codes or "P_DATA_QUALITY" in pain_codes:
+        return ["validation"]
+    if "Q_REPORT_SPEED" in question_codes or "O_XLSX" in output_codes:
+        return ["reporting"]
+    if "Q_DIAGNOSE_ISSUE" in question_codes or "P_TOOL_LIMITATION" in pain_codes:
+        return ["triage"]
+    return []
 
 
 def _analysis_goal_values(row: pd.Series) -> list[str]:
@@ -514,3 +532,92 @@ def _final_axis_schema_row(candidate: AxisCandidate, counts: Counter[str]) -> di
         "allowed_values_or_logic": logic,
         "evidence_fields_used": list(candidate.evidence_fields),
     }
+
+
+def build_persona_core_flags(
+    labeled_df: pd.DataFrame,
+    axis_wide_df: pd.DataFrame,
+    final_axis_schema: list[dict[str, Any]],
+    unknown_rows_df: pd.DataFrame | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Derive persona-core eligibility from reduced primary axes plus explicit low-signal exceptions."""
+    if labeled_df.empty:
+        return labeled_df.copy(), pd.DataFrame()
+
+    core_axes = [
+        str(row.get("axis_name", "")).strip()
+        for row in final_axis_schema
+        if str(row.get("axis_name", "")).strip() and str(row.get("axis_role", "core")).strip() == "core"
+    ]
+    if not core_axes:
+        core_axes = list(PRIMARY_PERSONA_CORE_AXES)
+
+    axis_columns = [axis for axis in core_axes if axis in axis_wide_df.columns]
+    axis_subset = (
+        axis_wide_df[["episode_id", *axis_columns]].drop_duplicates(subset=["episode_id"])
+        if not axis_wide_df.empty
+        else pd.DataFrame(columns=["episode_id", *axis_columns])
+    )
+    audit = labeled_df.merge(axis_subset, on="episode_id", how="left")
+
+    if unknown_rows_df is not None and not unknown_rows_df.empty and "unknown_reason" in unknown_rows_df.columns:
+        audit = audit.merge(
+            unknown_rows_df[["episode_id", "unknown_reason"]].drop_duplicates(subset=["episode_id"]),
+            on="episode_id",
+            how="left",
+        )
+    if "unknown_reason" not in audit.columns:
+        audit["unknown_reason"] = ""
+
+    for axis in core_axes:
+        if axis not in audit.columns:
+            audit[axis] = "unassigned"
+
+    missing_axes = audit[core_axes].apply(
+        lambda row: " | ".join(axis for axis, value in row.items() if _axis_value_is_unassigned(value)),
+        axis=1,
+    )
+    primary_complete = missing_axes.eq("")
+    labelability_status = audit.get("labelability_status", pd.Series("", index=audit.index)).fillna("").astype(str)
+    unknown_reason = audit.get("unknown_reason", pd.Series("", index=audit.index)).fillna("").astype(str)
+    baseline_allowed = labelability_status.isin({"labelable", "borderline"})
+    supported_low_signal = labelability_status.eq("low_signal") & unknown_reason.isin(SUPPORTED_LOW_SIGNAL_CORE_REASONS)
+    eligible = primary_complete & (baseline_allowed | supported_low_signal)
+
+    reasons = pd.Series("", index=audit.index, dtype=str)
+    reasons.loc[eligible & baseline_allowed] = "complete_primary_axes"
+    reasons.loc[eligible & supported_low_signal] = "complete_primary_axes_low_signal_product_support"
+    reasons.loc[~eligible & ~primary_complete] = "missing_core_axes<" + missing_axes.loc[~eligible & ~primary_complete] + ">"
+    excluded_low_signal = ~eligible & labelability_status.eq("low_signal")
+    reasons.loc[excluded_low_signal] = unknown_reason.loc[excluded_low_signal].map(
+        lambda value: f"excluded_low_signal<{value or 'weak_signal'}>"
+    )
+    unresolved = reasons.eq("")
+    reasons.loc[unresolved] = labelability_status.loc[unresolved].map(lambda value: f"excluded_status<{value or 'unknown'}>")
+
+    result = labeled_df.copy()
+    result["persona_core_eligible"] = eligible
+    result["persona_core_reason"] = reasons
+    result["persona_core_primary_axis_complete"] = primary_complete
+    result["persona_core_missing_axes"] = missing_axes
+
+    audit_df = pd.DataFrame(
+        {
+            "episode_id": result["episode_id"],
+            "labelability_status": labelability_status,
+            "unknown_reason": unknown_reason,
+            "persona_core_eligible": eligible,
+            "persona_core_reason": reasons,
+            "persona_core_primary_axis_complete": primary_complete,
+            "persona_core_missing_axes": missing_axes,
+        }
+    )
+    for axis in core_axes:
+        audit_df[axis] = audit[axis]
+    return result, audit_df
+
+
+def _axis_value_is_unassigned(value: Any) -> bool:
+    """Return whether an axis value should count as missing for persona-core admission."""
+    text = str(value or "").strip().lower()
+    return not text or text == "unassigned" or is_unknown_like(text)

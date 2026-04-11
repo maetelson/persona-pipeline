@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -21,7 +22,7 @@ from src.analysis.pipeline_thresholds import (
     upsert_threshold_audit,
 )
 from src.labeling.labelability import build_labelability_table
-from src.labeling.llm_labeler import enrich_with_llm_labels, resolve_llm_runtime
+from src.labeling.llm_labeler import enrich_with_llm_labels, llm_runtime_snapshot, resolve_llm_runtime
 from src.labeling.quality import build_label_quality_audit, write_label_quality_outputs
 from src.labeling.repair import apply_label_repairs, build_axis_label_details
 from src.labeling.rule_labeler import prelabel_episodes
@@ -80,6 +81,7 @@ def main() -> None:
     labeled_df = _apply_low_signal_gate(labeled_df)
     write_parquet(labeled_df, ROOT / "data" / "labeled" / "labeled_episodes_rule_only.parquet")
     runtime = resolve_llm_runtime(llm_config)
+    LOGGER.info("LLM runtime snapshot: %s", json.dumps(llm_runtime_snapshot(runtime), ensure_ascii=False, sort_keys=True))
     labeled_df, llm_audit_df = enrich_with_llm_labels(episodes_df, labeled_df, config=llm_config)
     labeled_df, repaired_df = apply_label_repairs(episodes_df, labeled_df, labelability_df, labeling_policy)
     details_df = build_axis_label_details(episodes_df, labeled_df, labelability_df)

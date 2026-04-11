@@ -39,13 +39,31 @@ def build_label_audit(labeled_df: pd.DataFrame, llm_audit_df: pd.DataFrame | Non
 
     if llm_audit_df is not None and not llm_audit_df.empty:
         metrics["rule_labeled_only_count"] = int((llm_audit_df["llm_status"] == "not_targeted").sum())
+        metrics["skipped_by_targeting_count"] = int((llm_audit_df["llm_status"] == "not_targeted").sum())
         metrics["llm_targeted_count"] = int(llm_audit_df["was_llm_targeted"].fillna(False).sum())
+        metrics["uncached_targeted_count"] = int(
+            llm_audit_df["was_llm_targeted"].fillna(False).sum()
+            - (llm_audit_df["llm_status"] == "cache_hit").sum()
+            - (llm_audit_df["llm_status"] == "run_reuse").sum()
+        )
         metrics["llm_called_count"] = int(llm_audit_df["was_llm_called"].fillna(False).sum())
+        metrics["live_call_attempt_count"] = int(llm_audit_df["was_llm_called"].fillna(False).sum())
+        metrics["llm_cache_hit_count"] = int((llm_audit_df["llm_status"] == "cache_hit").sum())
+        metrics["llm_run_reuse_count"] = int((llm_audit_df["llm_status"] == "run_reuse").sum())
+        metrics["served_from_cache_count"] = int(
+            (llm_audit_df["llm_status"] == "cache_hit").sum() + (llm_audit_df["llm_status"] == "run_reuse").sum()
+        )
+        metrics["only_uncached_filtered_count"] = int((llm_audit_df["llm_status"] == "only_uncached_filtered").sum())
         metrics["llm_batch_count"] = int(
             ((llm_audit_df["llm_mode"] == "batch") & llm_audit_df["was_llm_targeted"].fillna(False)).sum()
         )
         metrics["llm_success_count"] = int(llm_audit_df["llm_status"].isin(["applied", "no_change"]).sum())
+        metrics["live_call_success_count"] = int(llm_audit_df["llm_status"].isin(["applied", "no_change"]).sum())
         metrics["llm_failed_count"] = int((llm_audit_df["llm_status"] == "failed").sum())
+        metrics["live_call_failure_count"] = int((llm_audit_df["llm_status"] == "failed").sum())
+        metrics["llm_usage_present_count"] = int(llm_audit_df.get("usage_present", pd.Series(dtype=bool)).fillna(False).sum())
+        metrics["llm_retry_count_total"] = int(llm_audit_df.get("retry_count", pd.Series(dtype=int)).fillna(0).sum())
+        metrics["fallback_count"] = int(llm_audit_df.get("fallback_used", pd.Series(dtype=bool)).fillna(False).sum())
         metrics["llm_disabled_count"] = int(
             llm_audit_df["llm_reason"].fillna("").astype(str).str.startswith("llm:disabled:").sum()
         )
@@ -95,6 +113,7 @@ def build_labeling_audit(labeled_df: pd.DataFrame, llm_audit_df: pd.DataFrame) -
 
     preferred = [
         "episode_id",
+        "audit_tag",
         "was_rule_labeled",
         "was_llm_targeted",
         "was_llm_called",
@@ -103,12 +122,28 @@ def build_labeling_audit(labeled_df: pd.DataFrame, llm_audit_df: pd.DataFrame) -
         "llm_status",
         "llm_reason",
         "model_used",
+        "llm_job_id",
+        "endpoint_used",
+        "api_base_url",
+        "openai_organization",
+        "openai_project",
+        "api_key_masked",
+        "call_correlation_id",
+        "response_id",
+        "request_id",
+        "http_status",
+        "transport_error_class",
+        "retry_count",
+        "usage_present",
         "usage_input_tokens",
         "usage_output_tokens",
         "usage_total_tokens",
         "cost_estimate_optional",
         "parse_success",
         "fallback_used",
+        "skip_category",
+        "cache_source",
+        "cache_key",
         "label_confidence",
         "label_reason",
         "unknown_remaining",
@@ -116,6 +151,59 @@ def build_labeling_audit(labeled_df: pd.DataFrame, llm_audit_df: pd.DataFrame) -
     ]
     remainder = [column for column in detail.columns if column not in preferred]
     return detail[preferred + remainder]
+
+
+def build_llm_experiment_summary(llm_audit_df: pd.DataFrame, audit_df: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Create a compact experiment-oriented summary table for one labeled run."""
+    if llm_audit_df is None or llm_audit_df.empty:
+        return pd.DataFrame()
+
+    metric_lookup: dict[str, Any] = {}
+    if audit_df is not None and not audit_df.empty:
+        metric_lookup = {
+            str(row["metric"]): row["value"]
+            for _, row in audit_df.iterrows()
+            if "metric" in audit_df.columns and "value" in audit_df.columns
+        }
+
+    targeted_rows = int(metric_lookup.get("llm_targeted_count", int(llm_audit_df["was_llm_targeted"].fillna(False).sum())))
+    served_from_cache = int(metric_lookup.get("served_from_cache_count", 0))
+    live_calls = int(metric_lookup.get("live_call_attempt_count", int(llm_audit_df["was_llm_called"].fillna(False).sum())))
+    audit_tag = ""
+    if "audit_tag" in llm_audit_df.columns:
+        non_empty_tags = llm_audit_df["audit_tag"].fillna("").astype(str)
+        non_empty_tags = non_empty_tags[non_empty_tags != ""]
+        if not non_empty_tags.empty:
+            audit_tag = str(non_empty_tags.iloc[0])
+    summary = {
+        "audit_tag": audit_tag,
+        "total_rows": int(metric_lookup.get("total_episodes", len(llm_audit_df))),
+        "targeted_rows": targeted_rows,
+        "skipped_by_targeting_count": int(metric_lookup.get("skipped_by_targeting_count", 0)),
+        "cache_hit_count": int(metric_lookup.get("llm_cache_hit_count", 0)),
+        "run_reuse_count": int(metric_lookup.get("llm_run_reuse_count", 0)),
+        "served_from_cache_count": served_from_cache,
+        "uncached_targeted_count": int(metric_lookup.get("uncached_targeted_count", max(targeted_rows - served_from_cache, 0))),
+        "live_call_attempt_count": live_calls,
+        "live_call_success_count": int(metric_lookup.get("live_call_success_count", 0)),
+        "live_call_failure_count": int(metric_lookup.get("live_call_failure_count", 0)),
+        "retry_count_total": int(metric_lookup.get("llm_retry_count_total", 0)),
+        "fallback_count": int(metric_lookup.get("fallback_count", 0)),
+        "usage_present_count": int(metric_lookup.get("llm_usage_present_count", 0)),
+        "usage_input_tokens_total": int(metric_lookup.get("usage_input_tokens_total", 0)),
+        "usage_output_tokens_total": int(metric_lookup.get("usage_output_tokens_total", 0)),
+        "usage_total_tokens_total": int(metric_lookup.get("usage_total_tokens_total", 0)),
+        "request_id_count": int(llm_audit_df.get("request_id", pd.Series(dtype=str)).fillna("").astype(str).ne("").sum()),
+        "response_id_count": int(llm_audit_df.get("response_id", pd.Series(dtype=str)).fillna("").astype(str).ne("").sum()),
+    }
+    if targeted_rows > 0:
+        summary["percent_targeted_from_cache"] = round((served_from_cache / targeted_rows) * 100.0, 2)
+        summary["percent_targeted_live"] = round((live_calls / targeted_rows) * 100.0, 2)
+    else:
+        summary["percent_targeted_from_cache"] = 0.0
+        summary["percent_targeted_live"] = 0.0
+
+    return pd.DataFrame([summary])
 
 
 def _row_has_unknown(df: pd.DataFrame) -> pd.Series:

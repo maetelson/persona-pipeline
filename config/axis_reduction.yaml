@@ -19,7 +19,8 @@ axes:
   bottleneck_type:
     preferred_action: keep_core
   tool_dependency_mode:
-    preferred_action: keep_core
+    preferred_action: keep_optional
+    deprecation_notice: "Useful as descriptive workflow context, but too sparse to remain a hard persona-core gate."
   output_expectation:
     preferred_action: keep_optional
     deprecation_notice: "Useful for summary copy, but too imbalanced to remain core."

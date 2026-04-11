@@ -18,7 +18,7 @@ from src.analysis.cluster import build_cluster_summary
 from src.analysis.cooccurrence import build_code_edges, build_code_frequency_table
 from src.analysis.clustering import build_code_clusters, cluster_summary_json
 from src.analysis.persona import build_persona_candidates
-from src.analysis.persona_axes import discover_persona_axes, write_persona_axis_outputs
+from src.analysis.persona_axes import build_persona_core_flags, discover_persona_axes, write_persona_axis_outputs
 from src.analysis.persona_gen import generate_personas
 from src.analysis.persona_messaging import build_persona_messaging_outputs, write_persona_messaging_outputs
 from src.analysis.persona_service import build_persona_outputs, write_persona_outputs
@@ -45,6 +45,7 @@ from src.analysis.summary import (
 )
 from src.analysis.workbook_bundle import assemble_workbook_frames, validate_workbook_frames, write_workbook_bundle
 from src.exporters.xlsx_exporter import export_workbook_from_frames
+from src.labeling.unknown_reasons import build_unknown_reason_breakdown
 from src.utils.io import ensure_dir, load_yaml, read_parquet, write_parquet
 from src.utils.logging import get_logger
 
@@ -58,6 +59,9 @@ def load_analysis_inputs(root_dir: Path) -> dict[str, Any]:
     reduction_config = load_yaml(root_dir / "config" / "axis_reduction.yaml")
     return {
         "labeled_df": read_parquet(root_dir / "data" / "labeled" / "labeled_episodes.parquet"),
+        "label_details_df": read_parquet(root_dir / "data" / "labeled" / "label_details.parquet")
+        if (root_dir / "data" / "labeled" / "label_details.parquet").exists()
+        else pd.DataFrame(),
         "episodes_df": read_parquet(root_dir / "data" / "episodes" / "episode_table.parquet"),
         "valid_df": read_parquet(root_dir / "data" / "valid" / "valid_candidates.parquet"),
         "normalized_df": read_parquet(root_dir / "data" / "normalized" / "normalized_posts.parquet"),
@@ -71,55 +75,22 @@ def load_analysis_inputs(root_dir: Path) -> dict[str, Any]:
 
 def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any]) -> dict[str, Any]:
     """Build deterministic analytics outputs without final export side effects."""
-    labeled_df = inputs["labeled_df"]
+    labeled_df = inputs["labeled_df"].copy()
+    label_details_df = inputs.get("label_details_df", pd.DataFrame())
     episodes_df = inputs["episodes_df"]
     valid_df = inputs["valid_df"]
     normalized_df = inputs["normalized_df"]
     raw_audit_df = inputs["raw_audit_df"]
-    clustering_labeled_df = _persona_core_subset(labeled_df)
-    clustering_episode_ids = set(clustering_labeled_df.get("episode_id", pd.Series(dtype=str)).astype(str).tolist())
-    clustering_episodes_df = episodes_df[episodes_df["episode_id"].astype(str).isin(clustering_episode_ids)].reset_index(drop=True)
-
-    cluster_threshold_df, cluster_meta = evaluate_cluster_thresholds(
-        clustering_labeled_df,
-        inputs["threshold_profile"],
-        inputs["threshold_profile_cfg"],
-    )
-    combined_threshold_df = upsert_threshold_audit(root_dir, cluster_threshold_df)
 
     priority_scores_df = build_priority_scores(labeled_df, inputs["scoring"])
-    if cluster_meta["cluster_allowed"]:
-        cluster_summary_df = build_cluster_summary(clustering_labeled_df)
-        persona_candidates_df = build_persona_candidates(clustering_labeled_df, priority_scores_df[priority_scores_df["episode_id"].astype(str).isin(clustering_episode_ids)].reset_index(drop=True))
-    else:
-        cluster_summary_df = build_cluster_summary(clustering_labeled_df.iloc[0:0].copy())
-        persona_candidates_df = build_persona_candidates(
-            clustering_labeled_df.iloc[0:0].copy(),
-            priority_scores_df.iloc[0:0].copy(),
-        )
-    cluster_summary_df = _annotate_analysis_df(cluster_summary_df, cluster_meta)
-    persona_candidates_df = _annotate_analysis_df(persona_candidates_df, cluster_meta)
-    priority_scores_df = _annotate_analysis_df(priority_scores_df, cluster_meta)
-
-    code_freq_df = build_code_frequency_table(clustering_labeled_df)
-    code_edges_df = build_code_edges(clustering_labeled_df, code_freq_df, min_pair_count=5, normalization="count")
-    clusters_df, cluster_summary_rows = build_code_clusters(code_freq_df, code_edges_df)
-
-    cluster_profiles = build_cluster_profiles(
-        episodes_df=clustering_episodes_df,
-        labeled_df=clustering_labeled_df,
-        clusters_df=clusters_df,
-        cluster_summary_rows=cluster_summary_rows,
-        priority_df=priority_scores_df,
-    )
 
     axis_candidates_df, final_axis_schema, implementation_note = discover_persona_axes(
         episodes_df=episodes_df,
-        labeled_df=clustering_labeled_df,
+        labeled_df=labeled_df,
     )
     audit_outputs = build_axis_quality_audit(
-        episodes_df=clustering_episodes_df,
-        labeled_df=clustering_labeled_df,
+        episodes_df=episodes_df,
+        labeled_df=labeled_df,
         candidate_df=axis_candidates_df,
         current_axis_schema=final_axis_schema,
         config=inputs["axis_reduction_config"],
@@ -146,6 +117,51 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         recommendations_df=recommendations_df,
         reduced_outputs=reduced_outputs,
         apply_changes=True,
+    )
+
+    unknown_rows_df = pd.DataFrame()
+    if not label_details_df.empty:
+        _, unknown_rows_df = build_unknown_reason_breakdown(episodes_df, labeled_df, label_details_df)
+    labeled_df, persona_core_policy_df = build_persona_core_flags(
+        labeled_df=labeled_df,
+        axis_wide_df=reduced_outputs["reduced_axis_wide_df"],
+        final_axis_schema=reduced_outputs["reduced_axis_schema"],
+        unknown_rows_df=unknown_rows_df,
+    )
+    clustering_labeled_df = _persona_core_subset(labeled_df)
+    clustering_episode_ids = set(clustering_labeled_df.get("episode_id", pd.Series(dtype=str)).astype(str).tolist())
+    clustering_episodes_df = episodes_df[episodes_df["episode_id"].astype(str).isin(clustering_episode_ids)].reset_index(drop=True)
+
+    cluster_threshold_df, cluster_meta = evaluate_cluster_thresholds(
+        clustering_labeled_df,
+        inputs["threshold_profile"],
+        inputs["threshold_profile_cfg"],
+    )
+    combined_threshold_df = upsert_threshold_audit(root_dir, cluster_threshold_df)
+
+    if cluster_meta["cluster_allowed"]:
+        cluster_summary_df = build_cluster_summary(clustering_labeled_df)
+        persona_candidates_df = build_persona_candidates(clustering_labeled_df, priority_scores_df[priority_scores_df["episode_id"].astype(str).isin(clustering_episode_ids)].reset_index(drop=True))
+    else:
+        cluster_summary_df = build_cluster_summary(clustering_labeled_df.iloc[0:0].copy())
+        persona_candidates_df = build_persona_candidates(
+            clustering_labeled_df.iloc[0:0].copy(),
+            priority_scores_df.iloc[0:0].copy(),
+        )
+    cluster_summary_df = _annotate_analysis_df(cluster_summary_df, cluster_meta)
+    persona_candidates_df = _annotate_analysis_df(persona_candidates_df, cluster_meta)
+    priority_scores_df = _annotate_analysis_df(priority_scores_df, cluster_meta)
+
+    code_freq_df = build_code_frequency_table(clustering_labeled_df)
+    code_edges_df = build_code_edges(clustering_labeled_df, code_freq_df, min_pair_count=5, normalization="count")
+    clusters_df, cluster_summary_rows = build_code_clusters(code_freq_df, code_edges_df)
+
+    cluster_profiles = build_cluster_profiles(
+        episodes_df=clustering_episodes_df,
+        labeled_df=clustering_labeled_df,
+        clusters_df=clusters_df,
+        cluster_summary_rows=cluster_summary_rows,
+        priority_df=priority_scores_df,
     )
 
     persona_service_outputs = build_persona_outputs(
@@ -266,6 +282,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         "quality_failures_df": quality_failures_df,
         "metric_glossary_df": metric_glossary_df,
         "workbook_frames": workbook_frames,
+        "persona_core_policy_df": persona_core_policy_df,
         "clustering_labeled_df": clustering_labeled_df,
         "clustering_episodes_df": clustering_episodes_df,
     }
@@ -336,6 +353,7 @@ def persist_analysis_outputs(
 
     if write_debug_artifacts:
         debug_paths = write_persona_outputs(root_dir, persona_service_outputs)
+        deterministic_outputs["persona_core_policy_df"].to_csv(analysis_dir / "persona_core_policy_audit.csv", index=False)
         deterministic_outputs["counts_df"].to_csv(analysis_dir / "counts.csv", index=False)
         deterministic_outputs["source_distribution_df"].to_csv(analysis_dir / "source_distribution.csv", index=False)
         deterministic_outputs["taxonomy_summary_df"].to_csv(analysis_dir / "taxonomy_summary.csv", index=False)
@@ -347,6 +365,7 @@ def persist_analysis_outputs(
         debug_paths.update(
             {
                 "counts_csv": analysis_dir / "counts.csv",
+                "persona_core_policy_audit_csv": analysis_dir / "persona_core_policy_audit.csv",
                 "source_distribution_csv": analysis_dir / "source_distribution.csv",
                 "taxonomy_summary_csv": analysis_dir / "taxonomy_summary.csv",
                 "source_diagnostics_csv": analysis_dir / "source_diagnostics.csv",

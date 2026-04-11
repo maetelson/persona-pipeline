@@ -6,6 +6,7 @@ from typing import Any
 
 import pandas as pd
 
+from src.labeling.unknown_reasons import infer_axis_unknown_reason
 from src.utils.pipeline_schema import LABEL_CODE_COLUMNS, is_unknown_like, split_pipe_codes
 from src.utils.record_access import get_record_text
 
@@ -32,11 +33,19 @@ def apply_label_repairs(
         episodes_df[["episode_id", "source", *[column for column in AXIS_TEXT_FIELDS if column in episodes_df.columns]]],
         on="episode_id",
         how="left",
+        suffixes=("", "_episode"),
     ).merge(
         labelability_df[["episode_id", "labelability_status", "labelability_score"]],
         on="episode_id",
         how="left",
+        suffixes=("", "_labelability"),
     )
+    if "source" not in merged.columns and "source_episode" in merged.columns:
+        merged["source"] = merged["source_episode"]
+    if "labelability_status" not in merged.columns and "labelability_status_labelability" in merged.columns:
+        merged["labelability_status"] = merged["labelability_status_labelability"]
+    if "labelability_score" not in merged.columns and "labelability_score_labelability" in merged.columns:
+        merged["labelability_score"] = merged["labelability_score_labelability"]
     min_status = str(((policy.get("repair", {}) or {}).get("min_labelability_for_repair", "borderline")) or "borderline")
     allowed_statuses = {"labelable", "borderline"} if min_status == "borderline" else {"labelable"}
     repair_cfg = dict((policy.get("repair", {}) or {}).get("broad_role_rules", {}) or {})
@@ -73,6 +82,53 @@ def apply_label_repairs(
             if repaired_question:
                 result.loc[result["episode_id"] == episode_id, "question_codes"] = repaired_question
                 notes.append(f"question_codes={repaired_question}")
+
+        current_question = str(result.loc[result["episode_id"] == episode_id, "question_codes"].iloc[0] or "unknown")
+        current_output = str(result.loc[result["episode_id"] == episode_id, "output_codes"].iloc[0] or "unknown")
+        current_role = str(result.loc[result["episode_id"] == episode_id, "role_codes"].iloc[0] or "unknown")
+        current_pain = str(result.loc[result["episode_id"] == episode_id, "pain_codes"].iloc[0] or "unknown")
+        bottleneck_text = str(row.get("bottleneck_text", "") or "")
+        fit_code = str(row.get("fit_code", "unknown") or "unknown")
+
+        if is_unknown_like(current_question):
+            inferred_question = _repair_question_from_context(
+                combined,
+                bottleneck_text=bottleneck_text,
+                fit_code=fit_code,
+                output_codes=current_output,
+            )
+            if inferred_question:
+                result.loc[result["episode_id"] == episode_id, "question_codes"] = inferred_question
+                notes.append(f"question_codes={inferred_question}")
+
+        if is_unknown_like(current_output):
+            inferred_output = _repair_output_from_context(
+                combined,
+                bottleneck_text=bottleneck_text,
+                question_codes=str(result.loc[result["episode_id"] == episode_id, "question_codes"].iloc[0] or "unknown"),
+            )
+            if inferred_output:
+                result.loc[result["episode_id"] == episode_id, "output_codes"] = inferred_output
+                notes.append(f"output_codes={inferred_output}")
+
+        if is_unknown_like(current_role):
+            inferred_role = _repair_role_from_context(
+                combined,
+                output_codes=str(result.loc[result["episode_id"] == episode_id, "output_codes"].iloc[0] or "unknown"),
+            )
+            if inferred_role:
+                result.loc[result["episode_id"] == episode_id, "role_codes"] = inferred_role
+                notes.append(f"role_codes={inferred_role}")
+
+        if is_unknown_like(current_pain):
+            inferred_pain = _repair_pain_from_context(
+                combined,
+                bottleneck_text=bottleneck_text,
+                question_codes=str(result.loc[result["episode_id"] == episode_id, "question_codes"].iloc[0] or "unknown"),
+            )
+            if inferred_pain:
+                result.loc[result["episode_id"] == episode_id, "pain_codes"] = inferred_pain
+                notes.append(f"pain_codes={inferred_pain}")
 
         if notes:
             current_reason = str(result.loc[result["episode_id"] == episode_id, "label_reason"].iloc[0] or "")
@@ -142,6 +198,16 @@ def _repair_role(text: str, repair_cfg: dict[str, list[str]]) -> str:
     return ""
 
 
+def _repair_role_from_context(text: str, output_codes: str) -> str:
+    if any(term in text for term in ["report", "reporting", "export", "dashboard", "metrics", "analysis"]):
+        return "R_ANALYST"
+    if any(term in text for term in ["merchant", "campaign", "ads", "marketing"]):
+        return "R_MARKETER"
+    if output_codes == "O_XLSX":
+        return "R_ANALYST"
+    return ""
+
+
 def _repair_output(text: str) -> str:
     if any(term in text for term in ["excel", "spreadsheet", "board report", "business review", "presentation-ready", "presentation ready"]):
         return "O_XLSX"
@@ -162,6 +228,12 @@ def _repair_output(text: str) -> str:
             "advertiser verification",
             "verification failure",
             "manual reviews",
+            "not showing",
+            "unavailable",
+            "checkout broken",
+            "business category",
+            "grey camera",
+            "sales drop",
             "no physical stores found",
             "countries of sale",
             "profile filter",
@@ -268,6 +340,16 @@ def _repair_pain(text: str) -> str:
     return ""
 
 
+def _repair_pain_from_context(text: str, bottleneck_text: str, question_codes: str) -> str:
+    if "handoff" in bottleneck_text:
+        return "P_HANDOFF"
+    if "tool_limitation" in bottleneck_text or question_codes == "Q_DIAGNOSE_ISSUE":
+        return "P_TOOL_LIMITATION"
+    if question_codes == "Q_REPORT_SPEED" or any(term in text for term in ["report", "export", "excel", "manual"]):
+        return "P_MANUAL_REPORTING"
+    return ""
+
+
 def _repair_question(text: str) -> str:
     if any(
         term in text
@@ -304,6 +386,8 @@ def _repair_question(text: str) -> str:
             "why did",
             "can't explain",
             "root cause",
+            "human review",
+            "review",
             "segment",
             "channel",
             "device",
@@ -339,11 +423,39 @@ def _repair_question(text: str) -> str:
             "countries of sale",
             "manual reviews",
             "no specific feedback",
+            "clickbait flagged",
+            "product pages as unavailable",
+            "ads not showing",
+            "calls are not getting",
         ]
     ):
         return "Q_DIAGNOSE_ISSUE"
     if any(term in text for term in ["automate", "scheduled", "template away", "repeated steps", "flow", "flows", "sync", "not syncing", "not sending"]):
         return "Q_AUTOMATE_WORKFLOW"
+    return ""
+
+
+def _repair_question_from_context(text: str, bottleneck_text: str, fit_code: str, output_codes: str) -> str:
+    if "handoff" in bottleneck_text or output_codes == "O_AUTOMATION_JOB":
+        return "Q_AUTOMATE_WORKFLOW"
+    if fit_code in {"F_REVIEW", "F_STRONG|F_REVIEW"}:
+        return "Q_DIAGNOSE_ISSUE"
+    if "tool_limitation" in bottleneck_text:
+        return "Q_DIAGNOSE_ISSUE"
+    if "report" in text or output_codes == "O_XLSX":
+        return "Q_REPORT_SPEED"
+    return ""
+
+
+def _repair_output_from_context(text: str, bottleneck_text: str, question_codes: str) -> str:
+    if question_codes == "Q_REPORT_SPEED":
+        return "O_XLSX"
+    if question_codes == "Q_AUTOMATE_WORKFLOW" or "handoff" in bottleneck_text:
+        return "O_AUTOMATION_JOB"
+    if question_codes == "Q_DIAGNOSE_ISSUE" or "tool_limitation" in bottleneck_text:
+        return "O_DASHBOARD"
+    if any(term in text for term in ["tracking", "status", "visibility", "not showing", "unavailable", "checkout broken"]):
+        return "O_DASHBOARD"
     return ""
 
 
@@ -385,12 +497,4 @@ def _axis_confidence(row: pd.Series, family: str, evidence: str) -> float:
 
 
 def _infer_unknown_reason(row: pd.Series, family: str, text: str) -> str:
-    if str(row.get("labelability_status", "")) == "low_signal":
-        return "low_relevance_input"
-    if len(text.strip()) < 50:
-        return "truly_no_evidence"
-    if family == "role_codes" and any(term in text for term in ["campaign", "stakeholder", "analyst", "leadership"]):
-        return "conflicting_evidence"
-    if family in {"pain_codes", "question_codes"} and any(term in text for term in ["problem", "issue", "workflow"]):
-        return "taxonomy_gap"
-    return "truly_no_evidence"
+    return infer_axis_unknown_reason(row, family=family, text=text)
