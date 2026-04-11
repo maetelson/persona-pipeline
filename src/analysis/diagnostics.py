@@ -71,12 +71,27 @@ def build_metric_glossary() -> pd.DataFrame:
         ("promotion_visibility_persona_count", "persona_cluster_rows", "Count of promoted personas that remain visible in the workbook for reviewer inspection after grounding policy merge. Under the current flag policy this includes grounded, weakly grounded, and ungrounded promoted personas."),
         ("final_usable_persona_count", "persona_cluster_rows", "Count of final usable personas for downstream reporting. Under the current policy this includes only promoted_and_grounded personas, not weakly grounded or ungrounded review-only personas."),
         ("deck_ready_persona_count", "persona_cluster_rows", "Count of personas safe to present as deck-ready headline personas. Under the current policy this matches final_usable_persona_count."),
+        ("persona_readiness_state", "explicit_metric_value", "Workbook-level readiness state derived from policy-backed thresholds across unknown rate, persona-core coverage, source concentration, cluster dominance, grounding coverage, and final usable persona count."),
+        ("persona_readiness_label", "explicit_metric_value", "Reviewer-facing interpretation label for the current workbook state: Hypothesis Material, Reviewable Draft, or Final Persona Asset."),
+        ("persona_asset_class", "explicit_metric_value", "Workbook asset class derived from persona_readiness_state. Below deck_ready this will never be final_persona_asset."),
+        ("persona_readiness_gate_status", "explicit_metric_value", "Gate result for final persona claims: FAIL for exploratory_only, WARN for reviewable_but_not_deck_ready, and OK for deck_ready or production_persona_ready."),
+        ("persona_completion_claim_allowed", "explicit_metric_value", "Boolean flag showing whether the workbook is allowed to present itself as a completed persona asset. This is true only for deck_ready and production_persona_ready."),
+        ("persona_usage_restriction", "explicit_metric_value", "Explicit usage restriction text derived from persona_readiness_state so the workbook cannot be misread as final when blocked by readiness policy."),
+        ("persona_readiness_blockers", "explicit_metric_value", "Pipe-delimited readiness thresholds not yet met for the next readiness tier."),
         ("exploratory_bucket_count", "exploratory_cluster_rows", "Count of non-promoted exploratory clusters shown for context."),
         ("persona_core_unknown_ratio", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Ratio of persona-core labeled rows that still contain unresolved core label families."),
         ("overall_unknown_ratio", DENOMINATOR_LABELED_EPISODE_ROWS, "Ratio of all labeled rows with unresolved core label families, including rows outside persona-core clustering."),
         ("persona_core_coverage_of_all_labeled_pct", DENOMINATOR_LABELED_EPISODE_ROWS, "Percentage of all labeled rows that remain inside the persona-core subset used for clustering."),
         ("effective_labeled_source_count", "effective_labeled_source_count", "Effective count of contributing labeled sources after fractional down-weighting for very small labeled-source volumes. This is a source-count metric, not a row-count metric."),
         ("largest_cluster_share_of_core_labeled", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Largest promoted or exploratory persona cluster share over persona-core labeled rows."),
+        ("top_3_cluster_share_of_core_labeled", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Combined share of the three largest persona clusters over persona-core labeled rows; high values indicate concentration even when the top cluster alone is below the dominance threshold."),
+        ("robust_cluster_count", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Count of final clusters remaining after the robustness merge policy absorbs fragile adjacent fragments and collapses only the smallest residual buckets."),
+        ("stable_cluster_count", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Count of final clusters that meet the configured size or share threshold for structural stability."),
+        ("fragile_cluster_count", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Count of final clusters that remain above micro-cluster size but below the configured stability threshold."),
+        ("micro_cluster_count", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Count of final clusters that remain at micro scale after robustness merging; this should usually stay near zero."),
+        ("thin_evidence_cluster_count", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Count of final clusters whose cohesion and separation still do not clear the evidence sufficiency floors."),
+        ("avg_cluster_separation", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Average nearest-neighbor separation across final clusters; higher values indicate stronger distinctiveness between adjacent personas."),
+        ("min_cluster_separation", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Lowest nearest-neighbor separation across final clusters; low values indicate at least one pair of personas may still be weakly separated."),
         ("largest_labeled_source_share_pct", DENOMINATOR_LABELED_EPISODE_ROWS, "Largest source contribution share over all labeled episode rows."),
         ("promoted_persona_example_coverage_pct", "promoted_persona_rows", "Percentage of promoted personas that have any accepted grounding state, including weakly grounded personas."),
         ("promoted_persona_grounded_count", "promoted_persona_rows", "Count of promoted personas with at least one grounded representative example. Under the current policy this equals final_usable_persona_count and excludes weakly grounded review-only personas."),
@@ -86,10 +101,10 @@ def build_metric_glossary() -> pd.DataFrame:
         ("promoted_personas_missing_examples", "promoted_persona_rows", "Pipe-delimited promoted persona ids with no accepted selected example rows."),
         ("promoted_personas_weakly_grounded", "promoted_persona_rows", "Pipe-delimited promoted persona ids that remain visible only with weak grounding coverage."),
         ("selected_example_grounding_issue_count", "persona_example_rows", "Count of selected example rows whose evidence is weak, fallback-only, reject-like, or otherwise degraded. This is example-level and can be zero even when persona-level grounding coverage fails."),
-        ("promotion_status", "persona_cluster_row", "Final workbook promotion label after applying grounding policy merge. This can stay promoted while grounding_status is weak or ungrounded."),
+        ("promotion_status", "persona_cluster_row", "Final workbook promotion label after applying grounding policy merge. Grounded personas remain promoted_persona; weak or ungrounded review-visible personas are labeled review_only_persona."),
         ("base_promotion_status", "persona_cluster_row", "Size and dominance based promotion label before grounding policy is applied. Promoted candidates use the explicit term promoted_candidate_persona."),
         ("promoted_candidate_persona", "persona_cluster_row", "Boolean flag showing whether a row passed the base promotion gate before grounding review."),
-        ("workbook_review_visible", "persona_cluster_row", "Boolean flag showing whether a row remains visible in the workbook's promoted persona set for review."),
+        ("workbook_review_visible", "persona_cluster_row", "Boolean flag showing whether a row remains visible in the workbook's review set, including review_only_persona rows."),
         ("final_usable_persona", "persona_cluster_row", "Boolean flag showing whether a persona is usable for downstream reporting under the current policy."),
         ("deck_ready_persona", "persona_cluster_row", "Boolean flag showing whether a persona is safe for deck-ready headline reporting under the current policy."),
         ("reporting_readiness_status", "persona_cluster_row", "Reviewer-facing readiness class: final_usable_persona, review_only_weakly_grounded, review_only_ungrounded, promotion_candidate_pending_review, or not_final_usable."),
@@ -146,9 +161,14 @@ def build_source_stage_counts(
     labeled_with_source = _with_episode_source(labeled_df, episode_source)
     labelable_df = labelability_df[labelability_df.get("labelability_status", pd.Series(dtype=str)).astype(str).isin(LABELABLE_STATUSES)]
     labelable_with_source = _with_episode_source(labelable_df, episode_source)
+    workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
+    if workbook_review_visible.empty:
+        promoted_mask = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str).isin({"promoted_persona", "review_only_persona"})
+    else:
+        promoted_mask = workbook_review_visible.fillna(False).astype(bool)
     promoted_ids = set(
         cluster_stats_df[
-            cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str).eq("promoted_persona")
+            promoted_mask
         ]
         .get("persona_id", pd.Series(dtype=str))
         .astype(str)
@@ -794,7 +814,11 @@ def _small_promoted_count(cluster_stats_df: pd.DataFrame, min_cluster_size: int)
     """Count promoted personas below the size floor."""
     if cluster_stats_df.empty or "promotion_status" not in cluster_stats_df.columns:
         return 0
-    promoted = cluster_stats_df[cluster_stats_df["promotion_status"].astype(str).eq("promoted_persona")]
+    workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
+    if workbook_review_visible.empty:
+        promoted = cluster_stats_df[cluster_stats_df["promotion_status"].astype(str).isin({"promoted_persona", "review_only_persona"})]
+    else:
+        promoted = cluster_stats_df[workbook_review_visible.fillna(False).astype(bool)]
     sizes = pd.to_numeric(promoted.get("persona_size", pd.Series(dtype=int)), errors="coerce").fillna(0)
     return int((sizes < min_cluster_size).sum())
 

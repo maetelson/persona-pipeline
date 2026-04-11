@@ -78,6 +78,42 @@ QUALITY_STATUS_POLICY: dict[str, dict[str, object]] = {
         "fail_reason": "largest_cluster_too_dominant",
         "display_threshold": "warn>=55.0; fail>=70.0",
     },
+    "cluster_concentration_tail": {
+        "metric": "top_3_cluster_share_of_core_labeled",
+        "warn_threshold": 0.8,
+        "fail_threshold": 0.9,
+        "high_is_bad": True,
+        "warn_reason": "top_3_cluster_concentration_high",
+        "fail_reason": "top_3_cluster_concentration_critical",
+        "display_threshold": "warn>=0.80; fail>=0.90",
+    },
+    "cluster_fragility": {
+        "metric": "micro_cluster_count",
+        "warn_threshold": 1.0,
+        "fail_threshold": 3.0,
+        "high_is_bad": True,
+        "warn_reason": "micro_clusters_present",
+        "fail_reason": "micro_clusters_excessive",
+        "display_threshold": "warn>=1; fail>=3",
+    },
+    "cluster_evidence": {
+        "metric": "thin_evidence_cluster_count",
+        "warn_threshold": 1.0,
+        "fail_threshold": 2.0,
+        "high_is_bad": True,
+        "warn_reason": "thin_evidence_clusters_present",
+        "fail_reason": "thin_evidence_clusters_excessive",
+        "display_threshold": "warn>=1; fail>=2",
+    },
+    "cluster_separation": {
+        "metric": "min_cluster_separation",
+        "warn_threshold": 0.12,
+        "fail_threshold": 0.08,
+        "high_is_bad": False,
+        "warn_reason": "cluster_separation_low",
+        "fail_reason": "cluster_separation_critical",
+        "display_threshold": "warn<0.12; fail<0.08",
+    },
     "grounding_coverage": {
         "metric": "promoted_persona_example_coverage_pct",
         "warn_threshold": 100.0,
@@ -89,6 +125,85 @@ QUALITY_STATUS_POLICY: dict[str, dict[str, object]] = {
     },
 }
 
+READINESS_POLICY: dict[str, dict[str, object]] = {
+    "reviewable_but_not_deck_ready": {
+        "label": "Reviewable Draft",
+        "asset_class": "reviewable_draft",
+        "gate_status": STATUS_WARN,
+        "usage_restriction": "Reviewable draft only. Not a final persona asset and not safe for deck-ready or production use.",
+        "summary": "Reviewable draft with enough structure for analyst review, but still blocked from final persona use.",
+        "requirements": {
+            "overall_unknown_ratio": {"max": 0.35, "display": "overall_unknown_ratio<=0.35"},
+            "persona_core_coverage_of_all_labeled_pct": {"min": 65.0, "display": "persona_core_coverage_of_all_labeled_pct>=65.0"},
+            "largest_labeled_source_share_pct": {"max": 60.0, "display": "largest_labeled_source_share_pct<=60.0"},
+            "largest_cluster_share_of_core_labeled": {"max": 60.0, "display": "largest_cluster_share_of_core_labeled<=60.0"},
+            "promoted_persona_example_coverage_pct": {"min": 80.0, "display": "promoted_persona_example_coverage_pct>=80.0"},
+            "final_usable_persona_count": {"min": 2.0, "display": "final_usable_persona_count>=2"},
+        },
+    },
+    "deck_ready": {
+        "label": "Final Persona Asset",
+        "asset_class": "final_persona_asset",
+        "gate_status": STATUS_OK,
+        "usage_restriction": "Deck-ready final persona asset. Safe for presentation use, but still below the stricter production persona bar.",
+        "summary": "Final persona asset for deck and stakeholder presentation use.",
+        "requirements": {
+            "overall_unknown_ratio": {"max": 0.25, "display": "overall_unknown_ratio<=0.25"},
+            "persona_core_coverage_of_all_labeled_pct": {"min": 75.0, "display": "persona_core_coverage_of_all_labeled_pct>=75.0"},
+            "largest_labeled_source_share_pct": {"max": 50.0, "display": "largest_labeled_source_share_pct<=50.0"},
+            "largest_cluster_share_of_core_labeled": {"max": 55.0, "display": "largest_cluster_share_of_core_labeled<=55.0"},
+            "promoted_persona_example_coverage_pct": {"min": 100.0, "display": "promoted_persona_example_coverage_pct>=100.0"},
+            "final_usable_persona_count": {"min": 3.0, "display": "final_usable_persona_count>=3"},
+        },
+    },
+    "production_persona_ready": {
+        "label": "Final Persona Asset",
+        "asset_class": "final_persona_asset",
+        "gate_status": STATUS_OK,
+        "usage_restriction": "Production-ready final persona asset. Safe for downstream production persona usage under the current policy.",
+        "summary": "Final persona asset that clears the stricter production persona gate.",
+        "requirements": {
+            "overall_unknown_ratio": {"max": 0.15, "display": "overall_unknown_ratio<=0.15"},
+            "persona_core_coverage_of_all_labeled_pct": {"min": 85.0, "display": "persona_core_coverage_of_all_labeled_pct>=85.0"},
+            "largest_labeled_source_share_pct": {"max": 40.0, "display": "largest_labeled_source_share_pct<=40.0"},
+            "largest_cluster_share_of_core_labeled": {"max": 45.0, "display": "largest_cluster_share_of_core_labeled<=45.0"},
+            "promoted_persona_example_coverage_pct": {"min": 100.0, "display": "promoted_persona_example_coverage_pct>=100.0"},
+            "final_usable_persona_count": {"min": 4.0, "display": "final_usable_persona_count>=4"},
+        },
+    },
+}
+
+READINESS_STATE_META: dict[str, dict[str, object]] = {
+    "exploratory_only": {
+        "label": "Hypothesis Material",
+        "asset_class": "hypothesis_material",
+        "gate_status": STATUS_FAIL,
+        "usage_restriction": "Hypothesis material only. Not a final persona asset and not safe for review sign-off, deck-ready use, or production persona use.",
+        "summary": "Exploratory workbook only. Treat the contents as hypothesis material, not final personas.",
+    },
+    "reviewable_but_not_deck_ready": {
+        "label": str(READINESS_POLICY["reviewable_but_not_deck_ready"]["label"]),
+        "asset_class": str(READINESS_POLICY["reviewable_but_not_deck_ready"]["asset_class"]),
+        "gate_status": str(READINESS_POLICY["reviewable_but_not_deck_ready"]["gate_status"]),
+        "usage_restriction": str(READINESS_POLICY["reviewable_but_not_deck_ready"]["usage_restriction"]),
+        "summary": str(READINESS_POLICY["reviewable_but_not_deck_ready"]["summary"]),
+    },
+    "deck_ready": {
+        "label": str(READINESS_POLICY["deck_ready"]["label"]),
+        "asset_class": str(READINESS_POLICY["deck_ready"]["asset_class"]),
+        "gate_status": str(READINESS_POLICY["deck_ready"]["gate_status"]),
+        "usage_restriction": str(READINESS_POLICY["deck_ready"]["usage_restriction"]),
+        "summary": str(READINESS_POLICY["deck_ready"]["summary"]),
+    },
+    "production_persona_ready": {
+        "label": str(READINESS_POLICY["production_persona_ready"]["label"]),
+        "asset_class": str(READINESS_POLICY["production_persona_ready"]["asset_class"]),
+        "gate_status": str(READINESS_POLICY["production_persona_ready"]["gate_status"]),
+        "usage_restriction": str(READINESS_POLICY["production_persona_ready"]["usage_restriction"]),
+        "summary": str(READINESS_POLICY["production_persona_ready"]["summary"]),
+    },
+}
+
 
 def build_quality_metrics(
     stage_counts: dict[str, int],
@@ -97,9 +212,11 @@ def build_quality_metrics(
     cluster_stats_df: pd.DataFrame,
     persona_examples_df: pd.DataFrame,
     cluster_profiles: list[dict[str, object]] | None = None,
+    cluster_robustness_summary_df: pd.DataFrame | None = None,
 ) -> dict[str, object]:
     """Compute raw quality metrics only, without applying status policy."""
     cluster_profiles = cluster_profiles or []
+    cluster_robustness_summary_df = cluster_robustness_summary_df if cluster_robustness_summary_df is not None else pd.DataFrame()
     core_labeled_df = _persona_core_subset(labeled_df)
     labeled_count = int(len(labeled_df))
     persona_core_labeled_count = int(len(core_labeled_df))
@@ -122,6 +239,7 @@ def build_quality_metrics(
         }
         for row in cluster_profiles
     ]
+    robustness_metrics = _cluster_robustness_metric_lookup(cluster_robustness_summary_df)
     return {
         **{metric: int(stage_counts.get(metric, 0) or 0) for metric in PIPELINE_STAGE_METRIC_NAMES},
         "persona_core_labeled_rows": persona_core_labeled_count,
@@ -130,6 +248,14 @@ def build_quality_metrics(
         "persona_core_coverage_of_all_labeled_pct": round_pct(persona_core_labeled_count, labeled_count) if labeled_count else 0.0,
         "cluster_count": int(len(cluster_profiles)),
         "cluster_distribution": cluster_distribution,
+        "robust_cluster_count": int(robustness_metrics.get("robust_cluster_count", len(cluster_profiles))),
+        "stable_cluster_count": int(robustness_metrics.get("stable_cluster_count", 0)),
+        "fragile_cluster_count": int(robustness_metrics.get("fragile_cluster_count", 0)),
+        "micro_cluster_count": int(robustness_metrics.get("micro_cluster_count", 0)),
+        "thin_evidence_cluster_count": int(robustness_metrics.get("thin_evidence_cluster_count", 0)),
+        "top_3_cluster_share_of_core_labeled": round(float(robustness_metrics.get("top_3_cluster_share_of_core_labeled", 0.0)), 4),
+        "avg_cluster_separation": round(float(robustness_metrics.get("avg_cluster_separation", 0.0)), 4),
+        "min_cluster_separation": round(float(robustness_metrics.get("min_cluster_separation", 0.0)), 4),
         "labeled_source_count": labeled_sources,
         "effective_labeled_source_count": effective_labeled_source_count,
         "raw_source_count": raw_sources,
@@ -156,6 +282,23 @@ def build_quality_metrics(
         "denominator_consistency": "explicit",
         "largest_cluster_share_denominator_type": "persona_core_labeled_rows",
     }
+
+
+def _cluster_robustness_metric_lookup(cluster_robustness_summary_df: pd.DataFrame) -> dict[str, float]:
+    """Flatten robustness summary rows into a metric lookup."""
+    if cluster_robustness_summary_df is None or cluster_robustness_summary_df.empty:
+        return {}
+    metrics: dict[str, float] = {}
+    for _, row in cluster_robustness_summary_df.iterrows():
+        metric = str(row.get("metric", "")).strip()
+        if not metric:
+            continue
+        value = row.get("value", 0)
+        try:
+            metrics[metric] = float(value)
+        except (TypeError, ValueError):
+            continue
+    return metrics
 
 
 def evaluate_quality_status(metrics: dict[str, object]) -> dict[str, object]:
@@ -186,12 +329,24 @@ def evaluate_quality_status(metrics: dict[str, object]) -> dict[str, object]:
         "promoted_persona_grounding_weak",
     )
     grouped = {
-        "core_clustering": _compose_axis_group(["core_unknown", "core_coverage", "largest_cluster_dominance"], axes),
+        "core_clustering": _compose_axis_group(
+            [
+                "core_unknown",
+                "core_coverage",
+                "largest_cluster_dominance",
+                "cluster_concentration_tail",
+                "cluster_fragility",
+                "cluster_evidence",
+                "cluster_separation",
+            ],
+            axes,
+        ),
         "source_diversity": _compose_axis_group(["effective_source_diversity", "source_concentration"], axes),
         "example_grounding": _compose_axis_group(["grounding_coverage"], axes),
     }
     composite_reason_keys = _collect_reason_keys(axes)
     composite_status = _compose_status([axis["status"] for axis in axes.values()])
+    readiness = evaluate_persona_readiness(metrics)
     result = {
         "metrics": dict(metrics),
         "axes": axes,
@@ -200,6 +355,7 @@ def evaluate_quality_status(metrics: dict[str, object]) -> dict[str, object]:
         "composite_reason_keys": composite_reason_keys,
         "quality_flag": _quality_flag_from_status(composite_status),
         "quality_flag_rule": "UNSTABLE if any axis status is FAIL; EXPLORATORY if no FAIL and any axis status is WARN; otherwise OK.",
+        "readiness": readiness,
     }
     return result
 
@@ -209,6 +365,7 @@ def flatten_quality_status_result(evaluated: dict[str, object]) -> dict[str, obj
     metrics = dict(evaluated.get("metrics", {}) or {})
     axes = dict(evaluated.get("axes", {}) or {})
     groups = dict(evaluated.get("groups", {}) or {})
+    readiness = dict(evaluated.get("readiness", {}) or {})
     result = dict(metrics)
     for axis_name, payload in axes.items():
         result[f"{axis_name}_status"] = payload["status"]
@@ -224,6 +381,15 @@ def flatten_quality_status_result(evaluated: dict[str, object]) -> dict[str, obj
     result["composite_reason_keys"] = " | ".join(evaluated.get("composite_reason_keys", []) or [])
     result["quality_flag"] = str(evaluated.get("quality_flag", QUALITY_FLAG_OK))
     result["quality_flag_rule"] = str(evaluated.get("quality_flag_rule", "") or "")
+    result["persona_readiness_state"] = str(readiness.get("state", "exploratory_only"))
+    result["persona_readiness_label"] = str(readiness.get("label", "Hypothesis Material"))
+    result["persona_asset_class"] = str(readiness.get("asset_class", "hypothesis_material"))
+    result["persona_readiness_gate_status"] = str(readiness.get("gate_status", STATUS_FAIL))
+    result["persona_readiness_rule"] = str(readiness.get("rule", "") or "")
+    result["persona_readiness_blockers"] = str(readiness.get("blockers", "") or "")
+    result["persona_readiness_summary"] = str(readiness.get("summary", "") or "")
+    result["persona_usage_restriction"] = str(readiness.get("usage_restriction", "") or "")
+    result["persona_completion_claim_allowed"] = bool(readiness.get("completion_claim_allowed", False))
     return result
 
 
@@ -236,10 +402,81 @@ def quality_display_thresholds() -> dict[str, str]:
         "effective_labeled_source_count": str(QUALITY_STATUS_POLICY["effective_source_diversity"]["display_threshold"]),
         "largest_labeled_source_share_pct": str(QUALITY_STATUS_POLICY["source_concentration"]["display_threshold"]),
         "largest_cluster_share_of_core_labeled": str(QUALITY_STATUS_POLICY["largest_cluster_dominance"]["display_threshold"]),
+        "top_3_cluster_share_of_core_labeled": str(QUALITY_STATUS_POLICY["cluster_concentration_tail"]["display_threshold"]),
+        "micro_cluster_count": str(QUALITY_STATUS_POLICY["cluster_fragility"]["display_threshold"]),
+        "thin_evidence_cluster_count": str(QUALITY_STATUS_POLICY["cluster_evidence"]["display_threshold"]),
+        "min_cluster_separation": str(QUALITY_STATUS_POLICY["cluster_separation"]["display_threshold"]),
         "promoted_persona_example_coverage_pct": str(QUALITY_STATUS_POLICY["grounding_coverage"]["display_threshold"]),
+        "persona_readiness_state": _persona_readiness_rule(),
+        "persona_readiness_gate_status": "FAIL below reviewable threshold; WARN for reviewable_but_not_deck_ready; OK for deck_ready or production_persona_ready.",
+        "persona_completion_claim_allowed": "true only when persona_readiness_state is deck_ready or production_persona_ready.",
         "overall_status": "FAIL if any axis FAIL; WARN if no FAIL and any axis WARN; otherwise OK.",
         "quality_flag": "UNSTABLE if overall_status=FAIL; EXPLORATORY if overall_status=WARN; otherwise OK.",
     }
+
+
+def evaluate_persona_readiness(metrics: dict[str, object]) -> dict[str, object]:
+    """Evaluate workbook readiness so exploratory work cannot be mistaken for a final asset."""
+    ordered_states = ["production_persona_ready", "deck_ready", "reviewable_but_not_deck_ready"]
+    unmet_by_state = {
+        state: _unmet_readiness_requirements(metrics, dict(READINESS_POLICY[state].get("requirements", {})))
+        for state in ordered_states
+    }
+    chosen_state = "exploratory_only"
+    for state in ordered_states:
+        if not unmet_by_state[state]:
+            chosen_state = state
+            break
+    meta = dict(READINESS_STATE_META[chosen_state])
+    next_target = _next_readiness_target(chosen_state)
+    blockers_source = unmet_by_state.get(next_target, []) if next_target else []
+    blockers = " | ".join(blockers_source)
+    return {
+        "state": chosen_state,
+        "label": str(meta.get("label", "")),
+        "asset_class": str(meta.get("asset_class", "")),
+        "gate_status": str(meta.get("gate_status", STATUS_FAIL)),
+        "rule": _persona_readiness_rule(),
+        "blockers": blockers,
+        "summary": str(meta.get("summary", "")),
+        "usage_restriction": str(meta.get("usage_restriction", "")),
+        "completion_claim_allowed": chosen_state in {"deck_ready", "production_persona_ready"},
+        "next_target_state": next_target or "",
+    }
+
+
+def _unmet_readiness_requirements(metrics: dict[str, object], requirements: dict[str, dict[str, float | str]]) -> list[str]:
+    """Return unmet readiness requirements using human-readable threshold labels."""
+    unmet: list[str] = []
+    for metric_name, payload in requirements.items():
+        value = float(metrics.get(metric_name, 0.0) or 0.0)
+        minimum = payload.get("min")
+        maximum = payload.get("max")
+        if minimum is not None and value < float(minimum):
+            unmet.append(str(payload.get("display", f"{metric_name}>={minimum}")))
+            continue
+        if maximum is not None and value > float(maximum):
+            unmet.append(str(payload.get("display", f"{metric_name}<={maximum}")))
+    return unmet
+
+
+def _next_readiness_target(state: str) -> str | None:
+    """Return the next readiness tier above the chosen state."""
+    if state == "exploratory_only":
+        return "reviewable_but_not_deck_ready"
+    if state == "reviewable_but_not_deck_ready":
+        return "deck_ready"
+    if state == "deck_ready":
+        return "production_persona_ready"
+    return None
+
+
+def _persona_readiness_rule() -> str:
+    """Render the workbook readiness rule in one reviewer-facing sentence."""
+    return (
+        "exploratory_only below reviewable thresholds; reviewable_but_not_deck_ready when reviewable thresholds are met but deck_ready thresholds are not; "
+        "deck_ready when deck thresholds are met but production thresholds are not; production_persona_ready only when all production thresholds are met."
+    )
 
 
 def _persona_core_subset(labeled_df: pd.DataFrame) -> pd.DataFrame:
@@ -298,7 +535,12 @@ def _promoted_persona_example_counts(
     """Return promoted persona count, with-example count, and missing persona ids."""
     if cluster_stats_df.empty or "promotion_status" not in cluster_stats_df.columns:
         return 0, 0, [], {"grounded": 0, "weakly_grounded": 0, "ungrounded": 0, "weak_ids": []}
-    promoted = cluster_stats_df[cluster_stats_df["promotion_status"].astype(str).eq("promoted_persona")].copy()
+    workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
+    if workbook_review_visible.empty:
+        visible_mask = cluster_stats_df["promotion_status"].astype(str).isin({"promoted_persona", "review_only_persona"})
+    else:
+        visible_mask = workbook_review_visible.fillna(False).astype(bool)
+    promoted = cluster_stats_df[visible_mask].copy()
     promoted_ids = promoted.get("persona_id", pd.Series(dtype=str)).astype(str).tolist()
     if not promoted_ids:
         return 0, 0, [], {"grounded": 0, "weakly_grounded": 0, "ungrounded": 0, "weak_ids": []}
@@ -326,7 +568,11 @@ def _small_promoted_count(cluster_stats_df: pd.DataFrame, min_cluster_size: int)
     """Count promoted personas below the size floor."""
     if cluster_stats_df.empty or "promotion_status" not in cluster_stats_df.columns:
         return 0
-    promoted = cluster_stats_df[cluster_stats_df["promotion_status"].astype(str).eq("promoted_persona")]
+    workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
+    if workbook_review_visible.empty:
+        promoted = cluster_stats_df[cluster_stats_df["promotion_status"].astype(str).isin({"promoted_persona", "review_only_persona"})]
+    else:
+        promoted = cluster_stats_df[workbook_review_visible.fillna(False).astype(bool)]
     sizes = pd.to_numeric(promoted.get("persona_size", pd.Series(dtype=int)), errors="coerce").fillna(0)
     return int((sizes < min_cluster_size).sum())
 
@@ -342,9 +588,13 @@ def _persona_promotion_semantics(cluster_stats_df: pd.DataFrame) -> dict[str, in
         }
     base_status = cluster_stats_df.get("base_promotion_status", pd.Series(dtype=str)).astype(str)
     promotion_status = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str)
+    workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
     grounding_status = cluster_stats_df.get("promotion_grounding_status", pd.Series(dtype=str)).astype(str)
     promoted_candidate_count = int(base_status.isin({"promoted_candidate_persona", "promoted_persona"}).sum()) if not base_status.empty else int(promotion_status.eq("promoted_persona").sum())
-    promotion_visibility_count = int(promotion_status.eq("promoted_persona").sum())
+    if workbook_review_visible.empty:
+        promotion_visibility_count = int(promotion_status.isin({"promoted_persona", "review_only_persona"}).sum())
+    else:
+        promotion_visibility_count = int(workbook_review_visible.fillna(False).astype(bool).sum())
     final_usable_count = int(grounding_status.eq("promoted_and_grounded").sum())
     return {
         "promoted_candidate_persona_count": promoted_candidate_count,

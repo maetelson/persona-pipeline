@@ -11,7 +11,7 @@ from openpyxl import load_workbook
 
 from src.analysis.diagnostics import build_quality_failures, build_source_diagnostics, finalize_quality_checks
 from src.analysis.persona_service import _build_cluster_stats_df
-from src.analysis.quality_status import build_quality_metrics, evaluate_quality_status
+from src.analysis.quality_status import build_quality_metrics, evaluate_quality_status, flatten_quality_status_result
 from src.analysis.stage_service import _build_final_overview_df
 from src.analysis.summary import build_quality_checks_df
 from src.analysis.workbook_bundle import assemble_workbook_frames, validate_workbook_frames
@@ -186,6 +186,15 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
 
     def test_overview_cannot_hide_critical_status_reasons(self) -> None:
         flattened = {
+            "persona_readiness_state": "exploratory_only",
+            "persona_readiness_label": "Hypothesis Material",
+            "persona_asset_class": "hypothesis_material",
+            "persona_readiness_gate_status": "FAIL",
+            "persona_completion_claim_allowed": False,
+            "persona_usage_restriction": "Hypothesis material only. Not a final persona asset.",
+            "persona_readiness_summary": "Exploratory workbook only.",
+            "persona_readiness_blockers": "overall_unknown_ratio<=0.35 | promoted_persona_example_coverage_pct>=80.0",
+            "persona_readiness_rule": "exploratory_only below reviewable thresholds",
             "overall_status": "FAIL",
             "quality_flag": "UNSTABLE",
             "quality_flag_rule": "UNSTABLE if any axis status is FAIL; EXPLORATORY if no FAIL and any axis status is WARN; otherwise OK.",
@@ -233,7 +242,8 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
             cluster_stats_df=pd.DataFrame(
                 {
                     "base_promotion_status": ["promoted_candidate_persona", "promoted_candidate_persona", "promoted_candidate_persona", "exploratory_bucket"],
-                    "promotion_status": ["promoted_persona", "promoted_persona", "promoted_persona", "exploratory_bucket"],
+                    "promotion_status": ["promoted_persona", "promoted_persona", "review_only_persona", "exploratory_bucket"],
+                    "workbook_review_visible": [True, True, True, False],
                     "promotion_grounding_status": ["promoted_and_grounded", "promoted_and_grounded", "promoted_but_ungrounded", "exploratory_bucket"],
                     "final_usable_persona": [True, True, False, False],
                 }
@@ -242,6 +252,9 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
         lookup = dict(zip(overview_df["metric"], overview_df["value"]))
 
         self.assertEqual(str(lookup["quality_flag"]), "UNSTABLE")
+        self.assertEqual(str(lookup["persona_readiness_state"]), "exploratory_only")
+        self.assertEqual(str(lookup["persona_asset_class"]), "hypothesis_material")
+        self.assertEqual(str(lookup["persona_completion_claim_allowed"]), "False")
         self.assertEqual(str(lookup["overall_status"]), "FAIL")
         self.assertIn("promoted_persona_examples_missing", str(lookup["composite_reason_keys"]))
         self.assertEqual(str(lookup["example_grounding_status"]), "FAIL")
@@ -250,6 +263,44 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
         self.assertEqual(float(lookup["final_usable_persona_count"]), 2.0)
         self.assertEqual(float(lookup["deck_ready_persona_count"]), 2.0)
         self.assertEqual(float(lookup["promoted_persona_ungrounded_count"]), 1.0)
+
+    def test_persona_readiness_gate_marks_unstable_workbook_as_hypothesis_material(self) -> None:
+        evaluated = evaluate_quality_status(
+            {
+                "overall_unknown_ratio": 0.3881,
+                "persona_core_coverage_of_all_labeled_pct": 68.4,
+                "largest_labeled_source_share_pct": 49.0,
+                "largest_cluster_share_of_core_labeled": 49.5,
+                "promoted_persona_example_coverage_pct": 50.0,
+                "final_usable_persona_count": 2,
+            }
+        )
+        flattened = flatten_quality_status_result(evaluated)
+
+        self.assertEqual(flattened["persona_readiness_state"], "exploratory_only")
+        self.assertEqual(flattened["persona_readiness_label"], "Hypothesis Material")
+        self.assertEqual(flattened["persona_asset_class"], "hypothesis_material")
+        self.assertEqual(flattened["persona_readiness_gate_status"], "FAIL")
+        self.assertFalse(flattened["persona_completion_claim_allowed"])
+        self.assertIn("promoted_persona_example_coverage_pct>=80.0", flattened["persona_readiness_blockers"])
+
+    def test_persona_readiness_gate_allows_final_asset_only_at_deck_ready_or_above(self) -> None:
+        evaluated = evaluate_quality_status(
+            {
+                "overall_unknown_ratio": 0.2,
+                "persona_core_coverage_of_all_labeled_pct": 80.0,
+                "largest_labeled_source_share_pct": 45.0,
+                "largest_cluster_share_of_core_labeled": 50.0,
+                "promoted_persona_example_coverage_pct": 100.0,
+                "final_usable_persona_count": 3,
+            }
+        )
+        flattened = flatten_quality_status_result(evaluated)
+
+        self.assertEqual(flattened["persona_readiness_state"], "deck_ready")
+        self.assertEqual(flattened["persona_asset_class"], "final_persona_asset")
+        self.assertEqual(flattened["persona_readiness_gate_status"], "OK")
+        self.assertTrue(flattened["persona_completion_claim_allowed"])
 
     def test_promoted_personas_without_examples_are_explicitly_flagged(self) -> None:
         labeled_df = pd.DataFrame(
@@ -271,7 +322,8 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
                 "denominator_type": [DENOMINATOR_PERSONA_CORE_LABELED_ROWS, DENOMINATOR_PERSONA_CORE_LABELED_ROWS],
                 "denominator_value": [4, 4],
                 "base_promotion_status": ["promoted_candidate_persona", "promoted_candidate_persona"],
-                "promotion_status": ["promoted_persona", "promoted_persona"],
+                "promotion_status": ["promoted_persona", "review_only_persona"],
+                "workbook_review_visible": [True, True],
                 "promotion_grounding_status": ["promoted_and_grounded", "promoted_but_ungrounded"],
                 "final_usable_persona": [True, False],
             }
@@ -417,7 +469,8 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
                 {
                     "persona_id": ["persona_01", "persona_02", "persona_03"],
                     "base_promotion_status": ["promoted_candidate_persona", "promoted_candidate_persona", "promoted_candidate_persona"],
-                    "promotion_status": ["promoted_persona", "promoted_persona", "promoted_persona"],
+                    "promotion_status": ["promoted_persona", "promoted_persona", "review_only_persona"],
+                    "workbook_review_visible": [True, True, True],
                     "promotion_grounding_status": ["promoted_and_grounded", "promoted_and_grounded", "promoted_but_ungrounded"],
                     "final_usable_persona": [True, True, False],
                 }
@@ -545,7 +598,8 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
         cluster_stats_df = pd.DataFrame(
             {
                 "persona_id": ["persona_01", "persona_02", "persona_03"],
-                "promotion_status": ["promoted_persona", "promoted_persona", "promoted_persona"],
+                "promotion_status": ["promoted_persona", "review_only_persona", "promoted_persona"],
+                "workbook_review_visible": [True, True, True],
                 "promotion_grounding_status": ["promoted_and_grounded", "promoted_but_ungrounded", "promoted_and_grounded"],
                 "final_usable_persona": [True, False, True],
             }

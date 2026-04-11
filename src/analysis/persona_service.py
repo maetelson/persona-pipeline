@@ -130,6 +130,8 @@ def build_persona_outputs(
             cluster_outputs["cluster_naming_recommendations_df"],
         ),
         "cluster_meaning_audit_df": cluster_outputs["cluster_meaning_audit_df"],
+        "cluster_robustness_audit_df": cluster_outputs["cluster_robustness_audit_df"],
+        "cluster_robustness_summary_df": cluster_outputs["cluster_robustness_summary_df"],
         "cluster_naming_recommendations_df": cluster_outputs["cluster_naming_recommendations_df"],
         "old_vs_new_cluster_summary_df": cluster_outputs["old_vs_new_cluster_summary_df"],
         "bottleneck_feature_importance_df": cluster_outputs["bottleneck_feature_importance_df"],
@@ -165,6 +167,8 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
         "borderline_example_samples_csv": output_dir / "borderline_example_samples.csv",
         "example_selection_audit_csv": output_dir / "example_selection_audit.csv",
         "cluster_meaning_audit_csv": output_dir / "cluster_meaning_audit.csv",
+        "cluster_robustness_audit_csv": output_dir / "cluster_robustness_audit.csv",
+        "cluster_robustness_summary_csv": output_dir / "cluster_robustness_summary.csv",
         "cluster_naming_recommendations_csv": output_dir / "cluster_naming_recommendations.csv",
         "old_vs_new_cluster_summary_csv": output_dir / "old_vs_new_cluster_summary.csv",
         "bottleneck_feature_importance_csv": output_dir / "bottleneck_feature_importance.csv",
@@ -189,6 +193,8 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
     outputs["representative_examples_borderline_df"].head(200).to_csv(paths["borderline_example_samples_csv"], index=False)
     outputs["example_selection_audit_df"].to_csv(paths["example_selection_audit_csv"], index=False)
     outputs["cluster_meaning_audit_df"].to_csv(paths["cluster_meaning_audit_csv"], index=False)
+    outputs["cluster_robustness_audit_df"].to_csv(paths["cluster_robustness_audit_csv"], index=False)
+    outputs["cluster_robustness_summary_df"].to_csv(paths["cluster_robustness_summary_csv"], index=False)
     outputs["cluster_naming_recommendations_df"].to_csv(paths["cluster_naming_recommendations_csv"], index=False)
     outputs["old_vs_new_cluster_summary_df"].to_csv(paths["old_vs_new_cluster_summary_csv"], index=False)
     outputs["bottleneck_feature_importance_df"].to_csv(paths["bottleneck_feature_importance_csv"], index=False)
@@ -464,6 +470,8 @@ def _empty_outputs() -> dict[str, Any]:
         "representative_examples_markdown": "",
         "representative_examples_by_new_cluster_md": "",
         "cluster_meaning_audit_df": empty,
+        "cluster_robustness_audit_df": empty,
+        "cluster_robustness_summary_df": empty,
         "cluster_naming_recommendations_df": empty,
         "old_vs_new_cluster_summary_df": empty,
         "bottleneck_feature_importance_df": empty,
@@ -544,11 +552,13 @@ def _one_line_summary(
 ) -> str:
     """Create a grounded one-line persona summary."""
     if promotion_grounding_status == "promoted_but_weakly_grounded":
-        prefix = "Promoted but weakly grounded persona"
+        prefix = "Review-only weakly grounded persona"
     elif promotion_grounding_status == "promoted_but_ungrounded":
-        prefix = "Promoted but ungrounded persona"
+        prefix = "Review-only ungrounded persona"
     elif promotion_grounding_status == "downgraded_due_to_no_grounding":
         prefix = "Downgraded exploratory cluster"
+    elif promotion_status == "review_only_persona":
+        prefix = "Review-only persona"
     else:
         prefix = "Promoted persona" if promotion_status == "promoted_persona" else "Exploratory residual group"
     return (
@@ -606,7 +616,7 @@ def _is_promoted_candidate_persona(payload: dict[str, Any]) -> bool:
 
 def _is_workbook_review_visible(payload: dict[str, Any]) -> bool:
     """Return whether a persona remains visible in the workbook's promoted set."""
-    return str(payload.get("status", "") or "") == "promoted_persona"
+    return str(payload.get("status", "") or "") in {"promoted_persona", "review_only_persona"}
 
 
 def _is_final_usable_persona(payload: dict[str, Any]) -> bool:
@@ -703,11 +713,11 @@ def _merge_grounding_policy(
             payload["status"] = exploratory_status
             payload["reason"] = f"{payload.get('reason', '')}; downgraded because no acceptable grounding evidence met policy".strip("; ")
         elif combined_status == "promoted_but_ungrounded":
-            payload["status"] = "promoted_persona"
-            payload["reason"] = f"{payload.get('reason', '')}; promoted remains visible but no acceptable grounding evidence met policy".strip("; ")
+            payload["status"] = "review_only_persona"
+            payload["reason"] = f"{payload.get('reason', '')}; review-only because no acceptable grounding evidence met policy".strip("; ")
         elif combined_status == "promoted_but_weakly_grounded":
-            payload["status"] = "promoted_persona"
-            payload["reason"] = f"{payload.get('reason', '')}; only weak fallback evidence met policy".strip("; ")
+            payload["status"] = "review_only_persona"
+            payload["reason"] = f"{payload.get('reason', '')}; review-only because only weak fallback evidence met policy".strip("; ")
         else:
             payload["status"] = "promoted_persona"
     merged["status_by_persona"] = status_by_persona
@@ -738,6 +748,8 @@ def _archetype_name(role: str, workflow: str, bottleneck: str, goal: str, output
         "general_friction": "Blocked by Workflow Friction",
     }.get(str(bottleneck).strip().lower(), f"Blocked by {_titleize(bottleneck, 'Workflow Friction')}")
     name = f"{role_word} {job_word} {blocker_word}"
+    if promotion_status == "review_only_persona":
+        return f"Review-Only {name}"
     if promotion_status != "promoted_persona":
         return f"Exploratory {name}"
     return name

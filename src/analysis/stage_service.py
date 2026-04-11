@@ -199,6 +199,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
         persona_examples_df=persona_service_outputs["persona_examples_df"],
         cluster_profiles=bottleneck_cluster_profiles,
+        cluster_robustness_summary_df=persona_service_outputs.get("cluster_robustness_summary_df"),
     )
     evaluated_quality = evaluate_quality_status(quality_metrics)
     quality_checks = finalize_quality_checks(evaluated_quality)
@@ -462,7 +463,14 @@ def _build_final_overview_df(
     cluster_stats_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """Render overview directly from the evaluated quality result and stable report counts."""
-    promoted_mask = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str).eq("promoted_persona") if not cluster_stats_df.empty else pd.Series(dtype=bool)
+    if not cluster_stats_df.empty:
+        workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
+        if workbook_review_visible.empty:
+            promoted_mask = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str).isin({"promoted_persona", "review_only_persona"})
+        else:
+            promoted_mask = workbook_review_visible.fillna(False).astype(bool)
+    else:
+        promoted_mask = pd.Series(dtype=bool)
     promotion_grounding_status = cluster_stats_df.get("promotion_grounding_status", pd.Series(dtype=str)).astype(str) if not cluster_stats_df.empty else pd.Series(dtype=str)
     promotion_visibility_persona_count = int(quality_checks.get("promotion_visibility_persona_count", int(promoted_mask.sum()) if not cluster_stats_df.empty else 0) or 0)
     final_usable_persona_count = int(quality_checks.get("final_usable_persona_count", int(promotion_grounding_status.eq("promoted_and_grounded").sum()) if not cluster_stats_df.empty else 0) or 0)
@@ -473,6 +481,15 @@ def _build_final_overview_df(
         if str(row.get("axis_name", "")).strip()
     )
     rows = [
+        {"metric": "persona_readiness_state", "value": quality_checks.get("persona_readiness_state", "exploratory_only")},
+        {"metric": "persona_readiness_label", "value": quality_checks.get("persona_readiness_label", "Hypothesis Material")},
+        {"metric": "persona_asset_class", "value": quality_checks.get("persona_asset_class", "hypothesis_material")},
+        {"metric": "persona_readiness_gate_status", "value": quality_checks.get("persona_readiness_gate_status", "FAIL")},
+        {"metric": "persona_completion_claim_allowed", "value": quality_checks.get("persona_completion_claim_allowed", False)},
+        {"metric": "persona_usage_restriction", "value": quality_checks.get("persona_usage_restriction", "")},
+        {"metric": "persona_readiness_summary", "value": quality_checks.get("persona_readiness_summary", "")},
+        {"metric": "persona_readiness_blockers", "value": quality_checks.get("persona_readiness_blockers", "")},
+        {"metric": "persona_readiness_rule", "value": quality_checks.get("persona_readiness_rule", "")},
         {"metric": "overall_status", "value": quality_checks.get("overall_status", "")},
         {"metric": "quality_flag", "value": quality_checks.get("quality_flag", "")},
         {"metric": "quality_flag_rule", "value": quality_checks.get("quality_flag_rule", "")},
@@ -486,6 +503,10 @@ def _build_final_overview_df(
         {"metric": "effective_source_diversity_status", "value": quality_checks.get("effective_source_diversity_status", "")},
         {"metric": "source_concentration_status", "value": quality_checks.get("source_concentration_status", "")},
         {"metric": "largest_cluster_dominance_status", "value": quality_checks.get("largest_cluster_dominance_status", "")},
+        {"metric": "cluster_concentration_tail_status", "value": quality_checks.get("cluster_concentration_tail_status", "")},
+        {"metric": "cluster_fragility_status", "value": quality_checks.get("cluster_fragility_status", "")},
+        {"metric": "cluster_evidence_status", "value": quality_checks.get("cluster_evidence_status", "")},
+        {"metric": "cluster_separation_status", "value": quality_checks.get("cluster_separation_status", "")},
         {"metric": "grounding_coverage_status", "value": quality_checks.get("grounding_coverage_status", "")},
         *[{"metric": metric, "value": int(stage_counts.get(metric, 0) or 0)} for metric in stage_counts],
         {"metric": "persona_core_labeled_rows", "value": persona_core_labeled_rows},
@@ -494,6 +515,14 @@ def _build_final_overview_df(
         {"metric": "overall_unknown_ratio", "value": quality_checks.get("overall_unknown_ratio", 0.0)},
         {"metric": "effective_labeled_source_count", "value": quality_checks.get("effective_labeled_source_count", 0.0)},
         {"metric": "largest_cluster_share_of_core_labeled", "value": quality_checks.get("largest_cluster_share_of_core_labeled", 0.0)},
+        {"metric": "top_3_cluster_share_of_core_labeled", "value": quality_checks.get("top_3_cluster_share_of_core_labeled", 0.0)},
+        {"metric": "robust_cluster_count", "value": quality_checks.get("robust_cluster_count", 0)},
+        {"metric": "stable_cluster_count", "value": quality_checks.get("stable_cluster_count", 0)},
+        {"metric": "fragile_cluster_count", "value": quality_checks.get("fragile_cluster_count", 0)},
+        {"metric": "micro_cluster_count", "value": quality_checks.get("micro_cluster_count", 0)},
+        {"metric": "thin_evidence_cluster_count", "value": quality_checks.get("thin_evidence_cluster_count", 0)},
+        {"metric": "avg_cluster_separation", "value": quality_checks.get("avg_cluster_separation", 0.0)},
+        {"metric": "min_cluster_separation", "value": quality_checks.get("min_cluster_separation", 0.0)},
         {"metric": "largest_labeled_source_share_pct", "value": quality_checks.get("largest_labeled_source_share_pct", 0.0)},
         {"metric": "promoted_candidate_persona_count", "value": quality_checks.get("promoted_candidate_persona_count", promotion_visibility_persona_count)},
         {"metric": "promotion_visibility_persona_count", "value": promotion_visibility_persona_count},
@@ -508,6 +537,6 @@ def _build_final_overview_df(
         {"metric": "exploratory_bucket_count", "value": exploratory_bucket_count},
         {"metric": "min_cluster_size", "value": quality_checks.get("min_cluster_size", 0)},
         {"metric": "selected_axes", "value": selected_axes},
-        {"metric": "clustering_mode", "value": "bottleneck_first"},
+        {"metric": "clustering_mode", "value": "bottleneck_first_robust"},
     ]
     return pd.DataFrame(rows)

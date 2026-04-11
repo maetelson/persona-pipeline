@@ -284,6 +284,20 @@ clustering:
   max_context_features: 3
   max_examples_per_cluster: 6
 
+robustness:
+  min_stable_cluster_size: 24
+  min_stable_cluster_share: 0.08
+  micro_cluster_size: 8
+  same_primary_absorb_similarity: 0.8
+  same_base_name_absorb_similarity: 0.72
+  same_name_absorb_similarity: 0.78
+  general_absorb_similarity: 0.9
+  residual_bucket_by_primary: true
+  residual_bucket_max_count: 4
+  residual_fragile_cluster_size: 14
+  sufficient_separation_floor: 0.12
+  sufficient_cohesion_floor: 0.9
+
 naming:
   manual_reporting: "Manual Reporting Burden"
   spreadsheet_rework: "Spreadsheet Rework Burden"

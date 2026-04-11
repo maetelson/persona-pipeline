@@ -155,6 +155,8 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
         "largest_cluster_share_of_core_labeled": ("largest_cluster_dominance_status", "largest_cluster_dominance_reason_keys"),
         "promoted_persona_example_coverage_pct": ("grounding_coverage_status", "grounding_coverage_reason_keys"),
         "promoted_persona_grounding_failure_count": ("grounding_coverage_status", "grounding_coverage_reason_keys"),
+        "persona_readiness_state": ("persona_readiness_gate_status", "persona_readiness_blockers"),
+        "persona_readiness_gate_status": ("persona_readiness_gate_status", "persona_readiness_blockers"),
         "overall_status": ("overall_status", "composite_reason_keys"),
         "core_clustering_status": ("core_clustering_status", "core_clustering_reason_keys"),
         "source_diversity_status": ("source_diversity_status", "source_diversity_reason_keys"),
@@ -202,6 +204,12 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
             status = "pass"
             level = "pass"
             notes = "rendered from centralized evaluated status result"
+        elif metric == "persona_readiness_label":
+            status, level = _quality_row_style(str(quality_checks.get("persona_readiness_gate_status", QUALITY_FLAG_OK) or QUALITY_FLAG_OK))
+            notes = str(quality_checks.get("persona_usage_restriction", "") or "")
+        elif metric in {"persona_asset_class", "persona_usage_restriction", "persona_readiness_summary", "persona_readiness_blockers", "persona_readiness_rule"}:
+            status = "info"
+            level = "info"
         elif metric.endswith("_threshold_rule"):
             status = "info"
             level = "info"
@@ -363,7 +371,20 @@ def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) ->
     """Return denominator type for a quality metric."""
     if metric in PIPELINE_STAGE_METRIC_NAMES:
         return metric
-    if metric in {"persona_core_unknown_ratio", "cluster_distribution", "cluster_count", "largest_cluster_share_of_core_labeled"}:
+    if metric in {
+        "persona_core_unknown_ratio",
+        "cluster_distribution",
+        "cluster_count",
+        "robust_cluster_count",
+        "stable_cluster_count",
+        "fragile_cluster_count",
+        "micro_cluster_count",
+        "thin_evidence_cluster_count",
+        "largest_cluster_share_of_core_labeled",
+        "top_3_cluster_share_of_core_labeled",
+        "avg_cluster_separation",
+        "min_cluster_separation",
+    }:
         return DENOMINATOR_PERSONA_CORE_LABELED_ROWS
     if metric in {"overall_unknown_ratio", DENOMINATOR_LABELED_EPISODE_ROWS, "persona_core_coverage_of_all_labeled_pct", "largest_labeled_source_share_pct"}:
         return DENOMINATOR_LABELED_EPISODE_ROWS
@@ -379,6 +400,8 @@ def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) ->
         return "source_count"
     if metric == "source_failures":
         return "raw_covered_source_count"
+    if metric in {"persona_readiness_state", "persona_readiness_label", "persona_asset_class", "persona_readiness_gate_status", "persona_readiness_rule", "persona_readiness_blockers", "persona_readiness_summary", "persona_usage_restriction", "persona_completion_claim_allowed"}:
+        return "explicit_metric_value"
     return str(quality_checks.get("denominator_type", "explicit_metric_value"))
 
 
@@ -404,4 +427,6 @@ def _quality_denominator_value(metric: str, quality_checks: dict[str, object]) -
         return quality_checks.get("raw_source_count", "")
     if metric == "source_failures":
         return quality_checks.get("raw_source_count", "")
+    if metric in {"persona_readiness_state", "persona_readiness_label", "persona_asset_class", "persona_readiness_gate_status", "persona_readiness_rule", "persona_readiness_blockers", "persona_readiness_summary", "persona_usage_restriction", "persona_completion_claim_allowed"}:
+        return ""
     return ""

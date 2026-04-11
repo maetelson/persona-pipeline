@@ -270,8 +270,8 @@ class WorkbookExportTests(unittest.TestCase):
                 overview_rows = list(workbook["overview"].iter_rows(min_row=1, max_row=4, values_only=True))
                 quality_rows = list(workbook["quality_checks"].iter_rows(min_row=1, max_row=3, values_only=True))
                 glossary_rows = list(workbook["metric_glossary"].iter_rows(min_row=1, max_row=4, values_only=True))
-                readme_persona_copy = workbook["readme"]["B26"].value
-                readme_row_source_copy = workbook["readme"]["B27"].value
+                readme_persona_copy = workbook["readme"]["B37"].value
+                readme_row_source_copy = workbook["readme"]["B38"].value
             finally:
                 workbook.close()
 
@@ -289,6 +289,57 @@ class WorkbookExportTests(unittest.TestCase):
             self.assertIn("source-count metric, not a row-count metric", str(glossary_rows[1][3]))
             self.assertIn("Final Usable Persona Count", str(readme_persona_copy))
             self.assertIn("Raw Record Row Count is a count of JSONL rows", str(readme_row_source_copy))
+
+    def test_validate_workbook_frames_rejects_final_asset_claim_below_deck_ready(self) -> None:
+        frames = assemble_workbook_frames(
+            overview_df=pd.DataFrame(
+                {
+                    "metric": [
+                        "persona_readiness_state",
+                        "persona_asset_class",
+                        "persona_completion_claim_allowed",
+                        "promoted_candidate_persona_count",
+                        "promotion_visibility_persona_count",
+                        "final_usable_persona_count",
+                        "deck_ready_persona_count",
+                    ],
+                    "value": ["exploratory_only", "final_persona_asset", True, 1, 1, 1, 1],
+                }
+            ),
+            counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [12]}),
+            source_distribution_df=pd.DataFrame(),
+            taxonomy_summary_df=pd.DataFrame(),
+            cluster_stats_df=pd.DataFrame(
+                {
+                    "persona_id": ["persona_01"],
+                    "persona_size": [1],
+                    "share_of_core_labeled": [100.0],
+                    "share_of_all_labeled": [100.0],
+                    "base_promotion_status": ["promoted_candidate_persona"],
+                    "promotion_status": ["promoted_persona"],
+                    "workbook_review_visible": [True],
+                    "promotion_grounding_status": ["promoted_and_grounded"],
+                    "final_usable_persona": [True],
+                    "denominator_type": ["persona_core_labeled_rows"],
+                    "denominator_value": [1],
+                    "dominant_signature": ["workflow_stage=reporting"],
+                    "dominant_bottleneck": ["manual_reporting"],
+                    "dominant_analysis_goal": ["report_speed"],
+                }
+            ),
+            persona_summary_df=pd.DataFrame(),
+            persona_axes_df=pd.DataFrame(),
+            persona_needs_df=pd.DataFrame(),
+            persona_cooccurrence_df=pd.DataFrame(),
+            persona_examples_df=pd.DataFrame(),
+            quality_checks_df=pd.DataFrame({"metric": ["quality_flag"], "value": ["UNSTABLE"], "threshold": [""], "status": ["fail"], "level": ["hard_fail"], "denominator_type": [""], "denominator_value": [""], "notes": [""]}),
+            source_diagnostics_df=pd.DataFrame(),
+            quality_failures_df=pd.DataFrame(),
+            metric_glossary_df=pd.DataFrame(),
+        )
+
+        messages = validate_workbook_frames(frames)
+        self.assertIn("persona readiness metric mismatch: final persona asset class is forbidden below deck_ready", messages)
 
     def test_export_uses_explicit_row_based_headers_for_counts_and_source_distribution(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

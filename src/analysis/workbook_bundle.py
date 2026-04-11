@@ -252,13 +252,17 @@ def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> lis
 
     promotion_status = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str)
     base_status = cluster_stats_df.get("base_promotion_status", pd.Series(dtype=str)).astype(str)
+    workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
     final_usable_series = cluster_stats_df.get("final_usable_persona", pd.Series(dtype=bool))
     if final_usable_series.empty:
         final_usable_count = int(cluster_stats_df.get("promotion_grounding_status", pd.Series(dtype=str)).astype(str).eq("promoted_and_grounded").sum())
     else:
         final_usable_count = int(final_usable_series.fillna(False).astype(bool).sum())
     promoted_candidate_count = int(base_status.isin({"promoted_candidate_persona", "promoted_persona"}).sum()) if not base_status.empty else int(promotion_status.eq("promoted_persona").sum())
-    promotion_visibility_count = int(promotion_status.eq("promoted_persona").sum())
+    if workbook_review_visible.empty:
+        promotion_visibility_count = int(promotion_status.isin({"promoted_persona", "review_only_persona"}).sum())
+    else:
+        promotion_visibility_count = int(workbook_review_visible.fillna(False).astype(bool).sum())
 
     overview_df = frames.get("overview", pd.DataFrame())
     if overview_df is None or overview_df.empty or "metric" not in overview_df.columns or "value" not in overview_df.columns:
@@ -277,6 +281,21 @@ def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> lis
         actual_value = _normalize_stage_metric_value(overview_lookup.get(metric, ""))
         if actual_value != int(expected_value):
             messages.append(f"persona promotion metric mismatch: {metric} differs from cluster_stats (overview={actual_value}, cluster_stats={expected_value})")
+    readiness_state = str(overview_lookup.get("persona_readiness_state", "") or "")
+    asset_class = str(overview_lookup.get("persona_asset_class", "") or "")
+    completion_allowed = str(overview_lookup.get("persona_completion_claim_allowed", "") or "").strip().lower()
+    if readiness_state and readiness_state not in {"exploratory_only", "reviewable_but_not_deck_ready", "deck_ready", "production_persona_ready"}:
+        messages.append(f"persona readiness metric mismatch: unknown overview.persona_readiness_state={readiness_state}")
+    if readiness_state in {"exploratory_only", "reviewable_but_not_deck_ready"}:
+        if asset_class == "final_persona_asset":
+            messages.append("persona readiness metric mismatch: final persona asset class is forbidden below deck_ready")
+        if completion_allowed not in {"false", "0", ""}:
+            messages.append("persona readiness metric mismatch: persona_completion_claim_allowed must be false below deck_ready")
+    if readiness_state in {"deck_ready", "production_persona_ready"}:
+        if asset_class != "final_persona_asset":
+            messages.append("persona readiness metric mismatch: final persona asset class required at deck_ready or above")
+        if completion_allowed not in {"true", "1"}:
+            messages.append("persona readiness metric mismatch: persona_completion_claim_allowed must be true at deck_ready or above")
     if final_usable_count > promotion_visibility_count:
         messages.append("persona promotion metric mismatch: final_usable_persona_count cannot exceed promotion_visibility_persona_count")
     return messages

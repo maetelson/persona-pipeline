@@ -60,6 +60,15 @@ DISPLAY_TO_RAW_HEADER_OVERRIDES.update(
 )
 
 OVERVIEW_METRIC_LABELS = {
+    "persona_readiness_state": "Persona readiness state",
+    "persona_readiness_label": "Workbook interpretation label",
+    "persona_asset_class": "Workbook asset class",
+    "persona_readiness_gate_status": "Persona readiness gate status",
+    "persona_completion_claim_allowed": "Persona-complete claim allowed",
+    "persona_usage_restriction": "Workbook usage restriction",
+    "persona_readiness_summary": "Persona readiness summary",
+    "persona_readiness_blockers": "Persona readiness blockers",
+    "persona_readiness_rule": "Persona readiness policy rule",
     "overall_status": "Overall workbook status",
     "quality_flag": "Quality flag derived from overall status",
     "quality_flag_rule": "Quality flag decision rule",
@@ -73,6 +82,10 @@ OVERVIEW_METRIC_LABELS = {
     "effective_source_diversity_status": "Effective labeled-source diversity status",
     "source_concentration_status": "Labeled-source concentration status",
     "largest_cluster_dominance_status": "Largest cluster dominance status",
+    "cluster_concentration_tail_status": "Top-3 cluster concentration status",
+    "cluster_fragility_status": "Micro-cluster fragility status",
+    "cluster_evidence_status": "Thin-evidence cluster status",
+    "cluster_separation_status": "Minimum cluster separation status",
     "grounding_coverage_status": "Promoted persona grounding coverage status",
     "raw_record_rows": "Raw record row count (JSONL lines, not source count)",
     "normalized_post_rows": "Normalized post row count",
@@ -86,6 +99,14 @@ OVERVIEW_METRIC_LABELS = {
     "overall_unknown_ratio": "All labeled rows unknown ratio",
     "effective_labeled_source_count": "Effective labeled-source count (source diversity score, not row count)",
     "largest_cluster_share_of_core_labeled": "Largest cluster share of persona-core labeled rows (%)",
+    "top_3_cluster_share_of_core_labeled": "Top-3 cluster share of persona-core labeled rows",
+    "robust_cluster_count": "Robust final cluster count",
+    "stable_cluster_count": "Stable cluster count",
+    "fragile_cluster_count": "Fragile cluster count",
+    "micro_cluster_count": "Micro-cluster count",
+    "thin_evidence_cluster_count": "Thin-evidence cluster count",
+    "avg_cluster_separation": "Average cluster separation",
+    "min_cluster_separation": "Minimum cluster separation",
     "largest_labeled_source_share_pct": "Largest labeled-source share of labeled episode rows (%)",
     "promoted_candidate_persona_count": "Promoted candidate persona count before grounding review",
     "promotion_visibility_persona_count": "Promotion-visibility persona count (review-visible promoted personas)",
@@ -104,12 +125,24 @@ OVERVIEW_METRIC_LABELS = {
 }
 
 QUALITY_CHECK_METRIC_LABELS = {
+    "persona_readiness_state": "Persona readiness state",
+    "persona_readiness_gate_status": "Persona readiness gate status",
+    "persona_readiness_label": "Workbook interpretation label",
+    "persona_asset_class": "Workbook asset class",
+    "persona_readiness_summary": "Persona readiness summary",
+    "persona_readiness_blockers": "Persona readiness blockers",
+    "persona_usage_restriction": "Workbook usage restriction",
+    "persona_completion_claim_allowed": "Persona-complete claim allowed",
     "persona_core_unknown_ratio": "Persona-core unknown ratio",
     "overall_unknown_ratio": "All labeled rows unknown ratio",
     "persona_core_coverage_of_all_labeled_pct": "Persona-core coverage of labeled episode rows (%)",
     "effective_labeled_source_count": "Effective labeled-source count (source diversity score, not row count)",
     "largest_labeled_source_share_pct": "Largest labeled-source share of labeled episode rows (%)",
     "largest_cluster_share_of_core_labeled": "Largest cluster share of persona-core labeled rows (%)",
+    "top_3_cluster_share_of_core_labeled": "Top-3 cluster share of persona-core labeled rows",
+    "micro_cluster_count": "Micro-cluster count",
+    "thin_evidence_cluster_count": "Thin-evidence cluster count",
+    "min_cluster_separation": "Minimum cluster separation",
     "promoted_persona_example_coverage_pct": "Promoted persona grounding coverage (%)",
     "promoted_persona_grounding_failure_count": "Promoted persona count failing grounded-usable policy",
     "selected_example_grounding_issue_count": "Selected representative example issue count (example rows)",
@@ -424,7 +457,17 @@ def _write_readme_sheet(workbook) -> None:
         del workbook["readme"]
     worksheet = workbook.create_sheet("readme", 0)
     rows = [
-        ["Persona Workbook Guide", "Use this sheet first when reviewing denominators, grain, and grounding status."],
+        ["Persona Workbook Guide", "Use this sheet first. Read the readiness gate before treating any persona sheet as final."],
+        ["", ""],
+        ["Readiness Gate", "Formula-backed links to the canonical readiness decision in overview."],
+        ["Persona Readiness State", '=INDEX(overview!$C:$C,MATCH("persona_readiness_state",overview!$A:$A,0))'],
+        ["Workbook Interpretation Label", '=INDEX(overview!$C:$C,MATCH("persona_readiness_label",overview!$A:$A,0))'],
+        ["Workbook Asset Class", '=INDEX(overview!$C:$C,MATCH("persona_asset_class",overview!$A:$A,0))'],
+        ["Persona Readiness Gate Status", '=INDEX(overview!$C:$C,MATCH("persona_readiness_gate_status",overview!$A:$A,0))'],
+        ["Persona-Complete Claim Allowed", '=INDEX(overview!$C:$C,MATCH("persona_completion_claim_allowed",overview!$A:$A,0))'],
+        ["Usage Restriction", '=INDEX(overview!$C:$C,MATCH("persona_usage_restriction",overview!$A:$A,0))'],
+        ["Readiness Summary", '=INDEX(overview!$C:$C,MATCH("persona_readiness_summary",overview!$A:$A,0))'],
+        ["Readiness Blockers", '=INDEX(overview!$C:$C,MATCH("persona_readiness_blockers",overview!$A:$A,0))'],
         ["", ""],
         ["Pipeline Stage Summary", "Formula-backed links to the canonical stage metrics in overview."],
         ["Raw Record Row Count (JSONL lines, not sources)", '=INDEX(overview!$C:$C,MATCH("raw_record_rows",overview!$A:$A,0))'],
@@ -448,7 +491,8 @@ def _write_readme_sheet(workbook) -> None:
         ["denominator_type_key", "The semantic denominator family. Cross-check this against metric_glossary before comparing row counts, source counts, or persona counts."],
         ["", ""],
         ["Review Tips", ""],
-        ["Grounding states", "See persona_summary and cluster_stats for base_promotion_status, grounding_status, promotion_grounding_status, and reporting_readiness_status. Review-visible promoted personas are not automatically final usable personas."],
+        ["Readiness gate", "If persona_readiness_state is below deck_ready, this workbook is not a final persona asset. Treat persona_summary and cluster_stats as hypothesis or review material only."],
+        ["Grounding states", "See persona_summary and cluster_stats for base_promotion_status, promotion_status, grounding_status, promotion_grounding_status, and reporting_readiness_status. Review-only personas remain workbook-visible for audit but are not final usable or deck-ready personas."],
         ["Persona counts", "Use Final Usable Persona Count for headline or downstream persona totals. Use Review-Visible Promoted Persona Count only for workbook review coverage, because it can include weakly grounded or ungrounded promoted personas."],
         ["Rows versus sources", "Raw Record Row Count is a count of JSONL rows. Effective labeled-source count and source_distribution rows describe sources, not post or episode rows."],
         ["Mixed-grain diagnostics", "source_diagnostics rows with row_grain=mixed_grain_bridge are cross-grain ratios, not same-grain funnel percentages."],
@@ -462,17 +506,21 @@ def _write_readme_sheet(workbook) -> None:
     worksheet["A1"].font = TITLE_FONT
     worksheet["A3"].font = HEADER_FONT
     worksheet["B3"].font = HEADER_FONT
+    worksheet["A13"].font = HEADER_FONT
+    worksheet["B13"].font = HEADER_FONT
     for cell in worksheet[3]:
         cell.fill = HEADER_FILL
-    for row_index in [18, 24]:
+    for cell in worksheet[13]:
+        cell.fill = HEADER_FILL
+    for row_index in [27, 33]:
         for cell in worksheet[row_index]:
             cell.font = HEADER_FONT
             cell.fill = SUBTLE_FILL
     for row in worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=2):
         for cell in row:
             cell.alignment = Alignment(vertical="top", wrap_text=True)
-    worksheet["B28"].hyperlink = "#metric_glossary!A1"
-    worksheet["B28"].style = "Hyperlink"
+    worksheet["B37"].hyperlink = "#metric_glossary!A1"
+    worksheet["B37"].style = "Hyperlink"
 
 
 def _excel_safe_value(value: object, max_len: int) -> object:
