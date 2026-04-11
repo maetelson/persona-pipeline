@@ -46,6 +46,9 @@ def select_persona_representative_examples(
             item["persona_id"] = str(persona_id)
             item["example_rank"] = rank
             item["selection_decision"] = "selected"
+            item["selection_strength"] = "grounded"
+            item["fallback_selected"] = False
+            item["coverage_selection_reason"] = "score_plus_diversity_policy"
             selected_rows.append(item)
         for item in ranked:
             item["persona_id"] = str(persona_id)
@@ -73,6 +76,162 @@ def select_persona_representative_examples(
         "audit_df": audit_df,
         "summary_lookup": summary_lookup,
         "markdown": markdown,
+    }
+
+
+def ensure_promoted_persona_grounding(
+    selected_df: pd.DataFrame,
+    audit_df: pd.DataFrame,
+    promoted_persona_ids: list[str],
+    config: dict[str, Any],
+    max_items_per_persona: int = 6,
+) -> dict[str, Any]:
+    """Backward-compatible wrapper for explicit promotion-grounding policy."""
+    return apply_promotion_grounding_policy(
+        selected_df=selected_df,
+        audit_df=audit_df,
+        promoted_persona_ids=promoted_persona_ids,
+        config=config,
+        max_items_per_persona=max_items_per_persona,
+    )
+
+
+def apply_promotion_grounding_policy(
+    selected_df: pd.DataFrame,
+    audit_df: pd.DataFrame,
+    promoted_persona_ids: list[str],
+    config: dict[str, Any],
+    max_items_per_persona: int = 6,
+) -> dict[str, Any]:
+    """Link promoted-persona coverage to explicit grounding states."""
+    selected = selected_df.copy() if selected_df is not None else pd.DataFrame()
+    audit = audit_df.copy() if audit_df is not None else pd.DataFrame()
+    if selected.empty and audit.empty:
+        return {
+            "selected_df": selected,
+            "audit_df": audit,
+            "missing_persona_ids": promoted_persona_ids,
+            "persona_grounding_df": pd.DataFrame(),
+        }
+    weak_label = str(config.get("policy", {}).get("fallback", {}).get("weak_selection_strength_label", "weak_grounding_fallback"))
+    coverage_reason = str(config.get("policy", {}).get("fallback", {}).get("coverage_selection_reason", "minimum_coverage_policy"))
+    ungrounded_action = str(config.get("policy", {}).get("promotion_grounding", {}).get("ungrounded_action", "flag") or "flag").strip().lower()
+    selected_ids = set(selected.get("episode_id", pd.Series(dtype=str)).astype(str).tolist()) if not selected.empty else set()
+    fallback_rows: list[dict[str, Any]] = []
+    missing_persona_ids: list[str] = []
+    grounding_rows: list[dict[str, Any]] = []
+    for persona_id in promoted_persona_ids:
+        persona_key = str(persona_id)
+        persona_selected = selected[selected.get("persona_id", pd.Series(dtype=str)).astype(str).eq(persona_key)].copy() if not selected.empty else pd.DataFrame()
+        grounded_selected = persona_selected[
+            persona_selected.get("grounding_strength", pd.Series(dtype=str)).astype(str).isin({"strong", "grounded"})
+        ] if not persona_selected.empty else pd.DataFrame()
+        weak_selected = persona_selected[
+            persona_selected.get("selection_strength", pd.Series(dtype=str)).astype(str).eq(weak_label)
+        ] if not persona_selected.empty else pd.DataFrame()
+        persona_candidates = audit[audit.get("persona_id", pd.Series(dtype=str)).astype(str).eq(persona_key)].copy()
+        grounded_candidate_count = int(
+            persona_candidates.get("grounding_strength", pd.Series(dtype=str)).astype(str).isin({"strong", "grounded"}).sum()
+        ) if not persona_candidates.empty else 0
+        weak_candidate_count = int(
+            persona_candidates.get("grounding_strength", pd.Series(dtype=str)).astype(str).eq("weak").sum()
+        ) if not persona_candidates.empty else 0
+        rejected_candidate_count = int(
+            persona_candidates.get("grounding_strength", pd.Series(dtype=str)).astype(str).eq("unacceptable").sum()
+        ) if not persona_candidates.empty else 0
+
+        final_status = _policy_status(config, "promoted_and_grounded_status", "promoted_and_grounded")
+        grounding_status = "grounded"
+        grounding_reason = "has at least one grounded representative example selected by score and diversity policy"
+
+        if grounded_selected.empty and weak_selected.empty:
+            fallback = _pick_promoted_fallback(persona_candidates, selected, selected_ids, config)
+            if fallback is not None:
+                next_rank = (
+                    int(persona_selected["example_rank"].max()) + 1
+                    if not persona_selected.empty and "example_rank" in persona_selected.columns
+                    else 1
+                )
+                fallback["persona_id"] = persona_key
+                fallback["example_rank"] = next_rank
+                fallback["selection_decision"] = "policy_fallback_selected"
+                fallback["fallback_selected"] = True
+                fallback["coverage_selection_reason"] = coverage_reason
+                fallback["grounding_warning"] = _fallback_grounding_warning(fallback)
+                if str(fallback.get("grounding_strength", "") or "") in {"strong", "grounded"}:
+                    fallback["selection_strength"] = "grounded"
+                    final_status = _policy_status(config, "promoted_and_grounded_status", "promoted_and_grounded")
+                    grounding_status = "grounded"
+                    grounding_reason = "coverage policy selected an additional grounded example because the promoted persona had no selected grounding row"
+                else:
+                    fallback["selection_strength"] = weak_label
+                    final_status = _policy_status(config, "promoted_but_weakly_grounded_status", "promoted_but_weakly_grounded")
+                    grounding_status = "weakly_grounded"
+                    grounding_reason = "only weak fallback evidence met policy; workbook must label the persona as weakly grounded"
+                fallback["why_selected"] = (
+                    "Coverage policy selected this example because the promoted persona lacked grounded coverage. "
+                    + str(fallback.get("why_selected", "") or "")
+                    + (f" Weakness: {fallback['grounding_warning']}." if fallback["grounding_warning"] else "")
+                ).strip()
+                fallback_rows.append(fallback)
+                selected_ids.add(str(fallback.get("episode_id", "")))
+                if str(fallback.get("selection_strength", "") or "") == weak_label:
+                    weak_selected = pd.DataFrame([fallback])
+                else:
+                    grounded_selected = pd.DataFrame([fallback])
+            else:
+                missing_persona_ids.append(persona_key)
+                grounding_status = "ungrounded"
+                grounding_reason = "no grounded or weak fallback candidate met policy thresholds"
+                if ungrounded_action == "downgrade":
+                    final_status = _policy_status(config, "downgraded_due_to_no_grounding_status", "downgraded_due_to_no_grounding")
+                else:
+                    final_status = _policy_status(config, "promoted_but_ungrounded_status", "promoted_but_ungrounded")
+        elif grounded_selected.empty and not weak_selected.empty:
+            final_status = _policy_status(config, "promoted_but_weakly_grounded_status", "promoted_but_weakly_grounded")
+            grounding_status = "weakly_grounded"
+            grounding_reason = "only weak fallback evidence is selected for this promoted persona"
+
+        grounding_rows.append(
+            {
+                "persona_id": persona_key,
+                "grounding_status": grounding_status,
+                "promotion_grounding_status": final_status,
+                "grounding_reason": grounding_reason,
+                "grounded_candidate_count": grounded_candidate_count,
+                "weak_candidate_count": weak_candidate_count,
+                "rejected_candidate_count": rejected_candidate_count,
+                "selected_example_count": int(len(persona_selected)) + (1 if fallback_rows and str(fallback_rows[-1].get("persona_id", "")) == persona_key else 0),
+                "fallback_selected_count": int(len(weak_selected)),
+            }
+        )
+    if fallback_rows:
+        fallback_df = pd.DataFrame(fallback_rows)
+        selected = pd.concat([selected, fallback_df], ignore_index=True) if not selected.empty else fallback_df
+        if not audit.empty:
+            audit = audit.copy()
+            for _, row in fallback_df.iterrows():
+                mask = audit.get("episode_id", pd.Series(dtype=str)).astype(str).eq(str(row.get("episode_id", "")))
+                audit.loc[mask, "selection_decision"] = str(row.get("selection_decision", "promoted_fallback_selected"))
+                audit.loc[mask, "selection_strength"] = str(row.get("selection_strength", weak_label))
+                audit.loc[mask, "grounding_warning"] = str(row.get("grounding_warning", ""))
+                audit.loc[mask, "example_rank"] = int(row.get("example_rank", 1) or 1)
+                audit.loc[mask, "why_selected"] = str(row.get("why_selected", "") or "")
+                audit.loc[mask, "fallback_selected"] = bool(row.get("fallback_selected", False))
+                audit.loc[mask, "coverage_selection_reason"] = str(row.get("coverage_selection_reason", "") or "")
+    if not selected.empty:
+        sort_columns = [column for column in ["persona_id", "example_rank", "final_example_score"] if column in selected.columns]
+        ascending = [value for column, value in zip(["persona_id", "example_rank", "final_example_score"], [True, True, False]) if column in sort_columns]
+        if sort_columns:
+            selected = selected.sort_values(sort_columns, ascending=ascending).reset_index(drop=True)
+        selected["example_rank"] = (
+            selected.groupby("persona_id", dropna=False).cumcount() + 1
+        )
+    return {
+        "selected_df": selected,
+        "audit_df": audit,
+        "missing_persona_ids": missing_persona_ids,
+        "persona_grounding_df": pd.DataFrame(grounding_rows),
     }
 
 
@@ -152,6 +311,15 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
     weights = config.get("weights", {})
     positive_patterns = config.get("positive_patterns", {})
     negative_patterns = config.get("negative_patterns", {})
+    alignment = _persona_axis_alignment(row, dominant_axes, axis_names)
+    output_stakeholder_alignment = _output_stakeholder_alignment_score(
+        dominant_axes=dominant_axes,
+        score_breakdown_seed={
+            "output_need_score": _pattern_score(text, positive_patterns.get("output_need", [])),
+            "stakeholder_pressure_score": _pattern_score(text, ["stakeholder", "leadership", "executive", "board report", "business review"]),
+            "validation_pressure_score": _pattern_score(text, positive_patterns.get("validation_pressure", [])),
+        },
+    )
 
     score_breakdown = {
         "explicit_workflow_pain_score": _pattern_score(text, positive_patterns.get("explicit_workflow_pain", [])),
@@ -170,12 +338,18 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
         "root_cause_score": _pattern_score(text, ["why did", "can't explain", "root cause", "drove it"]),
         "metric_definition_score": _pattern_score(text, ["metric definition", "finance definition", "source of truth", "numbers don't match"]),
         "output_need_score": _pattern_score(text, positive_patterns.get("output_need", [])),
-        "persona_fit_score": _persona_fit_score(row, dominant_axes, axis_names),
+        "persona_fit_score": float(alignment["persona_fit_score"]),
+        "defining_axis_match_score": float(alignment["defining_axis_match_score"]),
+        "grounding_fit_score": float(_grounding_fit_score(alignment, output_stakeholder_alignment)),
+        "output_stakeholder_alignment_score": float(output_stakeholder_alignment),
         "genericness_penalty": _pattern_score(text, negative_patterns.get("genericness", [])),
         "technical_noise_penalty": _pattern_score(text, negative_patterns.get("technical_noise", [])),
         "generic_product_statement_penalty": _pattern_score(text, negative_patterns.get("generic_product_statement", [])),
         "no_user_pain_context_penalty": _no_user_pain_context_penalty(text),
         "short_no_workflow_evidence_penalty": _short_no_workflow_penalty(text),
+        "critical_axis_mismatch_penalty": float(alignment["critical_mismatch_count"]),
+        "major_axis_mismatch_penalty": float(1.0 if alignment["mismatch_count"] > int(config.get("thresholds", {}).get("max_selected_mismatch_axes", 2)) else 0.0),
+        "self_reported_mismatch_penalty": float(1.0 if alignment["critical_mismatch_count"] > 0 or alignment["mismatch_count"] > 0 else 0.0),
         "duplicate_penalty": 0.0,
     }
     final_example_score = (
@@ -196,18 +370,24 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
         + score_breakdown["metric_definition_score"] * float(weights.get("metric_definition", 1.0))
         + score_breakdown["output_need_score"] * float(weights.get("output_need", 1.0))
         + score_breakdown["persona_fit_score"] * float(weights.get("persona_fit", 1.0))
+        + score_breakdown["defining_axis_match_score"] * float(weights.get("defining_axis_match", 1.0))
+        + score_breakdown["grounding_fit_score"] * float(weights.get("grounding_fit", 1.0))
+        + score_breakdown["output_stakeholder_alignment_score"] * float(weights.get("output_stakeholder_alignment", 1.0))
         - score_breakdown["genericness_penalty"] * float(weights.get("genericness_penalty", 1.0))
         - score_breakdown["technical_noise_penalty"] * float(weights.get("technical_noise_penalty", 1.0))
         - score_breakdown["generic_product_statement_penalty"] * float(weights.get("generic_product_statement_penalty", 2.2))
         - score_breakdown["no_user_pain_context_penalty"] * float(weights.get("no_user_pain_context_penalty", 2.0))
         - score_breakdown["short_no_workflow_evidence_penalty"] * float(weights.get("short_no_workflow_evidence_penalty", 2.0))
+        - score_breakdown["critical_axis_mismatch_penalty"] * float(weights.get("critical_axis_mismatch_penalty", 1.0))
+        - score_breakdown["major_axis_mismatch_penalty"] * float(weights.get("major_axis_mismatch_penalty", 1.0))
+        - score_breakdown["self_reported_mismatch_penalty"] * float(weights.get("self_reported_mismatch_penalty", 1.0))
     )
     quote_quality = _quote_quality(score_breakdown, final_example_score, config)
     cluster_fit_reason = _cluster_fit_reason(row, dominant_axes, axis_names)
     top_positive_signals = _top_signals(score_breakdown, positive=True)
     top_negative_signals = _top_signals(score_breakdown, positive=False)
     rejection_reason = _rejection_reason(score_breakdown, quote_quality)
-    return {
+    candidate = {
         "episode_id": get_episode_id(row),
         "source": get_record_source(row),
         "grounded_text": snippet,
@@ -219,22 +399,42 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
         "rejection_reason": rejection_reason,
         "subpattern_label": _subpattern_label(text, config),
         "final_example_score": round(float(final_example_score), 4),
+        "mismatch_count": int(alignment["mismatch_count"]),
+        "critical_mismatch_count": int(alignment["critical_mismatch_count"]),
+        "matched_axis_count": int(alignment["matched_count"]),
+        "grounding_fit_score": round(float(score_breakdown["grounding_fit_score"]), 4),
+        "selection_strength": "not_selected",
         "label_confidence": float(get_record_value(row, "label_confidence", 0.0) or 0.0),
         "source_text_length": len(snippet),
         "reason_selected": " | ".join(top_positive_signals[:3]) if top_positive_signals else "borderline or weak evidence",
         "why_selected": _why_selected(top_positive_signals, cluster_fit_reason),
         "matched_axes": _matched_axes(cluster_fit_reason),
+        "fallback_selected": False,
+        "coverage_selection_reason": "",
     }
+    candidate["grounding_strength"] = _grounding_strength(candidate, config)
+    candidate["fallback_eligible"] = bool(candidate["grounding_strength"] == "weak" and _allow_borderline_fallback(candidate, config))
+    candidate["grounding_reason"] = _grounding_reason(candidate)
+    return candidate
 
 
 def _select_diverse_examples(candidates: list[dict[str, Any]], max_items: int, config: dict[str, Any]) -> list[dict[str, Any]]:
     """Select top examples with diversity and near-duplicate suppression."""
     selected: list[dict[str, Any]] = []
     selected_texts: list[str] = []
+    selected_sources: set[str] = set()
     used_subpatterns: set[str] = set()
     duplicate_threshold = float(config.get("thresholds", {}).get("duplicate_similarity_threshold", 0.72))
+    max_mismatch_axes = int(config.get("thresholds", {}).get("max_selected_mismatch_axes", 2))
+    max_critical_mismatch_axes = int(config.get("thresholds", {}).get("max_selected_critical_mismatch_axes", 1))
+    source_diversity_margin = float(config.get("policy", {}).get("diversity", {}).get("prefer_new_source_within_score_margin", config.get("thresholds", {}).get("source_diversity_score_margin", 1.25)))
+    diversify_fraction = float(config.get("policy", {}).get("diversity", {}).get("diversify_subpatterns_until_slot_fraction", 0.5))
     for candidate in candidates:
-        if candidate["quote_quality"] not in {"strong_representative", "usable"}:
+        if candidate.get("grounding_strength") not in {"strong", "grounded"}:
+            continue
+        if int(candidate.get("mismatch_count", 0) or 0) > max_mismatch_axes:
+            continue
+        if int(candidate.get("critical_mismatch_count", 0) or 0) > max_critical_mismatch_axes:
             continue
         text = str(candidate["grounded_text"])
         duplicate_penalty = 0.0
@@ -247,19 +447,27 @@ def _select_diverse_examples(candidates: list[dict[str, Any]], max_items: int, c
             candidate["rejection_reason"] = "near-duplicate of a stronger selected example"
             continue
         subpattern = str(candidate.get("subpattern_label", "general_bottleneck"))
-        if subpattern in used_subpatterns and len(selected) < max_items // 2:
+        source = str(candidate.get("source", "") or "")
+        if source and source in selected_sources:
+            better_source_option = any(
+                str(other.get("source", "") or "") not in selected_sources
+                and float(other.get("final_example_score", 0.0) or 0.0) >= float(candidate.get("final_example_score", 0.0) or 0.0) - source_diversity_margin
+                and str(other.get("quote_quality", "")) in {"strong_representative", "usable"}
+                and int(other.get("mismatch_count", 0) or 0) <= max_mismatch_axes
+                and int(other.get("critical_mismatch_count", 0) or 0) <= max_critical_mismatch_axes
+                for other in candidates
+            )
+            if better_source_option:
+                continue
+        if subpattern in used_subpatterns and len(selected) < max(1, int(max_items * diversify_fraction)):
             continue
         selected.append(candidate)
         selected_texts.append(text)
+        if source:
+            selected_sources.add(source)
         used_subpatterns.add(subpattern)
         if len(selected) >= max_items:
             break
-    if not selected:
-        for candidate in candidates:
-            if candidate["quote_quality"] == "borderline" and _allow_borderline_fallback(candidate):
-                selected.append(candidate)
-                if len(selected) >= max_items:
-                    break
     return selected
 
 
@@ -291,25 +499,9 @@ def _source_text(row: pd.Series) -> str:
     return get_record_text(row, fields=["normalized_episode", "evidence_snippet"])
 
 
-def _persona_fit_score(row: pd.Series, dominant_axes: dict[str, str], axis_names: list[str]) -> float:
-    """Score how well the row matches the persona's dominant axis values."""
-    if not axis_names or not dominant_axes:
-        return 0.0
-    matched = 0
-    considered = 0
-    for axis in axis_names:
-        raw_value = str(row.get(axis, "") or "").strip().lower()
-        dominant = str(dominant_axes.get(axis, "") or "").strip().lower()
-        if not dominant or dominant == "unassigned":
-            continue
-        considered += 1
-        if raw_value == dominant:
-            matched += 1
-    return round(matched / max(considered, 1), 4)
-
-
 def _cluster_fit_reason(row: pd.Series, dominant_axes: dict[str, str], axis_names: list[str]) -> str:
     """Explain why the example fits or misses the persona signature."""
+    alignment = _persona_axis_alignment(row, dominant_axes, axis_names)
     matches: list[str] = []
     misses: list[str] = []
     for axis in axis_names[:6]:
@@ -322,8 +514,11 @@ def _cluster_fit_reason(row: pd.Series, dominant_axes: dict[str, str], axis_name
         else:
             misses.append(f"{axis}={raw_value or 'unassigned'} vs {dominant}")
     if matches:
-        return f"Matches persona on {', '.join(matches[:3])}" + (f"; misses {', '.join(misses[:2])}" if misses else "")
-    return "Low direct axis match; kept only if bottleneck detail is unusually strong."
+        qualifier = ""
+        if int(alignment["critical_mismatch_count"]) > 0:
+            qualifier = " with major mismatch risk"
+        return f"Matches persona on {', '.join(matches[:3])}{qualifier}" + (f"; misses {', '.join(misses[:2])}" if misses else "")
+    return "Low direct axis match; keep only as weak grounding fallback when no stronger example exists."
 
 
 def _quote_quality(score_breakdown: dict[str, float], final_score: float, config: dict[str, Any]) -> str:
@@ -419,6 +614,71 @@ def _why_selected(top_positive_signals: list[str], cluster_fit_reason: str) -> s
     return f"Selected for {signals}. {cluster_fit_reason}"
 
 
+def _grounding_fit_score(alignment: dict[str, Any], output_stakeholder_alignment: float) -> float:
+    """Score whether an example is grounded enough to stand in for the persona."""
+    matched = float(alignment.get("persona_fit_score", 0.0) or 0.0)
+    defining = float(alignment.get("defining_axis_match_score", 0.0) or 0.0)
+    mismatches = float(alignment.get("mismatch_count", 0) or 0)
+    critical = float(alignment.get("critical_mismatch_count", 0) or 0)
+    return round(max(0.0, matched * 1.5 + defining * 1.5 + min(float(output_stakeholder_alignment), 2.0) * 0.25 - mismatches * 0.35 - critical * 1.0), 4)
+
+
+def _persona_axis_alignment(row: pd.Series, dominant_axes: dict[str, str], axis_names: list[str]) -> dict[str, Any]:
+    """Return detailed axis alignment between one row and the persona signature."""
+    if not axis_names or not dominant_axes:
+        return {
+            "matched_count": 0,
+            "mismatch_count": 0,
+            "critical_mismatch_count": 0,
+            "persona_fit_score": 0.0,
+            "defining_axis_match_score": 0.0,
+        }
+    critical_axes = {"bottleneck_type", "workflow_stage", "analysis_goal", "tool_dependency_mode", "output_expectation"}
+    matched = 0
+    mismatches = 0
+    considered = 0
+    critical_matches = 0
+    critical_mismatches = 0
+    critical_considered = 0
+    for axis in axis_names:
+        dominant = str(dominant_axes.get(axis, "") or "").strip().lower()
+        if not dominant or dominant == "unassigned":
+            continue
+        raw_value = str(row.get(axis, "") or "").strip().lower()
+        considered += 1
+        is_match = raw_value == dominant
+        if is_match:
+            matched += 1
+        else:
+            mismatches += 1
+        if axis in critical_axes:
+            critical_considered += 1
+            if is_match:
+                critical_matches += 1
+            else:
+                critical_mismatches += 1
+    return {
+        "matched_count": matched,
+        "mismatch_count": mismatches,
+        "critical_mismatch_count": critical_mismatches,
+        "persona_fit_score": round(matched / max(considered, 1), 4),
+        "defining_axis_match_score": round(critical_matches / max(critical_considered, 1), 4) if critical_considered else 0.0,
+    }
+
+
+def _output_stakeholder_alignment_score(dominant_axes: dict[str, str], score_breakdown_seed: dict[str, float]) -> float:
+    """Boost examples that surface output/stakeholder pressure when the persona signature suggests it matters."""
+    output_expected = str(dominant_axes.get("output_expectation", "") or "").strip().lower() not in {"", "unassigned"}
+    trust_expected = str(dominant_axes.get("trust_validation_need", "") or "").strip().lower() not in {"", "unassigned"}
+    score = 0.0
+    if output_expected:
+        score += float(score_breakdown_seed.get("output_need_score", 0.0))
+    if trust_expected:
+        score += float(score_breakdown_seed.get("stakeholder_pressure_score", 0.0))
+        score += float(score_breakdown_seed.get("validation_pressure_score", 0.0))
+    return min(score, 3.0)
+
+
 def _matched_axes(cluster_fit_reason: str) -> str:
     """Extract matched axis text from the cluster fit reason."""
     if "Matches persona on " not in cluster_fit_reason:
@@ -431,6 +691,41 @@ def _top_signals(score_breakdown: dict[str, float], positive: bool) -> list[str]
     keys = [key for key in score_breakdown if key.endswith("_penalty")] if not positive else [key for key in score_breakdown if not key.endswith("_penalty")]
     ranked = sorted(((key, float(score_breakdown[key])) for key in keys), key=lambda item: item[1], reverse=True)
     return [key for key, value in ranked if value > 0][:4]
+
+
+def _grounding_strength(candidate: dict[str, Any], config: dict[str, Any]) -> str:
+    """Classify whether a candidate can ground a persona strongly, weakly, or not at all."""
+    quality = str(candidate.get("quote_quality", "") or "")
+    mismatch_count = int(candidate.get("mismatch_count", 0) or 0)
+    critical_mismatch_count = int(candidate.get("critical_mismatch_count", 0) or 0)
+    for level in ("strong", "grounded", "weak"):
+        rule = dict(config.get("policy", {}).get("grounding_strength", {}).get(level, {}) or {})
+        allowed = {str(value) for value in list(rule.get("allowed_quote_qualities", []))}
+        if quality not in allowed:
+            continue
+        if mismatch_count > int(rule.get("max_mismatch_axes", 99)):
+            continue
+        if critical_mismatch_count > int(rule.get("max_critical_mismatch_axes", 99)):
+            continue
+        if level == "weak" and not _allow_borderline_fallback(candidate, config):
+            continue
+        return level
+    return "unacceptable"
+
+
+def _grounding_reason(candidate: dict[str, Any]) -> str:
+    """Explain how a candidate landed in its grounding bucket."""
+    return (
+        f"grounding_strength={candidate.get('grounding_strength', '')}; "
+        f"quote_quality={candidate.get('quote_quality', '')}; "
+        f"mismatch_count={int(candidate.get('mismatch_count', 0) or 0)}; "
+        f"critical_mismatch_count={int(candidate.get('critical_mismatch_count', 0) or 0)}"
+    )
+
+
+def _policy_status(config: dict[str, Any], key: str, default: str) -> str:
+    """Read a configured promotion-grounding status name."""
+    return str(config.get("policy", {}).get("promotion_grounding", {}).get(key, default) or default)
 
 
 def _subpattern_label(text: str, config: dict[str, Any]) -> str:
@@ -508,8 +803,10 @@ def _build_examples_markdown(selected_df: pd.DataFrame) -> str:
     return "\n".join(sections).strip() + "\n"
 
 
-def _allow_borderline_fallback(candidate: dict[str, Any]) -> bool:
+def _allow_borderline_fallback(candidate: dict[str, Any], config: dict[str, Any]) -> bool:
     """Allow only stronger borderline examples when no usable quote exists."""
+    if not bool(config.get("policy", {}).get("fallback", {}).get("allow_weak_grounding_fallback", True)):
+        return False
     try:
         breakdown = json.loads(str(candidate.get("score_breakdown", "{}")))
     except json.JSONDecodeError:
@@ -526,6 +823,74 @@ def _allow_borderline_fallback(candidate: dict[str, Any]) -> bool:
         + float(breakdown.get("metric_definition_score", 0.0))
         + float(breakdown.get("root_cause_score", 0.0))
     )
-    return float(candidate.get("final_example_score", 0.0)) >= 4.0 and (
+    return float(candidate.get("final_example_score", 0.0)) >= float(config.get("thresholds", {}).get("promoted_fallback_min_score", 4.0)) and (
         problem_strength >= 2.0 or (workflow_business_strength >= 2.0 and output_context >= 1.0)
     )
+
+
+def _pick_promoted_fallback(
+    persona_candidates: pd.DataFrame,
+    selected_df: pd.DataFrame,
+    selected_ids: set[str],
+    config: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Pick the best weak fallback for a promoted persona that lacks a selected example."""
+    if persona_candidates.empty:
+        return None
+    thresholds = config.get("thresholds", {})
+    min_score = float(thresholds.get("promoted_fallback_min_score", 2.5))
+    max_mismatch_axes = int(thresholds.get("max_selected_mismatch_axes", 2)) + 1
+    max_critical_mismatch_axes = int(thresholds.get("max_selected_critical_mismatch_axes", 1))
+    used_sources = set(selected_df.get("source", pd.Series(dtype=str)).astype(str).tolist()) if not selected_df.empty else set()
+    rows: list[dict[str, Any]] = []
+    for _, row in persona_candidates.iterrows():
+        candidate = row.to_dict()
+        if str(candidate.get("episode_id", "")) in selected_ids:
+            continue
+        grounding_strength = str(candidate.get("grounding_strength", "") or "")
+        if grounding_strength not in {"strong", "grounded", "weak"}:
+            continue
+        if grounding_strength == "weak" and not bool(config.get("policy", {}).get("fallback", {}).get("allow_weak_grounding_fallback", True)):
+            continue
+        if float(candidate.get("final_example_score", 0.0) or 0.0) < min_score:
+            continue
+        if int(candidate.get("critical_mismatch_count", 0) or 0) > max_critical_mismatch_axes:
+            continue
+        if int(candidate.get("mismatch_count", 0) or 0) > max_mismatch_axes:
+            continue
+        quality = str(candidate.get("quote_quality", "") or "")
+        quality_bonus = {"borderline": 1.0, "usable": 2.0, "strong_representative": 3.0, "reject": 0.0}.get(quality, 0.0)
+        grounding_bonus = {"weak": 1.0, "grounded": 2.5, "strong": 3.0}.get(grounding_strength, 0.0)
+        source_bonus = 0.75 if str(candidate.get("source", "") or "") not in used_sources else 0.0
+        candidate["_fallback_priority"] = (
+            float(candidate.get("final_example_score", 0.0) or 0.0)
+            + quality_bonus
+            + grounding_bonus
+            + source_bonus
+            - float(candidate.get("mismatch_count", 0) or 0) * 0.5
+            - float(candidate.get("critical_mismatch_count", 0) or 0) * 1.0
+        )
+        rows.append(candidate)
+    if not rows:
+        return None
+    rows.sort(key=lambda item: (-float(item["_fallback_priority"]), -float(item.get("final_example_score", 0.0) or 0.0), str(item.get("episode_id", ""))))
+    best = dict(rows[0])
+    best.pop("_fallback_priority", None)
+    return best
+
+
+def _fallback_grounding_warning(candidate: dict[str, Any]) -> str:
+    """Explain why a fallback-selected example is weaker than a normal representative example."""
+    reasons: list[str] = []
+    if str(candidate.get("grounding_strength", "") or "") == "weak":
+        reasons.append("grounding_strength=weak")
+    if str(candidate.get("quote_quality", "") or "") not in {"usable", "strong_representative"}:
+        reasons.append(f"quote_quality={candidate.get('quote_quality', '')}")
+    if int(candidate.get("critical_mismatch_count", 0) or 0) > 0:
+        reasons.append(f"critical_mismatch_count={int(candidate.get('critical_mismatch_count', 0) or 0)}")
+    if int(candidate.get("mismatch_count", 0) or 0) > 0:
+        reasons.append(f"mismatch_count={int(candidate.get('mismatch_count', 0) or 0)}")
+    rejection_reason = str(candidate.get("rejection_reason", "") or "").strip()
+    if rejection_reason:
+        reasons.append(rejection_reason)
+    return " | ".join(reasons)

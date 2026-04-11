@@ -11,6 +11,11 @@ UNKNOWN_VALUES = {"", "unknown", "null", "none", "nan", "other", "unspecified", 
 EPISODE_ID_FIELD = "episode_id"
 RAW_ID_FIELD = "raw_id"
 SOURCE_FIELD = "source"
+REDDIT_AGGREGATE_SOURCE = "reddit"
+REDDIT_VARIANT_PREFIX = "reddit_"
+DENOMINATOR_LABELED_EPISODE_ROWS = "labeled_episode_rows"
+DENOMINATOR_PERSONA_CORE_LABELED_ROWS = "persona_core_labeled_rows"
+DENOMINATOR_PROMOTED_PERSONA_ROWS = "promoted_persona_rows"
 
 RECORD_ID_FIELDS = ["episode_id", "raw_id", "raw_source_id", "id"]
 RECORD_TEXT_FIELDS = [
@@ -64,18 +69,13 @@ QUALITY_FLAG_OK = "OK"
 QUALITY_FLAG_LOW = "LOW QUALITY"
 QUALITY_FLAG_EXPLORATORY = "EXPLORATORY"
 QUALITY_FLAG_UNSTABLE = "UNSTABLE"
+STATUS_OK = "OK"
+STATUS_WARN = "WARN"
+STATUS_FAIL = "FAIL"
 QUALITY_UNKNOWN_RATIO_THRESHOLD = 0.30
-MIN_LABELED_SOURCE_COUNT = 4
 CLUSTER_DOMINANCE_SHARE_PCT = 70.0
 MIN_CLUSTER_SIZE_ABSOLUTE = 5
 MIN_CLUSTER_SIZE_RATIO = 0.05
-
-QUALITY_THRESHOLDS = {
-    "unknown_ratio": QUALITY_UNKNOWN_RATIO_THRESHOLD,
-    "cluster_count": 2,
-    "labeled_source_count": MIN_LABELED_SOURCE_COUNT,
-    "largest_cluster_share": CLUSTER_DOMINANCE_SHARE_PCT,
-}
 
 LABELABLE_STATUSES = {"labelable", "borderline"}
 RAW_WITHOUT_LABEL_FAILURE_SOURCES = {
@@ -125,12 +125,21 @@ WORKBOOK_COLUMN_ORDERS = {
     "cluster_stats": [
         "persona_id",
         "persona_size",
-        "share_of_total",
+        "share_of_core_labeled",
+        "share_of_all_labeled",
         "denominator_type",
         "denominator_value",
         "min_cluster_size",
+        "base_promotion_status",
         "promotion_status",
+        "grounding_status",
+        "promotion_grounding_status",
         "promotion_reason",
+        "grounding_reason",
+        "grounded_candidate_count",
+        "weak_candidate_count",
+        "selected_example_count",
+        "fallback_selected_count",
         "dominant_signature",
         "dominant_bottleneck",
         "dominant_analysis_goal",
@@ -139,11 +148,21 @@ WORKBOOK_COLUMN_ORDERS = {
         "persona_id",
         "persona_name",
         "persona_size",
-        "share_of_total",
+        "share_of_core_labeled",
+        "share_of_all_labeled",
         "denominator_type",
         "denominator_value",
         "min_cluster_size",
+        "base_promotion_status",
         "promotion_status",
+        "grounding_status",
+        "promotion_grounding_status",
+        "promotion_reason",
+        "grounding_reason",
+        "grounded_candidate_count",
+        "weak_candidate_count",
+        "selected_example_count",
+        "fallback_selected_count",
         "one_line_summary",
         "dominant_bottleneck",
         "main_workflow_context",
@@ -158,22 +177,39 @@ WORKBOOK_COLUMN_ORDERS = {
     "persona_axes": ["persona_id", "axis_name", "axis_value", "count", "pct_of_persona"],
     "persona_needs": ["persona_id", "pain_or_need", "count", "pct_of_persona", "rank"],
     "persona_cooccurrence": ["persona_id", "theme_a", "theme_b", "pair_count", "pct_of_persona", "rank"],
-    "persona_examples": ["persona_id", "example_rank", "grounded_text", "why_selected", "matched_axes", "reason_selected"],
+    "persona_examples": [
+        "persona_id",
+        "example_rank",
+        "grounded_text",
+        "selection_strength",
+        "grounding_strength",
+        "fallback_selected",
+        "coverage_selection_reason",
+        "grounding_reason",
+        "why_selected",
+        "matched_axes",
+        "reason_selected",
+        "quote_quality",
+        "grounding_fit_score",
+        "mismatch_count",
+        "critical_mismatch_count",
+        "matched_axis_count",
+        "final_example_score",
+    ],
     "quality_checks": ["metric", "value", "threshold", "status", "level", "denominator_type", "denominator_value", "notes"],
     "source_diagnostics": [
         "source",
-        "raw_count",
-        "normalized_count",
-        "valid_count",
-        "prefiltered_valid_count",
-        "prefilter_survival_rate",
-        "episode_count",
-        "episode_survival_rate",
-        "labelable_count",
-        "labeled_count",
-        "labeling_survival_rate",
-        "effective_diversity_contribution",
-        "promoted_to_persona_count",
+        "section",
+        "grain",
+        "metric_name",
+        "metric_value",
+        "metric_type",
+        "denominator_metric",
+        "denominator_grain",
+        "denominator_value",
+        "bounded_range",
+        "is_same_grain_funnel",
+        "metric_definition",
         "failure_reason_top",
         "failure_level",
         "recommended_seed_set",
@@ -184,17 +220,12 @@ WORKBOOK_COLUMN_ORDERS = {
 
 WORKBOOK_RATIO_COLUMNS = {
     "source_distribution": {"share_of_labeled": 1},
-    "cluster_stats": {"share_of_total": 1},
-    "persona_summary": {"share_of_total": 1},
+    "cluster_stats": {"share_of_core_labeled": 1, "share_of_all_labeled": 1},
+    "persona_summary": {"share_of_core_labeled": 1, "share_of_all_labeled": 1},
     "persona_axes": {"pct_of_persona": 1},
     "persona_needs": {"pct_of_persona": 1},
     "persona_cooccurrence": {"pct_of_persona": 1},
-    "source_diagnostics": {
-        "prefilter_survival_rate": 1,
-        "episode_survival_rate": 1,
-        "labeling_survival_rate": 1,
-        "effective_diversity_contribution": 2,
-    },
+    "source_diagnostics": {},
 }
 
 
@@ -278,13 +309,32 @@ def row_has_unknown_labels(values: Iterable[object]) -> bool:
     return any(is_unknown_like(value) for value in values)
 
 
+def canonical_source_name(source: object) -> str:
+    """Return the workbook/reporting source key used for aggregation."""
+    value = str(source or "").strip()
+    if value.startswith(REDDIT_VARIANT_PREFIX):
+        return REDDIT_AGGREGATE_SOURCE
+    return value
+
+
+def share_column_for_denominator(denominator_type: object) -> str:
+    """Return the canonical share column name for a denominator."""
+    mapping = {
+        DENOMINATOR_LABELED_EPISODE_ROWS: "share_of_all_labeled",
+        DENOMINATOR_PERSONA_CORE_LABELED_ROWS: "share_of_core_labeled",
+        DENOMINATOR_PROMOTED_PERSONA_ROWS: "share_of_promoted_persona_rows",
+    }
+    return mapping.get(str(denominator_type or "").strip(), "")
+
+
 def source_row_count(df, source: str, source_column: str = SOURCE_FIELD) -> int:
     """Return row count for one source from a dataframe-like table."""
     import pandas as pd
 
     if df is None or df.empty or source_column not in df.columns:
         return 0
-    return int((df[source_column].astype(str) == str(source)).sum())
+    canonical = canonical_source_name(source)
+    return int(df[source_column].astype(str).map(canonical_source_name).eq(canonical).sum())
 
 
 def aggregated_source_count(df, source: str, count_column: str, source_column: str = SOURCE_FIELD) -> int:
@@ -293,7 +343,8 @@ def aggregated_source_count(df, source: str, count_column: str, source_column: s
 
     if df is None or df.empty or source_column not in df.columns or count_column not in df.columns:
         return 0
-    match = df[df[source_column].astype(str) == str(source)]
+    canonical = canonical_source_name(source)
+    match = df[df[source_column].astype(str).map(canonical_source_name).eq(canonical)]
     return int(pd.to_numeric(match[count_column], errors="coerce").fillna(0).sum()) if not match.empty else 0
 
 

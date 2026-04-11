@@ -8,7 +8,14 @@ from pathlib import Path
 import pandas as pd
 
 from src.utils.io import ensure_dir, read_parquet, write_parquet
-from src.utils.pipeline_schema import WORKBOOK_COLUMN_ORDERS, WORKBOOK_RATIO_COLUMNS, WORKBOOK_SHEET_NAMES, reorder_frame_columns, round_frame_ratios
+from src.utils.pipeline_schema import (
+    WORKBOOK_COLUMN_ORDERS,
+    WORKBOOK_RATIO_COLUMNS,
+    WORKBOOK_SHEET_NAMES,
+    reorder_frame_columns,
+    round_frame_ratios,
+    share_column_for_denominator,
+)
 
 
 def assemble_workbook_frames(
@@ -112,6 +119,8 @@ def validate_workbook_frames(frames: dict[str, pd.DataFrame]) -> list[str]:
                 messages.append(f"unrounded ratio values normalized: {sheet_name}.{column}")
         if sheet_name in {"cluster_stats", "persona_summary", "persona_examples"} and frame.empty:
             messages.append(f"sparse data: empty {sheet_name} sheet")
+        messages.extend(_validate_share_denominator_contract(sheet_name, frame))
+        messages.extend(_validate_source_diagnostics_contract(sheet_name, frame))
     return messages
 
 
@@ -133,3 +142,54 @@ def _normalize_bundle_value(value: object) -> object:
     if value is None:
         return ""
     return value
+
+
+def _validate_share_denominator_contract(sheet_name: str, frame: pd.DataFrame) -> list[str]:
+    """Validate that share column labels match declared denominator semantics."""
+    if sheet_name not in {"cluster_stats", "persona_summary"}:
+        return []
+    if frame.empty or "denominator_type" not in frame.columns:
+        return []
+    messages: list[str] = []
+    if "share_of_total" in frame.columns:
+        messages.append(f"forbidden generic share column: {sheet_name}.share_of_total")
+    share_columns = [column for column in frame.columns if column.startswith("share_of_")]
+    if not share_columns:
+        return messages
+    for _, row in frame.iterrows():
+        denominator_type = str(row.get("denominator_type", "") or "").strip()
+        expected = share_column_for_denominator(denominator_type)
+        if not expected:
+            continue
+        if expected not in share_columns:
+            messages.append(f"share denominator mismatch: {sheet_name}.{expected} missing for denominator_type={denominator_type}")
+    return messages
+
+
+def _validate_source_diagnostics_contract(sheet_name: str, frame: pd.DataFrame) -> list[str]:
+    """Reject legacy mixed-grain source diagnostics columns from workbook export."""
+    if sheet_name != "source_diagnostics" or frame.empty:
+        return []
+    forbidden_columns = {
+        "raw_count",
+        "normalized_count",
+        "valid_count",
+        "prefiltered_valid_count",
+        "prefilter_survival_rate",
+        "episode_survival_rate",
+        "labelable_count",
+        "labeled_count",
+        "labeling_survival_rate",
+        "promoted_to_persona_count",
+    }
+    messages = [f"ambiguous source_diagnostics column: {sheet_name}.{column}" for column in sorted(forbidden_columns & set(frame.columns))]
+    required = {"section", "grain", "metric_name", "metric_value", "metric_type", "metric_definition"}
+    for column in sorted(required - set(frame.columns)):
+        messages.append(f"missing source_diagnostics structure column: {sheet_name}.{column}")
+    if {"grain", "metric_name"}.issubset(frame.columns):
+        mixed = frame[frame["grain"].astype(str).eq("mixed_grain_bridge")]
+        if not mixed.empty:
+            bad = mixed[mixed["metric_name"].astype(str).str.contains("rate|share|survival", case=False, regex=True)]
+            for metric_name in sorted(bad.get("metric_name", pd.Series(dtype=str)).astype(str).unique().tolist()):
+                messages.append(f"mixed-grain metric mislabeled as rate: {sheet_name}.{metric_name}")
+    return messages

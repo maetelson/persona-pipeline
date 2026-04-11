@@ -22,10 +22,12 @@ from src.analysis.persona_axes import discover_persona_axes, write_persona_axis_
 from src.analysis.persona_gen import generate_personas
 from src.analysis.persona_messaging import build_persona_messaging_outputs, write_persona_messaging_outputs
 from src.analysis.persona_service import build_persona_outputs, write_persona_outputs
+from src.analysis.quality_status import build_quality_metrics, evaluate_quality_status
 from src.analysis.diagnostics import (
     build_metric_glossary,
     build_quality_failures,
     build_source_diagnostics,
+    build_source_stage_counts,
     build_survival_funnel_by_source,
     finalize_quality_checks,
 )
@@ -37,7 +39,6 @@ from src.analysis.summary import (
     build_counts_table,
     build_final_source_distribution,
     append_source_survival_rows,
-    build_quality_checks,
     build_quality_checks_df,
     build_taxonomy_summary,
 )
@@ -146,28 +147,17 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         apply_changes=True,
     )
 
-    quality_checks = build_quality_checks(
-        raw_audit_df=raw_audit_df,
-        valid_df=valid_df,
-        labeled_df=labeled_df,
-        cluster_profiles=cluster_profiles,
-        root_dir=root_dir,
-    )
     persona_service_outputs = build_persona_outputs(
         episodes_df=clustering_episodes_df,
         labeled_df=clustering_labeled_df,
         final_axis_schema=reduced_outputs["reduced_axis_schema"],
-        quality_checks=quality_checks,
+        quality_checks={
+            "labeled_count": int(len(labeled_df)),
+            "persona_core_labeled_count": int(len(clustering_labeled_df)),
+        },
     )
     bottleneck_cluster_profiles = persona_service_outputs.get("cluster_profiles", [])
-    quality_checks = build_quality_checks(
-        raw_audit_df=raw_audit_df,
-        valid_df=valid_df,
-        labeled_df=labeled_df,
-        cluster_profiles=bottleneck_cluster_profiles,
-        root_dir=root_dir,
-    )
-    source_diagnostics_df = build_source_diagnostics(
+    source_stage_counts_df = build_source_stage_counts(
         root_dir=root_dir,
         normalized_df=normalized_df,
         valid_df=valid_df,
@@ -176,25 +166,39 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         persona_assignments_df=persona_service_outputs["persona_assignments_df"],
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
     )
-    quality_checks = finalize_quality_checks(
-        quality_checks,
-        source_diagnostics_df=source_diagnostics_df,
+    source_diagnostics_df = build_source_diagnostics(source_stage_counts_df)
+    quality_metrics = build_quality_metrics(
+        total_raw_count=int(
+            raw_audit_df.get("raw_record_count", pd.Series(dtype=int)).fillna(0).sum()
+        ) if not raw_audit_df.empty else 0,
+        cleaned_count=int(len(valid_df)),
+        labeled_df=labeled_df,
+        source_stage_counts_df=source_stage_counts_df,
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
         persona_examples_df=persona_service_outputs["persona_examples_df"],
+        cluster_profiles=bottleneck_cluster_profiles,
     )
-    survival_funnel_df = build_survival_funnel_by_source(source_diagnostics_df)
+    evaluated_quality = evaluate_quality_status(quality_metrics)
+    quality_checks = finalize_quality_checks(evaluated_quality)
+    persona_service_outputs["overview_df"] = _build_final_overview_df(
+        axis_names=reduced_outputs["reduced_axis_schema"],
+        quality_checks=quality_checks,
+        total_labeled_records=int(len(labeled_df)),
+        persona_core_labeled_records=int(len(clustering_labeled_df)),
+        cluster_stats_df=persona_service_outputs["cluster_stats_df"],
+    )
+    survival_funnel_df = build_survival_funnel_by_source(source_stage_counts_df)
     persona_service_outputs["quality_checks_df"] = append_source_survival_rows(
         build_quality_checks_df(quality_checks),
-        source_diagnostics_df,
+        source_stage_counts_df,
     )
     quality_failures_df = build_quality_failures(
         quality_checks=quality_checks,
-        source_diagnostics_df=source_diagnostics_df,
+        source_stage_counts_df=source_stage_counts_df,
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
         persona_examples_df=persona_service_outputs["persona_examples_df"],
     )
     metric_glossary_df = build_metric_glossary()
-    _update_overview_quality(persona_service_outputs["overview_df"], quality_checks)
 
     counts_df = build_counts_table(
         raw_audit_df=raw_audit_df,
@@ -244,11 +248,13 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         "axis_paths": axis_paths,
         "reduction_paths": reduction_paths,
         "quality_checks": quality_checks,
+        "evaluated_quality": evaluated_quality,
         "persona_service_outputs": persona_service_outputs,
         "bottleneck_cluster_profiles": bottleneck_cluster_profiles,
         "counts_df": counts_df,
         "source_distribution_df": source_distribution_df,
         "taxonomy_summary_df": taxonomy_summary_df,
+        "source_stage_counts_df": source_stage_counts_df,
         "source_diagnostics_df": source_diagnostics_df,
         "survival_funnel_df": survival_funnel_df,
         "quality_failures_df": quality_failures_df,
@@ -422,12 +428,55 @@ def _persona_core_subset(labeled_df: pd.DataFrame) -> pd.DataFrame:
     return labeled_df[labeled_df["persona_core_eligible"].fillna(True)].reset_index(drop=True)
 
 
-def _update_overview_quality(overview_df: pd.DataFrame, quality_checks: dict[str, Any]) -> None:
-    """Patch overview rows after final quality gates are available."""
-    if overview_df.empty or "metric" not in overview_df.columns or "value" not in overview_df.columns:
-        return
-    for metric in ["quality_flag", "unknown_ratio", "single_cluster_dominance", "min_cluster_size"]:
-        if metric not in set(overview_df["metric"].astype(str)):
-            overview_df.loc[len(overview_df)] = {"metric": metric, "value": quality_checks.get(metric, "")}
-            continue
-        overview_df.loc[overview_df["metric"].astype(str).eq(metric), "value"] = quality_checks.get(metric, "")
+def _build_final_overview_df(
+    axis_names: list[dict[str, Any]],
+    quality_checks: dict[str, Any],
+    total_labeled_records: int,
+    persona_core_labeled_records: int,
+    cluster_stats_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Render overview directly from the evaluated quality result and stable report counts."""
+    promoted_mask = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str).eq("promoted_persona") if not cluster_stats_df.empty else pd.Series(dtype=bool)
+    persona_count = int(promoted_mask.sum()) if not cluster_stats_df.empty else 0
+    exploratory_bucket_count = int((~promoted_mask).sum()) if not cluster_stats_df.empty else 0
+    selected_axes = " | ".join(
+        str(row.get("axis_name", "")).strip()
+        for row in axis_names
+        if str(row.get("axis_name", "")).strip()
+    )
+    rows = [
+        {"metric": "overall_status", "value": quality_checks.get("overall_status", "")},
+        {"metric": "quality_flag", "value": quality_checks.get("quality_flag", "")},
+        {"metric": "quality_flag_rule", "value": quality_checks.get("quality_flag_rule", "")},
+        {"metric": "composite_reason_keys", "value": quality_checks.get("composite_reason_keys", "")},
+        {"metric": "core_clustering_status", "value": quality_checks.get("core_clustering_status", "")},
+        {"metric": "source_diversity_status", "value": quality_checks.get("source_diversity_status", "")},
+        {"metric": "example_grounding_status", "value": quality_checks.get("example_grounding_status", "")},
+        {"metric": "overall_unknown_status", "value": quality_checks.get("overall_unknown_status", "")},
+        {"metric": "core_unknown_status", "value": quality_checks.get("core_unknown_status", "")},
+        {"metric": "core_coverage_status", "value": quality_checks.get("core_coverage_status", "")},
+        {"metric": "effective_source_diversity_status", "value": quality_checks.get("effective_source_diversity_status", "")},
+        {"metric": "source_concentration_status", "value": quality_checks.get("source_concentration_status", "")},
+        {"metric": "largest_cluster_dominance_status", "value": quality_checks.get("largest_cluster_dominance_status", "")},
+        {"metric": "grounding_coverage_status", "value": quality_checks.get("grounding_coverage_status", "")},
+        {"metric": "total_labeled_records", "value": total_labeled_records},
+        {"metric": "persona_core_labeled_records", "value": persona_core_labeled_records},
+        {"metric": "persona_core_coverage_of_all_labeled_pct", "value": quality_checks.get("persona_core_coverage_of_all_labeled_pct", 0.0)},
+        {"metric": "persona_core_unknown_ratio", "value": quality_checks.get("persona_core_unknown_ratio", 0.0)},
+        {"metric": "overall_unknown_ratio", "value": quality_checks.get("overall_unknown_ratio", 0.0)},
+        {"metric": "effective_labeled_source_count", "value": quality_checks.get("effective_labeled_source_count", 0.0)},
+        {"metric": "largest_cluster_share_of_core_labeled", "value": quality_checks.get("largest_cluster_share_of_core_labeled", 0.0)},
+        {"metric": "largest_labeled_source_share_pct", "value": quality_checks.get("largest_labeled_source_share_pct", 0.0)},
+        {"metric": "promoted_persona_example_coverage_pct", "value": quality_checks.get("promoted_persona_example_coverage_pct", 0.0)},
+        {"metric": "promoted_persona_grounded_count", "value": quality_checks.get("promoted_persona_grounded_count", 0)},
+        {"metric": "promoted_persona_weakly_grounded_count", "value": quality_checks.get("promoted_persona_weakly_grounded_count", 0)},
+        {"metric": "promoted_persona_ungrounded_count", "value": quality_checks.get("promoted_persona_ungrounded_count", 0)},
+        {"metric": "promoted_personas_weakly_grounded", "value": quality_checks.get("promoted_personas_weakly_grounded", "")},
+        {"metric": "promoted_personas_missing_examples", "value": quality_checks.get("promoted_personas_missing_examples", "")},
+        {"metric": "persona_count", "value": persona_count},
+        {"metric": "exploratory_bucket_count", "value": exploratory_bucket_count},
+        {"metric": "min_cluster_size", "value": quality_checks.get("min_cluster_size", 0)},
+        {"metric": "selected_axes", "value": selected_axes},
+        {"metric": "clustering_mode", "value": "bottleneck_first"},
+    ]
+    return pd.DataFrame(rows)

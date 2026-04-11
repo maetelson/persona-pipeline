@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from src.collectors.base import BaseCollector, RawRecord
 from src.collectors.reddit_public_parser import (
@@ -19,6 +19,12 @@ from src.utils.logging import get_logger
 from src.utils.text import make_hash_id
 
 LOGGER = get_logger("collectors.reddit_public")
+
+
+def _should_skip_robots_check(url: str) -> bool:
+    """Allow direct fetches for Reddit's public JSON endpoints."""
+    parsed = urlparse(url)
+    return parsed.netloc.endswith("reddit.com") and parsed.path.endswith(".json")
 
 
 class RedditPublicCollector(BaseCollector):
@@ -37,7 +43,7 @@ class RedditPublicCollector(BaseCollector):
             raise ValueError(f"Missing subreddit config for {self.source_name}")
         user_agent = os.getenv("REDDIT_USER_AGENT", os.getenv("PUBLIC_WEB_USER_AGENT", "persona-pipeline/0.1"))
         listing_url = f"https://www.reddit.com/r/{quote(subreddit)}/new.json?limit={int(self.config.get('max_posts_per_run', 10))}&raw_json=1"
-        allowed, reason = check_robots_allowed(listing_url, user_agent=user_agent)
+        allowed, reason = (True, "") if _should_skip_robots_check(listing_url) else check_robots_allowed(listing_url, user_agent=user_agent)
         if not allowed:
             self._record_fetch_error(listing_url, "robots", "", reason)
             self._record_page_result(listing_url, 0, "robots_disallow")
@@ -58,7 +64,7 @@ class RedditPublicCollector(BaseCollector):
         for post in posts:
             records.append(self._build_thread_record(post))
             comments_url = f"https://www.reddit.com/comments/{post.get('id', '')}.json?limit={int(self.config.get('max_comments_per_thread', 10))}&depth=1&raw_json=1"
-            comment_allowed, _ = check_robots_allowed(comments_url, user_agent=user_agent)
+            comment_allowed, _ = (True, "") if _should_skip_robots_check(comments_url) else check_robots_allowed(comments_url, user_agent=user_agent)
             if not comment_allowed:
                 continue
             comments_response = fetch_text(comments_url, user_agent=user_agent)

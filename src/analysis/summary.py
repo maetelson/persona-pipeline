@@ -6,15 +6,16 @@ from pathlib import Path
 
 import pandas as pd
 from src.analysis.diagnostics import count_raw_jsonl_by_source
+from src.analysis.quality_status import build_quality_metrics, quality_display_thresholds
 from src.utils.pipeline_schema import (
-    CORE_LABEL_COLUMNS,
+    DENOMINATOR_LABELED_EPISODE_ROWS,
+    DENOMINATOR_PERSONA_CORE_LABELED_ROWS,
     QUALITY_FLAG_OK,
     QUALITY_FLAG_UNSTABLE,
-    QUALITY_THRESHOLDS,
+    STATUS_FAIL,
     SOURCE_FIELD,
     aggregated_source_count,
-    compute_quality_flag,
-    row_has_unknown_labels,
+    canonical_source_name,
     round_pct,
     source_row_count,
 )
@@ -22,7 +23,7 @@ from src.utils.pipeline_schema import (
 
 def build_source_summary(normalized_df: pd.DataFrame, valid_df: pd.DataFrame, episodes_df: pd.DataFrame) -> pd.DataFrame:
     """Summarize counts by source across core stages."""
-    sources = sorted(set(normalized_df.get(SOURCE_FIELD, pd.Series(dtype=str)).tolist()))
+    sources = sorted(set(normalized_df.get(SOURCE_FIELD, pd.Series(dtype=str)).astype(str).map(canonical_source_name).tolist()))
     rows: list[dict[str, int | str]] = []
     for source in sources:
         rows.append(
@@ -93,9 +94,9 @@ def build_final_source_distribution(
         else pd.DataFrame(columns=["source"])
     )
     sources = sorted(
-        set(raw_counts_df.get("source", pd.Series(dtype=str)).astype(str).tolist())
-        | set(source_df.get("source", pd.Series(dtype=str)).tolist())
-        | set(labeled_with_source.get("source", pd.Series(dtype=str)).dropna().tolist())
+        set(raw_counts_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name).tolist())
+        | set(source_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name).tolist())
+        | set(labeled_with_source.get("source", pd.Series(dtype=str)).dropna().astype(str).map(canonical_source_name).tolist())
     )
     total_labeled = int(len(labeled_with_source))
     rows: list[dict[str, object]] = []
@@ -137,8 +138,21 @@ def build_taxonomy_summary(final_axis_schema: list[dict[str, object]]) -> pd.Dat
 
 
 def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
-    """Convert deterministic quality metrics into workbook rows."""
-    thresholds = QUALITY_THRESHOLDS
+    """Convert evaluated quality metrics/statuses into workbook rows without re-evaluating policy."""
+    thresholds = quality_display_thresholds()
+    metric_status_map = {
+        "persona_core_unknown_ratio": ("core_unknown_status", "core_unknown_reason_keys"),
+        "overall_unknown_ratio": ("overall_unknown_status", "overall_unknown_reason_keys"),
+        "persona_core_coverage_of_all_labeled_pct": ("core_coverage_status", "core_coverage_reason_keys"),
+        "effective_labeled_source_count": ("effective_source_diversity_status", "effective_source_diversity_reason_keys"),
+        "largest_labeled_source_share_pct": ("source_concentration_status", "source_concentration_reason_keys"),
+        "largest_cluster_share_of_core_labeled": ("largest_cluster_dominance_status", "largest_cluster_dominance_reason_keys"),
+        "promoted_persona_example_coverage_pct": ("grounding_coverage_status", "grounding_coverage_reason_keys"),
+        "overall_status": ("overall_status", "composite_reason_keys"),
+        "core_clustering_status": ("core_clustering_status", "core_clustering_reason_keys"),
+        "source_diversity_status": ("source_diversity_status", "source_diversity_reason_keys"),
+        "example_grounding_status": ("example_grounding_status", "example_grounding_reason_keys"),
+    }
     rows: list[dict[str, object]] = []
     for metric, value in quality_checks.items():
         if metric == "cluster_distribution":
@@ -159,34 +173,23 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
         status = "pass"
         level = "pass"
         notes = ""
-        if metric == "unknown_ratio" and float(value) > float(thresholds["unknown_ratio"]):
-            status = "warn"
-            level = "warning"
-            notes = "unknown ratio above recommended threshold"
-        elif metric == "cluster_count" and int(value) < int(thresholds["cluster_count"]):
-            status = "warn"
-            level = "warning"
-            notes = "too few clusters for robust persona comparison"
-        elif metric == "labeled_source_count" and int(value) < int(thresholds["labeled_source_count"]):
-            status = "fail"
-            level = "soft_fail"
-            notes = "fewer than 4 labeled sources"
-        elif metric == "effective_labeled_source_count" and float(value) < float(thresholds["labeled_source_count"]):
-            status = "fail"
-            level = "soft_fail"
-            notes = "effective labeled source count below 4 after weak-contribution weighting"
-        elif metric == "largest_cluster_share" and float(value) > float(thresholds["largest_cluster_share"]):
-            status = "fail"
-            level = "hard_fail"
-            notes = "largest cluster exceeds 70% of denominator"
-        elif metric == "source_failures" and str(value).strip():
-            status = "fail"
-            level = "soft_fail"
-            notes = "raw-covered sources still missing labeled output"
+        if metric in metric_status_map:
+            status_key, reason_key = metric_status_map[metric]
+            status, level = _quality_row_style(str(quality_checks.get(status_key, QUALITY_FLAG_OK) or QUALITY_FLAG_OK))
+            notes = str(quality_checks.get(reason_key, "") or "")
         elif metric == "quality_flag":
-            status = "pass" if str(value) == QUALITY_FLAG_OK else "fail" if str(value) == QUALITY_FLAG_UNSTABLE else "warn"
-            level = "pass" if str(value) == QUALITY_FLAG_OK else "hard_fail" if str(value) == QUALITY_FLAG_UNSTABLE else "soft_fail"
-            notes = "derived from source diversity, cluster dominance, persona promotion, example grounding, and denominator gates"
+            status, level = _quality_row_style(str(quality_checks.get("overall_status", QUALITY_FLAG_OK) or QUALITY_FLAG_OK))
+            notes = str(quality_checks.get("quality_flag_rule", "") or "")
+        elif metric == "source_failures" and str(value).strip():
+            status, level = "fail", "soft_fail"
+            notes = str(quality_checks.get("source_diversity_reason_keys", "") or "")
+        elif metric == "denominator_consistency":
+            status = "pass"
+            level = "pass"
+            notes = "rendered from centralized evaluated status result"
+        elif metric.endswith("_threshold_rule"):
+            status = "info"
+            level = "info"
         rows.append(
             {
                 "metric": metric,
@@ -202,48 +205,99 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def append_source_survival_rows(quality_checks_df: pd.DataFrame, source_diagnostics_df: pd.DataFrame) -> pd.DataFrame:
-    """Append source-level survival metrics to the quality checks sheet."""
-    if source_diagnostics_df.empty:
+def _quality_row_style(status_value: str) -> tuple[str, str]:
+    """Map evaluated status strings into workbook row status/level."""
+    if status_value == STATUS_FAIL or status_value == QUALITY_FLAG_UNSTABLE:
+        return "fail", "hard_fail"
+    if status_value != QUALITY_FLAG_OK:
+        return "warn", "warning"
+    return "pass", "pass"
+
+
+def append_source_survival_rows(quality_checks_df: pd.DataFrame, source_stage_counts_df: pd.DataFrame) -> pd.DataFrame:
+    """Append source-level post/episode funnel checks and mixed-grain bridge metrics."""
+    if source_stage_counts_df.empty:
         return quality_checks_df
     rows: list[dict[str, object]] = []
-    for _, row in source_diagnostics_df.iterrows():
+    for _, row in source_stage_counts_df.iterrows():
         source = str(row.get("source", "") or "")
-        valid_count = int(row.get("valid_count", 0) or 0)
-        prefiltered_count = int(row.get("prefiltered_valid_count", 0) or 0)
+        normalized_count = int(row.get("normalized_post_count", 0) or 0)
+        valid_count = int(row.get("valid_post_count", 0) or 0)
+        prefiltered_count = int(row.get("prefiltered_valid_post_count", 0) or 0)
         episode_count = int(row.get("episode_count", 0) or 0)
-        labeled_count = int(row.get("labeled_count", 0) or 0)
+        labeled_count = int(row.get("labeled_episode_count", 0) or 0)
+        labelable_count = int(row.get("labelable_episode_count", 0) or 0)
         rows.extend(
             [
                 {
-                    "metric": f"prefilter_survival_rate:{source}",
-                    "value": row.get("prefilter_survival_rate", 0.0),
+                    "metric": f"valid_posts_per_normalized_post_pct:{source}",
+                    "value": round_pct(valid_count, normalized_count) if normalized_count else 0.0,
+                    "threshold": "",
+                    "status": "info",
+                    "level": "info",
+                    "denominator_type": "normalized_posts_rows",
+                    "denominator_value": normalized_count,
+                    "notes": f"valid_post_count={valid_count}",
+                },
+                {
+                    "metric": f"prefiltered_valid_posts_per_valid_post_pct:{source}",
+                    "value": round_pct(prefiltered_count, valid_count) if valid_count else 0.0,
                     "threshold": "",
                     "status": "info",
                     "level": "info",
                     "denominator_type": "valid_candidate_rows",
                     "denominator_value": valid_count,
-                    "notes": f"prefiltered_valid={prefiltered_count}",
+                    "notes": f"prefiltered_valid_post_count={prefiltered_count}",
                 },
                 {
-                    "metric": f"episode_survival_rate:{source}",
-                    "value": row.get("episode_survival_rate", 0.0),
-                    "threshold": "",
-                    "status": "info",
-                    "level": "info",
-                    "denominator_type": "prefiltered_valid_rows",
-                    "denominator_value": prefiltered_count,
-                    "notes": f"episode_count={episode_count}",
-                },
-                {
-                    "metric": f"labeling_survival_rate:{source}",
-                    "value": row.get("labeling_survival_rate", 0.0),
+                    "metric": f"labeled_episodes_per_episode_pct:{source}",
+                    "value": round_pct(labeled_count, episode_count) if episode_count else 0.0,
                     "threshold": "",
                     "status": "info",
                     "level": "info",
                     "denominator_type": "episode_rows",
                     "denominator_value": episode_count,
-                    "notes": f"labeled_count={labeled_count}",
+                    "notes": f"labeled_episode_count={labeled_count}",
+                },
+                {
+                    "metric": f"labelable_episodes_per_labeled_episode_pct:{source}",
+                    "value": round_pct(labelable_count, labeled_count) if labeled_count else 0.0,
+                    "threshold": "",
+                    "status": "info",
+                    "level": "info",
+                    "denominator_type": "labeled_episode_rows",
+                    "denominator_value": labeled_count,
+                    "notes": f"labelable_episode_count={labelable_count}",
+                },
+                {
+                    "metric": f"episodes_per_prefiltered_valid_post:{source}",
+                    "value": round(float(episode_count) / float(prefiltered_count), 2) if prefiltered_count else 0.0,
+                    "threshold": "",
+                    "status": "info",
+                    "level": "info",
+                    "denominator_type": "prefiltered_valid_rows",
+                    "denominator_value": prefiltered_count,
+                    "notes": f"episode_count={episode_count}; cross-grain bridge metric can exceed 1.0",
+                },
+                {
+                    "metric": f"labeled_episodes_per_prefiltered_valid_post:{source}",
+                    "value": round(float(labeled_count) / float(prefiltered_count), 2) if prefiltered_count else 0.0,
+                    "threshold": "",
+                    "status": "info",
+                    "level": "info",
+                    "denominator_type": "prefiltered_valid_rows",
+                    "denominator_value": prefiltered_count,
+                    "notes": f"labeled_episode_count={labeled_count}; cross-grain bridge metric can exceed 1.0",
+                },
+                {
+                    "metric": f"labelable_episodes_per_prefiltered_valid_post:{source}",
+                    "value": round(float(labelable_count) / float(prefiltered_count), 2) if prefiltered_count else 0.0,
+                    "threshold": "",
+                    "status": "info",
+                    "level": "info",
+                    "denominator_type": "prefiltered_valid_rows",
+                    "denominator_value": prefiltered_count,
+                    "notes": f"labelable_episode_count={labelable_count}; cross-grain bridge metric can exceed 1.0",
                 },
             ]
         )
@@ -267,47 +321,15 @@ def build_quality_checks(
         if not raw_counts_df.empty
         else int(raw_audit_df.get("raw_record_count", pd.Series(dtype=int)).fillna(0).sum()) if not raw_audit_df.empty else 0
     )
-    cleaned_count = int(len(valid_df))
-    labeled_count = int(len(labeled_df))
-    core_labeled_df = _persona_core_subset(labeled_df)
-    unknown_ratio = round(_row_unknown_ratio(core_labeled_df), 6)
-    overall_unknown_ratio = round(_row_unknown_ratio(labeled_df), 6)
-    cluster_count = int(len(cluster_profiles))
-    cluster_distribution = [
-        {
-            "cluster_id": str(row.get("cluster_id", "")),
-            "size": int(row.get("size", 0)),
-            "share_of_core_labeled": float(row.get("share_of_total", 0.0)),
-        }
-        for row in cluster_profiles
-    ]
-    return {
-        "total_raw_count": total_raw_count,
-        "cleaned_count": cleaned_count,
-        "labeled_count": labeled_count,
-        "persona_core_labeled_count": int(len(core_labeled_df)),
-        "unknown_ratio": unknown_ratio,
-        "overall_unknown_ratio": overall_unknown_ratio,
-        "cluster_count": cluster_count,
-        "cluster_distribution": cluster_distribution,
-        "quality_flag": compute_quality_flag(unknown_ratio),
-    }
-
-
-def _persona_core_subset(labeled_df: pd.DataFrame) -> pd.DataFrame:
-    """Use persona-core-eligible rows when available for quality scoring."""
-    if labeled_df.empty or "persona_core_eligible" not in labeled_df.columns:
-        return labeled_df
-    return labeled_df[labeled_df["persona_core_eligible"].fillna(True)]
-
-
-def _row_unknown_ratio(labeled_df: pd.DataFrame) -> float:
-    """Return ratio of rows that still have any unresolved label family."""
-    if labeled_df.empty:
-        return 1.0
-    label_columns = [column for column in CORE_LABEL_COLUMNS if column in labeled_df.columns]
-    unknown_mask = labeled_df[label_columns].apply(lambda row: row_has_unknown_labels(row.tolist()), axis=1)
-    return float(unknown_mask.mean())
+    return build_quality_metrics(
+        total_raw_count=total_raw_count,
+        cleaned_count=int(len(valid_df)),
+        labeled_df=labeled_df,
+        source_stage_counts_df=pd.DataFrame(),
+        cluster_stats_df=pd.DataFrame(),
+        persona_examples_df=pd.DataFrame(),
+        cluster_profiles=cluster_profiles,
+    )
 
 
 def _count_row(metric: str, count: int, denominator_type: str, denominator_value: int, definition: str) -> dict[str, object]:
@@ -323,12 +345,14 @@ def _count_row(metric: str, count: int, denominator_type: str, denominator_value
 
 def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) -> str:
     """Return denominator type for a quality metric."""
-    if metric in {"unknown_ratio", "cluster_distribution", "cluster_count", "largest_cluster_share"}:
-        return "persona_core_labeled_rows"
-    if metric in {"overall_unknown_ratio", "labeled_count"}:
-        return "labeled_episode_rows"
+    if metric in {"persona_core_unknown_ratio", "cluster_distribution", "cluster_count", "largest_cluster_share_of_core_labeled"}:
+        return DENOMINATOR_PERSONA_CORE_LABELED_ROWS
+    if metric in {"overall_unknown_ratio", "labeled_count", "persona_core_coverage_of_all_labeled_pct", "largest_labeled_source_share_pct"}:
+        return DENOMINATOR_LABELED_EPISODE_ROWS
     if metric in {"cleaned_count"}:
         return "valid_candidate_rows"
+    if metric in {"promoted_persona_example_coverage_pct"}:
+        return "promoted_persona_rows"
     if metric in {"total_raw_count", "raw_source_count"}:
         return "raw_jsonl_rows"
     if metric in {"labeled_source_count", "effective_labeled_source_count"}:
@@ -340,10 +364,12 @@ def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) ->
 
 def _quality_denominator_value(metric: str, quality_checks: dict[str, object]) -> object:
     """Return denominator value for a quality metric."""
-    if metric in {"unknown_ratio", "cluster_distribution", "cluster_count", "largest_cluster_share"}:
+    if metric in {"persona_core_unknown_ratio", "cluster_distribution", "cluster_count", "largest_cluster_share_of_core_labeled"}:
         return quality_checks.get("persona_core_labeled_count", "")
-    if metric in {"overall_unknown_ratio", "labeled_count"}:
+    if metric in {"overall_unknown_ratio", "labeled_count", "persona_core_coverage_of_all_labeled_pct", "largest_labeled_source_share_pct"}:
         return quality_checks.get("labeled_count", "")
+    if metric == "promoted_persona_example_coverage_pct":
+        return quality_checks.get("promoted_persona_count", "")
     if metric == "cleaned_count":
         return quality_checks.get("cleaned_count", "")
     if metric in {"total_raw_count", "raw_source_count"}:

@@ -37,27 +37,28 @@ class WorkbookExportTests(unittest.TestCase):
                 quality_checks_df=pd.DataFrame({"metric": ["quality_flag"], "value": ["OK"], "threshold": [""], "status": ["pass"], "notes": [""]}),
             )
             output = export_workbook_from_frames(root, frames)
-            workbook = load_workbook(output, read_only=True)
+            workbook = load_workbook(output, read_only=False)
             try:
-                self.assertEqual(
-                    workbook.sheetnames,
-                    [
-                        "overview",
-                        "counts",
-                        "source_distribution",
-                        "taxonomy_summary",
-                        "cluster_stats",
-                        "persona_summary",
-                        "persona_axes",
-                        "persona_needs",
-                        "persona_cooccurrence",
-                        "persona_examples",
-                        "quality_checks",
-                        "source_diagnostics",
-                        "quality_failures",
-                        "metric_glossary",
-                    ],
-                )
+                self.assertEqual(workbook.sheetnames[0], "readme")
+                self.assertEqual(workbook.sheetnames[1:], [
+                    "overview",
+                    "counts",
+                    "source_distribution",
+                    "taxonomy_summary",
+                    "cluster_stats",
+                    "persona_summary",
+                    "persona_axes",
+                    "persona_needs",
+                    "persona_cooccurrence",
+                    "persona_examples",
+                    "quality_checks",
+                    "source_diagnostics",
+                    "quality_failures",
+                    "metric_glossary",
+                ])
+                self.assertEqual(workbook["overview"].freeze_panes, "A2")
+                self.assertIsNotNone(workbook["overview"].auto_filter.ref)
+                self.assertEqual(str(workbook["readme"]["B4"].value).startswith("=INDEX("), True)
             finally:
                 workbook.close()
 
@@ -108,7 +109,19 @@ class WorkbookExportTests(unittest.TestCase):
                 counts_df=pd.DataFrame({"metric": ["raw_records"], "count": [1]}),
                 source_distribution_df=pd.DataFrame({"source": ["reddit"], "normalized_count": [1], "valid_count": [1], "episode_count": [1], "labeled_count": [1], "share_of_labeled": [100.0]}),
                 taxonomy_summary_df=pd.DataFrame({"axis_name": ["role"], "why_it_matters": ["x"], "allowed_values_or_logic": ["a"], "evidence_fields": ["b"]}),
-                cluster_stats_df=pd.DataFrame({"persona_id": ["p1"], "persona_size": [1], "share_of_total": ["bad"], "dominant_signature": [""], "dominant_bottleneck": [""], "dominant_analysis_goal": [""]}),
+                cluster_stats_df=pd.DataFrame(
+                    {
+                        "persona_id": ["p1"],
+                        "persona_size": [1],
+                        "share_of_core_labeled": ["bad"],
+                        "share_of_all_labeled": [100.0],
+                        "denominator_type": ["persona_core_labeled_rows"],
+                        "denominator_value": [1],
+                        "dominant_signature": [""],
+                        "dominant_bottleneck": [""],
+                        "dominant_analysis_goal": [""],
+                    }
+                ),
                 persona_summary_df=pd.DataFrame(),
                 persona_axes_df=pd.DataFrame(),
                 persona_needs_df=pd.DataFrame(),
@@ -120,7 +133,66 @@ class WorkbookExportTests(unittest.TestCase):
                 warnings.simplefilter("always")
                 output = export_workbook_from_frames(root, frames)
             self.assertTrue(output.exists())
-            self.assertTrue(any("non-numeric ratio values: cluster_stats.share_of_total" in str(item.message) for item in captured))
+            self.assertTrue(any("non-numeric ratio values: cluster_stats.share_of_core_labeled" in str(item.message) for item in captured))
+
+    def test_export_applies_literal_percentage_format_to_pct_columns(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "config").mkdir(parents=True, exist_ok=True)
+            (root / "config" / "export_schema.yaml").write_text("workbook_name: test.xlsx\n", encoding="utf-8")
+            frames = assemble_workbook_frames(
+                overview_df=pd.DataFrame({"metric": ["quality_flag"], "value": ["OK"]}),
+                counts_df=pd.DataFrame({"metric": ["raw_records"], "count": [1]}),
+                source_distribution_df=pd.DataFrame({"source": ["reddit"], "raw_count": [1], "normalized_count": [1], "valid_count": [1], "prefiltered_valid_count": [1], "episode_count": [1], "labeled_count": [1], "share_of_labeled": [100.0]}),
+                taxonomy_summary_df=pd.DataFrame({"axis_name": ["role"], "why_it_matters": ["x"], "allowed_values_or_logic": ["a"], "evidence_fields": ["b"]}),
+                cluster_stats_df=pd.DataFrame({"persona_id": ["p1"], "persona_size": [1], "share_of_core_labeled": [75.0], "share_of_all_labeled": [50.0], "denominator_type": ["persona_core_labeled_rows"], "denominator_value": [1], "dominant_signature": [""], "dominant_bottleneck": [""], "dominant_analysis_goal": [""]}),
+                persona_summary_df=pd.DataFrame(),
+                persona_axes_df=pd.DataFrame(),
+                persona_needs_df=pd.DataFrame(),
+                persona_cooccurrence_df=pd.DataFrame(),
+                persona_examples_df=pd.DataFrame(),
+                quality_checks_df=pd.DataFrame({"metric": ["quality_flag"], "value": ["OK"], "threshold": [""], "status": ["pass"], "notes": [""]}),
+            )
+            output = export_workbook_from_frames(root, frames)
+            workbook = load_workbook(output, read_only=False)
+            try:
+                worksheet = workbook["cluster_stats"]
+                self.assertEqual(worksheet["C2"].number_format, '0.0"%"')
+                self.assertEqual(worksheet["D2"].number_format, '0.0"%"')
+            finally:
+                workbook.close()
+
+    def test_export_fails_when_share_name_and_denominator_do_not_match(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "config").mkdir(parents=True, exist_ok=True)
+            (root / "config" / "export_schema.yaml").write_text("workbook_name: test.xlsx\n", encoding="utf-8")
+            frames = assemble_workbook_frames(
+                overview_df=pd.DataFrame({"metric": ["x"], "value": ["y"]}),
+                counts_df=pd.DataFrame({"metric": ["raw_records"], "count": [1]}),
+                source_distribution_df=pd.DataFrame({"source": ["reddit"], "normalized_count": [1], "valid_count": [1], "episode_count": [1], "labeled_count": [1], "share_of_labeled": [100.0]}),
+                taxonomy_summary_df=pd.DataFrame({"axis_name": ["role"], "why_it_matters": ["x"], "allowed_values_or_logic": ["a"], "evidence_fields": ["b"]}),
+                cluster_stats_df=pd.DataFrame(
+                    {
+                        "persona_id": ["p1"],
+                        "persona_size": [1],
+                        "share_of_core_labeled": [100.0],
+                        "denominator_type": ["labeled_episode_rows"],
+                        "denominator_value": [1],
+                        "dominant_signature": [""],
+                        "dominant_bottleneck": [""],
+                        "dominant_analysis_goal": [""],
+                    }
+                ),
+                persona_summary_df=pd.DataFrame(),
+                persona_axes_df=pd.DataFrame(),
+                persona_needs_df=pd.DataFrame(),
+                persona_cooccurrence_df=pd.DataFrame(),
+                persona_examples_df=pd.DataFrame(),
+                quality_checks_df=pd.DataFrame({"metric": ["quality_flag"], "value": ["OK"], "threshold": [""], "status": ["pass"], "notes": [""]}),
+            )
+            with self.assertRaisesRegex(ValueError, "share denominator mismatch"):
+                export_workbook_from_frames(root, frames)
 
 
 if __name__ == "__main__":

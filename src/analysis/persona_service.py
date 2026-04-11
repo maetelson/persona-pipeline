@@ -13,9 +13,10 @@ from src.analysis.bottleneck_clustering import (
     build_bottleneck_cluster_outputs,
     render_cluster_examples_markdown,
 )
+from src.analysis.example_selection import apply_promotion_grounding_policy, load_example_selection_config
 from src.analysis.persona_axes import build_axis_assignments
-from src.analysis.summary import build_quality_checks_df
 from src.utils.pipeline_schema import (
+    DENOMINATOR_PERSONA_CORE_LABELED_ROWS,
     THEME_COLUMNS,
     collect_pipe_codes_from_frame,
     is_single_cluster_dominant,
@@ -62,13 +63,33 @@ def build_persona_outputs(
         .drop_duplicates(subset=["episode_id"])
     )
     total_labeled_records = int(quality_checks.get("labeled_count", len(labeled_df)))
+    persona_core_labeled_records = int(quality_checks.get("persona_core_labeled_count", len(labeled_df)))
+    example_config = load_example_selection_config(Path(__file__).resolve().parents[2])
     cluster_policy = _cluster_promotion_policy(persona_source_df, total_labeled_records)
+    grounding_outputs = apply_promotion_grounding_policy(
+        selected_df=cluster_outputs["selected_examples_df"],
+        audit_df=cluster_outputs["example_audit_df"],
+        promoted_persona_ids=[
+            persona_id
+            for persona_id, payload in cluster_policy["status_by_persona"].items()
+            if str(payload.get("status", "") or "") == "promoted_persona"
+        ],
+        config=example_config,
+        max_items_per_persona=int(example_config.get("policy", {}).get("fallback", {}).get("max_examples_per_persona", 1)),
+    )
+    cluster_outputs["selected_examples_df"] = grounding_outputs["selected_df"]
+    cluster_outputs["example_audit_df"] = grounding_outputs["audit_df"]
+    cluster_policy = _merge_grounding_policy(
+        cluster_policy=cluster_policy,
+        persona_grounding_df=grounding_outputs["persona_grounding_df"],
+        config=example_config,
+    )
 
-    overview_df = _build_overview_df(persona_source_df, core_axis_names, quality_checks, total_labeled_records, cluster_policy)
     persona_summary_df = _build_persona_summary_df(
         persona_source_df,
         core_axis_names,
         total_labeled_records,
+        persona_core_labeled_records,
         cluster_policy,
         summary_examples_lookup=_summary_examples_lookup(cluster_outputs["selected_examples_df"]),
         naming_lookup=_naming_lookup(cluster_outputs["cluster_naming_recommendations_df"]),
@@ -77,19 +98,26 @@ def build_persona_outputs(
     persona_pains_df = _build_persona_pains_df(persona_source_df)
     persona_cooccurrence_df = _build_persona_cooccurrence_df(persona_source_df)
     persona_examples_df = _build_persona_examples_df(cluster_outputs["selected_examples_df"])
-    cluster_stats_df = _build_cluster_stats_df(persona_source_df, core_axis_names, total_labeled_records, cluster_policy, cluster_outputs["cluster_meaning_audit_df"])
-    quality_checks_df = build_quality_checks_df(quality_checks)
+    cluster_stats_df = _build_cluster_stats_df(
+        persona_source_df,
+        core_axis_names,
+        total_labeled_records,
+        persona_core_labeled_records,
+        cluster_policy,
+        cluster_outputs["cluster_meaning_audit_df"],
+    )
 
     outputs = {
-        "overview_df": overview_df,
+        "overview_df": pd.DataFrame(columns=["metric", "value"]),
         "persona_summary_df": persona_summary_df,
         "persona_axes_df": persona_axes_df,
         "persona_pains_df": persona_pains_df,
         "persona_cooccurrence_df": persona_cooccurrence_df,
         "persona_examples_df": persona_examples_df,
         "cluster_stats_df": cluster_stats_df,
-        "quality_checks_df": quality_checks_df,
+        "quality_checks_df": pd.DataFrame(columns=["metric", "value", "threshold", "status", "level", "denominator_type", "denominator_value", "notes"]),
         "persona_assignments_df": persona_assignments_df,
+        "persona_grounding_df": grounding_outputs["persona_grounding_df"],
         "axis_wide_df": axis_wide_df,
         "axis_long_df": axis_long_df,
         "representative_examples_v2_df": cluster_outputs["selected_examples_df"],
@@ -122,6 +150,7 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
         "persona_pains_csv": output_dir / "persona_pains.csv",
         "persona_cooccurrence_csv": output_dir / "persona_cooccurrence.csv",
         "persona_examples_csv": output_dir / "persona_examples.csv",
+        "persona_grounding_csv": output_dir / "persona_grounding.csv",
         "cluster_stats_csv": output_dir / "cluster_stats.csv",
         "quality_checks_csv": output_dir / "quality_checks.csv",
         "overview_csv": output_dir / "overview.csv",
@@ -148,6 +177,7 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
     outputs["persona_pains_df"].to_csv(paths["persona_pains_csv"], index=False)
     outputs["persona_cooccurrence_df"].to_csv(paths["persona_cooccurrence_csv"], index=False)
     outputs["persona_examples_df"].to_csv(paths["persona_examples_csv"], index=False)
+    outputs["persona_grounding_df"].to_csv(paths["persona_grounding_csv"], index=False)
     outputs["cluster_stats_df"].to_csv(paths["cluster_stats_csv"], index=False)
     outputs["quality_checks_df"].to_csv(paths["quality_checks_csv"], index=False)
     outputs["overview_df"].to_csv(paths["overview_csv"], index=False)
@@ -199,32 +229,11 @@ def _assign_personas(axis_wide_df: pd.DataFrame, axis_names: list[str]) -> pd.Da
     return working
 
 
-def _build_overview_df(
-    persona_source_df: pd.DataFrame,
-    axis_names: list[str],
-    quality_checks: dict[str, Any],
-    total_labeled_records: int,
-    cluster_policy: dict[str, Any],
-) -> pd.DataFrame:
-    """Build workbook overview sheet."""
-    overview_rows = [
-        {"metric": "total_labeled_records", "value": total_labeled_records},
-        {"metric": "persona_count", "value": int(cluster_policy["promoted_count"])},
-        {"metric": "exploratory_bucket_count", "value": int(cluster_policy["exploratory_count"])},
-        {"metric": "min_cluster_size", "value": int(cluster_policy["min_cluster_size"])},
-        {"metric": "single_cluster_dominance", "value": bool(cluster_policy["single_cluster_dominance"])},
-        {"metric": "selected_axes", "value": " | ".join(axis_names)},
-        {"metric": "clustering_mode", "value": "bottleneck_first"},
-        {"metric": "quality_flag", "value": quality_checks.get("quality_flag", "unknown")},
-        {"metric": "unknown_ratio", "value": quality_checks.get("unknown_ratio", 0.0)},
-    ]
-    return pd.DataFrame(overview_rows)
-
-
 def _build_persona_summary_df(
     persona_source_df: pd.DataFrame,
     axis_names: list[str],
     total_labeled_records: int,
+    persona_core_labeled_records: int,
     cluster_policy: dict[str, Any],
     summary_examples_lookup: dict[str, list[str]],
     naming_lookup: dict[str, str],
@@ -248,13 +257,30 @@ def _build_persona_summary_df(
                 "persona_id": persona_id,
                 "persona_name": persona_name,
                 "persona_size": persona_size,
-                "share_of_total": round_pct(persona_size, total_labeled_records),
-                "denominator_type": "labeled_episode_rows",
-                "denominator_value": total_labeled_records,
+                "share_of_core_labeled": round_pct(persona_size, persona_core_labeled_records),
+                "share_of_all_labeled": round_pct(persona_size, total_labeled_records),
+                "denominator_type": DENOMINATOR_PERSONA_CORE_LABELED_ROWS,
+                "denominator_value": persona_core_labeled_records,
                 "min_cluster_size": int(cluster_policy["min_cluster_size"]),
+                "base_promotion_status": promotion.get("base_promotion_status", promotion.get("status", "exploratory_bucket")),
                 "promotion_status": promotion.get("status", "exploratory_bucket"),
+                "grounding_status": promotion.get("grounding_status", "not_applicable"),
+                "promotion_grounding_status": promotion.get("promotion_grounding_status", "exploratory_bucket"),
                 "promotion_reason": promotion.get("reason", ""),
-                "one_line_summary": _one_line_summary(persona_name, workflow, bottleneck, goal, output_mode, promotion.get("status", "")),
+                "grounding_reason": promotion.get("grounding_reason", ""),
+                "grounded_candidate_count": int(promotion.get("grounded_candidate_count", 0) or 0),
+                "weak_candidate_count": int(promotion.get("weak_candidate_count", 0) or 0),
+                "selected_example_count": int(promotion.get("selected_example_count", 0) or 0),
+                "fallback_selected_count": int(promotion.get("fallback_selected_count", 0) or 0),
+                "one_line_summary": _one_line_summary(
+                    persona_name,
+                    workflow,
+                    bottleneck,
+                    goal,
+                    output_mode,
+                    promotion.get("status", ""),
+                    promotion.get("promotion_grounding_status", ""),
+                ),
                 "main_workflow_context": workflow,
                 "dominant_bottleneck": bottleneck,
                 "analysis_behavior": goal,
@@ -339,7 +365,25 @@ def _build_persona_examples_df(selected_examples_df: pd.DataFrame) -> pd.DataFra
         frame["why_selected"] = frame.get("reason_selected", "")
     if "matched_axes" not in frame.columns:
         frame["matched_axes"] = frame.get("cluster_fit_reason", "")
-    preferred = ["persona_id", "example_rank", "grounded_text", "why_selected", "matched_axes", "reason_selected"]
+    preferred = [
+        "persona_id",
+        "example_rank",
+        "grounded_text",
+        "selection_strength",
+        "grounding_strength",
+        "fallback_selected",
+        "coverage_selection_reason",
+        "grounding_reason",
+        "why_selected",
+        "matched_axes",
+        "reason_selected",
+        "quote_quality",
+        "grounding_fit_score",
+        "mismatch_count",
+        "critical_mismatch_count",
+        "matched_axis_count",
+        "final_example_score",
+    ]
     remainder = [column for column in frame.columns if column not in preferred]
     return frame[preferred + remainder].sort_values(["persona_id", "example_rank"]).reset_index(drop=True)
 
@@ -348,6 +392,7 @@ def _build_cluster_stats_df(
     persona_source_df: pd.DataFrame,
     axis_names: list[str],
     total_labeled_records: int,
+    persona_core_labeled_records: int,
     cluster_policy: dict[str, Any],
     cluster_audit_df: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
@@ -363,12 +408,21 @@ def _build_cluster_stats_df(
             {
                 "persona_id": persona_id,
                 "persona_size": persona_size,
-                "share_of_total": round_pct(persona_size, total_labeled_records),
-                "denominator_type": "labeled_episode_rows",
-                "denominator_value": total_labeled_records,
+                "share_of_core_labeled": round_pct(persona_size, persona_core_labeled_records),
+                "share_of_all_labeled": round_pct(persona_size, total_labeled_records),
+                "denominator_type": DENOMINATOR_PERSONA_CORE_LABELED_ROWS,
+                "denominator_value": persona_core_labeled_records,
                 "min_cluster_size": int(cluster_policy["min_cluster_size"]),
+                "base_promotion_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("base_promotion_status", "exploratory_bucket"),
                 "promotion_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("status", "exploratory_bucket"),
                 "promotion_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("reason", ""),
+                "grounding_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("grounding_status", "not_applicable"),
+                "promotion_grounding_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("promotion_grounding_status", "exploratory_bucket"),
+                "grounding_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("grounding_reason", ""),
+                "grounded_candidate_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("grounded_candidate_count", 0) or 0),
+                "weak_candidate_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("weak_candidate_count", 0) or 0),
+                "selected_example_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("selected_example_count", 0) or 0),
+                "fallback_selected_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("fallback_selected_count", 0) or 0),
                 "dominant_signature": axis_signature,
                 "dominant_bottleneck": top_non_unknown_value(group, "bottleneck_type"),
                 "dominant_analysis_goal": top_non_unknown_value(group, "analysis_goal"),
@@ -387,6 +441,7 @@ def _empty_outputs() -> dict[str, Any]:
         "persona_pains_df": empty,
         "persona_cooccurrence_df": empty,
         "persona_examples_df": empty,
+        "persona_grounding_df": empty,
         "cluster_stats_df": empty,
         "quality_checks_df": empty,
         "persona_assignments_df": empty,
@@ -468,9 +523,24 @@ def _persona_name(role: str, workflow: str, goal: str) -> str:
     return " ".join(part for part in parts if part and part != "Unassigned").strip() or "Mixed Persona"
 
 
-def _one_line_summary(cluster_name: str, workflow: str, bottleneck: str, goal: str, output_mode: str = "", promotion_status: str = "") -> str:
+def _one_line_summary(
+    cluster_name: str,
+    workflow: str,
+    bottleneck: str,
+    goal: str,
+    output_mode: str = "",
+    promotion_status: str = "",
+    promotion_grounding_status: str = "",
+) -> str:
     """Create a grounded one-line persona summary."""
-    prefix = "Promoted persona" if promotion_status == "promoted_persona" else "Exploratory residual group"
+    if promotion_grounding_status == "promoted_but_weakly_grounded":
+        prefix = "Promoted but weakly grounded persona"
+    elif promotion_grounding_status == "promoted_but_ungrounded":
+        prefix = "Promoted but ungrounded persona"
+    elif promotion_grounding_status == "downgraded_due_to_no_grounding":
+        prefix = "Downgraded exploratory cluster"
+    else:
+        prefix = "Promoted persona" if promotion_status == "promoted_persona" else "Exploratory residual group"
     return (
         f"{prefix}: {cluster_name} repeatedly works in {_titleize(workflow, 'mixed workflow').lower()} "
         f"to {_titleize(goal, 'move analysis forward').lower()}, but {_titleize(bottleneck, 'general friction').lower()} "
@@ -491,11 +561,16 @@ def _summary_examples_lookup(selected_examples_df: pd.DataFrame) -> dict[str, li
     """Build short representative-example lists keyed by persona id."""
     if selected_examples_df is None or selected_examples_df.empty:
         return {}
-    return (
-        selected_examples_df.groupby("persona_id")["grounded_text"]
-        .apply(lambda values: list(values[:3]))
-        .to_dict()
+    frame = selected_examples_df.copy()
+    frame["summary_text"] = frame.apply(
+        lambda row: (
+            f"[weak grounding fallback] {row.get('grounded_text', '')}"
+            if str(row.get("selection_strength", "") or "") == "weak_grounding_fallback"
+            else str(row.get("grounded_text", "") or "")
+        ),
+        axis=1,
     )
+    return frame.groupby("persona_id")["summary_text"].apply(lambda values: list(values[:3])).to_dict()
 
 
 def _naming_lookup(naming_df: pd.DataFrame) -> dict[str, str]:
@@ -533,7 +608,15 @@ def _cluster_promotion_policy(persona_source_df: pd.DataFrame, total_labeled_rec
         else:
             status = "promoted_persona"
             reason = f"sample size {int(size)} meets min_cluster_size {min_cluster_size}"
-        status_by_persona[persona_key] = {"status": status, "reason": reason, "share": str(share)}
+        status_by_persona[persona_key] = {
+            "status": status,
+            "reason": reason,
+            "share": str(share),
+            "base_promotion_status": status,
+            "grounding_status": "not_evaluated" if status == "promoted_persona" else "not_applicable",
+            "promotion_grounding_status": status if status != "promoted_persona" else "promotion_pending_grounding_review",
+            "grounding_reason": "",
+        }
     return {
         "min_cluster_size": min_cluster_size,
         "largest_share": largest_share,
@@ -542,6 +625,54 @@ def _cluster_promotion_policy(persona_source_df: pd.DataFrame, total_labeled_rec
         "promoted_count": sum(1 for value in status_by_persona.values() if value["status"] == "promoted_persona"),
         "exploratory_count": sum(1 for value in status_by_persona.values() if value["status"] != "promoted_persona"),
     }
+
+
+def _merge_grounding_policy(
+    cluster_policy: dict[str, Any],
+    persona_grounding_df: pd.DataFrame,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    """Merge explicit grounding outcomes into the promotion policy map."""
+    merged = dict(cluster_policy)
+    status_by_persona = {key: dict(value) for key, value in dict(cluster_policy.get("status_by_persona", {})).items()}
+    grounding_lookup = (
+        persona_grounding_df.set_index("persona_id").to_dict(orient="index")
+        if persona_grounding_df is not None and not persona_grounding_df.empty and "persona_id" in persona_grounding_df.columns
+        else {}
+    )
+    exploratory_status = str(config.get("policy", {}).get("promotion_grounding", {}).get("exploratory_status", "exploratory_bucket"))
+    downgraded_status = str(config.get("policy", {}).get("promotion_grounding", {}).get("downgraded_due_to_no_grounding_status", "downgraded_due_to_no_grounding"))
+    for persona_id, payload in status_by_persona.items():
+        base_status = str(payload.get("base_promotion_status", payload.get("status", exploratory_status)) or exploratory_status)
+        grounding = dict(grounding_lookup.get(str(persona_id), {}) or {})
+        if base_status != "promoted_persona":
+            payload["grounding_status"] = "not_applicable"
+            payload["promotion_grounding_status"] = exploratory_status
+            payload["grounding_reason"] = "grounding coverage is only enforced for promoted personas"
+            continue
+        combined_status = str(grounding.get("promotion_grounding_status", "promoted_but_ungrounded") or "promoted_but_ungrounded")
+        payload["grounding_status"] = str(grounding.get("grounding_status", "ungrounded") or "ungrounded")
+        payload["promotion_grounding_status"] = combined_status
+        payload["grounding_reason"] = str(grounding.get("grounding_reason", "") or "")
+        payload["grounded_candidate_count"] = int(grounding.get("grounded_candidate_count", 0) or 0)
+        payload["weak_candidate_count"] = int(grounding.get("weak_candidate_count", 0) or 0)
+        payload["selected_example_count"] = int(grounding.get("selected_example_count", 0) or 0)
+        payload["fallback_selected_count"] = int(grounding.get("fallback_selected_count", 0) or 0)
+        if combined_status == downgraded_status:
+            payload["status"] = exploratory_status
+            payload["reason"] = f"{payload.get('reason', '')}; downgraded because no acceptable grounding evidence met policy".strip("; ")
+        elif combined_status == "promoted_but_ungrounded":
+            payload["status"] = "promoted_persona"
+            payload["reason"] = f"{payload.get('reason', '')}; promoted remains visible but no acceptable grounding evidence met policy".strip("; ")
+        elif combined_status == "promoted_but_weakly_grounded":
+            payload["status"] = "promoted_persona"
+            payload["reason"] = f"{payload.get('reason', '')}; only weak fallback evidence met policy".strip("; ")
+        else:
+            payload["status"] = "promoted_persona"
+    merged["status_by_persona"] = status_by_persona
+    merged["promoted_count"] = sum(1 for value in status_by_persona.values() if value.get("status") == "promoted_persona")
+    merged["exploratory_count"] = sum(1 for value in status_by_persona.values() if value.get("status") != "promoted_persona")
+    return merged
 
 
 def _archetype_name(role: str, workflow: str, bottleneck: str, goal: str, output_mode: str, promotion_status: str) -> str:

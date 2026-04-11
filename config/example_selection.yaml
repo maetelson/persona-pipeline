@@ -8,6 +8,48 @@ thresholds:
   usable_min_score: 5.5
   borderline_min_score: 3.0
   duplicate_similarity_threshold: 0.72
+  max_selected_mismatch_axes: 2
+  max_selected_critical_mismatch_axes: 1
+  promoted_fallback_min_score: 2.5
+  source_diversity_score_margin: 1.25
+
+policy:
+  grounding_strength:
+    strong:
+      allowed_quote_qualities:
+        - strong_representative
+      max_mismatch_axes: 1
+      max_critical_mismatch_axes: 0
+    grounded:
+      allowed_quote_qualities:
+        - strong_representative
+        - usable
+      max_mismatch_axes: 2
+      max_critical_mismatch_axes: 0
+    weak:
+      allowed_quote_qualities:
+        - strong_representative
+        - usable
+        - borderline
+      max_mismatch_axes: 3
+      max_critical_mismatch_axes: 1
+  fallback:
+    promoted_personas_only: true
+    allow_weak_grounding_fallback: true
+    weak_selection_strength_label: weak_grounding_fallback
+    coverage_selection_reason: minimum_coverage_policy
+    max_examples_per_persona: 1
+  promotion_grounding:
+    base_promoted_status: promoted_persona
+    exploratory_status: exploratory_bucket
+    promoted_and_grounded_status: promoted_and_grounded
+    promoted_but_weakly_grounded_status: promoted_but_weakly_grounded
+    promoted_but_ungrounded_status: promoted_but_ungrounded
+    downgraded_due_to_no_grounding_status: downgraded_due_to_no_grounding
+    ungrounded_action: flag
+  diversity:
+    prefer_new_source_within_score_margin: 1.25
+    diversify_subpatterns_until_slot_fraction: 0.5
 
 weights:
   explicit_workflow_pain: 1.8
@@ -27,12 +69,18 @@ weights:
   metric_definition: 1.0
   output_need: 0.8
   persona_fit: 1.2
+  defining_axis_match: 1.4
+  grounding_fit: 1.6
+  output_stakeholder_alignment: 1.2
   genericness_penalty: 1.4
   technical_noise_penalty: 1.6
   generic_product_statement_penalty: 2.2
   no_user_pain_context_penalty: 2.0
   short_no_workflow_evidence_penalty: 2.0
   duplicate_penalty: 1.5
+  critical_axis_mismatch_penalty: 1.5
+  major_axis_mismatch_penalty: 1.2
+  self_reported_mismatch_penalty: 1.0
 
 positive_patterns:
   explicit_workflow_pain:
