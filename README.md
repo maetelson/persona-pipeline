@@ -70,11 +70,16 @@ python run/10_source_cli.py prefilter --source stackoverflow --export-borderline
 python run/10_source_cli.py prefilter --source-group existing_forums --export-borderline --limit 200
 python run/10_source_cli.py qa-relevance --source reddit --limit 200
 python run/10_source_cli.py qa-relevance --source stackoverflow --limit 200
+python run/19_analyze_reddit_retention.py
 ```
 
 Important implementation note:
 
 - Active source configs now focus on Reddit, subreddit-specific Reddit, Stack Overflow, GitHub discussions, and existing lightweight forum stubs.
+- Aggregate `reddit` now uses a curated source-config seed bank instead of the broad expanded query map.
+- The Reddit collector applies source-specific negative keywords, per-seed page caps, rolling-retention stop rules, and optional comment expansion before raw persistence.
+- Seed, subreddit, and seed-by-subreddit retention diagnostics are written under `data/analysis/` via `run/19_analyze_reddit_retention.py`.
+- Policy audit artifacts are also written under `data/analysis/`, including `reddit_collection_policy_audit.csv`, `reddit_collection_policy_audit.json`, and `reddit_collection_policy_report.md`.
 - Raw outputs remain source-specific under `data/raw/{source_id}/`.
 - Normalized outputs remain source-specific under `data/normalized/{source_id}.parquet`.
 - Coverage, keep/drop, and QA reports can still be calculated per source because each row keeps its own `source` value.
@@ -83,7 +88,7 @@ Important implementation note:
 
 | Source | Status | Notes |
 |---|---|---|
-| Reddit | Implemented | Legacy Reddit collector remains available; live collection requires `REDDIT_USER_AGENT` |
+| Reddit | Implemented | Aggregate source now uses curated seeds plus collector-side pruning; live collection requires `REDDIT_USER_AGENT` |
 | Stack Overflow | Implemented | Legacy Stack Overflow collector remains available |
 | GitHub Issues | Implemented | REST search based |
 | GitHub Discussions | Conditionally implemented | Requires `GITHUB_TOKEN` |
@@ -144,6 +149,15 @@ $env:ENABLE_LLM_LABELER="false"
 ```
 
 You can also place these values in a repo-root `.env` file for local use.
+
+## Reddit policy
+
+Aggregate Reddit is treated as a source-specific low-yield/high-overhead collector rather than a generic forum source.
+
+- Policy lives in [config/sources/reddit.yaml](config/sources/reddit.yaml).
+- Curated aggregate seeds live in [config/seeds/existing_forums/reddit.yaml](config/seeds/existing_forums/reddit.yaml).
+- Configurable controls include subreddit allow/deny rules, per-seed page caps, minimum rolling retention threshold, comment expansion mode, and early-stop thresholds.
+- Auditable outputs include the latest policy snapshot, runtime stop counters, and seed/subreddit retention tables under `data/analysis/`.
 
 ## Repository layout
 

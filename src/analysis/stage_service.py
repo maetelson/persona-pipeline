@@ -23,6 +23,7 @@ from src.analysis.persona_gen import generate_personas
 from src.analysis.persona_messaging import build_persona_messaging_outputs, write_persona_messaging_outputs
 from src.analysis.persona_service import build_persona_outputs, write_persona_outputs
 from src.analysis.quality_status import build_quality_metrics, evaluate_quality_status
+from src.analysis.reddit_retention import analyze_reddit_retention
 from src.analysis.diagnostics import (
     build_metric_glossary,
     build_quality_failures,
@@ -363,6 +364,7 @@ def persist_analysis_outputs(
         deterministic_outputs["quality_failures_df"].to_csv(analysis_dir / "quality_failures.csv", index=False)
         deterministic_outputs["metric_glossary_df"].to_csv(analysis_dir / "metric_glossary.csv", index=False)
         write_parquet(deterministic_outputs["survival_funnel_df"], analysis_dir / "survival_funnel_by_source.parquet")
+        reddit_retention_paths = analyze_reddit_retention(root_dir)
         debug_paths.update(
             {
                 "counts_csv": analysis_dir / "counts.csv",
@@ -374,6 +376,7 @@ def persist_analysis_outputs(
                 "survival_funnel_parquet": analysis_dir / "survival_funnel_by_source.parquet",
                 "quality_failures_csv": analysis_dir / "quality_failures.csv",
                 "metric_glossary_csv": analysis_dir / "metric_glossary.csv",
+                **{f"reddit_retention_{name}": path for name, path in reddit_retention_paths.items()},
             }
         )
         if optional_outputs:

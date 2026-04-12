@@ -147,7 +147,7 @@ class StackOverflowCollector(BaseCollector):
             "sort": self.config.get("search_sort", "relevance"),
             "filter": "withbody",
         }
-        return self._fetch_json("https://api.stackexchange.com/2.3/search/advanced", params)
+        return self._fetch_json("https://api.stackexchange.com/2.3/search/advanced", params, request_kind="search")
 
     def _fetch_answers_by_question(self, question_ids: list[str]) -> dict[str, list[dict[str, Any]]]:
         """Fetch answers for question IDs and group them by question."""
@@ -164,7 +164,7 @@ class StackOverflowCollector(BaseCollector):
                 "sort": "votes",
                 "order": "desc",
             }
-            payload = self._fetch_json(endpoint, params)
+            payload = self._fetch_json(endpoint, params, request_kind="answers")
             for answer in payload.get("items", []):
                 parent_id = str(answer.get("question_id", ""))
                 grouped.setdefault(parent_id, []).append(answer)
@@ -185,7 +185,7 @@ class StackOverflowCollector(BaseCollector):
                 "sort": "votes",
                 "order": "desc",
             }
-            payload = self._fetch_json(endpoint, params)
+            payload = self._fetch_json(endpoint, params, request_kind="comments")
             for comment in payload.get("items", []):
                 post_id = str(comment.get("post_id", ""))
                 grouped.setdefault(post_id, []).append(comment)
@@ -213,7 +213,7 @@ class StackOverflowCollector(BaseCollector):
                     blocks.append(f"[answer_comment] {comment_body}")
         return "\n\n".join(blocks)
 
-    def _fetch_json(self, base_url: str, params: dict[str, Any]) -> dict[str, Any]:
+    def _fetch_json(self, base_url: str, params: dict[str, Any], request_kind: str = "rest") -> dict[str, Any]:
         """Fetch JSON from the Stack Exchange API."""
         request_params = dict(params)
         request_params["site"] = self.config.get("site", "stackoverflow")
@@ -225,14 +225,22 @@ class StackOverflowCollector(BaseCollector):
         max_retries = int(os.getenv("STACKOVERFLOW_REQUEST_RETRIES", "2"))
         for attempt in range(max_retries + 1):
             request = Request(url, headers={"Accept": "application/json", "User-Agent": "persona-pipeline/0.1"})
+            request_started_at = time.perf_counter()
             try:
                 with urlopen(request, timeout=30) as response:
-                    return json.load(response)
+                    payload = json.load(response)
+                self.record_request(request_kind, time.perf_counter() - request_started_at, success=True)
+                return payload
             except HTTPError as exc:
+                self.record_request(request_kind, time.perf_counter() - request_started_at, success=False)
                 raise RuntimeError(f"Stack Overflow request failed with HTTP {exc.code} for URL: {url}") from exc
             except URLError as exc:
+                self.record_request(request_kind, time.perf_counter() - request_started_at, success=False)
                 if attempt < max_retries:
-                    time.sleep(1.5 * (attempt + 1))
+                    retry_sleep_seconds = 1.5 * (attempt + 1)
+                    self.record_request_retry()
+                    self.record_backoff_sleep(retry_sleep_seconds)
+                    time.sleep(retry_sleep_seconds)
                     continue
                 raise RuntimeError(f"Stack Overflow request failed due to network error for URL: {url}") from exc
         raise RuntimeError(f"Stack Overflow request failed after retries for URL: {url}")

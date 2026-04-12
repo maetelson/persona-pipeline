@@ -7,17 +7,131 @@ normalizer_kind: existing_forums
 enabled: true
 use_stub: false
 source_type: forum
-query_mode: expanded_map
+query_mode: source_config
+seed_bank_path: config/seeds/existing_forums/reddit.yaml
 allowed_query_priorities:
   - high
   - medium
 search_sort: new
 max_posts_per_seed: 10
 max_pages_per_query: 4
+default_per_seed_page_cap: 3
+per_seed_page_caps:
+  excel after dashboard: 4
+  dashboard numbers don't match: 4
+  reconcile dashboard numbers: 3
+  metric definition mismatch: 3
+  manual reporting after dashboard: 2
+  stakeholder asks why numbers changed: 2
+  attribution numbers don't match: 3
+  why did conversion drop by segment: 2
 comment_limit_per_post: 10
+comment_expansion_mode: conditional
+comment_expand_body_char_threshold: 220
+comment_expand_max_posts_per_page: 3
+comment_expand_max_posts_per_query: 8
 sleep_seconds: 1.5
 max_rate_limit_retries: 3
 rate_limit_wait_seconds: 20
+early_stop_low_yield_pages: 2
+early_stop_min_kept_per_page: 1
+early_stop_max_kept_ratio: 0.15
+minimum_rolling_retention_threshold: 0.12
+rolling_retention_min_pages: 2
+early_stop_overlap_ratio: 0.6
+early_stop_overlap_pages: 1
 time_filter_mode: post_filter_only
+preferred_subreddits:
+  - analytics
+  - businessintelligence
+  - excel
+  - marketinganalytics
+  - powerbi
+  - tableau
+  - lookerstudio
+deny_subreddit_patterns:
+  - "^u/"
+  - "^r/ppcagencies$"
+  - "^r/scamchecker$"
+  - "^r/saasdevelopers$"
+  - "^r/privacycompass$"
+  - "^r/sideproject$"
+  - "^r/vibecoding$"
+  - "^r/claudeai$"
+  - "^r/localllama$"
+  - "^r/content_marketing$"
+  - "^r/resumes$"
+  - "^r/faanginterviewprep$"
+search_negative_keywords:
+  - job
+  - hiring
+  - salary
+  - resume
+  - interview
+  - internship
+  - homework
+  - assignment
+  - course
+  - tutorial
+  - roleplay
+  - fanfic
+  - fiction
+precollector_negative_keywords:
+  - remote job
+  - hiring
+  - salary
+  - internship
+  - resume
+  - course
+  - tutorial
+  - assignment
+  - homework
+  - fanfic
+  - fiction
+  - chapter
+  - roleplay
+  - stock market news
+  - morning update
+  - i built a free
+precollector_required_signal_terms:
+  - dashboard
+  - report
+  - reporting
+  - export
+  - excel
+  - spreadsheet
+  - metric
+  - metrics
+  - kpi
+  - attribution
+  - power bi
+  - tableau
+  - analytics
+  - reconcile
+precollector_problem_terms:
+  - mismatch
+  - not match
+  - wrong
+  - trust
+  - reconcile
+  - validation
+  - explain
+  - why did
+  - dropped
+  - broken
+  - manual
+  - stakeholder
+precollector_workflow_terms:
+  - dashboard
+  - report
+  - reporting
+  - export
+  - excel
+  - spreadsheet
+  - metric
+  - kpi
+  - segment
+  - channel
+  - device
 aliases:
   - reddit

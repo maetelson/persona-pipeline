@@ -1,4 +1,4 @@
-"""GitHub issues/discussions collector with query × time window × pagination batching."""
+"""GitHub issues/discussions collector with query x time window x pagination batching."""
 
 from __future__ import annotations
 
@@ -62,7 +62,9 @@ class GitHubDiscussionsCollector(BaseCollector):
                 self._record_partial_error(query_task, time_slice, page_no, "issues_page", exc, repository)
 
             token = os.getenv("GITHUB_TOKEN", "").strip()
-            discussions_enabled = str(os.getenv("GITHUB_ENABLE_DISCUSSIONS", str(self.config.get("enable_discussions", False)))).lower() == "true"
+            discussions_enabled = str(
+                os.getenv("GITHUB_ENABLE_DISCUSSIONS", str(self.config.get("enable_discussions", False)))
+            ).lower() == "true"
             if token and discussions_enabled:
                 try:
                     discussions, discussions_has_more = self._fetch_discussions_page(
@@ -111,7 +113,7 @@ class GitHubDiscussionsCollector(BaseCollector):
             "per_page": per_query,
             "page": page_no,
         }
-        payload = self._fetch_rest_json("https://api.github.com/search/issues", params=params)
+        payload = self._fetch_rest_json("https://api.github.com/search/issues", params=params, request_kind="search")
         page_items = payload.get("items", [])
         return page_items, len(page_items) >= per_query
 
@@ -125,7 +127,7 @@ class GitHubDiscussionsCollector(BaseCollector):
         if per_page <= 0:
             return []
         params = {"per_page": per_page}
-        payload = self._fetch_rest_json(str(comments_url), params=params)
+        payload = self._fetch_rest_json(str(comments_url), params=params, request_kind="comments")
         if isinstance(payload, list):
             return payload[:per_page]
         return []
@@ -196,6 +198,7 @@ class GitHubDiscussionsCollector(BaseCollector):
                 "replyFirst": per_reply,
                 "after": after,
             },
+            request_kind="graphql",
         )
         discussions_data = payload.get("data", {}).get("repository", {}).get("discussions", {}) or {}
         discussions = discussions_data.get("nodes", []) or []
@@ -207,7 +210,10 @@ class GitHubDiscussionsCollector(BaseCollector):
                 [
                     str(discussion.get("title", "") or ""),
                     str(discussion.get("body", "") or ""),
-                    " ".join(str(comment.get("body", "") or "") for comment in discussion.get("comments", {}).get("nodes", [])),
+                    " ".join(
+                        str(comment.get("body", "") or "")
+                        for comment in discussion.get("comments", {}).get("nodes", [])
+                    ),
                 ]
             ).lower()
             overlap = sum(1 for token in query_tokens if token in haystack)
@@ -347,25 +353,43 @@ class GitHubDiscussionsCollector(BaseCollector):
             },
         )
 
-    def _fetch_rest_json(self, base_url: str, params: dict[str, Any] | None = None) -> Any:
+    def _fetch_rest_json(
+        self,
+        base_url: str,
+        params: dict[str, Any] | None = None,
+        request_kind: str = "rest",
+    ) -> Any:
         """Fetch JSON from the GitHub REST API."""
         url = base_url if not params else f"{base_url}?{urlencode(params)}"
         max_retries = int(os.getenv("GITHUB_REQUEST_RETRIES", "2"))
         for attempt in range(max_retries + 1):
             request = Request(url, headers=self._headers())
+            request_started_at = time.perf_counter()
             try:
                 with urlopen(request, timeout=30) as response:
-                    return json.load(response)
+                    payload = json.load(response)
+                self.record_request(request_kind, time.perf_counter() - request_started_at, success=True)
+                return payload
             except HTTPError as exc:
+                self.record_request(request_kind, time.perf_counter() - request_started_at, success=False)
                 raise RuntimeError(f"GitHub REST request failed with HTTP {exc.code} for URL: {url}") from exc
             except URLError as exc:
+                self.record_request(request_kind, time.perf_counter() - request_started_at, success=False)
                 if attempt < max_retries:
-                    time.sleep(1.5 * (attempt + 1))
+                    retry_sleep_seconds = 1.5 * (attempt + 1)
+                    self.record_request_retry()
+                    self.record_backoff_sleep(retry_sleep_seconds)
+                    time.sleep(retry_sleep_seconds)
                     continue
                 raise RuntimeError(f"GitHub REST request failed due to network error for URL: {url}") from exc
         raise RuntimeError(f"GitHub REST request failed after retries for URL: {url}")
 
-    def _fetch_graphql_json(self, query: str, variables: dict[str, Any]) -> dict[str, Any]:
+    def _fetch_graphql_json(
+        self,
+        query: str,
+        variables: dict[str, Any],
+        request_kind: str = "graphql",
+    ) -> dict[str, Any]:
         """Fetch JSON from the GitHub GraphQL API."""
         token = os.getenv("GITHUB_TOKEN", "").strip()
         if not token:
@@ -375,15 +399,22 @@ class GitHubDiscussionsCollector(BaseCollector):
         max_retries = int(os.getenv("GITHUB_REQUEST_RETRIES", "2"))
         for attempt in range(max_retries + 1):
             request = Request("https://api.github.com/graphql", headers=self._headers(), data=body, method="POST")
+            request_started_at = time.perf_counter()
             try:
                 with urlopen(request, timeout=30) as response:
                     payload = json.load(response)
+                self.record_request(request_kind, time.perf_counter() - request_started_at, success=True)
                 break
             except HTTPError as exc:
+                self.record_request(request_kind, time.perf_counter() - request_started_at, success=False)
                 raise RuntimeError("GitHub GraphQL request failed.") from exc
             except URLError as exc:
+                self.record_request(request_kind, time.perf_counter() - request_started_at, success=False)
                 if attempt < max_retries:
-                    time.sleep(1.5 * (attempt + 1))
+                    retry_sleep_seconds = 1.5 * (attempt + 1)
+                    self.record_request_retry()
+                    self.record_backoff_sleep(retry_sleep_seconds)
+                    time.sleep(retry_sleep_seconds)
                     continue
                 raise RuntimeError("GitHub GraphQL network request failed.") from exc
         else:

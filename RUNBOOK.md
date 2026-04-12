@@ -66,6 +66,16 @@ python run/06_cluster_and_score.py
 python run/07_export_xlsx.py
 ```
 
+Reddit collection policy diagnostics:
+
+```bash
+python run/19_analyze_reddit_retention.py
+```
+
+- Aggregate `reddit` uses curated source-config seeds, subreddit targeting, and collector-side low-intent skips.
+- The retention command writes per-seed, per-subreddit, and seed-by-subreddit retention artifacts under `data/analysis/`.
+- It also writes Reddit policy audit artifacts that show the configured policy and the latest observed early-stop/runtime counters.
+
 ## 3.5 Query 설계 파일
 
 - `config/query_seed_taxonomy.yaml`
@@ -325,6 +335,9 @@ source별 finer slicing 지원:
 
 - `source_meta.raw_post`
 - `source_meta.raw_comments`
+- Aggregate `reddit` is intentionally narrower than before: it prioritizes higher-intent subreddits and problem-oriented seeds, and rejects obvious low-yield posts before comment hydration.
+- Source-specific policy is configured in `config/sources/reddit.yaml` and includes subreddit rules, per-seed page caps, rolling-retention thresholds, comment-expansion controls, and early-stop conditions.
+- Audit artifacts for this policy are written to `data/analysis/reddit_collection_policy_audit.csv`, `data/analysis/reddit_collection_policy_audit.json`, and `data/analysis/reddit_collection_policy_report.md`.
 
 ### Stack Overflow
 

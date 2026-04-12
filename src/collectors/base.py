@@ -97,6 +97,7 @@ class PageResult:
     has_more: bool
     rate_limit_wait_seconds: float = 0.0
     stop_reason: str = ""
+    metrics: dict[str, Any] = field(default_factory=dict)
 
 
 class BaseCollector(ABC):
@@ -113,6 +114,17 @@ class BaseCollector(ABC):
         self.query_map = load_yaml(self.root_dir / "config" / "query_map.yaml")
         self.collection_stats: list[dict[str, Any]] = []
         self.error_stats: list[dict[str, Any]] = []
+        self.profile_metrics: dict[str, Any] = {
+            "request_count": 0,
+            "request_success_count": 0,
+            "request_failure_count": 0,
+            "request_retry_count": 0,
+            "request_seconds_total": 0.0,
+            "backoff_sleep_seconds": 0.0,
+            "configured_sleep_seconds": 0.0,
+            "pagination_iterations": 0,
+            "page_fetch_seconds": 0.0,
+        }
 
     @abstractmethod
     def collect(self) -> list[RawRecord]:
@@ -296,9 +308,11 @@ class BaseCollector(ABC):
             for time_slice in self.get_collection_time_slices():
                 stop_reason = ""
                 for page_no in range(1, max_pages + 1):
+                    page_started_at = time.perf_counter()
                     try:
                         page_result = page_fetcher(query_task, time_slice, page_no)
                     except Exception as exc:  # noqa: BLE001
+                        self.record_page_fetch(time.perf_counter() - page_started_at)
                         error_code = self._extract_error_code(exc)
                         error_message = str(exc)
                         stop_reason = "page_fetch_error"
@@ -335,6 +349,7 @@ class BaseCollector(ABC):
                             }
                         )
                         break
+                    self.record_page_fetch(time.perf_counter() - page_started_at)
                     page_records = page_result.records
                     unique_page_records: list[RawRecord] = []
                     duplicate_count = 0
@@ -376,10 +391,14 @@ class BaseCollector(ABC):
                             "stop_reason": stop_reason,
                         }
                     )
+                    if page_result.metrics:
+                        self.collection_stats[-1].update(page_result.metrics)
 
                     if page_result.rate_limit_wait_seconds > 0:
+                        self.record_backoff_sleep(page_result.rate_limit_wait_seconds)
                         time.sleep(page_result.rate_limit_wait_seconds)
                     elif sleep_seconds > 0 and not stop_reason:
+                        self.record_configured_sleep(sleep_seconds)
                         time.sleep(sleep_seconds)
 
                     if stop_reason:
@@ -403,6 +422,59 @@ class BaseCollector(ABC):
                         }
                     )
         return records
+
+    def record_request(self, request_kind: str, duration_seconds: float, success: bool) -> None:
+        """Track one HTTP request attempt for source profiling."""
+        safe_kind = re.sub(r"[^a-z0-9_]+", "_", str(request_kind).strip().lower()) or "generic"
+        count_key = f"{safe_kind}_request_count"
+        seconds_key = f"{safe_kind}_request_seconds"
+        self.profile_metrics["request_count"] += 1
+        self.profile_metrics["request_seconds_total"] = round(
+            float(self.profile_metrics.get("request_seconds_total", 0.0)) + max(float(duration_seconds), 0.0),
+            6,
+        )
+        self.profile_metrics[count_key] = int(self.profile_metrics.get(count_key, 0)) + 1
+        self.profile_metrics[seconds_key] = round(
+            float(self.profile_metrics.get(seconds_key, 0.0)) + max(float(duration_seconds), 0.0),
+            6,
+        )
+        if success:
+            self.profile_metrics["request_success_count"] += 1
+        else:
+            self.profile_metrics["request_failure_count"] += 1
+
+    def record_request_retry(self) -> None:
+        """Track one retry attempt after a failed HTTP request."""
+        self.profile_metrics["request_retry_count"] += 1
+
+    def record_backoff_sleep(self, sleep_seconds: float) -> None:
+        """Track sleep time caused by rate limits or retry backoff."""
+        self.profile_metrics["backoff_sleep_seconds"] = round(
+            float(self.profile_metrics.get("backoff_sleep_seconds", 0.0)) + max(float(sleep_seconds), 0.0),
+            6,
+        )
+
+    def record_configured_sleep(self, sleep_seconds: float) -> None:
+        """Track inter-page sleep configured by the collector."""
+        self.profile_metrics["configured_sleep_seconds"] = round(
+            float(self.profile_metrics.get("configured_sleep_seconds", 0.0)) + max(float(sleep_seconds), 0.0),
+            6,
+        )
+
+    def record_page_fetch(self, duration_seconds: float) -> None:
+        """Track one query-window page iteration in the shared pagination loop."""
+        self.profile_metrics["pagination_iterations"] += 1
+        self.profile_metrics["page_fetch_seconds"] = round(
+            float(self.profile_metrics.get("page_fetch_seconds", 0.0)) + max(float(duration_seconds), 0.0),
+            6,
+        )
+
+    def get_profile_metrics(self) -> dict[str, Any]:
+        """Return collector profiling metrics with the source identifier attached."""
+        return {
+            "source": self.source_name,
+            **self.profile_metrics,
+        }
 
     def _extract_error_code(self, exc: Exception) -> str:
         """Extract an HTTP-like error code from an exception message when present."""
