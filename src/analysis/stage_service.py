@@ -27,6 +27,7 @@ from src.analysis.reddit_retention import analyze_reddit_retention
 from src.analysis.diagnostics import (
     build_metric_glossary,
     build_quality_failures,
+    build_source_balance_audit,
     build_source_diagnostics,
     build_source_stage_counts,
     build_survival_funnel_by_source,
@@ -193,6 +194,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
     )
     source_diagnostics_df = build_source_diagnostics(source_stage_counts_df)
+    source_balance_audit_df = build_source_balance_audit(source_stage_counts_df)
     quality_metrics = build_quality_metrics(
         stage_counts=stage_counts,
         labeled_df=labeled_df,
@@ -204,6 +206,18 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
     )
     evaluated_quality = evaluate_quality_status(quality_metrics)
     quality_checks = finalize_quality_checks(evaluated_quality)
+    persona_service_outputs["cluster_stats_df"] = _annotate_persona_readiness_frame(
+        persona_service_outputs["cluster_stats_df"],
+        quality_checks,
+    )
+    persona_service_outputs["persona_summary_df"] = _annotate_persona_readiness_frame(
+        persona_service_outputs["persona_summary_df"],
+        quality_checks,
+    )
+    persona_service_outputs["persona_promotion_grounding_audit_df"] = _annotate_persona_readiness_frame(
+        persona_service_outputs.get("persona_promotion_grounding_audit_df", pd.DataFrame()),
+        quality_checks,
+    )
     persona_service_outputs["overview_df"] = _build_final_overview_df(
         axis_names=reduced_outputs["reduced_axis_schema"],
         quality_checks=quality_checks,
@@ -280,6 +294,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         "taxonomy_summary_df": taxonomy_summary_df,
         "source_stage_counts_df": source_stage_counts_df,
         "source_diagnostics_df": source_diagnostics_df,
+        "source_balance_audit_df": source_balance_audit_df,
         "survival_funnel_df": survival_funnel_df,
         "quality_failures_df": quality_failures_df,
         "metric_glossary_df": metric_glossary_df,
@@ -360,6 +375,7 @@ def persist_analysis_outputs(
         deterministic_outputs["source_distribution_df"].to_csv(analysis_dir / "source_distribution.csv", index=False)
         deterministic_outputs["taxonomy_summary_df"].to_csv(analysis_dir / "taxonomy_summary.csv", index=False)
         deterministic_outputs["source_diagnostics_df"].to_csv(analysis_dir / "source_diagnostics.csv", index=False)
+        deterministic_outputs["source_balance_audit_df"].to_csv(analysis_dir / "source_balance_audit.csv", index=False)
         deterministic_outputs["survival_funnel_df"].to_csv(analysis_dir / "survival_funnel_by_source.csv", index=False)
         deterministic_outputs["quality_failures_df"].to_csv(analysis_dir / "quality_failures.csv", index=False)
         deterministic_outputs["metric_glossary_df"].to_csv(analysis_dir / "metric_glossary.csv", index=False)
@@ -372,6 +388,7 @@ def persist_analysis_outputs(
                 "source_distribution_csv": analysis_dir / "source_distribution.csv",
                 "taxonomy_summary_csv": analysis_dir / "taxonomy_summary.csv",
                 "source_diagnostics_csv": analysis_dir / "source_diagnostics.csv",
+                "source_balance_audit_csv": analysis_dir / "source_balance_audit.csv",
                 "survival_funnel_csv": analysis_dir / "survival_funnel_by_source.csv",
                 "survival_funnel_parquet": analysis_dir / "survival_funnel_by_source.parquet",
                 "quality_failures_csv": analysis_dir / "quality_failures.csv",
@@ -458,6 +475,17 @@ def _persona_core_subset(labeled_df: pd.DataFrame) -> pd.DataFrame:
     return labeled_df[labeled_df["persona_core_eligible"].fillna(True)].reset_index(drop=True)
 
 
+def _annotate_persona_readiness_frame(df: pd.DataFrame, quality_checks: dict[str, Any]) -> pd.DataFrame:
+    """Stamp workbook-level readiness fields onto persona-facing sheets."""
+    if df is None:
+        return pd.DataFrame()
+    result = df.copy()
+    result["workbook_readiness_state"] = quality_checks.get("persona_readiness_state", "exploratory_only")
+    result["workbook_readiness_gate_status"] = quality_checks.get("persona_readiness_gate_status", "FAIL")
+    result["workbook_usage_restriction"] = quality_checks.get("persona_usage_restriction", "")
+    return result
+
+
 def _build_final_overview_df(
     axis_names: list[dict[str, Any]],
     quality_checks: dict[str, Any],
@@ -469,7 +497,7 @@ def _build_final_overview_df(
     if not cluster_stats_df.empty:
         workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
         if workbook_review_visible.empty:
-            promoted_mask = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str).isin({"promoted_persona", "review_only_persona"})
+            promoted_mask = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str).isin({"promoted_persona", "review_visible_persona"})
         else:
             promoted_mask = workbook_review_visible.fillna(False).astype(bool)
     else:
@@ -505,6 +533,8 @@ def _build_final_overview_df(
         {"metric": "core_coverage_status", "value": quality_checks.get("core_coverage_status", "")},
         {"metric": "effective_source_diversity_status", "value": quality_checks.get("effective_source_diversity_status", "")},
         {"metric": "source_concentration_status", "value": quality_checks.get("source_concentration_status", "")},
+        {"metric": "source_influence_concentration_status", "value": quality_checks.get("source_influence_concentration_status", "")},
+        {"metric": "weak_source_yield_status", "value": quality_checks.get("weak_source_yield_status", "")},
         {"metric": "largest_cluster_dominance_status", "value": quality_checks.get("largest_cluster_dominance_status", "")},
         {"metric": "cluster_concentration_tail_status", "value": quality_checks.get("cluster_concentration_tail_status", "")},
         {"metric": "cluster_fragility_status", "value": quality_checks.get("cluster_fragility_status", "")},
@@ -517,6 +547,7 @@ def _build_final_overview_df(
         {"metric": "persona_core_unknown_ratio", "value": quality_checks.get("persona_core_unknown_ratio", 0.0)},
         {"metric": "overall_unknown_ratio", "value": quality_checks.get("overall_unknown_ratio", 0.0)},
         {"metric": "effective_labeled_source_count", "value": quality_checks.get("effective_labeled_source_count", 0.0)},
+        {"metric": "effective_balanced_source_count", "value": quality_checks.get("effective_balanced_source_count", 0.0)},
         {"metric": "largest_cluster_share_of_core_labeled", "value": quality_checks.get("largest_cluster_share_of_core_labeled", 0.0)},
         {"metric": "top_3_cluster_share_of_core_labeled", "value": quality_checks.get("top_3_cluster_share_of_core_labeled", 0.0)},
         {"metric": "robust_cluster_count", "value": quality_checks.get("robust_cluster_count", 0)},
@@ -524,11 +555,21 @@ def _build_final_overview_df(
         {"metric": "fragile_cluster_count", "value": quality_checks.get("fragile_cluster_count", 0)},
         {"metric": "micro_cluster_count", "value": quality_checks.get("micro_cluster_count", 0)},
         {"metric": "thin_evidence_cluster_count", "value": quality_checks.get("thin_evidence_cluster_count", 0)},
+        {"metric": "structurally_supported_cluster_count", "value": quality_checks.get("structurally_supported_cluster_count", 0)},
+        {"metric": "weak_separation_cluster_count", "value": quality_checks.get("weak_separation_cluster_count", 0)},
+        {"metric": "fragile_tail_cluster_count", "value": quality_checks.get("fragile_tail_cluster_count", 0)},
+        {"metric": "fragile_tail_share_of_core_labeled", "value": quality_checks.get("fragile_tail_share_of_core_labeled", 0.0)},
         {"metric": "avg_cluster_separation", "value": quality_checks.get("avg_cluster_separation", 0.0)},
         {"metric": "min_cluster_separation", "value": quality_checks.get("min_cluster_separation", 0.0)},
         {"metric": "largest_labeled_source_share_pct", "value": quality_checks.get("largest_labeled_source_share_pct", 0.0)},
+        {"metric": "largest_promoted_source_share_pct", "value": quality_checks.get("largest_promoted_source_share_pct", 0.0)},
+        {"metric": "largest_grounded_source_share_pct", "value": quality_checks.get("largest_grounded_source_share_pct", 0.0)},
+        {"metric": "largest_source_influence_share_pct", "value": quality_checks.get("largest_source_influence_share_pct", 0.0)},
+        {"metric": "weak_source_cost_center_count", "value": quality_checks.get("weak_source_cost_center_count", 0)},
+        {"metric": "weak_source_cost_centers", "value": quality_checks.get("weak_source_cost_centers", "")},
         {"metric": "promoted_candidate_persona_count", "value": quality_checks.get("promoted_candidate_persona_count", promotion_visibility_persona_count)},
         {"metric": "promotion_visibility_persona_count", "value": promotion_visibility_persona_count},
+        {"metric": "headline_persona_count", "value": quality_checks.get("headline_persona_count", final_usable_persona_count)},
         {"metric": "final_usable_persona_count", "value": final_usable_persona_count},
         {"metric": "deck_ready_persona_count", "value": quality_checks.get("deck_ready_persona_count", final_usable_persona_count)},
         {"metric": "promoted_persona_example_coverage_pct", "value": quality_checks.get("promoted_persona_example_coverage_pct", 0.0)},

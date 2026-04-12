@@ -150,8 +150,10 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
         "persona_core_unknown_ratio": ("core_unknown_status", "core_unknown_reason_keys"),
         "overall_unknown_ratio": ("overall_unknown_status", "overall_unknown_reason_keys"),
         "persona_core_coverage_of_all_labeled_pct": ("core_coverage_status", "core_coverage_reason_keys"),
-        "effective_labeled_source_count": ("effective_source_diversity_status", "effective_source_diversity_reason_keys"),
+        "effective_balanced_source_count": ("effective_source_diversity_status", "effective_source_diversity_reason_keys"),
         "largest_labeled_source_share_pct": ("source_concentration_status", "source_concentration_reason_keys"),
+        "largest_source_influence_share_pct": ("source_influence_concentration_status", "source_influence_concentration_reason_keys"),
+        "weak_source_cost_center_count": ("weak_source_yield_status", "weak_source_yield_reason_keys"),
         "largest_cluster_share_of_core_labeled": ("largest_cluster_dominance_status", "largest_cluster_dominance_reason_keys"),
         "promoted_persona_example_coverage_pct": ("grounding_coverage_status", "grounding_coverage_reason_keys"),
         "promoted_persona_grounding_failure_count": ("grounding_coverage_status", "grounding_coverage_reason_keys"),
@@ -160,6 +162,8 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
         "overall_status": ("overall_status", "composite_reason_keys"),
         "core_clustering_status": ("core_clustering_status", "core_clustering_reason_keys"),
         "source_diversity_status": ("source_diversity_status", "source_diversity_reason_keys"),
+        "source_influence_concentration_status": ("source_influence_concentration_status", "source_influence_concentration_reason_keys"),
+        "weak_source_yield_status": ("weak_source_yield_status", "weak_source_yield_reason_keys"),
         "example_grounding_status": ("example_grounding_status", "example_grounding_reason_keys"),
     }
     rows: list[dict[str, object]] = []
@@ -380,23 +384,42 @@ def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) ->
         "fragile_cluster_count",
         "micro_cluster_count",
         "thin_evidence_cluster_count",
+        "structurally_supported_cluster_count",
+        "weak_separation_cluster_count",
+        "fragile_tail_cluster_count",
         "largest_cluster_share_of_core_labeled",
         "top_3_cluster_share_of_core_labeled",
         "avg_cluster_separation",
         "min_cluster_separation",
+        "fragile_tail_share_of_core_labeled",
     }:
         return DENOMINATOR_PERSONA_CORE_LABELED_ROWS
-    if metric in {"overall_unknown_ratio", DENOMINATOR_LABELED_EPISODE_ROWS, "persona_core_coverage_of_all_labeled_pct", "largest_labeled_source_share_pct"}:
+    if metric in {
+        "overall_unknown_ratio",
+        DENOMINATOR_LABELED_EPISODE_ROWS,
+        "persona_core_coverage_of_all_labeled_pct",
+        "largest_labeled_source_share_pct",
+    }:
         return DENOMINATOR_LABELED_EPISODE_ROWS
+    if metric == "largest_promoted_source_share_pct":
+        return "promoted_cluster_rows"
+    if metric == "largest_grounded_source_share_pct":
+        return "grounded_persona_rows"
+    if metric == "promoted_persona_episode_rows":
+        return "promoted_cluster_rows"
+    if metric == "grounded_promoted_persona_episode_rows":
+        return "grounded_persona_rows"
+    if metric in {"effective_labeled_source_count", "effective_balanced_source_count", "weak_source_cost_center_count", "weak_source_cost_centers", "largest_source_influence_share_pct"}:
+        return "source_count"
     if metric in {"promoted_persona_example_coverage_pct"}:
         return "promoted_persona_rows"
-    if metric in {"promoted_candidate_persona_count", "promotion_visibility_persona_count", "final_usable_persona_count", "deck_ready_persona_count", "promoted_persona_count", "promoted_persona_grounded_count", "promoted_persona_weakly_grounded_count", "promoted_persona_ungrounded_count", "promoted_persona_grounding_failure_count"}:
+    if metric in {"promoted_candidate_persona_count", "promotion_visibility_persona_count", "headline_persona_count", "final_usable_persona_count", "deck_ready_persona_count", "promoted_persona_count", "promoted_persona_grounded_count", "promoted_persona_weakly_grounded_count", "promoted_persona_ungrounded_count", "promoted_persona_grounding_failure_count"}:
         return "persona_cluster_rows"
     if metric in {"selected_example_grounding_issue_count"}:
         return "persona_example_rows"
     if metric in {"raw_source_count"}:
         return DENOMINATOR_RAW_RECORD_ROWS
-    if metric in {"labeled_source_count", "effective_labeled_source_count"}:
+    if metric in {"labeled_source_count"}:
         return "source_count"
     if metric == "source_failures":
         return "raw_covered_source_count"
@@ -409,21 +432,36 @@ def _quality_denominator_value(metric: str, quality_checks: dict[str, object]) -
     """Return denominator value for a quality metric."""
     if metric in PIPELINE_STAGE_METRIC_NAMES:
         return quality_checks.get(metric, "")
-    if metric in {"persona_core_unknown_ratio", "cluster_distribution", "cluster_count", "largest_cluster_share_of_core_labeled"}:
+    if metric in {"persona_core_unknown_ratio", "cluster_distribution", "cluster_count", "largest_cluster_share_of_core_labeled", "robust_cluster_count", "stable_cluster_count", "fragile_cluster_count", "micro_cluster_count", "thin_evidence_cluster_count", "structurally_supported_cluster_count", "weak_separation_cluster_count", "fragile_tail_cluster_count", "top_3_cluster_share_of_core_labeled", "avg_cluster_separation", "min_cluster_separation", "fragile_tail_share_of_core_labeled"}:
         return quality_checks.get("persona_core_labeled_rows", quality_checks.get("persona_core_labeled_count", ""))
-    if metric in {"overall_unknown_ratio", DENOMINATOR_LABELED_EPISODE_ROWS, "persona_core_coverage_of_all_labeled_pct", "largest_labeled_source_share_pct"}:
+    if metric in {
+        "overall_unknown_ratio",
+        DENOMINATOR_LABELED_EPISODE_ROWS,
+        "persona_core_coverage_of_all_labeled_pct",
+        "largest_labeled_source_share_pct",
+    }:
         return quality_checks.get(DENOMINATOR_LABELED_EPISODE_ROWS, quality_checks.get("labeled_count", ""))
+    if metric == "largest_promoted_source_share_pct":
+        return quality_checks.get("promoted_persona_episode_rows", "")
+    if metric == "largest_grounded_source_share_pct":
+        return quality_checks.get("grounded_promoted_persona_episode_rows", "")
+    if metric == "promoted_persona_episode_rows":
+        return quality_checks.get("promoted_persona_episode_rows", "")
+    if metric == "grounded_promoted_persona_episode_rows":
+        return quality_checks.get("grounded_promoted_persona_episode_rows", "")
+    if metric in {"effective_labeled_source_count", "effective_balanced_source_count", "weak_source_cost_center_count", "weak_source_cost_centers", "largest_source_influence_share_pct"}:
+        return quality_checks.get("raw_source_count", "")
     if metric == "promoted_persona_example_coverage_pct":
         return quality_checks.get("promoted_persona_count", "")
     if metric == "promoted_candidate_persona_count":
         return quality_checks.get("cluster_count", "")
-    if metric in {"promotion_visibility_persona_count", "promoted_persona_count", "promoted_persona_grounded_count", "promoted_persona_weakly_grounded_count", "promoted_persona_ungrounded_count", "promoted_persona_grounding_failure_count", "final_usable_persona_count", "deck_ready_persona_count"}:
+    if metric in {"promotion_visibility_persona_count", "headline_persona_count", "promoted_persona_count", "promoted_persona_grounded_count", "promoted_persona_weakly_grounded_count", "promoted_persona_ungrounded_count", "promoted_persona_grounding_failure_count", "final_usable_persona_count", "deck_ready_persona_count"}:
         return quality_checks.get("promoted_candidate_persona_count", quality_checks.get("cluster_count", ""))
     if metric == "selected_example_grounding_issue_count":
         return quality_checks.get("promoted_personas_with_examples", "")
     if metric == "raw_source_count":
         return quality_checks.get(DENOMINATOR_RAW_RECORD_ROWS, "")
-    if metric in {"labeled_source_count", "effective_labeled_source_count"}:
+    if metric in {"labeled_source_count"}:
         return quality_checks.get("raw_source_count", "")
     if metric == "source_failures":
         return quality_checks.get("raw_source_count", "")

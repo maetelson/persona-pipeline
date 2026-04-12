@@ -52,13 +52,13 @@ QUALITY_STATUS_POLICY: dict[str, dict[str, object]] = {
         "display_threshold": "warn<75.0; fail<60.0",
     },
     "effective_source_diversity": {
-        "metric": "effective_labeled_source_count",
-        "warn_threshold": 4.0,
-        "fail_threshold": 4.0,
+        "metric": "effective_balanced_source_count",
+        "warn_threshold": 6.0,
+        "fail_threshold": 5.0,
         "high_is_bad": False,
-        "warn_reason": "effective_source_diversity_low",
-        "fail_reason": "effective_source_diversity_low",
-        "display_threshold": "fail<4.0",
+        "warn_reason": "effective_source_balance_low",
+        "fail_reason": "effective_source_balance_critical",
+        "display_threshold": "warn<6.0; fail<5.0",
     },
     "source_concentration": {
         "metric": "largest_labeled_source_share_pct",
@@ -68,6 +68,24 @@ QUALITY_STATUS_POLICY: dict[str, dict[str, object]] = {
         "warn_reason": "source_concentration_high",
         "fail_reason": "source_concentration_critical",
         "display_threshold": "warn>=50.0; fail>=70.0",
+    },
+    "source_influence_concentration": {
+        "metric": "largest_source_influence_share_pct",
+        "warn_threshold": 35.0,
+        "fail_threshold": 45.0,
+        "high_is_bad": True,
+        "warn_reason": "source_influence_concentration_high",
+        "fail_reason": "source_influence_concentration_critical",
+        "display_threshold": "warn>=35.0; fail>=45.0",
+    },
+    "weak_source_yield": {
+        "metric": "weak_source_cost_center_count",
+        "warn_threshold": 2.0,
+        "fail_threshold": 4.0,
+        "high_is_bad": True,
+        "warn_reason": "weak_source_cost_centers_present",
+        "fail_reason": "weak_source_cost_centers_excessive",
+        "display_threshold": "warn>=2; fail>=4",
     },
     "largest_cluster_dominance": {
         "metric": "largest_cluster_share_of_core_labeled",
@@ -133,11 +151,11 @@ READINESS_POLICY: dict[str, dict[str, object]] = {
         "usage_restriction": "Reviewable draft only. Not a final persona asset and not safe for deck-ready or production use.",
         "summary": "Reviewable draft with enough structure for analyst review, but still blocked from final persona use.",
         "requirements": {
-            "overall_unknown_ratio": {"max": 0.35, "display": "overall_unknown_ratio<=0.35"},
-            "persona_core_coverage_of_all_labeled_pct": {"min": 65.0, "display": "persona_core_coverage_of_all_labeled_pct>=65.0"},
-            "largest_labeled_source_share_pct": {"max": 60.0, "display": "largest_labeled_source_share_pct<=60.0"},
-            "largest_cluster_share_of_core_labeled": {"max": 60.0, "display": "largest_cluster_share_of_core_labeled<=60.0"},
+            "overall_unknown_ratio": {"max": 0.30, "display": "overall_unknown_ratio<=0.30"},
+            "persona_core_coverage_of_all_labeled_pct": {"min": 70.0, "display": "persona_core_coverage_of_all_labeled_pct>=70.0"},
             "promoted_persona_example_coverage_pct": {"min": 80.0, "display": "promoted_persona_example_coverage_pct>=80.0"},
+            "largest_source_influence_share_pct": {"max": 45.0, "display": "largest_source_influence_share_pct<=45.0"},
+            "fragile_tail_share_of_core_labeled": {"max": 0.12, "display": "fragile_tail_share_of_core_labeled<=0.12"},
             "final_usable_persona_count": {"min": 2.0, "display": "final_usable_persona_count>=2"},
         },
     },
@@ -148,11 +166,11 @@ READINESS_POLICY: dict[str, dict[str, object]] = {
         "usage_restriction": "Deck-ready final persona asset. Safe for presentation use, but still below the stricter production persona bar.",
         "summary": "Final persona asset for deck and stakeholder presentation use.",
         "requirements": {
-            "overall_unknown_ratio": {"max": 0.25, "display": "overall_unknown_ratio<=0.25"},
-            "persona_core_coverage_of_all_labeled_pct": {"min": 75.0, "display": "persona_core_coverage_of_all_labeled_pct>=75.0"},
-            "largest_labeled_source_share_pct": {"max": 50.0, "display": "largest_labeled_source_share_pct<=50.0"},
-            "largest_cluster_share_of_core_labeled": {"max": 55.0, "display": "largest_cluster_share_of_core_labeled<=55.0"},
+            "overall_unknown_ratio": {"max": 0.20, "display": "overall_unknown_ratio<=0.20"},
+            "persona_core_coverage_of_all_labeled_pct": {"min": 80.0, "display": "persona_core_coverage_of_all_labeled_pct>=80.0"},
             "promoted_persona_example_coverage_pct": {"min": 100.0, "display": "promoted_persona_example_coverage_pct>=100.0"},
+            "largest_source_influence_share_pct": {"max": 35.0, "display": "largest_source_influence_share_pct<=35.0"},
+            "fragile_tail_share_of_core_labeled": {"max": 0.08, "display": "fragile_tail_share_of_core_labeled<=0.08"},
             "final_usable_persona_count": {"min": 3.0, "display": "final_usable_persona_count>=3"},
         },
     },
@@ -164,10 +182,10 @@ READINESS_POLICY: dict[str, dict[str, object]] = {
         "summary": "Final persona asset that clears the stricter production persona gate.",
         "requirements": {
             "overall_unknown_ratio": {"max": 0.15, "display": "overall_unknown_ratio<=0.15"},
-            "persona_core_coverage_of_all_labeled_pct": {"min": 85.0, "display": "persona_core_coverage_of_all_labeled_pct>=85.0"},
-            "largest_labeled_source_share_pct": {"max": 40.0, "display": "largest_labeled_source_share_pct<=40.0"},
-            "largest_cluster_share_of_core_labeled": {"max": 45.0, "display": "largest_cluster_share_of_core_labeled<=45.0"},
+            "persona_core_coverage_of_all_labeled_pct": {"min": 90.0, "display": "persona_core_coverage_of_all_labeled_pct>=90.0"},
             "promoted_persona_example_coverage_pct": {"min": 100.0, "display": "promoted_persona_example_coverage_pct>=100.0"},
+            "largest_source_influence_share_pct": {"max": 25.0, "display": "largest_source_influence_share_pct<=25.0"},
+            "fragile_tail_share_of_core_labeled": {"max": 0.05, "display": "fragile_tail_share_of_core_labeled<=0.05"},
             "final_usable_persona_count": {"min": 4.0, "display": "final_usable_persona_count>=4"},
         },
     },
@@ -223,8 +241,15 @@ def build_quality_metrics(
     labeled_sources = int((source_stage_counts_df.get("labeled_episode_count", pd.Series(dtype=int)) > 0).sum()) if not source_stage_counts_df.empty else 0
     raw_sources = int((source_stage_counts_df.get("raw_record_count", pd.Series(dtype=int)) > 0).sum()) if not source_stage_counts_df.empty else 0
     effective_labeled_source_count = round(float(_effective_labeled_source_count(source_stage_counts_df)), 2)
+    effective_balanced_source_count = round(float(_effective_balanced_source_count(source_stage_counts_df)), 2)
     largest_cluster_share = _largest_cluster_share(cluster_stats_df)
     largest_labeled_source_share = _largest_labeled_source_share(source_stage_counts_df, labeled_count)
+    promoted_persona_episode_rows = int(pd.to_numeric(source_stage_counts_df.get("promoted_persona_episode_count", pd.Series(dtype=int)), errors="coerce").fillna(0).sum()) if not source_stage_counts_df.empty else 0
+    grounded_promoted_persona_episode_rows = int(pd.to_numeric(source_stage_counts_df.get("grounded_promoted_persona_episode_count", pd.Series(dtype=int)), errors="coerce").fillna(0).sum()) if not source_stage_counts_df.empty else 0
+    largest_promoted_source_share = _largest_source_share(source_stage_counts_df, "promoted_persona_episode_count")
+    largest_grounded_source_share = _largest_source_share(source_stage_counts_df, "grounded_promoted_persona_episode_count")
+    largest_source_influence_share = _largest_source_influence_share(source_stage_counts_df)
+    weak_source_cost_centers = _weak_source_cost_centers(source_stage_counts_df)
     promoted_persona_count, promoted_with_examples, promoted_missing_examples, grounding_counts = _promoted_persona_example_counts(cluster_stats_df, persona_examples_df)
     promotion_semantics = _persona_promotion_semantics(cluster_stats_df)
     promoted_persona_example_coverage_pct = round_pct(promoted_with_examples, promoted_persona_count) if promoted_persona_count else 100.0
@@ -253,21 +278,34 @@ def build_quality_metrics(
         "fragile_cluster_count": int(robustness_metrics.get("fragile_cluster_count", 0)),
         "micro_cluster_count": int(robustness_metrics.get("micro_cluster_count", 0)),
         "thin_evidence_cluster_count": int(robustness_metrics.get("thin_evidence_cluster_count", 0)),
+        "structurally_supported_cluster_count": int(robustness_metrics.get("structurally_supported_cluster_count", 0)),
+        "weak_separation_cluster_count": int(robustness_metrics.get("weak_separation_cluster_count", 0)),
+        "fragile_tail_cluster_count": int(robustness_metrics.get("fragile_tail_cluster_count", 0)),
+        "fragile_tail_share_of_core_labeled": round(float(robustness_metrics.get("fragile_tail_share_of_core_labeled", 0.0)), 4),
         "top_3_cluster_share_of_core_labeled": round(float(robustness_metrics.get("top_3_cluster_share_of_core_labeled", 0.0)), 4),
         "avg_cluster_separation": round(float(robustness_metrics.get("avg_cluster_separation", 0.0)), 4),
         "min_cluster_separation": round(float(robustness_metrics.get("min_cluster_separation", 0.0)), 4),
         "labeled_source_count": labeled_sources,
         "effective_labeled_source_count": effective_labeled_source_count,
+        "effective_balanced_source_count": effective_balanced_source_count,
         "raw_source_count": raw_sources,
         "min_cluster_size": min_cluster_size,
         "largest_cluster_share_of_core_labeled": largest_cluster_share,
         "largest_labeled_source_share_pct": largest_labeled_source_share,
+        "promoted_persona_episode_rows": promoted_persona_episode_rows,
+        "grounded_promoted_persona_episode_rows": grounded_promoted_persona_episode_rows,
+        "largest_promoted_source_share_pct": largest_promoted_source_share,
+        "largest_grounded_source_share_pct": largest_grounded_source_share,
+        "largest_source_influence_share_pct": largest_source_influence_share,
+        "weak_source_cost_center_count": len(weak_source_cost_centers),
+        "weak_source_cost_centers": " | ".join(weak_source_cost_centers),
         "single_cluster_dominance": largest_cluster_share > CLUSTER_DOMINANCE_SHARE_PCT,
         "small_promoted_persona_count": _small_promoted_count(cluster_stats_df, min_cluster_size),
         "selected_example_grounding_issue_count": selected_example_grounding_issue_count,
         "promoted_persona_grounding_failure_count": promoted_persona_grounding_failure_count,
         "promoted_candidate_persona_count": int(promotion_semantics.get("promoted_candidate_persona_count", 0)),
         "promotion_visibility_persona_count": int(promotion_semantics.get("promotion_visibility_persona_count", promoted_persona_count)),
+        "headline_persona_count": int(promotion_semantics.get("headline_persona_count", grounding_counts.get("grounded", 0))),
         "final_usable_persona_count": int(promotion_semantics.get("final_usable_persona_count", grounding_counts.get("grounded", 0))),
         "deck_ready_persona_count": int(promotion_semantics.get("deck_ready_persona_count", grounding_counts.get("grounded", 0))),
         "promoted_persona_count": promoted_persona_count,
@@ -312,6 +350,11 @@ def evaluate_quality_status(metrics: dict[str, object]) -> dict[str, object]:
         bool(str(metrics.get("source_failures", "") or "").strip()),
         "raw_covered_sources_missing_labels",
     )
+    axes["weak_source_yield"] = _append_reason_if(
+        axes["weak_source_yield"],
+        bool(str(metrics.get("weak_source_cost_centers", "") or "").strip()),
+        "weak_source_cost_centers_listed",
+    )
     axes["grounding_coverage"] = _append_reason_if(
         axes["grounding_coverage"],
         int(metrics.get("selected_example_grounding_issue_count", 0) or 0) > 0,
@@ -341,7 +384,10 @@ def evaluate_quality_status(metrics: dict[str, object]) -> dict[str, object]:
             ],
             axes,
         ),
-        "source_diversity": _compose_axis_group(["effective_source_diversity", "source_concentration"], axes),
+        "source_diversity": _compose_axis_group(
+            ["effective_source_diversity", "source_concentration", "source_influence_concentration", "weak_source_yield"],
+            axes,
+        ),
         "example_grounding": _compose_axis_group(["grounding_coverage"], axes),
     }
     composite_reason_keys = _collect_reason_keys(axes)
@@ -399,14 +445,18 @@ def quality_display_thresholds() -> dict[str, str]:
         "persona_core_unknown_ratio": str(QUALITY_STATUS_POLICY["core_unknown"]["display_threshold"]),
         "overall_unknown_ratio": str(QUALITY_STATUS_POLICY["overall_unknown"]["display_threshold"]),
         "persona_core_coverage_of_all_labeled_pct": str(QUALITY_STATUS_POLICY["core_coverage"]["display_threshold"]),
-        "effective_labeled_source_count": str(QUALITY_STATUS_POLICY["effective_source_diversity"]["display_threshold"]),
+        "effective_balanced_source_count": str(QUALITY_STATUS_POLICY["effective_source_diversity"]["display_threshold"]),
         "largest_labeled_source_share_pct": str(QUALITY_STATUS_POLICY["source_concentration"]["display_threshold"]),
+        "largest_source_influence_share_pct": str(QUALITY_STATUS_POLICY["source_influence_concentration"]["display_threshold"]),
+        "weak_source_cost_center_count": str(QUALITY_STATUS_POLICY["weak_source_yield"]["display_threshold"]),
         "largest_cluster_share_of_core_labeled": str(QUALITY_STATUS_POLICY["largest_cluster_dominance"]["display_threshold"]),
         "top_3_cluster_share_of_core_labeled": str(QUALITY_STATUS_POLICY["cluster_concentration_tail"]["display_threshold"]),
+        "fragile_tail_share_of_core_labeled": _readiness_threshold_display("fragile_tail_share_of_core_labeled"),
         "micro_cluster_count": str(QUALITY_STATUS_POLICY["cluster_fragility"]["display_threshold"]),
         "thin_evidence_cluster_count": str(QUALITY_STATUS_POLICY["cluster_evidence"]["display_threshold"]),
         "min_cluster_separation": str(QUALITY_STATUS_POLICY["cluster_separation"]["display_threshold"]),
         "promoted_persona_example_coverage_pct": str(QUALITY_STATUS_POLICY["grounding_coverage"]["display_threshold"]),
+        "final_usable_persona_count": _readiness_threshold_display("final_usable_persona_count"),
         "persona_readiness_state": _persona_readiness_rule(),
         "persona_readiness_gate_status": "FAIL below reviewable threshold; WARN for reviewable_but_not_deck_ready; OK for deck_ready or production_persona_ready.",
         "persona_completion_claim_allowed": "true only when persona_readiness_state is deck_ready or production_persona_ready.",
@@ -474,9 +524,21 @@ def _next_readiness_target(state: str) -> str | None:
 def _persona_readiness_rule() -> str:
     """Render the workbook readiness rule in one reviewer-facing sentence."""
     return (
-        "exploratory_only below reviewable thresholds; reviewable_but_not_deck_ready when reviewable thresholds are met but deck_ready thresholds are not; "
-        "deck_ready when deck thresholds are met but production thresholds are not; production_persona_ready only when all production thresholds are met."
+        "exploratory_only below reviewable thresholds; reviewable_but_not_deck_ready requires explicit floors for overall_unknown_ratio, persona_core_coverage_of_all_labeled_pct, promoted_persona_example_coverage_pct, final_usable_persona_count, largest_source_influence_share_pct, and fragile_tail_share_of_core_labeled; "
+        "deck_ready is the first state allowed to claim a final persona asset; production_persona_ready requires the stricter production thresholds for those same metrics."
     )
+
+
+def _readiness_threshold_display(metric_name: str) -> str:
+    """Render one readiness-threshold summary for workbook-facing display."""
+    ordered_states = ["reviewable_but_not_deck_ready", "deck_ready", "production_persona_ready"]
+    parts: list[str] = []
+    for state in ordered_states:
+        requirement = dict(READINESS_POLICY.get(state, {}).get("requirements", {})).get(metric_name)
+        if not requirement:
+            continue
+        parts.append(f"{state}:{requirement.get('display', metric_name)}")
+    return "; ".join(parts)
 
 
 def _persona_core_subset(labeled_df: pd.DataFrame) -> pd.DataFrame:
@@ -503,6 +565,18 @@ def _effective_labeled_source_count(source_stage_counts_df: pd.DataFrame) -> flo
     return float(sum(min(1.0, float(count) / 5.0) for count in counts.tolist()))
 
 
+def _effective_balanced_source_count(source_stage_counts_df: pd.DataFrame) -> float:
+    """Return effective source count after blending labeled, promoted, and grounded influence."""
+    influence_df = _source_influence_frame(source_stage_counts_df)
+    if influence_df.empty:
+        return 0.0
+    shares = pd.to_numeric(influence_df["blended_influence_share_pct"], errors="coerce").fillna(0.0) / 100.0
+    hhi = float((shares.pow(2)).sum())
+    if hhi <= 0.0:
+        return 0.0
+    return 1.0 / hhi
+
+
 def _largest_cluster_share(cluster_stats_df: pd.DataFrame) -> float:
     """Return largest persona-core cluster share percentage."""
     if cluster_stats_df.empty or "share_of_core_labeled" not in cluster_stats_df.columns:
@@ -517,6 +591,95 @@ def _largest_labeled_source_share(source_stage_counts_df: pd.DataFrame, labeled_
         return 0.0
     counts = pd.to_numeric(source_stage_counts_df["labeled_episode_count"], errors="coerce").fillna(0)
     return round(float(counts.max()) / float(labeled_count) * 100.0, 1) if not counts.empty else 0.0
+
+
+def _largest_source_share(source_stage_counts_df: pd.DataFrame, column: str) -> float:
+    """Return largest share percentage for one source metric column."""
+    if source_stage_counts_df.empty or column not in source_stage_counts_df.columns:
+        return 0.0
+    counts = pd.to_numeric(source_stage_counts_df[column], errors="coerce").fillna(0.0)
+    total = float(counts.sum())
+    if total <= 0.0 or counts.empty:
+        return 0.0
+    return round(float(counts.max()) / total * 100.0, 1)
+
+
+def _largest_source_influence_share(source_stage_counts_df: pd.DataFrame) -> float:
+    """Return largest blended downstream influence share across all sources."""
+    influence_df = _source_influence_frame(source_stage_counts_df)
+    if influence_df.empty:
+        return 0.0
+    values = pd.to_numeric(influence_df["blended_influence_share_pct"], errors="coerce").fillna(0.0)
+    return round(float(values.max()), 1) if not values.empty else 0.0
+
+
+def _weak_source_cost_centers(source_stage_counts_df: pd.DataFrame) -> list[str]:
+    """Return raw-covered sources that remain weak downstream cost centers."""
+    influence_df = _source_influence_frame(source_stage_counts_df)
+    if influence_df.empty:
+        return []
+    matches = influence_df[
+        (influence_df["raw_record_count"] >= 100)
+        & (influence_df["blended_influence_share_pct"] < 10.0)
+        & (
+            (influence_df["prefilter_retention_pct"] < 10.0)
+            | (influence_df["episode_yield"] < 0.5)
+            | (influence_df["labelable_episode_ratio_pct"] < 50.0)
+            | (influence_df["grounded_promoted_persona_episode_count"] <= 0)
+        )
+    ]
+    return sorted(matches.get("source", pd.Series(dtype=str)).astype(str).tolist())
+
+
+def _source_influence_frame(source_stage_counts_df: pd.DataFrame) -> pd.DataFrame:
+    """Return a per-source frame with labeled, promoted, grounded, and blended shares."""
+    if source_stage_counts_df.empty:
+        return pd.DataFrame()
+    frame = source_stage_counts_df.copy()
+    for column in [
+        "raw_record_count",
+        "valid_post_count",
+        "prefiltered_valid_post_count",
+        "episode_count",
+        "labelable_episode_count",
+        "labeled_episode_count",
+        "promoted_persona_episode_count",
+        "grounded_promoted_persona_episode_count",
+    ]:
+        if column not in frame.columns:
+            frame[column] = 0
+    labeled_total = float(pd.to_numeric(frame.get("labeled_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).sum())
+    promoted_total = float(pd.to_numeric(frame.get("promoted_persona_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).sum())
+    grounded_total = float(pd.to_numeric(frame.get("grounded_promoted_persona_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).sum())
+    frame["labeled_share_pct"] = pd.to_numeric(frame.get("labeled_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).map(
+        lambda value: round(float(value) / labeled_total * 100.0, 1) if labeled_total > 0.0 else 0.0
+    )
+    frame["promoted_share_pct"] = pd.to_numeric(frame.get("promoted_persona_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).map(
+        lambda value: round(float(value) / promoted_total * 100.0, 1) if promoted_total > 0.0 else 0.0
+    )
+    frame["grounded_share_pct"] = pd.to_numeric(frame.get("grounded_promoted_persona_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).map(
+        lambda value: round(float(value) / grounded_total * 100.0, 1) if grounded_total > 0.0 else 0.0
+    )
+    active_columns = [column for column, total in [("labeled_share_pct", labeled_total), ("promoted_share_pct", promoted_total), ("grounded_share_pct", grounded_total)] if total > 0.0]
+    if active_columns:
+        frame["blended_influence_share_pct"] = frame[active_columns].mean(axis=1).round(1)
+    else:
+        frame["blended_influence_share_pct"] = 0.0
+    frame["prefilter_retention_pct"] = frame.apply(
+        lambda row: round_pct(row.get("prefiltered_valid_post_count", 0), row.get("valid_post_count", 0)) if float(row.get("valid_post_count", 0) or 0) > 0 else 0.0,
+        axis=1,
+    )
+    frame["episode_yield"] = frame.apply(
+        lambda row: round(float(row.get("episode_count", 0) or 0) / float(row.get("prefiltered_valid_post_count", 0) or 1), 2)
+        if float(row.get("prefiltered_valid_post_count", 0) or 0) > 0
+        else 0.0,
+        axis=1,
+    )
+    frame["labelable_episode_ratio_pct"] = frame.apply(
+        lambda row: round_pct(row.get("labelable_episode_count", 0), row.get("labeled_episode_count", 0)) if float(row.get("labeled_episode_count", 0) or 0) > 0 else 0.0,
+        axis=1,
+    )
+    return frame
 
 
 def _failed_sources(source_stage_counts_df: pd.DataFrame) -> list[str]:
@@ -537,7 +700,7 @@ def _promoted_persona_example_counts(
         return 0, 0, [], {"grounded": 0, "weakly_grounded": 0, "ungrounded": 0, "weak_ids": []}
     workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
     if workbook_review_visible.empty:
-        visible_mask = cluster_stats_df["promotion_status"].astype(str).isin({"promoted_persona", "review_only_persona"})
+        visible_mask = cluster_stats_df["promotion_status"].astype(str).isin({"promoted_persona", "review_visible_persona"})
     else:
         visible_mask = workbook_review_visible.fillna(False).astype(bool)
     promoted = cluster_stats_df[visible_mask].copy()
@@ -545,12 +708,12 @@ def _promoted_persona_example_counts(
     if not promoted_ids:
         return 0, 0, [], {"grounded": 0, "weakly_grounded": 0, "ungrounded": 0, "weak_ids": []}
     grounding_lookup = promoted.set_index("persona_id").get("promotion_grounding_status", pd.Series(dtype=str)).astype(str).to_dict()
-    grounded_statuses = {"promoted_and_grounded", "promoted_but_weakly_grounded"}
+    grounded_statuses = {"promoted_and_grounded", "promoted_but_weakly_grounded", "grounded_but_structurally_weak"}
     with_examples = [persona_id for persona_id in promoted_ids if grounding_lookup.get(persona_id, "") in grounded_statuses]
     missing = [persona_id for persona_id in promoted_ids if grounding_lookup.get(persona_id, "") not in grounded_statuses]
     weak_ids = [persona_id for persona_id in promoted_ids if grounding_lookup.get(persona_id, "") == "promoted_but_weakly_grounded"]
     counts = {
-        "grounded": sum(1 for persona_id in promoted_ids if grounding_lookup.get(persona_id, "") == "promoted_and_grounded"),
+        "grounded": sum(1 for persona_id in promoted_ids if grounding_lookup.get(persona_id, "") in {"promoted_and_grounded", "grounded_but_structurally_weak"}),
         "weakly_grounded": len(weak_ids),
         "ungrounded": sum(1 for persona_id in promoted_ids if grounding_lookup.get(persona_id, "") == "promoted_but_ungrounded"),
         "weak_ids": weak_ids,
@@ -570,7 +733,7 @@ def _small_promoted_count(cluster_stats_df: pd.DataFrame, min_cluster_size: int)
         return 0
     workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
     if workbook_review_visible.empty:
-        promoted = cluster_stats_df[cluster_stats_df["promotion_status"].astype(str).isin({"promoted_persona", "review_only_persona"})]
+        promoted = cluster_stats_df[cluster_stats_df["promotion_status"].astype(str).isin({"promoted_persona", "review_visible_persona"})]
     else:
         promoted = cluster_stats_df[workbook_review_visible.fillna(False).astype(bool)]
     sizes = pd.to_numeric(promoted.get("persona_size", pd.Series(dtype=int)), errors="coerce").fillna(0)
@@ -583,6 +746,7 @@ def _persona_promotion_semantics(cluster_stats_df: pd.DataFrame) -> dict[str, in
         return {
             "promoted_candidate_persona_count": 0,
             "promotion_visibility_persona_count": 0,
+            "headline_persona_count": 0,
             "final_usable_persona_count": 0,
             "deck_ready_persona_count": 0,
         }
@@ -590,15 +754,20 @@ def _persona_promotion_semantics(cluster_stats_df: pd.DataFrame) -> dict[str, in
     promotion_status = cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str)
     workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
     grounding_status = cluster_stats_df.get("promotion_grounding_status", pd.Series(dtype=str)).astype(str)
+    final_usable_series = cluster_stats_df.get("final_usable_persona", pd.Series(dtype=bool))
     promoted_candidate_count = int(base_status.isin({"promoted_candidate_persona", "promoted_persona"}).sum()) if not base_status.empty else int(promotion_status.eq("promoted_persona").sum())
     if workbook_review_visible.empty:
-        promotion_visibility_count = int(promotion_status.isin({"promoted_persona", "review_only_persona"}).sum())
+        promotion_visibility_count = int(promotion_status.isin({"promoted_persona", "review_visible_persona"}).sum())
     else:
         promotion_visibility_count = int(workbook_review_visible.fillna(False).astype(bool).sum())
-    final_usable_count = int(grounding_status.eq("promoted_and_grounded").sum())
+    if final_usable_series.empty:
+        final_usable_count = int(grounding_status.eq("promoted_and_grounded").sum())
+    else:
+        final_usable_count = int(final_usable_series.fillna(False).astype(bool).sum())
     return {
         "promoted_candidate_persona_count": promoted_candidate_count,
         "promotion_visibility_persona_count": promotion_visibility_count,
+        "headline_persona_count": final_usable_count,
         "final_usable_persona_count": final_usable_count,
         "deck_ready_persona_count": final_usable_count,
     }

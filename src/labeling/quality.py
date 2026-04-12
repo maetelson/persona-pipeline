@@ -206,7 +206,7 @@ def _audit_markdown(outputs: dict[str, pd.DataFrame]) -> str:
         lines.extend(["", "## Dominant Unknown Reasons", ""])
         for _, row in reason_df.head(8).iterrows():
             lines.append(
-                f"- `{row['unknown_reason']}`: count={row['count']}, share_of_unknown={row['share_of_unknown']}, remediation={row['likely_remediation_type']}"
+                f"- `{row['unknown_reason']}`: category={row.get('root_cause_category', '')}, policy={row.get('persona_core_policy', '')}, count={row['count']}, share_of_unknown={row['share_of_unknown']}, remediation={row['likely_remediation_type']}"
             )
     lines.append("")
     return "\n".join(lines)
@@ -226,7 +226,7 @@ def _unknown_reason_markdown(outputs: dict[str, pd.DataFrame]) -> str:
     lines.extend(["", "## Top Reasons", ""])
     for _, row in breakdown_df.head(10).iterrows():
         lines.append(
-            f"- `{row['unknown_reason']}`: count={row['count']}, share_of_unknown={row['share_of_unknown']}, remediation={row['likely_remediation_type']}"
+            f"- `{row['unknown_reason']}`: category={row.get('root_cause_category', '')}, policy={row.get('persona_core_policy', '')}, count={row['count']}, share_of_unknown={row['share_of_unknown']}, remediation={row['likely_remediation_type']}"
         )
         if str(row.get("sample_rows", "") or ""):
             lines.append(f"  samples: {row['sample_rows']}")
@@ -234,7 +234,7 @@ def _unknown_reason_markdown(outputs: dict[str, pd.DataFrame]) -> str:
         lines.extend(["", "## Sample Rows", ""])
         for _, row in unknown_rows_df.head(12).iterrows():
             lines.append(
-                f"- `{row['episode_id']}` [{row.get('unknown_reason', '')}] labelability={row.get('labelability_status', '')} missing={row.get('missing_core_axes', '')}"
+                f"- `{row['episode_id']}` [{row.get('unknown_reason', '')} | {row.get('root_cause_category', '')}] labelability={row.get('labelability_status', '')} missing={row.get('missing_core_axes', '')}"
             )
             lines.append(f"  excerpt: {row.get('text_excerpt', '')}")
     lines.append("")

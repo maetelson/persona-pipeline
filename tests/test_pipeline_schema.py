@@ -57,7 +57,11 @@ class PipelineSchemaTests(unittest.TestCase):
             "overall_unknown_ratio": 0.10,
             "persona_core_coverage_of_all_labeled_pct": 100.0,
             "effective_labeled_source_count": 2.4,
+            "effective_balanced_source_count": 4.3,
             "largest_labeled_source_share_pct": 33.3,
+            "largest_source_influence_share_pct": 40.1,
+            "weak_source_cost_center_count": 4,
+            "weak_source_cost_centers": "reddit | stackoverflow | github_discussions | merchant_center_community",
             "largest_cluster_share_of_core_labeled": 50.0,
             "promoted_persona_example_coverage_pct": 100.0,
             "selected_example_grounding_issue_count": 0,
@@ -65,13 +69,13 @@ class PipelineSchemaTests(unittest.TestCase):
             "source_failures": "",
         }
         result = finalize_quality_checks(evaluate_quality_status(base))
-        self.assertEqual(float(QUALITY_STATUS_POLICY["effective_source_diversity"]["fail_threshold"]), 4.0)
+        self.assertEqual(float(QUALITY_STATUS_POLICY["effective_source_diversity"]["fail_threshold"]), 5.0)
         self.assertEqual(result["source_diversity_status"], "FAIL")
         self.assertEqual(result["effective_source_diversity_status"], "FAIL")
-        self.assertIn("effective_source_diversity_low", str(result["effective_source_diversity_reason_keys"]))
+        self.assertIn("effective_source_balance_critical", str(result["effective_source_diversity_reason_keys"]))
         self.assertEqual(result["overall_status"], "FAIL")
         self.assertEqual(result["quality_flag"], "UNSTABLE")
-        self.assertLess(float(result["effective_labeled_source_count"]), 4.0)
+        self.assertLess(float(result["effective_balanced_source_count"]), 5.0)
 
     def test_finalize_quality_checks_escalates_when_overall_uncertainty_is_high(self) -> None:
         base = {
@@ -81,7 +85,11 @@ class PipelineSchemaTests(unittest.TestCase):
             "overall_unknown_ratio": 0.430085,
             "persona_core_coverage_of_all_labeled_pct": 61.2,
             "effective_labeled_source_count": 9.6,
+            "effective_balanced_source_count": 8.1,
             "largest_labeled_source_share_pct": 42.4,
+            "largest_source_influence_share_pct": 24.0,
+            "weak_source_cost_center_count": 0,
+            "weak_source_cost_centers": "",
             "largest_cluster_share_of_core_labeled": 55.0,
             "promoted_persona_example_coverage_pct": 80.0,
             "selected_example_grounding_issue_count": 0,
@@ -102,9 +110,13 @@ class PipelineSchemaTests(unittest.TestCase):
                         "persona_core_unknown_ratio": 0.05,
                         "persona_core_coverage_of_all_labeled_pct": 80.0,
                         "largest_labeled_source_share_pct": 40.0,
+                        "largest_source_influence_share_pct": 24.0,
                         "largest_cluster_share_of_core_labeled": 50.0,
                         "promoted_persona_example_coverage_pct": 100.0,
                         "effective_labeled_source_count": 8.0,
+                        "effective_balanced_source_count": 7.4,
+                        "weak_source_cost_center_count": 0,
+                        "weak_source_cost_centers": "",
                         "selected_example_grounding_issue_count": 0,
                         "promoted_persona_grounding_failure_count": 0,
                         "source_failures": "",
@@ -168,9 +180,13 @@ class PipelineSchemaTests(unittest.TestCase):
                 "persona_core_unknown_ratio": 0.069204,
                 "persona_core_coverage_of_all_labeled_pct": 61.2,
                 "largest_labeled_source_share_pct": 42.4,
+                "largest_source_influence_share_pct": 24.0,
                 "largest_cluster_share_of_core_labeled": 55.0,
                 "promoted_persona_example_coverage_pct": 80.0,
                 "effective_labeled_source_count": 9.6,
+                "effective_balanced_source_count": 7.8,
+                "weak_source_cost_center_count": 0,
+                "weak_source_cost_centers": "",
                 "selected_example_grounding_issue_count": 0,
                 "promoted_persona_grounding_failure_count": 1,
                 "source_failures": "",
@@ -205,9 +221,13 @@ class PipelineSchemaTests(unittest.TestCase):
                 "persona_core_unknown_ratio": 0.02,
                 "persona_core_coverage_of_all_labeled_pct": 88.0,
                 "largest_labeled_source_share_pct": 20.0,
+                "largest_source_influence_share_pct": 15.0,
                 "largest_cluster_share_of_core_labeled": 40.0,
                 "promoted_persona_example_coverage_pct": 100.0,
                 "effective_labeled_source_count": 8.0,
+                "effective_balanced_source_count": 7.2,
+                "weak_source_cost_center_count": 0,
+                "weak_source_cost_centers": "",
                 "selected_example_grounding_issue_count": 0,
                 "promoted_persona_grounding_failure_count": 0,
                 "source_failures": "",
@@ -242,9 +262,13 @@ class PipelineSchemaTests(unittest.TestCase):
                 "persona_core_unknown_ratio": 0.05,
                 "persona_core_coverage_of_all_labeled_pct": 90.0,
                 "largest_labeled_source_share_pct": 20.0,
+                "largest_source_influence_share_pct": 15.0,
                 "largest_cluster_share_of_core_labeled": 40.0,
                 "promoted_persona_example_coverage_pct": 100.0,
                 "effective_labeled_source_count": 8.0,
+                "effective_balanced_source_count": 7.2,
+                "weak_source_cost_center_count": 0,
+                "weak_source_cost_centers": "",
                 "selected_example_grounding_issue_count": 0,
                 "promoted_persona_grounding_failure_count": 0,
                 "source_failures": "",
@@ -257,7 +281,7 @@ class PipelineSchemaTests(unittest.TestCase):
     def test_threshold_display_is_derived_from_central_policy(self) -> None:
         thresholds = quality_display_thresholds()
         self.assertEqual(
-            thresholds["effective_labeled_source_count"],
+            thresholds["effective_balanced_source_count"],
             str(QUALITY_STATUS_POLICY["effective_source_diversity"]["display_threshold"]),
         )
         quality_df = build_quality_checks_df(
@@ -268,9 +292,13 @@ class PipelineSchemaTests(unittest.TestCase):
                         "persona_core_unknown_ratio": 0.05,
                         "persona_core_coverage_of_all_labeled_pct": 90.0,
                         "effective_labeled_source_count": 3.5,
+                        "effective_balanced_source_count": 3.5,
                         "largest_labeled_source_share_pct": 20.0,
+                        "largest_source_influence_share_pct": 20.0,
                         "largest_cluster_share_of_core_labeled": 40.0,
                         "promoted_persona_example_coverage_pct": 100.0,
+                        "weak_source_cost_center_count": 0,
+                        "weak_source_cost_centers": "",
                         "selected_example_grounding_issue_count": 0,
                         "promoted_persona_grounding_failure_count": 0,
                         "source_failures": "",
@@ -278,8 +306,8 @@ class PipelineSchemaTests(unittest.TestCase):
                 )
             )
         )
-        row = quality_df.loc[quality_df["metric"] == "effective_labeled_source_count"].iloc[0]
-        self.assertEqual(str(row["threshold"]), "fail<4.0")
+        row = quality_df.loc[quality_df["metric"] == "effective_balanced_source_count"].iloc[0]
+        self.assertEqual(str(row["threshold"]), "warn<6.0; fail<5.0")
         self.assertEqual(str(row["status"]), "fail")
 
     def test_build_quality_failures_uses_persona_level_grounding_failure_count(self) -> None:
@@ -313,8 +341,9 @@ class PipelineSchemaTests(unittest.TestCase):
     def test_policy_document_explicitly_describes_source_diversity_fail_rule(self) -> None:
         policy_doc = Path("docs/quality_status_policy.md").read_text(encoding="utf-8")
         self.assertIn("effective_source_diversity", policy_doc)
-        self.assertIn("FAIL at `< 4.0`", policy_doc)
-        self.assertIn("intentionally a fail-level axis", policy_doc)
+        self.assertIn("effective_balanced_source_count", policy_doc)
+        self.assertIn("FAIL at `< 5.0`", policy_doc)
+        self.assertIn("influence-aware source balance", policy_doc)
 
 
 if __name__ == "__main__":

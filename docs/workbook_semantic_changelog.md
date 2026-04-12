@@ -27,7 +27,7 @@
 ### Promotion and usable persona policy changes
 - Promoted candidate personas, review-visible promoted personas, final usable personas, and deck-ready personas are now separate concepts.
 - Review-visible promoted personas can include weakly grounded or ungrounded promoted personas.
-- Final usable and deck-ready persona counts now exclude weakly grounded and ungrounded review-only personas.
+- Final usable and deck-ready persona counts now exclude weakly grounded and ungrounded review-visible personas.
 
 ### Grounding failure metric fixes
 - Persona-level grounding failure is now tracked explicitly as `promoted_persona_grounding_failure_count`.

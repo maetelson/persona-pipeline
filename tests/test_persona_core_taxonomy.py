@@ -65,8 +65,8 @@ class PersonaCoreTaxonomyTests(unittest.TestCase):
         ]
         unknown_rows_df = pd.DataFrame(
             [
-                {"episode_id": "support-1", "unknown_reason": "labelability_failure_product_support"},
-                {"episode_id": "noise-1", "unknown_reason": "too_generic_or_noisy"},
+                {"episode_id": "support-1", "unknown_reason": "labelability_failure_product_support", "root_cause_category": "overly_strict_axis_requirement", "persona_core_policy": "supportable_low_signal"},
+                {"episode_id": "noise-1", "unknown_reason": "too_generic_or_noisy", "root_cause_category": "generic_chatter_not_persona_usable", "persona_core_policy": "exclude_low_signal"},
             ]
         )
 
@@ -79,10 +79,13 @@ class PersonaCoreTaxonomyTests(unittest.TestCase):
         self.assertTrue(bool(eligibility["support-1"]))
         self.assertFalse(bool(eligibility["noise-1"]))
         self.assertFalse(bool(eligibility["incomplete-1"]))
-        self.assertEqual(reasons["support-1"], "complete_primary_axes_low_signal_product_support")
+        self.assertEqual(reasons["support-1"], "complete_primary_axes_low_signal_supported<overly_strict_axis_requirement>")
         self.assertEqual(reasons["noise-1"], "excluded_low_signal<too_generic_or_noisy>")
         self.assertEqual(reasons["incomplete-1"], "missing_core_axes<workflow_stage>")
         self.assertEqual(int(audit_df["persona_core_eligible"].sum()), 3)
+        categories = dict(zip(audit_df["episode_id"], audit_df["root_cause_category"]))
+        self.assertEqual(categories["support-1"], "overly_strict_axis_requirement")
+        self.assertEqual(categories["noise-1"], "generic_chatter_not_persona_usable")
 
 
 if __name__ == "__main__":

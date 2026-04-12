@@ -242,7 +242,10 @@ def build_cluster_robustness_outputs(
                 "pre_merge_anchor_count",
                 "stability_status",
                 "evidence_status",
+                "structural_support_status",
+                "weak_separation_status",
                 "concentration_status",
+                "tail_fragility_status",
                 "robustness_action_summary",
                 "cohesion",
                 "separation",
@@ -281,7 +284,10 @@ def build_cluster_robustness_outputs(
         else:
             stability_status = "fragile"
         evidence_status = "sufficient" if cohesion >= sufficient_cohesion_floor and separation >= sufficient_separation_floor else "thin"
+        structural_support_status = "structurally_supported" if stability_status == "stable" and evidence_status == "sufficient" else "review_visible_only"
+        weak_separation_status = "weakly_separated" if separation < sufficient_separation_floor else "separation_clear"
         concentration_status = "dominant" if cluster_size == largest_cluster_size and share_of_core_labeled >= 0.4 else "distributed"
+        tail_fragility_status = "tail_fragile" if stability_status in {"fragile", "micro"} else "tail_clear"
         actions = action_counts.loc[persona_id] if persona_id in action_counts.index else pd.Series(dtype=int)
         action_summary = " | ".join(f"{action}:{int(count)}" for action, count in actions.items() if int(count) > 0)
         rows.append(
@@ -293,7 +299,10 @@ def build_cluster_robustness_outputs(
                 "pre_merge_anchor_count": int(initial_anchor_counts.get(persona_id, 0)),
                 "stability_status": stability_status,
                 "evidence_status": evidence_status,
+                "structural_support_status": structural_support_status,
+                "weak_separation_status": weak_separation_status,
                 "concentration_status": concentration_status,
+                "tail_fragility_status": tail_fragility_status,
                 "robustness_action_summary": action_summary,
                 "cohesion": round(cohesion, 4),
                 "separation": round(separation, 4),
@@ -324,6 +333,9 @@ def _apply_cluster_robustness_policy(
     same_base_name_absorb_similarity = float(robustness_config.get("same_base_name_absorb_similarity", 0.72))
     same_name_absorb_similarity = float(robustness_config.get("same_name_absorb_similarity", 0.78))
     general_absorb_similarity = float(robustness_config.get("general_absorb_similarity", 0.9))
+    low_separation_absorb_similarity = float(robustness_config.get("low_separation_absorb_similarity", 0.955))
+    low_separation_ceiling = float(robustness_config.get("low_separation_ceiling", 0.05))
+    low_separation_max_share = float(robustness_config.get("low_separation_max_share", 0.3))
     residual_bucket_by_primary = bool(robustness_config.get("residual_bucket_by_primary", True))
     residual_bucket_max_count = int(robustness_config.get("residual_bucket_max_count", 4))
     residual_fragile_cluster_size = int(robustness_config.get("residual_fragile_cluster_size", max(micro_cluster_size, 14)))
@@ -379,6 +391,42 @@ def _apply_cluster_robustness_policy(
         signature: final_anchor_map.get(anchor, anchor)
         for signature, anchor in signature_to_anchor.items()
     }
+
+    while True:
+        current_anchor_signatures = list(dict.fromkeys(updated_signature_to_anchor.values()))
+        current_anchor_sizes = feature_df["cluster_signature"].astype(str).map(updated_signature_to_anchor).value_counts().to_dict()
+        current_feature_lookup = {
+            anchor: _signature_vector(
+                feature_df[feature_df["cluster_signature"].astype(str).map(updated_signature_to_anchor) == anchor],
+                feature_columns,
+            )
+            for anchor in current_anchor_signatures
+        }
+        candidate = _choose_low_separation_absorption_candidate(
+            anchor_signatures=current_anchor_signatures,
+            anchor_sizes=current_anchor_sizes,
+            anchor_feature_lookup=current_feature_lookup,
+            naming_lookup=naming_lookup,
+            total_rows=total_rows,
+            low_separation_absorb_similarity=low_separation_absorb_similarity,
+            low_separation_ceiling=low_separation_ceiling,
+            low_separation_max_share=low_separation_max_share,
+        )
+        if not candidate:
+            break
+        signature, merge_target, similarity = candidate
+        updated_signature_to_anchor = {
+            item_signature: merge_target if anchor == signature else anchor
+            for item_signature, anchor in updated_signature_to_anchor.items()
+        }
+        action_lookup[signature] = "merged_low_separation_cluster"
+        reason_lookup[signature] = (
+            f"merged into adjacent cluster {naming_lookup.get(merge_target, merge_target)} "
+            f"because centroid similarity {similarity:.4f} implied weak separability"
+        )
+
+    anchor_sizes = feature_df["cluster_signature"].astype(str).map(updated_signature_to_anchor).value_counts().to_dict()
+
     final_anchor_signatures = list(
         dict.fromkeys(
             sorted(
@@ -472,18 +520,69 @@ def _cluster_robustness_summary(cluster_robustness_df: pd.DataFrame) -> pd.DataF
     if cluster_robustness_df.empty:
         return pd.DataFrame(columns=["metric", "value"])
     shares = pd.to_numeric(cluster_robustness_df["share_of_core_labeled"], errors="coerce").fillna(0.0)
+    fragile_tail_mask = cluster_robustness_df["tail_fragility_status"].astype(str).eq("tail_fragile")
+    weak_separation_mask = cluster_robustness_df["weak_separation_status"].astype(str).eq("weakly_separated")
     metrics = [
         {"metric": "robust_cluster_count", "value": int(len(cluster_robustness_df))},
         {"metric": "stable_cluster_count", "value": int((cluster_robustness_df["stability_status"] == "stable").sum())},
         {"metric": "fragile_cluster_count", "value": int((cluster_robustness_df["stability_status"] == "fragile").sum())},
         {"metric": "micro_cluster_count", "value": int((cluster_robustness_df["stability_status"] == "micro").sum())},
         {"metric": "thin_evidence_cluster_count", "value": int((cluster_robustness_df["evidence_status"] == "thin").sum())},
+        {"metric": "structurally_supported_cluster_count", "value": int((cluster_robustness_df["structural_support_status"] == "structurally_supported").sum())},
+        {"metric": "weak_separation_cluster_count", "value": int(weak_separation_mask.sum())},
+        {"metric": "fragile_tail_cluster_count", "value": int(fragile_tail_mask.sum())},
+        {"metric": "fragile_tail_share_of_core_labeled", "value": round(float(shares[fragile_tail_mask].sum()), 4)},
         {"metric": "largest_cluster_share_of_core_labeled", "value": round(float(shares.max()), 4)},
         {"metric": "top_3_cluster_share_of_core_labeled", "value": round(float(shares.sort_values(ascending=False).head(3).sum()), 4)},
         {"metric": "avg_cluster_separation", "value": round(float(pd.to_numeric(cluster_robustness_df["separation"], errors="coerce").fillna(0.0).mean()), 4)},
         {"metric": "min_cluster_separation", "value": round(float(pd.to_numeric(cluster_robustness_df["separation"], errors="coerce").fillna(0.0).min()), 4)},
     ]
     return pd.DataFrame(metrics)
+
+
+def _choose_low_separation_absorption_candidate(
+    anchor_signatures: list[str],
+    anchor_sizes: dict[str, int],
+    anchor_feature_lookup: dict[str, dict[str, float]],
+    naming_lookup: dict[str, str],
+    total_rows: int,
+    low_separation_absorb_similarity: float,
+    low_separation_ceiling: float,
+    low_separation_max_share: float,
+) -> tuple[str, str, float] | None:
+    """Choose one near-duplicate cluster merge when centroids are too similar to justify separation."""
+    ordered = sorted(anchor_signatures, key=lambda signature: (anchor_sizes.get(signature, 0), signature))
+    for signature in ordered:
+        cluster_size = int(anchor_sizes.get(signature, 0))
+        if cluster_size <= 0:
+            continue
+        share = cluster_size / max(total_rows, 1)
+        if share > low_separation_max_share:
+            continue
+        best_target = ""
+        best_similarity = -1.0
+        mapping = _parse_signature(signature)
+        for candidate in ordered:
+            candidate_size = int(anchor_sizes.get(candidate, 0))
+            if candidate == signature or candidate_size <= cluster_size:
+                continue
+            candidate_mapping = _parse_signature(candidate)
+            similarity = _cosine_similarity(anchor_feature_lookup.get(signature, {}), anchor_feature_lookup.get(candidate, {}))
+            separation = max(1.0 - similarity, 0.0)
+            same_primary = mapping.get("primary", "") == candidate_mapping.get("primary", "")
+            same_name = naming_lookup.get(signature, "") == naming_lookup.get(candidate, "")
+            same_base_name = _base_cluster_name(naming_lookup.get(signature, "")) == _base_cluster_name(naming_lookup.get(candidate, ""))
+            shared_secondary = bool(set(mapping.get("secondary", [])) & set(candidate_mapping.get("secondary", [])))
+            if similarity < low_separation_absorb_similarity or separation > low_separation_ceiling:
+                continue
+            if not (same_primary or same_name or same_base_name or shared_secondary):
+                continue
+            if similarity > best_similarity:
+                best_target = candidate
+                best_similarity = similarity
+        if best_target:
+            return signature, best_target, best_similarity
+    return None
 
 
 def build_cluster_meaning_audit(

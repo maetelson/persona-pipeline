@@ -205,11 +205,47 @@ class BottleneckClusteringTests(unittest.TestCase):
         self.assertEqual(residual_row["robustness_action"], "collapsed_to_residual")
         self.assertIn("Exploratory", residual_row["cluster_name"])
 
+    def test_low_separation_cluster_absorbs_into_larger_neighbor(self) -> None:
+        config = dict(self.config)
+        config["clustering"] = dict(self.config.get("clustering", {}))
+        config["robustness"] = dict(self.config.get("robustness", {}))
+        config["clustering"]["min_anchor_size"] = 2
+        config["clustering"]["min_anchor_share"] = 0.0
+        config["clustering"]["merge_similarity_threshold"] = 0.99
+        config["clustering"]["merge_signature_floor"] = 0.99
+        config["robustness"]["low_separation_absorb_similarity"] = 0.93
+        config["robustness"]["low_separation_ceiling"] = 0.08
+        config["robustness"]["low_separation_max_share"] = 0.4
+        feature_columns = list(config.get("core_features", []))
+        rows = []
+        for episode_id, signature, primary, values in [
+            ("a1", "primary=root_cause_analysis_difficulty||secondary=numbers_visible_but_not_explainable", "root_cause_analysis_difficulty", {"root_cause_analysis_difficulty": 2.3, "numbers_visible_but_not_explainable": 1.7, "tool_limitation_workaround": 0.8}),
+            ("a2", "primary=root_cause_analysis_difficulty||secondary=numbers_visible_but_not_explainable", "root_cause_analysis_difficulty", {"root_cause_analysis_difficulty": 2.2, "numbers_visible_but_not_explainable": 1.6, "tool_limitation_workaround": 0.8}),
+            ("a3", "primary=root_cause_analysis_difficulty||secondary=numbers_visible_but_not_explainable", "root_cause_analysis_difficulty", {"root_cause_analysis_difficulty": 2.4, "numbers_visible_but_not_explainable": 1.6, "tool_limitation_workaround": 0.9}),
+            ("b1", "primary=tool_limitation_workaround||secondary=numbers_visible_but_not_explainable", "tool_limitation_workaround", {"root_cause_analysis_difficulty": 2.2, "numbers_visible_but_not_explainable": 1.7, "tool_limitation_workaround": 1.7}),
+            ("b2", "primary=tool_limitation_workaround||secondary=numbers_visible_but_not_explainable", "tool_limitation_workaround", {"root_cause_analysis_difficulty": 2.1, "numbers_visible_but_not_explainable": 1.6, "tool_limitation_workaround": 1.7}),
+        ]:
+            row = {
+                "episode_id": episode_id,
+                "cluster_signature": signature,
+                "primary_bottleneck": primary,
+                "secondary_bottlenecks": "numbers_visible_but_not_explainable",
+                "primary_score": 2.0,
+                "role_metadata": "analyst",
+                "source_metadata": "reddit",
+            }
+            for feature in feature_columns:
+                row[feature] = float(values.get(feature, 0.0))
+            rows.append(row)
+        assignments_df = assign_bottleneck_clusters(pd.DataFrame(rows), config)
+        self.assertEqual(assignments_df["persona_id"].nunique(), 1)
+        self.assertIn("merged_low_separation_cluster", assignments_df["robustness_action"].tolist())
+
     def test_cluster_robustness_outputs_summarize_stability_metrics(self) -> None:
         cluster_audit_df = pd.DataFrame(
             [
                 {"persona_id": "persona_01", "cluster_name": "Manual Reporting Burden", "cluster_size": 20, "cohesion": 0.95, "separation": 0.18},
-                {"persona_id": "persona_02", "cluster_name": "Exploratory Residual", "cluster_size": 4, "cohesion": 0.88, "separation": 0.05},
+                {"persona_id": "persona_02", "cluster_name": "Exploratory Residual", "cluster_size": 1, "cohesion": 0.88, "separation": 0.05},
             ]
         )
         persona_assignments_df = pd.DataFrame(
@@ -223,6 +259,8 @@ class BottleneckClusteringTests(unittest.TestCase):
         summary_lookup = dict(zip(outputs["summary_df"]["metric"], outputs["summary_df"]["value"]))
         self.assertEqual(summary_lookup["robust_cluster_count"], 2)
         self.assertEqual(summary_lookup["thin_evidence_cluster_count"], 1)
+        self.assertEqual(summary_lookup["structurally_supported_cluster_count"], 1)
+        self.assertEqual(summary_lookup["fragile_tail_cluster_count"], 1)
 
 
 def _sample_inputs() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:

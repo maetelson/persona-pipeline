@@ -33,11 +33,16 @@ A row is persona-core eligible when:
 
 1. all primary core axes are assigned
 2. and the row is either:
-   - `labelable`
-   - `borderline`
-   - `low_signal` with row-level reason `labelability_failure_product_support`
+  - `labelable`
+  - `borderline`
+  - `low_signal` with a supportable coverage category:
+    - `missing_taxonomy_value`
+    - `overly_strict_axis_requirement`
+    - `weak_workflow_context`
+    - `insufficient_bottleneck_signal`
+    - `output_expectation_not_captured`
 
-Low-signal rows classified as `too_generic_or_noisy` stay out of persona-core even if they appear mappable on a few axes. This prevents silent bucket inflation.
+Low-signal rows in `generic_chatter_not_persona_usable`, `parser_schema_mismatch`, or `multi_axis_conflict` stay out of persona-core even if they appear partially mappable. This prevents silent bucket inflation.
 
 ## Exclusions
 

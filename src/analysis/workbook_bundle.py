@@ -188,9 +188,23 @@ def _validate_source_diagnostics_contract(sheet_name: str, frame: pd.DataFrame) 
         "promoted_to_persona_count",
     }
     messages = [f"ambiguous source_diagnostics column: {sheet_name}.{column}" for column in sorted(forbidden_columns & set(frame.columns))]
-    required = {"section", "grain", "metric_name", "metric_value", "metric_type", "metric_definition"}
+    required = {"section", "row_kind", "grain", "metric_name", "metric_value", "metric_type", "diagnostic_level", "metric_definition"}
     for column in sorted(required - set(frame.columns)):
         messages.append(f"missing source_diagnostics structure column: {sheet_name}.{column}")
+    if {"row_kind", "section"}.issubset(frame.columns):
+        metric_rows = frame[frame["row_kind"].astype(str).eq("metric")]
+        diagnostic_rows = frame[frame["row_kind"].astype(str).eq("diagnostic")]
+        if not metric_rows.empty and metric_rows["section"].astype(str).eq("diagnostic_reasons").any():
+            messages.append(f"invalid source_diagnostics row placement: {sheet_name}.metric_rows_in_diagnostic_reasons")
+        if not diagnostic_rows.empty and (~diagnostic_rows["section"].astype(str).eq("diagnostic_reasons")).any():
+            messages.append(f"invalid source_diagnostics row placement: {sheet_name}.diagnostic_rows_outside_diagnostic_reasons")
+    if {"metric_name", "metric_value"}.issubset(frame.columns):
+        generic_reason = frame[
+            frame["metric_name"].astype(str).eq("top_failure_reason")
+            & frame["metric_value"].astype(str).isin({"labeled_output_present", "generic_source_pass", "pass"})
+        ]
+        if not generic_reason.empty:
+            messages.append(f"generic source_diagnostics reason: {sheet_name}.top_failure_reason")
     if {"grain", "metric_name"}.issubset(frame.columns):
         mixed = frame[frame["grain"].astype(str).eq("mixed_grain_bridge")]
         if not mixed.empty:
@@ -260,7 +274,7 @@ def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> lis
         final_usable_count = int(final_usable_series.fillna(False).astype(bool).sum())
     promoted_candidate_count = int(base_status.isin({"promoted_candidate_persona", "promoted_persona"}).sum()) if not base_status.empty else int(promotion_status.eq("promoted_persona").sum())
     if workbook_review_visible.empty:
-        promotion_visibility_count = int(promotion_status.isin({"promoted_persona", "review_only_persona"}).sum())
+        promotion_visibility_count = int(promotion_status.isin({"promoted_persona", "review_visible_persona"}).sum())
     else:
         promotion_visibility_count = int(workbook_review_visible.fillna(False).astype(bool).sum())
 
@@ -271,6 +285,7 @@ def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> lis
     expected = {
         "promoted_candidate_persona_count": promoted_candidate_count,
         "promotion_visibility_persona_count": promotion_visibility_count,
+        "headline_persona_count": final_usable_count,
         "final_usable_persona_count": final_usable_count,
         "deck_ready_persona_count": final_usable_count,
     }
@@ -296,6 +311,24 @@ def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> lis
             messages.append("persona readiness metric mismatch: final persona asset class required at deck_ready or above")
         if completion_allowed not in {"true", "1"}:
             messages.append("persona readiness metric mismatch: persona_completion_claim_allowed must be true at deck_ready or above")
+    expected_restriction = str(overview_lookup.get("persona_usage_restriction", "") or "")
+    expected_gate_status = str(overview_lookup.get("persona_readiness_gate_status", "") or "")
+    for sheet_name in ["persona_summary", "cluster_stats"]:
+        frame = frames.get(sheet_name, pd.DataFrame())
+        if frame is None or frame.empty:
+            continue
+        if "workbook_readiness_state" in frame.columns:
+            values = sorted(frame["workbook_readiness_state"].astype(str).dropna().unique().tolist())
+            if values != [readiness_state]:
+                messages.append(f"persona readiness metric mismatch: {sheet_name}.workbook_readiness_state must match overview.persona_readiness_state")
+        if "workbook_readiness_gate_status" in frame.columns:
+            values = sorted(frame["workbook_readiness_gate_status"].astype(str).dropna().unique().tolist())
+            if values != [expected_gate_status]:
+                messages.append(f"persona readiness metric mismatch: {sheet_name}.workbook_readiness_gate_status must match overview.persona_readiness_gate_status")
+        if "workbook_usage_restriction" in frame.columns:
+            values = sorted(frame["workbook_usage_restriction"].astype(str).dropna().unique().tolist())
+            if values != [expected_restriction]:
+                messages.append(f"persona readiness metric mismatch: {sheet_name}.workbook_usage_restriction must match overview.persona_usage_restriction")
     if final_usable_count > promotion_visibility_count:
         messages.append("persona promotion metric mismatch: final_usable_persona_count cannot exceed promotion_visibility_persona_count")
     return messages

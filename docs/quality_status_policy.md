@@ -33,7 +33,10 @@ The evaluator consumes these raw metrics:
 - `overall_unknown_ratio`
 - `persona_core_coverage_of_all_labeled_pct`
 - `effective_labeled_source_count`
+- `effective_balanced_source_count`
 - `largest_labeled_source_share_pct`
+- `largest_source_influence_share_pct`
+- `weak_source_cost_center_count`
 - `largest_cluster_share_of_core_labeled`
 - `promoted_persona_example_coverage_pct`
 - `example_grounding_failure_count`
@@ -63,16 +66,25 @@ Current axis rules:
   - `WARN` at `< 75.0`
   - `FAIL` at `< 60.0`
 - `effective_source_diversity`
-  - metric: `effective_labeled_source_count`
-  - `FAIL` at `< 4.0`
-  - explicit threshold phrase: `FAIL at < 4.0`
-  - workbook-test reference: FAIL at `< 4.0`
-  - reason: `effective_source_diversity_low`
-  - note: this is intentionally a fail-level axis, not a warning-level axis
+  - metric: `effective_balanced_source_count`
+  - `WARN` at `< 6.0`
+  - `FAIL` at `< 5.0`
+  - explicit threshold phrase: `FAIL at < 5.0`
+  - workbook-test reference: FAIL at `< 5.0`
+  - reason: `effective_source_balance_critical`
+  - note: this is an influence-aware source balance axis, not a simple source-count breadth check
 - `source_concentration`
   - metric: `largest_labeled_source_share_pct`
   - `WARN` at `>= 50.0`
   - `FAIL` at `>= 70.0`
+- `source_influence_concentration`
+  - metric: `largest_source_influence_share_pct`
+  - `WARN` at `>= 35.0`
+  - `FAIL` at `>= 45.0`
+- `weak_source_yield`
+  - metric: `weak_source_cost_center_count`
+  - `WARN` at `>= 2`
+  - `FAIL` at `>= 4`
 - `largest_cluster_dominance`
   - metric: `largest_cluster_share_of_core_labeled`
   - `WARN` at `>= 55.0`
@@ -92,13 +104,13 @@ Additional reason keys can be appended without changing the numeric threshold ou
 
 The source-diversity severity change was intentional and is now policy-backed.
 
-When `effective_labeled_source_count < 4.0`, the workbook is not just slightly noisy. It means the labeled evidence base is too narrow for the workbook to present a stable top-line summary without a strong caveat. Under the centralized policy, that condition is therefore a `FAIL` axis:
+When `effective_balanced_source_count < 5.0`, the workbook is not just slightly noisy. It means downstream source influence is concentrated even after looking beyond simple labeled-row breadth. Under the centralized policy, that condition is therefore a `FAIL` axis:
 
 - axis: `effective_source_diversity`
-- reason key: `effective_source_diversity_low`
+- reason key: `effective_source_balance_critical`
 - implementation: [`QUALITY_STATUS_POLICY`](/Users/hands/OneDrive/Desktop/persona/src/analysis/quality_status.py)
 
-Any test expectation update to treat this as `FAIL` is only valid because this rule is now explicitly defined here and consumed by both `overview` and `quality_checks`.
+Any test expectation update to treat this as `FAIL` is only valid because this rule is now explicitly defined here and consumed by both `overview` and `quality_checks`. The workbook still surfaces `effective_labeled_source_count`, but that legacy breadth signal is informational. The actual gate is the influence-aware source balance metric.
 
 ## Grouped and composite statuses
 
@@ -107,7 +119,7 @@ Workbook-facing grouped statuses are composed from axis results:
 - `core_clustering_status`
   - axes: `core_unknown`, `core_coverage`, `largest_cluster_dominance`
 - `source_diversity_status`
-  - axes: `effective_source_diversity`, `source_concentration`
+  - axes: `effective_source_diversity`, `source_concentration`, `source_influence_concentration`, `weak_source_yield`
 - `example_grounding_status`
   - axes: `grounding_coverage`
 

@@ -413,11 +413,79 @@ class LabelQualityTests(unittest.TestCase):
         outputs = build_label_quality_audit(episodes, labeled, details, labelability)
         breakdown = outputs["unknown_reason_breakdown_df"]
 
-        self.assertEqual(int(breakdown.loc[breakdown["unknown_reason"] == "labelability_failure_product_support", "count"].iloc[0]), 1)
+        self.assertEqual(int(breakdown.loc[breakdown["unknown_reason"] == "overly_strict_axis_requirement", "count"].iloc[0]), 1)
         self.assertEqual(int(breakdown.loc[breakdown["unknown_reason"] == "workflow_stage_missing", "count"].iloc[0]), 1)
-        self.assertEqual(int(breakdown.loc[breakdown["unknown_reason"] == "role_missing", "count"].iloc[0]), 1)
+        self.assertEqual(int(breakdown.loc[breakdown["unknown_reason"] == "parser_schema_mismatch", "count"].iloc[0]), 1)
+        self.assertEqual(
+            str(breakdown.loc[breakdown["unknown_reason"] == "overly_strict_axis_requirement", "root_cause_category"].iloc[0]),
+            "overly_strict_axis_requirement",
+        )
+        self.assertEqual(
+            str(breakdown.loc[breakdown["unknown_reason"] == "workflow_stage_missing", "root_cause_category"].iloc[0]),
+            "output_expectation_not_captured",
+        )
+        self.assertEqual(
+            str(breakdown.loc[breakdown["unknown_reason"] == "parser_schema_mismatch", "root_cause_category"].iloc[0]),
+            "parser_schema_mismatch",
+        )
+        self.assertEqual(
+            str(breakdown.loc[breakdown["unknown_reason"] == "overly_strict_axis_requirement", "persona_core_policy"].iloc[0]),
+            "supportable_low_signal",
+        )
         self.assertIn("likely_remediation_type", breakdown.columns)
         self.assertIn("sample_rows", breakdown.columns)
+
+    def test_repairs_supportable_low_signal_taxonomy_gaps(self) -> None:
+        policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
+        episodes = pd.DataFrame(
+            [
+                {
+                    "episode_id": "low-signal-1",
+                    "source": "metabase_discussions",
+                    "normalized_episode": "Dashboard filters are broken after metadata sync and query results are incorrect after the database migration.",
+                    "evidence_snippet": "Dashboard filters showing IDs instead of names after sync.",
+                    "business_question": "How can we diagnose why the dashboard behavior changed and fix the incorrect results?",
+                    "bottleneck_text": "tool_limitation",
+                    "workaround_text": "manual export for validation",
+                    "desired_output": "validated dataset and dashboard fix",
+                }
+            ]
+        )
+        labeled = pd.DataFrame(
+            [
+                {
+                    "episode_id": "low-signal-1",
+                    "source": "metabase_discussions",
+                    "role_codes": "unknown",
+                    "question_codes": "unknown",
+                    "pain_codes": "unknown",
+                    "output_codes": "unknown",
+                    "fit_code": "F_REVIEW",
+                    "label_confidence": 0.2,
+                    "label_reason": "low_signal_input",
+                    "labelability_status": "low_signal",
+                    "labelability_score": 1,
+                }
+            ]
+        )
+        labelability = pd.DataFrame(
+            [
+                {
+                    "episode_id": "low-signal-1",
+                    "source": "metabase_discussions",
+                    "labelability_status": "low_signal",
+                    "labelability_score": 1,
+                }
+            ]
+        )
+
+        repaired, repairs = apply_label_repairs(episodes, labeled, labelability, policy)
+
+        self.assertEqual(str(repaired.loc[0, "question_codes"]), "Q_DIAGNOSE_ISSUE")
+        self.assertEqual(str(repaired.loc[0, "pain_codes"]), "P_TOOL_LIMITATION")
+        self.assertIn(str(repaired.loc[0, "output_codes"]), {"O_VALIDATED_DATASET", "O_DASHBOARD"})
+        self.assertEqual(str(repaired.loc[0, "role_codes"]), "R_ANALYST")
+        self.assertEqual(str(repairs.loc[0, "root_cause_category"]), "overly_strict_axis_requirement")
 
     def test_before_after_quality_report_includes_reported_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

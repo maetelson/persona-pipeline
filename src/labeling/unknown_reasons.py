@@ -95,17 +95,86 @@ OUTPUT_TERMS = [
     "workflow",
 ]
 
-REMEDIATION_BY_REASON = {
-    "labelability_failure_product_support": "Tighten prefilter or labelability rules for product-support and admin troubleshooting threads.",
-    "labelability_failure_announcement": "Strengthen source-specific announcement suppression before labeling.",
-    "too_generic_or_noisy": "Improve low-signal gating and episode segmentation so weak rows do not enter persona labeling.",
-    "workflow_stage_missing": "Extend deterministic output-stage repairs and output taxonomy hints.",
-    "analysis_goal_missing": "Extend question-goal repair rules and goal taxonomy coverage.",
-    "bottleneck_axis_missing": "Extend pain-axis repair rules and bottleneck taxonomy coverage.",
-    "role_missing": "Extend role inference heuristics for report owners, operators, and marketers.",
-    "taxonomy_missing_multi_axis": "Expand taxonomy coverage or add source-aware repair rules for multi-axis gaps.",
-    "parser_schema_mismatch": "Inspect parser/prompt contract for rows with strong evidence but unresolved labels.",
-    "multi_axis_conflict": "Add disambiguation rules or allow broader multi-axis handling for conflicting evidence.",
+WORKFLOW_TERMS = [
+    "report",
+    "reporting",
+    "dashboard",
+    "export",
+    "download",
+    "monitor",
+    "triage",
+    "validate",
+    "reconcile",
+    "diagnose",
+    "review",
+    "filter",
+    "sync",
+    "automation",
+]
+
+BOTTLENECK_SIGNAL_TERMS = [
+    "broken",
+    "failed",
+    "fails",
+    "error",
+    "issue",
+    "problem",
+    "not working",
+    "not showing",
+    "not syncing",
+    "mismatch",
+    "incorrect",
+    "manual",
+    "limitation",
+    "blocked",
+]
+
+GENERIC_CHATTER_NOT_PERSONA_USABLE = "generic_chatter_not_persona_usable"
+MISSING_TAXONOMY_VALUE = "missing_taxonomy_value"
+OVERLY_STRICT_AXIS_REQUIREMENT = "overly_strict_axis_requirement"
+WEAK_WORKFLOW_CONTEXT = "weak_workflow_context"
+INSUFFICIENT_BOTTLENECK_SIGNAL = "insufficient_bottleneck_signal"
+OUTPUT_EXPECTATION_NOT_CAPTURED = "output_expectation_not_captured"
+PARSER_SCHEMA_MISMATCH = "parser_schema_mismatch"
+MULTI_AXIS_CONFLICT = "multi_axis_conflict"
+
+SUPPORTED_LOW_SIGNAL_UNKNOWN_CATEGORIES = {
+    MISSING_TAXONOMY_VALUE,
+    OVERLY_STRICT_AXIS_REQUIREMENT,
+    WEAK_WORKFLOW_CONTEXT,
+    INSUFFICIENT_BOTTLENECK_SIGNAL,
+    OUTPUT_EXPECTATION_NOT_CAPTURED,
+}
+
+REMEDIATION_BY_CATEGORY = {
+    GENERIC_CHATTER_NOT_PERSONA_USABLE: "Keep these rows out of persona-core and improve low-signal suppression upstream.",
+    MISSING_TAXONOMY_VALUE: "Expand deterministic taxonomy coverage or add source-aware repair rules for stable multi-axis gaps.",
+    OVERLY_STRICT_AXIS_REQUIREMENT: "Preserve and repair low-signal rows that already express a stable persona signature instead of blanking them wholesale.",
+    WEAK_WORKFLOW_CONTEXT: "Extend workflow-stage inference from reporting, triage, validation, and automation cues.",
+    INSUFFICIENT_BOTTLENECK_SIGNAL: "Strengthen bottleneck inference for product friction, data issues, and operational blockers.",
+    OUTPUT_EXPECTATION_NOT_CAPTURED: "Broaden output and delivery heuristics for dashboard, export, validation, and automation expectations.",
+    PARSER_SCHEMA_MISMATCH: "Inspect parser or prompt contract for rows with strong evidence but unresolved labels.",
+    MULTI_AXIS_CONFLICT: "Add explicit disambiguation rules or allow broader multi-axis handling for conflicting evidence.",
+}
+
+CATEGORY_BY_REASON = {
+    "labelability_failure_product_support": OVERLY_STRICT_AXIS_REQUIREMENT,
+    "labelability_failure_announcement": GENERIC_CHATTER_NOT_PERSONA_USABLE,
+    "too_generic_or_noisy": GENERIC_CHATTER_NOT_PERSONA_USABLE,
+    MISSING_TAXONOMY_VALUE: MISSING_TAXONOMY_VALUE,
+    OVERLY_STRICT_AXIS_REQUIREMENT: OVERLY_STRICT_AXIS_REQUIREMENT,
+    WEAK_WORKFLOW_CONTEXT: WEAK_WORKFLOW_CONTEXT,
+    INSUFFICIENT_BOTTLENECK_SIGNAL: INSUFFICIENT_BOTTLENECK_SIGNAL,
+    OUTPUT_EXPECTATION_NOT_CAPTURED: OUTPUT_EXPECTATION_NOT_CAPTURED,
+    PARSER_SCHEMA_MISMATCH: PARSER_SCHEMA_MISMATCH,
+    MULTI_AXIS_CONFLICT: MULTI_AXIS_CONFLICT,
+    "workflow_stage_missing": WEAK_WORKFLOW_CONTEXT,
+    "analysis_goal_missing": OVERLY_STRICT_AXIS_REQUIREMENT,
+    "bottleneck_axis_missing": INSUFFICIENT_BOTTLENECK_SIGNAL,
+    "role_missing": MISSING_TAXONOMY_VALUE,
+    "taxonomy_missing_multi_axis": MISSING_TAXONOMY_VALUE,
+    "parser_schema_mismatch": PARSER_SCHEMA_MISMATCH,
+    "multi_axis_conflict": MULTI_AXIS_CONFLICT,
 }
 
 
@@ -148,12 +217,20 @@ def infer_row_unknown_reason(row: pd.Series, failed_axes: list[str], failed_reas
 
     if any(term in lowered for term in ANNOUNCEMENT_TERMS):
         return "labelability_failure_announcement"
-    if labelability_status == "low_signal":
-        if any(term in lowered for term in PRODUCT_SUPPORT_TERMS):
-            return "labelability_failure_product_support"
-        return "too_generic_or_noisy"
     if "multi_axis_conflict" in failed_reason_set:
-        return "multi_axis_conflict"
+        return MULTI_AXIS_CONFLICT
+    if "parser_schema_mismatch" in failed_reason_set:
+        return PARSER_SCHEMA_MISMATCH
+    category = infer_unknown_category(
+        row,
+        failed_axes=failed_axes,
+        failed_reasons=failed_reasons,
+        text=lowered,
+    )
+    if labelability_status == "low_signal":
+        if category == GENERIC_CHATTER_NOT_PERSONA_USABLE:
+            return "too_generic_or_noisy"
+        return category
     if failed_axis_set == {"output_codes"}:
         return "workflow_stage_missing"
     if failed_axis_set == {"question_codes"}:
@@ -162,9 +239,82 @@ def infer_row_unknown_reason(row: pd.Series, failed_axes: list[str], failed_reas
         return "bottleneck_axis_missing"
     if failed_axis_set == {"role_codes"}:
         return "role_missing"
-    if "parser_schema_mismatch" in failed_reason_set:
-        return "parser_schema_mismatch"
+    if category in CATEGORY_BY_REASON:
+        return category
     return "taxonomy_missing_multi_axis"
+
+
+def infer_unknown_category(row: pd.Series, failed_axes: list[str], failed_reasons: list[str], text: str | None = None) -> str:
+    """Map row-level unknown evidence into explicit persona-core coverage categories."""
+    lowered = (text or get_record_text(row, fields=TEXT_FIELDS)).lower()
+    labelability_status = str(row.get("labelability_status", "") or "")
+    failed_axis_set = set(failed_axes)
+    failed_reason_set = {reason for reason in failed_reasons if reason}
+
+    if any(term in lowered for term in ANNOUNCEMENT_TERMS):
+        return GENERIC_CHATTER_NOT_PERSONA_USABLE
+    if "multi_axis_conflict" in failed_reason_set:
+        return MULTI_AXIS_CONFLICT
+    if "parser_schema_mismatch" in failed_reason_set:
+        return PARSER_SCHEMA_MISMATCH
+    if labelability_status == "low_signal" and any(term in lowered for term in PRODUCT_SUPPORT_TERMS):
+        return OVERLY_STRICT_AXIS_REQUIREMENT
+    if failed_axis_set == {"output_codes"}:
+        return OUTPUT_EXPECTATION_NOT_CAPTURED
+    if "workflow_stage_missing" in failed_reason_set or ("output_codes" in failed_axis_set and _has_workflow_signal(lowered)):
+        return WEAK_WORKFLOW_CONTEXT
+    if failed_axis_set == {"pain_codes"} or "bottleneck_axis_missing" in failed_reason_set:
+        return INSUFFICIENT_BOTTLENECK_SIGNAL
+    if failed_axis_set == {"question_codes"} or "analysis_goal_missing" in failed_reason_set:
+        return OVERLY_STRICT_AXIS_REQUIREMENT
+    if failed_axis_set == {"role_codes"} or "role_missing" in failed_reason_set:
+        return MISSING_TAXONOMY_VALUE
+    if "taxonomy_missing_multi_axis" in failed_reason_set:
+        if _has_output_signal(lowered) and "output_codes" in failed_axis_set:
+            return OUTPUT_EXPECTATION_NOT_CAPTURED
+        if _has_bottleneck_signal(lowered) and "pain_codes" in failed_axis_set:
+            return INSUFFICIENT_BOTTLENECK_SIGNAL
+        if _has_workflow_signal(lowered) and "output_codes" in failed_axis_set:
+            return WEAK_WORKFLOW_CONTEXT
+        return MISSING_TAXONOMY_VALUE
+    if labelability_status == "low_signal":
+        if _has_output_signal(lowered):
+            return OUTPUT_EXPECTATION_NOT_CAPTURED
+        if _has_bottleneck_signal(lowered):
+            return INSUFFICIENT_BOTTLENECK_SIGNAL
+        if _has_workflow_signal(lowered):
+            return WEAK_WORKFLOW_CONTEXT
+        return GENERIC_CHATTER_NOT_PERSONA_USABLE
+    if len(lowered.strip()) < 80:
+        return GENERIC_CHATTER_NOT_PERSONA_USABLE
+    return MISSING_TAXONOMY_VALUE
+
+
+def category_from_unknown_reason(reason: str) -> str:
+    """Return the explicit coverage category for a detailed unknown reason."""
+    return CATEGORY_BY_REASON.get(str(reason or "").strip(), MISSING_TAXONOMY_VALUE)
+
+
+def is_supportable_low_signal_category(category: str) -> bool:
+    """Return whether a low-signal row can still contribute to persona-core after repair."""
+    return str(category or "").strip() in SUPPORTED_LOW_SIGNAL_UNKNOWN_CATEGORIES
+
+
+def persona_core_policy_for_category(category: str) -> str:
+    """Expose whether the category is supportable for persona-core coverage repair."""
+    return "supportable_low_signal" if is_supportable_low_signal_category(category) else "exclude_low_signal"
+
+
+def _has_output_signal(text: str) -> bool:
+    return any(term in text for term in OUTPUT_TERMS + ["xlsx", "csv", "download", "sheet", "board report"])
+
+
+def _has_workflow_signal(text: str) -> bool:
+    return any(term in text for term in WORKFLOW_TERMS)
+
+
+def _has_bottleneck_signal(text: str) -> bool:
+    return any(term in text for term in PAIN_TERMS + BOTTLENECK_SIGNAL_TERMS)
 
 
 def build_unknown_reason_breakdown(
@@ -206,7 +356,19 @@ def build_unknown_reason_breakdown(
         ),
         axis=1,
     )
-    unknown_rows["likely_remediation_type"] = unknown_rows["unknown_reason"].map(REMEDIATION_BY_REASON).fillna("Inspect row-level evidence and expand the nearest repair rule.")
+    unknown_rows["root_cause_category"] = unknown_rows.apply(
+        lambda row: infer_unknown_category(
+            row,
+            failed_axes=list(row.get("failed_axes", []) or []),
+            failed_reasons=list(row.get("failed_reasons", []) or []),
+            text=str(row.get("text_excerpt", "") or ""),
+        ),
+        axis=1,
+    )
+    unknown_rows["persona_core_policy"] = unknown_rows["root_cause_category"].map(persona_core_policy_for_category)
+    unknown_rows["likely_remediation_type"] = unknown_rows["root_cause_category"].map(REMEDIATION_BY_CATEGORY).fillna(
+        "Inspect row-level evidence and expand the nearest repair rule."
+    )
     unknown_rows["missing_core_axes"] = unknown_rows[core_columns].fillna("unknown").apply(
         lambda row: " | ".join([column for column, value in row.items() if is_unknown_like(value)]),
         axis=1,
@@ -222,6 +384,8 @@ def build_unknown_reason_breakdown(
         breakdown_rows.append(
             {
                 "unknown_reason": str(unknown_reason or "unknown"),
+                "root_cause_category": str(group["root_cause_category"].iloc[0] or ""),
+                "persona_core_policy": str(group["persona_core_policy"].iloc[0] or ""),
                 "count": int(len(group)),
                 "share_of_unknown": round(float(len(group)) / float(total_unknown), 6),
                 "sample_rows": " || ".join(sample_rows),
@@ -237,6 +401,8 @@ def build_unknown_reason_breakdown(
         "label_confidence",
         "fit_code",
         "unknown_reason",
+        "root_cause_category",
+        "persona_core_policy",
         "likely_remediation_type",
         "missing_core_axes",
         "failed_axes",

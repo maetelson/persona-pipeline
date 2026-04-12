@@ -41,12 +41,16 @@
 
 - Every `source_diagnostics` row now carries:
   - `section`
+  - `row_kind`
   - `grain`
   - `metric_name`
   - `metric_type`
   - `denominator_metric`
   - `denominator_grain`
   - `metric_definition`
+- `row_kind=metric` rows are numeric funnel or bridge metrics.
+- `row_kind=diagnostic` rows are categorical source bottleneck reasons and interventions.
+- `section=diagnostic_reasons` is the only place where source bottleneck reason rows are allowed.
 - Same-grain percentages are bounded to `0-100`.
 - Mixed-grain bridge metrics use explicit `*_per_*` naming and are not treated as rates.
-- Validation fails workbook generation if legacy ambiguous columns or mixed-grain rate-like names reappear.
+- Validation fails workbook generation if legacy ambiguous columns, mixed-grain rate-like names, generic placeholder reasons, or misplaced diagnostic rows reappear.

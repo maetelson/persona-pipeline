@@ -7,7 +7,8 @@
 - Keep source-stage math grain-correct.
 - Use same-grain post and episode funnel metrics for retention judgments.
 - Use cross-grain bridge metrics only for source diagnosis, not as implied funnel survival rates.
-- Emit exactly one `top_failure_reason` and one `failure_level` per source so workbook readers can quickly identify the dominant issue.
+- Emit exactly one `top_failure_reason` diagnostic row per source, with `diagnostic_level` carrying the severity so workbook readers can quickly identify the dominant issue.
+- Keep `top_failure_reason` as an explicit diagnostic row, not a repeated column value smeared across every metric row.
 
 ## Ranked diagnostic reasons
 
@@ -29,9 +30,9 @@ The current rule order is intentionally root-cause first:
    - Episodes exist but labeled output is missing.
 7. `low_labelable_episode_ratio`
    - Too few labeled episodes remain labelable/borderline after labeling audit.
-8. `zero_promoted_persona_contribution`
+8. `grounding_contribution_absent`
    - The source contributes labeled evidence but contributes zero promoted persona episodes.
-9. `concentration_risk_contribution`
+9. `overconcentration_risk`
    - The source contributes a dominant share of labeled or promoted evidence, creating concentration risk.
 10. `weak_diversity_contribution`
    - The source contributes some evidence but remains a weak fractional source-diversity contributor.
@@ -56,6 +57,7 @@ The current rule order is intentionally root-cause first:
 ## Workbook interpretation
 
 - `top_failure_reason` should describe why a source is weak or risky.
-- `failure_level` should describe how urgent the issue is.
-- Strong sources may still show `concentration_risk_contribution` when they dominate the evidence base.
+- `diagnostic_level` should describe how urgent the issue is.
+- Per-dimension rows such as `valid_retention_reason`, `prefilter_retention_reason`, `episode_yield_reason`, `labelable_coverage_reason`, `grounding_contribution_reason`, `concentration_risk_reason`, and `diversity_contribution_reason` should make the underlying bottleneck legible without inferring it from mixed-grain math.
+- Strong sources may still show `overconcentration_risk` when they dominate the evidence base.
 - Small but otherwise healthy sources may show `weak_diversity_contribution` even when their same-grain funnels look healthy.

@@ -10,11 +10,11 @@ from pathlib import Path
 from typing import Any, Callable
 
 import pandas as pd
+from src.labeling.unknown_reasons import category_from_unknown_reason, is_supportable_low_signal_category
 from src.utils.pipeline_schema import is_unknown_like, split_pipe_codes
 from src.utils.record_access import get_record_demo, get_record_id, get_record_text, get_record_value, is_valid_record
 
 PRIMARY_PERSONA_CORE_AXES = ("bottleneck_type", "workflow_stage", "analysis_goal")
-SUPPORTED_LOW_SIGNAL_CORE_REASONS = {"labelability_failure_product_support"}
 
 
 @dataclass(frozen=True)
@@ -561,13 +561,28 @@ def build_persona_core_flags(
     audit = labeled_df.merge(axis_subset, on="episode_id", how="left")
 
     if unknown_rows_df is not None and not unknown_rows_df.empty and "unknown_reason" in unknown_rows_df.columns:
+        unknown_merge_columns = [
+            column
+            for column in ["episode_id", "unknown_reason", "root_cause_category", "persona_core_policy"]
+            if column in unknown_rows_df.columns
+        ]
         audit = audit.merge(
-            unknown_rows_df[["episode_id", "unknown_reason"]].drop_duplicates(subset=["episode_id"]),
+            unknown_rows_df[unknown_merge_columns].drop_duplicates(subset=["episode_id"]),
             on="episode_id",
             how="left",
         )
     if "unknown_reason" not in audit.columns:
         audit["unknown_reason"] = ""
+    if "root_cause_category" not in audit.columns:
+        audit["root_cause_category"] = audit["unknown_reason"].map(category_from_unknown_reason)
+    else:
+        audit["root_cause_category"] = audit["root_cause_category"].fillna("").astype(str)
+        missing_category = audit["root_cause_category"].eq("")
+        audit.loc[missing_category, "root_cause_category"] = audit.loc[missing_category, "unknown_reason"].map(category_from_unknown_reason)
+    if "persona_core_policy" not in audit.columns:
+        audit["persona_core_policy"] = audit["root_cause_category"].map(
+            lambda value: "supportable_low_signal" if is_supportable_low_signal_category(value) else "exclude_low_signal"
+        )
 
     for axis in core_axes:
         if axis not in audit.columns:
@@ -580,13 +595,16 @@ def build_persona_core_flags(
     primary_complete = missing_axes.eq("")
     labelability_status = audit.get("labelability_status", pd.Series("", index=audit.index)).fillna("").astype(str)
     unknown_reason = audit.get("unknown_reason", pd.Series("", index=audit.index)).fillna("").astype(str)
+    root_cause_category = audit.get("root_cause_category", pd.Series("", index=audit.index)).fillna("").astype(str)
     baseline_allowed = labelability_status.isin({"labelable", "borderline"})
-    supported_low_signal = labelability_status.eq("low_signal") & unknown_reason.isin(SUPPORTED_LOW_SIGNAL_CORE_REASONS)
+    supported_low_signal = labelability_status.eq("low_signal") & root_cause_category.map(is_supportable_low_signal_category)
     eligible = primary_complete & (baseline_allowed | supported_low_signal)
 
     reasons = pd.Series("", index=audit.index, dtype=str)
     reasons.loc[eligible & baseline_allowed] = "complete_primary_axes"
-    reasons.loc[eligible & supported_low_signal] = "complete_primary_axes_low_signal_product_support"
+    reasons.loc[eligible & supported_low_signal] = root_cause_category.loc[eligible & supported_low_signal].map(
+        lambda value: f"complete_primary_axes_low_signal_supported<{value or 'unspecified'}>"
+    )
     reasons.loc[~eligible & ~primary_complete] = "missing_core_axes<" + missing_axes.loc[~eligible & ~primary_complete] + ">"
     excluded_low_signal = ~eligible & labelability_status.eq("low_signal")
     reasons.loc[excluded_low_signal] = unknown_reason.loc[excluded_low_signal].map(
@@ -606,6 +624,8 @@ def build_persona_core_flags(
             "episode_id": result["episode_id"],
             "labelability_status": labelability_status,
             "unknown_reason": unknown_reason,
+            "root_cause_category": root_cause_category,
+            "persona_core_policy": audit.get("persona_core_policy", pd.Series("", index=audit.index)).fillna("").astype(str),
             "persona_core_eligible": eligible,
             "persona_core_reason": reasons,
             "persona_core_primary_axis_complete": primary_complete,

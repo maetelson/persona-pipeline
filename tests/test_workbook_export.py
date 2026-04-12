@@ -107,7 +107,7 @@ class WorkbookExportTests(unittest.TestCase):
             (root / "config").mkdir(parents=True, exist_ok=True)
             (root / "config" / "export_schema.yaml").write_text("workbook_name: test.xlsx\n", encoding="utf-8")
             frames = assemble_workbook_frames(
-                overview_df=pd.DataFrame({"metric": ["x", "promoted_candidate_persona_count", "promotion_visibility_persona_count", "final_usable_persona_count", "deck_ready_persona_count"], "value": ["y", 1, 1, 1, 1]}),
+                overview_df=pd.DataFrame({"metric": ["x", "promoted_candidate_persona_count", "promotion_visibility_persona_count", "headline_persona_count", "final_usable_persona_count", "deck_ready_persona_count"], "value": ["y", 1, 1, 1, 1, 1]}),
                 counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [1]}),
                 source_distribution_df=pd.DataFrame({"source": ["reddit"], "normalized_count": [1], "valid_count": [1], "episode_count": [1], "labeled_count": [1], "share_of_labeled": [100.0]}),
                 taxonomy_summary_df=pd.DataFrame({"axis_name": ["role"], "why_it_matters": ["x"], "allowed_values_or_logic": ["a"], "evidence_fields": ["b"]}),
@@ -147,7 +147,7 @@ class WorkbookExportTests(unittest.TestCase):
             (root / "config").mkdir(parents=True, exist_ok=True)
             (root / "config" / "export_schema.yaml").write_text("workbook_name: test.xlsx\n", encoding="utf-8")
             frames = assemble_workbook_frames(
-                overview_df=pd.DataFrame({"metric": ["quality_flag", "promoted_candidate_persona_count", "promotion_visibility_persona_count", "final_usable_persona_count", "deck_ready_persona_count"], "value": ["OK", 1, 1, 1, 1]}),
+                overview_df=pd.DataFrame({"metric": ["quality_flag", "promoted_candidate_persona_count", "promotion_visibility_persona_count", "headline_persona_count", "final_usable_persona_count", "deck_ready_persona_count"], "value": ["OK", 1, 1, 1, 1, 1]}),
                 counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [1]}),
                 source_distribution_df=pd.DataFrame({"source": ["reddit"], "raw_count": [1], "normalized_count": [1], "valid_count": [1], "prefiltered_valid_count": [1], "episode_count": [1], "labeled_count": [1], "share_of_labeled": [100.0]}),
                 taxonomy_summary_df=pd.DataFrame({"axis_name": ["role"], "why_it_matters": ["x"], "allowed_values_or_logic": ["a"], "evidence_fields": ["b"]}),
@@ -174,7 +174,7 @@ class WorkbookExportTests(unittest.TestCase):
             (root / "config").mkdir(parents=True, exist_ok=True)
             (root / "config" / "export_schema.yaml").write_text("workbook_name: test.xlsx\n", encoding="utf-8")
             frames = assemble_workbook_frames(
-                overview_df=pd.DataFrame({"metric": ["x", "promoted_candidate_persona_count", "promotion_visibility_persona_count", "final_usable_persona_count", "deck_ready_persona_count"], "value": ["y", 1, 1, 1, 1]}),
+                overview_df=pd.DataFrame({"metric": ["x", "promoted_candidate_persona_count", "promotion_visibility_persona_count", "headline_persona_count", "final_usable_persona_count", "deck_ready_persona_count"], "value": ["y", 1, 1, 1, 1, 1]}),
                 counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [1]}),
                 source_distribution_df=pd.DataFrame({"source": ["reddit"], "normalized_count": [1], "valid_count": [1], "episode_count": [1], "labeled_count": [1], "share_of_labeled": [100.0]}),
                 taxonomy_summary_df=pd.DataFrame({"axis_name": ["role"], "why_it_matters": ["x"], "allowed_values_or_logic": ["a"], "evidence_fields": ["b"]}),
@@ -212,8 +212,8 @@ class WorkbookExportTests(unittest.TestCase):
             frames = assemble_workbook_frames(
                 overview_df=pd.DataFrame(
                     {
-                        "metric": ["raw_record_rows", "promotion_visibility_persona_count", "final_usable_persona_count"],
-                        "value": [12, 3, 2],
+                        "metric": ["raw_record_rows", "promotion_visibility_persona_count", "headline_persona_count", "final_usable_persona_count"],
+                        "value": [12, 3, 2, 2],
                     }
                 ),
                 counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [12]}),
@@ -258,7 +258,7 @@ class WorkbookExportTests(unittest.TestCase):
                         "denominator_type": ["effective_labeled_source_count", "persona_cluster_rows", "persona_cluster_rows"],
                         "definition": [
                             "Effective count of contributing labeled sources after fractional down-weighting for very small labeled-source volumes. This is a source-count metric, not a row-count metric.",
-                            "Count of final usable personas for downstream reporting. Under the current policy this includes only promoted_and_grounded personas, not weakly grounded or ungrounded review-only personas.",
+                            "Count of final usable personas for downstream reporting. Under the current policy this includes only promoted_and_grounded personas, not weakly grounded or ungrounded review-visible personas.",
                             "Count of promoted personas that remain visible in the workbook for reviewer inspection after grounding policy merge. Under the current flag policy this includes grounded, weakly grounded, and ungrounded promoted personas.",
                         ],
                     }
@@ -267,18 +267,19 @@ class WorkbookExportTests(unittest.TestCase):
             output = export_workbook_from_frames(root, frames)
             workbook = load_workbook(output, read_only=True)
             try:
-                overview_rows = list(workbook["overview"].iter_rows(min_row=1, max_row=4, values_only=True))
+                overview_rows = list(workbook["overview"].iter_rows(min_row=1, max_row=5, values_only=True))
                 quality_rows = list(workbook["quality_checks"].iter_rows(min_row=1, max_row=3, values_only=True))
                 glossary_rows = list(workbook["metric_glossary"].iter_rows(min_row=1, max_row=4, values_only=True))
-                readme_persona_copy = workbook["readme"]["B37"].value
-                readme_row_source_copy = workbook["readme"]["B38"].value
+                readme_persona_copy = workbook["readme"]["B38"].value
+                readme_row_source_copy = workbook["readme"]["B39"].value
             finally:
                 workbook.close()
 
             self.assertEqual(overview_rows[0][:3], ("metric_key", "display_label", "metric_value"))
             self.assertEqual(overview_rows[1][:3], ("raw_record_rows", "Raw record row count (JSONL lines, not source count)", 12))
             self.assertEqual(overview_rows[2][:3], ("promotion_visibility_persona_count", "Promotion-visibility persona count (review-visible promoted personas)", 3))
-            self.assertEqual(overview_rows[3][:3], ("final_usable_persona_count", "Final usable persona count (grounded promoted personas only)", 2))
+            self.assertEqual(overview_rows[3][:3], ("headline_persona_count", "Headline persona count (final usable personas only)", 2))
+            self.assertEqual(overview_rows[4][:3], ("final_usable_persona_count", "Final usable persona count (structurally supported and grounded promoted personas only)", 2))
 
             self.assertEqual(quality_rows[0][:3], ("metric_key", "display_label", "metric_value"))
             self.assertEqual(quality_rows[1][1], "Effective labeled-source count (source diversity score, not row count)")
@@ -300,10 +301,11 @@ class WorkbookExportTests(unittest.TestCase):
                         "persona_completion_claim_allowed",
                         "promoted_candidate_persona_count",
                         "promotion_visibility_persona_count",
+                        "headline_persona_count",
                         "final_usable_persona_count",
                         "deck_ready_persona_count",
                     ],
-                    "value": ["exploratory_only", "final_persona_asset", True, 1, 1, 1, 1],
+                    "value": ["exploratory_only", "final_persona_asset", True, 1, 1, 1, 1, 1],
                 }
             ),
             counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [12]}),
@@ -340,6 +342,144 @@ class WorkbookExportTests(unittest.TestCase):
 
         messages = validate_workbook_frames(frames)
         self.assertIn("persona readiness metric mismatch: final persona asset class is forbidden below deck_ready", messages)
+
+    def test_validate_workbook_frames_rejects_persona_sheet_readiness_drift(self) -> None:
+        frames = assemble_workbook_frames(
+            overview_df=pd.DataFrame(
+                {
+                    "metric": [
+                        "persona_readiness_state",
+                        "persona_readiness_gate_status",
+                        "persona_asset_class",
+                        "persona_completion_claim_allowed",
+                        "persona_usage_restriction",
+                        "promoted_candidate_persona_count",
+                        "promotion_visibility_persona_count",
+                        "headline_persona_count",
+                        "final_usable_persona_count",
+                        "deck_ready_persona_count",
+                    ],
+                    "value": ["exploratory_only", "FAIL", "hypothesis_material", False, "Hypothesis material only. Not a final persona asset.", 1, 1, 1, 1, 1],
+                }
+            ),
+            counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [12]}),
+            source_distribution_df=pd.DataFrame(),
+            taxonomy_summary_df=pd.DataFrame(),
+            cluster_stats_df=pd.DataFrame(
+                {
+                    "persona_id": ["persona_01"],
+                    "workbook_readiness_state": ["deck_ready"],
+                    "workbook_readiness_gate_status": ["OK"],
+                    "workbook_usage_restriction": ["Final persona asset."],
+                    "persona_size": [1],
+                    "share_of_core_labeled": [100.0],
+                    "share_of_all_labeled": [100.0],
+                    "base_promotion_status": ["promoted_candidate_persona"],
+                    "promotion_status": ["promoted_persona"],
+                    "workbook_review_visible": [True],
+                    "promotion_grounding_status": ["promoted_and_grounded"],
+                    "final_usable_persona": [True],
+                    "denominator_type": ["persona_core_labeled_rows"],
+                    "denominator_value": [1],
+                    "dominant_signature": ["workflow_stage=reporting"],
+                    "dominant_bottleneck": ["manual_reporting"],
+                    "dominant_analysis_goal": ["report_speed"],
+                }
+            ),
+            persona_summary_df=pd.DataFrame(
+                {
+                    "persona_id": ["persona_01"],
+                    "workbook_readiness_state": ["exploratory_only"],
+                    "workbook_readiness_gate_status": ["FAIL"],
+                    "workbook_usage_restriction": ["Hypothesis material only. Not a final persona asset."],
+                }
+            ),
+            persona_axes_df=pd.DataFrame(),
+            persona_needs_df=pd.DataFrame(),
+            persona_cooccurrence_df=pd.DataFrame(),
+            persona_examples_df=pd.DataFrame(),
+            quality_checks_df=pd.DataFrame({"metric": ["quality_flag"], "value": ["UNSTABLE"], "threshold": [""], "status": ["fail"], "level": ["hard_fail"], "denominator_type": [""], "denominator_value": [""], "notes": [""]}),
+            source_diagnostics_df=pd.DataFrame(),
+            quality_failures_df=pd.DataFrame(),
+            metric_glossary_df=pd.DataFrame(),
+        )
+
+        messages = validate_workbook_frames(frames)
+        self.assertIn("persona readiness metric mismatch: cluster_stats.workbook_readiness_state must match overview.persona_readiness_state", messages)
+        self.assertIn("persona readiness metric mismatch: cluster_stats.workbook_readiness_gate_status must match overview.persona_readiness_gate_status", messages)
+        self.assertIn("persona readiness metric mismatch: cluster_stats.workbook_usage_restriction must match overview.persona_usage_restriction", messages)
+
+    def test_export_readme_blocks_finality_below_deck_ready(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "config").mkdir(parents=True, exist_ok=True)
+            (root / "config" / "export_schema.yaml").write_text("workbook_name: test.xlsx\n", encoding="utf-8")
+            frames = assemble_workbook_frames(
+                overview_df=pd.DataFrame(
+                    {
+                        "metric": [
+                            "persona_readiness_state",
+                            "persona_readiness_label",
+                            "persona_asset_class",
+                            "persona_readiness_gate_status",
+                            "persona_completion_claim_allowed",
+                            "persona_usage_restriction",
+                            "persona_readiness_summary",
+                            "persona_readiness_blockers",
+                            "promotion_visibility_persona_count",
+                            "headline_persona_count",
+                            "final_usable_persona_count",
+                            "deck_ready_persona_count",
+                            "promoted_persona_weakly_grounded_count",
+                            "promoted_persona_ungrounded_count",
+                            "overall_unknown_ratio",
+                            "labeled_episode_rows",
+                        ],
+                        "value": [
+                            "exploratory_only",
+                            "Hypothesis Material",
+                            "hypothesis_material",
+                            "FAIL",
+                            False,
+                            "Hypothesis material only. Not a final persona asset.",
+                            "Exploratory workbook only.",
+                            "overall_unknown_ratio<=0.30",
+                            3,
+                            2,
+                            2,
+                            2,
+                            0,
+                            1,
+                            0.388,
+                            100,
+                        ],
+                    }
+                ),
+                counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [12]}),
+                source_distribution_df=pd.DataFrame(),
+                taxonomy_summary_df=pd.DataFrame(),
+                cluster_stats_df=pd.DataFrame(),
+                persona_summary_df=pd.DataFrame(),
+                persona_axes_df=pd.DataFrame(),
+                persona_needs_df=pd.DataFrame(),
+                persona_cooccurrence_df=pd.DataFrame(),
+                persona_examples_df=pd.DataFrame(),
+                quality_checks_df=pd.DataFrame({"metric": ["quality_flag"], "value": ["UNSTABLE"], "threshold": [""], "status": ["fail"], "level": ["hard_fail"], "denominator_type": [""], "denominator_value": [""], "notes": [""]}),
+                source_diagnostics_df=pd.DataFrame(),
+                quality_failures_df=pd.DataFrame(),
+                metric_glossary_df=pd.DataFrame(),
+            )
+
+            output = export_workbook_from_frames(root, frames)
+            workbook = load_workbook(output, read_only=True)
+            try:
+                readme_gate_copy = workbook["readme"]["B36"].value
+                readme_persona_count_copy = workbook["readme"]["B38"].value
+            finally:
+                workbook.close()
+
+            self.assertIn("no sheet in this workbook may be interpreted as a final persona asset", str(readme_gate_copy))
+            self.assertIn("only when persona_readiness_state is deck_ready or higher", str(readme_persona_count_copy))
 
     def test_export_uses_explicit_row_based_headers_for_counts_and_source_distribution(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

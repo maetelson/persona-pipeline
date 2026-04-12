@@ -33,9 +33,7 @@ DISPLAY_HEADER_OVERRIDES = {
     "denominator_value": "denominator_row_count",
     "pct_of_persona": "pct_of_persona_rows",
     "grain": "row_grain",
-    "metric_value": "metric_value_numeric",
     "metric_type": "metric_value_type",
-    "failure_reason_top": "top_failure_reason",
     "selection_strength": "selected_example_strength",
     "grounding_strength": "example_grounding_strength",
 }
@@ -79,8 +77,10 @@ OVERVIEW_METRIC_LABELS = {
     "overall_unknown_status": "All labeled rows unknown-rate status",
     "core_unknown_status": "Persona-core unknown-rate status",
     "core_coverage_status": "Persona-core coverage status",
-    "effective_source_diversity_status": "Effective labeled-source diversity status",
+    "effective_source_diversity_status": "Effective source-balance status",
     "source_concentration_status": "Labeled-source concentration status",
+    "source_influence_concentration_status": "Blended source-influence concentration status",
+    "weak_source_yield_status": "Weak-source cost-center status",
     "largest_cluster_dominance_status": "Largest cluster dominance status",
     "cluster_concentration_tail_status": "Top-3 cluster concentration status",
     "cluster_fragility_status": "Micro-cluster fragility status",
@@ -98,6 +98,7 @@ OVERVIEW_METRIC_LABELS = {
     "persona_core_unknown_ratio": "Persona-core unknown ratio",
     "overall_unknown_ratio": "All labeled rows unknown ratio",
     "effective_labeled_source_count": "Effective labeled-source count (source diversity score, not row count)",
+    "effective_balanced_source_count": "Effective balanced-source count (influence-aware source balance score)",
     "largest_cluster_share_of_core_labeled": "Largest cluster share of persona-core labeled rows (%)",
     "top_3_cluster_share_of_core_labeled": "Top-3 cluster share of persona-core labeled rows",
     "robust_cluster_count": "Robust final cluster count",
@@ -105,17 +106,29 @@ OVERVIEW_METRIC_LABELS = {
     "fragile_cluster_count": "Fragile cluster count",
     "micro_cluster_count": "Micro-cluster count",
     "thin_evidence_cluster_count": "Thin-evidence cluster count",
+    "structurally_supported_cluster_count": "Structurally supported cluster count",
+    "weak_separation_cluster_count": "Weak-separation cluster count",
+    "fragile_tail_cluster_count": "Fragile tail cluster count",
+    "fragile_tail_share_of_core_labeled": "Fragile tail share of persona-core labeled rows",
     "avg_cluster_separation": "Average cluster separation",
     "min_cluster_separation": "Minimum cluster separation",
     "largest_labeled_source_share_pct": "Largest labeled-source share of labeled episode rows (%)",
+    "promoted_persona_episode_rows": "Promoted persona episode contribution rows",
+    "grounded_promoted_persona_episode_rows": "Grounded promoted persona episode contribution rows",
+    "largest_promoted_source_share_pct": "Largest promoted-persona source share (%)",
+    "largest_grounded_source_share_pct": "Largest grounded-persona source share (%)",
+    "largest_source_influence_share_pct": "Largest blended source influence share (%)",
+    "weak_source_cost_center_count": "Weak-source cost-center count",
+    "weak_source_cost_centers": "Weak-source cost-center source ids",
     "promoted_candidate_persona_count": "Promoted candidate persona count before grounding review",
     "promotion_visibility_persona_count": "Promotion-visibility persona count (review-visible promoted personas)",
-    "final_usable_persona_count": "Final usable persona count (grounded promoted personas only)",
+    "headline_persona_count": "Headline persona count (final usable personas only)",
+    "final_usable_persona_count": "Final usable persona count (structurally supported and grounded promoted personas only)",
     "deck_ready_persona_count": "Deck-ready persona count",
     "promoted_persona_example_coverage_pct": "Promoted persona grounding coverage (%)",
     "promoted_persona_grounded_count": "Grounded promoted persona count",
-    "promoted_persona_weakly_grounded_count": "Weakly grounded review-only promoted persona count",
-    "promoted_persona_ungrounded_count": "Ungrounded review-only promoted persona count",
+    "promoted_persona_weakly_grounded_count": "Weakly grounded review-visible promoted persona count",
+    "promoted_persona_ungrounded_count": "Ungrounded review-visible promoted persona count",
     "promoted_personas_weakly_grounded": "Weakly grounded promoted persona ids",
     "promoted_personas_missing_examples": "Promoted persona ids missing accepted grounding examples",
     "exploratory_bucket_count": "Exploratory non-promoted cluster count",
@@ -137,11 +150,20 @@ QUALITY_CHECK_METRIC_LABELS = {
     "overall_unknown_ratio": "All labeled rows unknown ratio",
     "persona_core_coverage_of_all_labeled_pct": "Persona-core coverage of labeled episode rows (%)",
     "effective_labeled_source_count": "Effective labeled-source count (source diversity score, not row count)",
+    "effective_balanced_source_count": "Effective balanced-source count (influence-aware source balance score)",
     "largest_labeled_source_share_pct": "Largest labeled-source share of labeled episode rows (%)",
+    "promoted_persona_episode_rows": "Promoted persona episode contribution rows",
+    "grounded_promoted_persona_episode_rows": "Grounded promoted persona episode contribution rows",
+    "largest_source_influence_share_pct": "Largest blended source influence share (%)",
+    "weak_source_cost_center_count": "Weak-source cost-center count",
     "largest_cluster_share_of_core_labeled": "Largest cluster share of persona-core labeled rows (%)",
     "top_3_cluster_share_of_core_labeled": "Top-3 cluster share of persona-core labeled rows",
     "micro_cluster_count": "Micro-cluster count",
     "thin_evidence_cluster_count": "Thin-evidence cluster count",
+    "structurally_supported_cluster_count": "Structurally supported cluster count",
+    "weak_separation_cluster_count": "Weak-separation cluster count",
+    "fragile_tail_cluster_count": "Fragile tail cluster count",
+    "fragile_tail_share_of_core_labeled": "Fragile tail share of persona-core labeled rows",
     "min_cluster_separation": "Minimum cluster separation",
     "promoted_persona_example_coverage_pct": "Promoted persona grounding coverage (%)",
     "promoted_persona_grounding_failure_count": "Promoted persona count failing grounded-usable policy",
@@ -151,6 +173,8 @@ QUALITY_CHECK_METRIC_LABELS = {
     "overall_status": "Overall workbook status",
     "core_clustering_status": "Core clustering status",
     "source_diversity_status": "Source diversity status",
+    "source_influence_concentration_status": "Blended source-influence concentration status",
+    "weak_source_yield_status": "Weak-source cost-center status",
     "example_grounding_status": "Example grounding status",
     "denominator_consistency": "Denominator consistency contract status",
 }
@@ -273,6 +297,8 @@ def _prepare_workbook_frames(frames: dict[str, pd.DataFrame]) -> dict[str, pd.Da
         or message.startswith("persona promotion metric mismatch:")
         or message.startswith("ambiguous source_diagnostics column:")
         or message.startswith("missing source_diagnostics structure column:")
+        or message.startswith("invalid source_diagnostics row placement:")
+        or message.startswith("generic source_diagnostics reason:")
         or message.startswith("mixed-grain metric mislabeled as rate:")
         for message in messages
     ):
@@ -289,6 +315,8 @@ def _prepare_workbook_frames(frames: dict[str, pd.DataFrame]) -> dict[str, pd.Da
             or message.startswith("persona promotion metric mismatch:")
             or message.startswith("ambiguous source_diagnostics column:")
             or message.startswith("missing source_diagnostics structure column:")
+            or message.startswith("invalid source_diagnostics row placement:")
+            or message.startswith("generic source_diagnostics reason:")
             or message.startswith("mixed-grain metric mislabeled as rate:")
         ]
         failures = [*missing, *denominator_errors]
@@ -340,6 +368,13 @@ def _display_frame(sheet_name: str, df: pd.DataFrame) -> pd.DataFrame:
     if sheet_name == "source_distribution":
         rename_map = {key: value for key, value in SOURCE_DISTRIBUTION_HEADER_OVERRIDES.items() if key in frame.columns}
         return frame.rename(columns=rename_map)
+    if sheet_name == "source_diagnostics":
+        rename_map = {
+            "grain": "row_grain",
+            "metric_type": "metric_value_type",
+            "denominator_value": "denominator_row_count",
+        }
+        return frame.rename(columns={key: value for key, value in rename_map.items() if key in frame.columns})
     rename_map = {
         column: DISPLAY_HEADER_OVERRIDES.get(column, column)
         for column in frame.columns
@@ -442,8 +477,10 @@ def _apply_column_format(worksheet, column_index: int, sheet_name: str, original
                 cell.number_format = PERCENT_LITERAL_FORMAT
             elif metric_type == "count":
                 cell.number_format = INTEGER_FORMAT
-            else:
+            elif metric_type == "ratio":
                 cell.number_format = RATIO_FORMAT
+            else:
+                cell.number_format = "General"
         return
     if number_format is None:
         return
@@ -478,10 +515,11 @@ def _write_readme_sheet(workbook) -> None:
         ["Labeled Episode Row Count", '=INDEX(overview!$C:$C,MATCH("labeled_episode_rows",overview!$A:$A,0))'],
         ["Persona-Core Labeled Episode Row Count", '=INDEX(overview!$C:$C,MATCH("persona_core_labeled_rows",overview!$A:$A,0))'],
         ["Review-Visible Promoted Persona Count", '=INDEX(overview!$C:$C,MATCH("promotion_visibility_persona_count",overview!$A:$A,0))'],
-        ["Final Usable Persona Count (grounded promoted personas only)", '=INDEX(overview!$C:$C,MATCH("final_usable_persona_count",overview!$A:$A,0))'],
+        ["Headline Persona Count (final usable personas only)", '=INDEX(overview!$C:$C,MATCH("headline_persona_count",overview!$A:$A,0))'],
+        ["Final Usable Persona Count (structurally supported and grounded promoted personas only)", '=INDEX(overview!$C:$C,MATCH("final_usable_persona_count",overview!$A:$A,0))'],
         ["Deck-Ready Persona Count", '=INDEX(overview!$C:$C,MATCH("deck_ready_persona_count",overview!$A:$A,0))'],
-        ["Weakly Grounded Review-Only Promoted Persona Count", '=INDEX(overview!$C:$C,MATCH("promoted_persona_weakly_grounded_count",overview!$A:$A,0))'],
-        ["Ungrounded Review-Only Promoted Persona Count", '=INDEX(overview!$C:$C,MATCH("promoted_persona_ungrounded_count",overview!$A:$A,0))'],
+        ["Weakly Grounded Review-Visible Promoted Persona Count", '=INDEX(overview!$C:$C,MATCH("promoted_persona_weakly_grounded_count",overview!$A:$A,0))'],
+        ["Ungrounded Review-Visible Promoted Persona Count", '=INDEX(overview!$C:$C,MATCH("promoted_persona_ungrounded_count",overview!$A:$A,0))'],
         ["Approximate Unknown Labeled Episode Rows", '=ROUND(INDEX(overview!$C:$C,MATCH("overall_unknown_ratio",overview!$A:$A,0))*INDEX(overview!$C:$C,MATCH("labeled_episode_rows",overview!$A:$A,0)),0)'],
         ["", ""],
         ["How To Read Denominators", ""],
@@ -491,9 +529,9 @@ def _write_readme_sheet(workbook) -> None:
         ["denominator_type_key", "The semantic denominator family. Cross-check this against metric_glossary before comparing row counts, source counts, or persona counts."],
         ["", ""],
         ["Review Tips", ""],
-        ["Readiness gate", "If persona_readiness_state is below deck_ready, this workbook is not a final persona asset. Treat persona_summary and cluster_stats as hypothesis or review material only."],
-        ["Grounding states", "See persona_summary and cluster_stats for base_promotion_status, promotion_status, grounding_status, promotion_grounding_status, and reporting_readiness_status. Review-only personas remain workbook-visible for audit but are not final usable or deck-ready personas."],
-        ["Persona counts", "Use Final Usable Persona Count for headline or downstream persona totals. Use Review-Visible Promoted Persona Count only for workbook review coverage, because it can include weakly grounded or ungrounded promoted personas."],
+        ["Readiness gate", "If persona_readiness_state is below deck_ready, no sheet in this workbook may be interpreted as a final persona asset. Treat persona_summary and cluster_stats as hypothesis or review material only."],
+        ["Grounding states", "See persona_summary and cluster_stats for base_promotion_status, structural_support_status, visibility_state, usability_state, deck_readiness_state, promotion_action, promotion_status, grounding_status, promotion_grounding_status, and reporting_readiness_status. Review-visible personas remain workbook-visible for audit but are not final usable or deck-ready personas."],
+        ["Persona counts", "Use Headline Persona Count or Final Usable Persona Count for headline or downstream persona totals only when persona_readiness_state is deck_ready or higher. Use Review-Visible Promoted Persona Count only for workbook review coverage, because it can include weakly grounded or ungrounded promoted personas."],
         ["Rows versus sources", "Raw Record Row Count is a count of JSONL rows. Effective labeled-source count and source_distribution rows describe sources, not post or episode rows."],
         ["Mixed-grain diagnostics", "source_diagnostics rows with row_grain=mixed_grain_bridge are cross-grain ratios, not same-grain funnel percentages."],
         ["Glossary", "See metric_glossary for metric keys, reviewer-facing workbook labels, and denominator semantics."],
@@ -512,7 +550,7 @@ def _write_readme_sheet(workbook) -> None:
         cell.fill = HEADER_FILL
     for cell in worksheet[13]:
         cell.fill = HEADER_FILL
-    for row_index in [27, 33]:
+    for row_index in [29, 35]:
         for cell in worksheet[row_index]:
             cell.font = HEADER_FONT
             cell.fill = SUBTLE_FILL

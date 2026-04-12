@@ -6,7 +6,7 @@ from typing import Any
 
 import pandas as pd
 
-from src.labeling.unknown_reasons import infer_axis_unknown_reason
+from src.labeling.unknown_reasons import infer_axis_unknown_reason, infer_unknown_category, is_supportable_low_signal_category
 from src.utils.pipeline_schema import LABEL_CODE_COLUMNS, is_unknown_like, split_pipe_codes
 from src.utils.record_access import get_record_text
 
@@ -54,9 +54,19 @@ def apply_label_repairs(
     repair_rows: list[dict[str, Any]] = []
     for _, row in merged.iterrows():
         episode_id = str(row.get("episode_id", ""))
-        if str(row.get("labelability_status", "low_signal")) not in allowed_statuses:
-            continue
         combined = get_record_text(row, fields=AXIS_TEXT_FIELDS).lower()
+        labelability_status = str(row.get("labelability_status", "low_signal") or "low_signal")
+        failed_axes = [column for column in LABEL_CODE_COLUMNS if is_unknown_like(row.get(column, "unknown"))]
+        failed_reasons = [infer_axis_unknown_reason(row, family=family, text=combined) for family in failed_axes]
+        root_cause_category = infer_unknown_category(
+            row,
+            failed_axes=failed_axes,
+            failed_reasons=failed_reasons,
+            text=combined,
+        )
+        allow_low_signal_repair = labelability_status == "low_signal" and is_supportable_low_signal_category(root_cause_category)
+        if labelability_status not in allowed_statuses and not allow_low_signal_repair:
+            continue
         notes: list[str] = []
 
         if is_unknown_like(row.get("role_codes", "unknown")):
@@ -114,6 +124,9 @@ def apply_label_repairs(
         if is_unknown_like(current_role):
             inferred_role = _repair_role_from_context(
                 combined,
+                source=str(row.get("source", "")),
+                question_codes=str(result.loc[result["episode_id"] == episode_id, "question_codes"].iloc[0] or "unknown"),
+                pain_codes=str(result.loc[result["episode_id"] == episode_id, "pain_codes"].iloc[0] or "unknown"),
                 output_codes=str(result.loc[result["episode_id"] == episode_id, "output_codes"].iloc[0] or "unknown"),
             )
             if inferred_role:
@@ -140,7 +153,8 @@ def apply_label_repairs(
                 {
                     "episode_id": episode_id,
                     "source": str(row.get("source", "")),
-                    "labelability_status": str(row.get("labelability_status", "")),
+                    "labelability_status": labelability_status,
+                    "root_cause_category": root_cause_category,
                     "repair_notes": " ; ".join(notes),
                 }
             )
@@ -198,12 +212,18 @@ def _repair_role(text: str, repair_cfg: dict[str, list[str]]) -> str:
     return ""
 
 
-def _repair_role_from_context(text: str, output_codes: str) -> str:
+def _repair_role_from_context(text: str, source: str, question_codes: str, pain_codes: str, output_codes: str) -> str:
     if any(term in text for term in ["report", "reporting", "export", "dashboard", "metrics", "analysis"]):
+        return "R_ANALYST"
+    if any(term in text for term in ["sql", "database", "query", "schema", "warehouse", "metabase", "snowflake", "databricks"]):
         return "R_ANALYST"
     if any(term in text for term in ["merchant", "campaign", "ads", "marketing"]):
         return "R_MARKETER"
     if output_codes == "O_XLSX":
+        return "R_ANALYST"
+    if question_codes in {"Q_DIAGNOSE_ISSUE", "Q_VALIDATE_NUMBERS"} or pain_codes in {"P_DATA_QUALITY", "P_TOOL_LIMITATION"}:
+        return "R_ANALYST"
+    if source in {"metabase_discussions", "github_discussions", "reddit"}:
         return "R_ANALYST"
     return ""
 
@@ -264,9 +284,18 @@ def _repair_output(text: str) -> str:
             "manual reviews",
             "no specific feedback",
             "verification failure",
+            "metadata sync",
+            "query results incorrect",
+            "wrong options",
+            "wrong values",
+            "table metadata",
+            "database fails to migrate",
+            "not syncing",
         ]
     ):
         return "O_VALIDATED_DATASET"
+    if any(term in text for term in ["download data", "download", "csv export", "export data", "100k rows"]):
+        return "O_XLSX"
     if any(term in text for term in ["scheduled", "automate", "automation", "template", "flow", "flows", "campaign not sending"]):
         return "O_AUTOMATION_JOB"
     return ""
@@ -332,6 +361,13 @@ def _repair_pain(text: str) -> str:
             "added to cart",
             "no physical stores found",
             "countries of sale",
+            "dashboard filter",
+            "database fails",
+            "failed to migrate",
+            "metadata sync",
+            "filter dropdown",
+            "query results incorrect",
+            "unable to download",
         ]
     ):
         return "P_TOOL_LIMITATION"
@@ -427,6 +463,12 @@ def _repair_question(text: str) -> str:
             "product pages as unavailable",
             "ads not showing",
             "calls are not getting",
+            "not syncing",
+            "fails to migrate",
+            "dashboard filter",
+            "filter dropdown",
+            "query results incorrect",
+            "unable to download",
         ]
     ):
         return "Q_DIAGNOSE_ISSUE"
@@ -442,6 +484,8 @@ def _repair_question_from_context(text: str, bottleneck_text: str, fit_code: str
         return "Q_DIAGNOSE_ISSUE"
     if "tool_limitation" in bottleneck_text:
         return "Q_DIAGNOSE_ISSUE"
+    if any(term in text for term in ["not syncing", "failed", "broken", "filter", "query", "database", "schema"]):
+        return "Q_DIAGNOSE_ISSUE"
     if "report" in text or output_codes == "O_XLSX":
         return "Q_REPORT_SPEED"
     return ""
@@ -452,6 +496,8 @@ def _repair_output_from_context(text: str, bottleneck_text: str, question_codes:
         return "O_XLSX"
     if question_codes == "Q_AUTOMATE_WORKFLOW" or "handoff" in bottleneck_text:
         return "O_AUTOMATION_JOB"
+    if any(term in text for term in ["sync", "schema", "database", "query", "tracking", "source of truth", "validated", "reconcile"]):
+        return "O_VALIDATED_DATASET"
     if question_codes == "Q_DIAGNOSE_ISSUE" or "tool_limitation" in bottleneck_text:
         return "O_DASHBOARD"
     if any(term in text for term in ["tracking", "status", "visibility", "not showing", "unavailable", "checkout broken"]):

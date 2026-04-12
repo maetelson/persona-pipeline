@@ -65,7 +65,11 @@ def build_persona_outputs(
     total_labeled_records = int(quality_checks.get("labeled_episode_rows", len(labeled_df)))
     persona_core_labeled_records = int(quality_checks.get("persona_core_labeled_rows", len(labeled_df)))
     example_config = load_example_selection_config(Path(__file__).resolve().parents[2])
-    cluster_policy = _cluster_promotion_policy(persona_source_df, total_labeled_records)
+    cluster_policy = _cluster_promotion_policy(
+        persona_source_df,
+        total_labeled_records,
+        cluster_outputs.get("cluster_robustness_audit_df"),
+    )
     grounding_outputs = apply_promotion_grounding_policy(
         selected_df=cluster_outputs["selected_examples_df"],
         audit_df=cluster_outputs["example_audit_df"],
@@ -115,6 +119,7 @@ def build_persona_outputs(
         "persona_cooccurrence_df": persona_cooccurrence_df,
         "persona_examples_df": persona_examples_df,
         "cluster_stats_df": cluster_stats_df,
+        "persona_promotion_grounding_audit_df": _build_persona_promotion_grounding_audit_df(persona_summary_df),
         "quality_checks_df": pd.DataFrame(columns=["metric", "value", "threshold", "status", "level", "denominator_type", "denominator_value", "notes"]),
         "persona_assignments_df": persona_assignments_df,
         "persona_grounding_df": grounding_outputs["persona_grounding_df"],
@@ -154,6 +159,7 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
         "persona_examples_csv": output_dir / "persona_examples.csv",
         "persona_grounding_csv": output_dir / "persona_grounding.csv",
         "cluster_stats_csv": output_dir / "cluster_stats.csv",
+        "persona_promotion_grounding_audit_csv": output_dir / "persona_promotion_grounding_audit.csv",
         "quality_checks_csv": output_dir / "quality_checks.csv",
         "overview_csv": output_dir / "overview.csv",
         "persona_assignments_parquet": output_dir / "persona_assignments.parquet",
@@ -183,6 +189,7 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
     outputs["persona_examples_df"].to_csv(paths["persona_examples_csv"], index=False)
     outputs["persona_grounding_df"].to_csv(paths["persona_grounding_csv"], index=False)
     outputs["cluster_stats_df"].to_csv(paths["cluster_stats_csv"], index=False)
+    outputs["persona_promotion_grounding_audit_df"].to_csv(paths["persona_promotion_grounding_audit_csv"], index=False)
     outputs["quality_checks_df"].to_csv(paths["quality_checks_csv"], index=False)
     outputs["overview_df"].to_csv(paths["overview_csv"], index=False)
     outputs["persona_assignments_df"].to_parquet(paths["persona_assignments_parquet"], index=False)
@@ -269,6 +276,12 @@ def _build_persona_summary_df(
                 "denominator_value": persona_core_labeled_records,
                 "min_cluster_size": int(cluster_policy["min_cluster_size"]),
                 "base_promotion_status": promotion.get("base_promotion_status", promotion.get("status", "exploratory_bucket")),
+                "structural_support_status": promotion.get("structural_support_status", "not_evaluated"),
+                "structural_support_reason": promotion.get("structural_support_reason", ""),
+                "visibility_state": _visibility_state(promotion),
+                "usability_state": _usability_state(promotion),
+                "deck_readiness_state": _deck_readiness_state(promotion),
+                "promotion_action": _promotion_action(promotion),
                 "promoted_candidate_persona": _is_promoted_candidate_persona(promotion),
                 "workbook_review_visible": _is_workbook_review_visible(promotion),
                 "final_usable_persona": _is_final_usable_persona(promotion),
@@ -283,6 +296,14 @@ def _build_persona_summary_df(
                 "weak_candidate_count": int(promotion.get("weak_candidate_count", 0) or 0),
                 "selected_example_count": int(promotion.get("selected_example_count", 0) or 0),
                 "fallback_selected_count": int(promotion.get("fallback_selected_count", 0) or 0),
+                "cluster_stability_status": promotion.get("cluster_stability_status", ""),
+                "cluster_evidence_status": promotion.get("cluster_evidence_status", ""),
+                "cluster_concentration_status": promotion.get("cluster_concentration_status", ""),
+                "tail_fragility_status": promotion.get("tail_fragility_status", ""),
+                "cluster_separation": float(promotion.get("cluster_separation", 0.0) or 0.0),
+                "nearest_neighbor_similarity": float(promotion.get("nearest_neighbor_similarity", 0.0) or 0.0),
+                "pre_merge_anchor_count": int(promotion.get("pre_merge_anchor_count", 0) or 0),
+                "robustness_action_summary": promotion.get("robustness_action_summary", ""),
                 "one_line_summary": _one_line_summary(
                     persona_name,
                     workflow,
@@ -399,6 +420,48 @@ def _build_persona_examples_df(selected_examples_df: pd.DataFrame) -> pd.DataFra
     return frame[preferred + remainder].sort_values(["persona_id", "example_rank"]).reset_index(drop=True)
 
 
+def _build_persona_promotion_grounding_audit_df(persona_summary_df: pd.DataFrame) -> pd.DataFrame:
+    """Build one audit row per promoted candidate persona with explicit disposition fields."""
+    if persona_summary_df is None or persona_summary_df.empty:
+        return pd.DataFrame()
+    promoted = persona_summary_df[persona_summary_df.get("promoted_candidate_persona", pd.Series(dtype=bool)).fillna(False).astype(bool)].copy()
+    if promoted.empty:
+        return pd.DataFrame()
+    preferred = [
+        "persona_id",
+        "persona_name",
+        "persona_size",
+        "base_promotion_status",
+        "structural_support_status",
+        "structural_support_reason",
+        "visibility_state",
+        "promotion_status",
+        "promotion_action",
+        "promotion_reason",
+        "grounding_status",
+        "promotion_grounding_status",
+        "grounding_reason",
+        "grounded_candidate_count",
+        "weak_candidate_count",
+        "selected_example_count",
+        "fallback_selected_count",
+        "cluster_stability_status",
+        "cluster_evidence_status",
+        "cluster_concentration_status",
+        "tail_fragility_status",
+        "cluster_separation",
+        "nearest_neighbor_similarity",
+        "pre_merge_anchor_count",
+        "robustness_action_summary",
+        "usability_state",
+        "deck_readiness_state",
+        "final_usable_persona",
+        "deck_ready_persona",
+    ]
+    available = [column for column in preferred if column in promoted.columns]
+    return promoted[available].sort_values(["final_usable_persona", "persona_size", "persona_id"], ascending=[False, False, True]).reset_index(drop=True)
+
+
 def _build_cluster_stats_df(
     persona_source_df: pd.DataFrame,
     axis_names: list[str],
@@ -425,6 +488,12 @@ def _build_cluster_stats_df(
                 "denominator_value": persona_core_labeled_records,
                 "min_cluster_size": int(cluster_policy["min_cluster_size"]),
                 "base_promotion_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("base_promotion_status", "exploratory_bucket"),
+                "structural_support_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("structural_support_status", "not_evaluated"),
+                "structural_support_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("structural_support_reason", ""),
+                "visibility_state": _visibility_state(cluster_policy["status_by_persona"].get(str(persona_id), {})),
+                "usability_state": _usability_state(cluster_policy["status_by_persona"].get(str(persona_id), {})),
+                "deck_readiness_state": _deck_readiness_state(cluster_policy["status_by_persona"].get(str(persona_id), {})),
+                "promotion_action": _promotion_action(cluster_policy["status_by_persona"].get(str(persona_id), {})),
                 "promoted_candidate_persona": _is_promoted_candidate_persona(cluster_policy["status_by_persona"].get(str(persona_id), {})),
                 "workbook_review_visible": _is_workbook_review_visible(cluster_policy["status_by_persona"].get(str(persona_id), {})),
                 "final_usable_persona": _is_final_usable_persona(cluster_policy["status_by_persona"].get(str(persona_id), {})),
@@ -439,6 +508,14 @@ def _build_cluster_stats_df(
                 "weak_candidate_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("weak_candidate_count", 0) or 0),
                 "selected_example_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("selected_example_count", 0) or 0),
                 "fallback_selected_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("fallback_selected_count", 0) or 0),
+                "cluster_stability_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_stability_status", ""),
+                "cluster_evidence_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_evidence_status", ""),
+                "cluster_concentration_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_concentration_status", ""),
+                "tail_fragility_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("tail_fragility_status", ""),
+                "cluster_separation": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_separation", 0.0) or 0.0),
+                "nearest_neighbor_similarity": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("nearest_neighbor_similarity", 0.0) or 0.0),
+                "pre_merge_anchor_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("pre_merge_anchor_count", 0) or 0),
+                "robustness_action_summary": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("robustness_action_summary", ""),
                 "dominant_signature": axis_signature,
                 "dominant_bottleneck": top_non_unknown_value(group, "bottleneck_type"),
                 "dominant_analysis_goal": top_non_unknown_value(group, "analysis_goal"),
@@ -459,6 +536,7 @@ def _empty_outputs() -> dict[str, Any]:
         "persona_examples_df": empty,
         "persona_grounding_df": empty,
         "cluster_stats_df": empty,
+        "persona_promotion_grounding_audit_df": empty,
         "quality_checks_df": empty,
         "persona_assignments_df": empty,
         "axis_wide_df": empty,
@@ -551,14 +629,16 @@ def _one_line_summary(
     promotion_grounding_status: str = "",
 ) -> str:
     """Create a grounded one-line persona summary."""
-    if promotion_grounding_status == "promoted_but_weakly_grounded":
-        prefix = "Review-only weakly grounded persona"
+    if promotion_grounding_status == "grounded_but_structurally_weak":
+        prefix = "Review-visible structurally weak grounded persona"
+    elif promotion_grounding_status == "promoted_but_weakly_grounded":
+        prefix = "Review-visible weakly grounded persona"
     elif promotion_grounding_status == "promoted_but_ungrounded":
-        prefix = "Review-only ungrounded persona"
+        prefix = "Review-visible ungrounded persona"
     elif promotion_grounding_status == "downgraded_due_to_no_grounding":
         prefix = "Downgraded exploratory cluster"
-    elif promotion_status == "review_only_persona":
-        prefix = "Review-only persona"
+    elif promotion_status == "review_visible_persona":
+        prefix = "Review-visible persona"
     else:
         prefix = "Promoted persona" if promotion_status == "promoted_persona" else "Exploratory residual group"
     return (
@@ -616,56 +696,121 @@ def _is_promoted_candidate_persona(payload: dict[str, Any]) -> bool:
 
 def _is_workbook_review_visible(payload: dict[str, Any]) -> bool:
     """Return whether a persona remains visible in the workbook's promoted set."""
-    return str(payload.get("status", "") or "") in {"promoted_persona", "review_only_persona"}
+    return str(payload.get("status", "") or "") in {"promoted_persona", "review_visible_persona"}
 
 
 def _is_final_usable_persona(payload: dict[str, Any]) -> bool:
     """Return whether a persona is usable for downstream reporting."""
-    return str(payload.get("promotion_grounding_status", "") or "") == "promoted_and_grounded"
+    structurally_supported = str(payload.get("structural_support_status", "structurally_supported") or "structurally_supported") == "structurally_supported"
+    return structurally_supported and str(payload.get("promotion_grounding_status", "") or "") == "promoted_and_grounded"
+
+
+def _visibility_state(payload: dict[str, Any]) -> str:
+    """Return the explicit review visibility state for one persona."""
+    if str(payload.get("status", "") or "") == "review_visible_persona":
+        return "review_visible_persona"
+    if _is_promoted_candidate_persona(payload):
+        return "promoted_candidate_persona"
+    return str(payload.get("status", "exploratory_bucket") or "exploratory_bucket")
+
+
+def _usability_state(payload: dict[str, Any]) -> str:
+    """Return whether the persona is final usable under the current grounding policy."""
+    return "final_usable_persona" if _is_final_usable_persona(payload) else "not_final_usable"
+
+
+def _deck_readiness_state(payload: dict[str, Any]) -> str:
+    """Return whether the persona is deck-ready under the current reporting policy."""
+    return "deck_ready_persona" if _is_final_usable_persona(payload) else "not_deck_ready"
+
+
+def _promotion_action(payload: dict[str, Any]) -> str:
+    """Return the policy action implied by the current promotion-grounding outcome."""
+    if _is_final_usable_persona(payload):
+        return "remain_promoted"
+    if str(payload.get("status", "") or "") == "review_visible_persona":
+        return "remain_review_visible"
+    if _is_promoted_candidate_persona(payload):
+        return "promotion_candidate_pending_review"
+    return "downgraded_to_exploratory"
 
 
 def _reporting_readiness_status(payload: dict[str, Any]) -> str:
     """Return the downstream reporting readiness class for one persona."""
     if _is_final_usable_persona(payload):
-        return "final_usable_persona"
+        return "deck_ready_persona" if bool(payload.get("deck_ready_persona", True)) else "final_usable_persona"
     if _is_workbook_review_visible(payload):
         combined_status = str(payload.get("promotion_grounding_status", "") or "")
+        if combined_status == "grounded_but_structurally_weak":
+            return "grounded_but_structurally_weak"
         if combined_status == "promoted_but_weakly_grounded":
-            return "review_only_weakly_grounded"
+            return "promoted_but_weakly_grounded"
         if combined_status == "promoted_but_ungrounded":
-            return "review_only_ungrounded"
+            return "promoted_but_ungrounded"
+        return "review_visible_persona"
     if _is_promoted_candidate_persona(payload):
-        return "promotion_candidate_pending_review"
+        return "promoted_candidate_persona"
     return "not_final_usable"
 
 
-def _cluster_promotion_policy(persona_source_df: pd.DataFrame, total_labeled_records: int) -> dict[str, Any]:
+def _cluster_promotion_policy(
+    persona_source_df: pd.DataFrame,
+    total_labeled_records: int,
+    cluster_robustness_df: pd.DataFrame | None = None,
+) -> dict[str, Any]:
     """Classify clusters as promoted personas or exploratory residual buckets."""
     sizes = persona_source_df.groupby("persona_id")["episode_id"].nunique().sort_values(ascending=False)
     min_cluster_size = persona_min_cluster_size(total_labeled_records)
     largest_share = round_pct(int(sizes.iloc[0]) if not sizes.empty else 0, total_labeled_records)
     single_cluster_dominance = is_single_cluster_dominant(largest_share)
     dominant_persona = str(sizes.index[0]) if not sizes.empty else ""
+    robustness_lookup = (
+        cluster_robustness_df.set_index("persona_id").to_dict(orient="index")
+        if cluster_robustness_df is not None and not cluster_robustness_df.empty and "persona_id" in cluster_robustness_df.columns
+        else {}
+    )
     status_by_persona: dict[str, dict[str, str]] = {}
     for persona_id, size in sizes.items():
         persona_key = str(persona_id)
         share = round_pct(int(size), total_labeled_records)
+        robustness = dict(robustness_lookup.get(persona_key, {}) or {})
+        stability_status = str(robustness.get("stability_status", "not_evaluated") or "not_evaluated")
+        evidence_status = str(robustness.get("evidence_status", "not_evaluated") or "not_evaluated")
+        structural_support_status = str(robustness.get("structural_support_status", "structurally_supported") or "structurally_supported")
+        structural_support_reason = _structural_support_reason(robustness)
         if int(size) < min_cluster_size:
             status = "exploratory_bucket"
             reason = f"sample size {int(size)} below min_cluster_size {min_cluster_size}"
         elif single_cluster_dominance and persona_key != dominant_persona:
             status = "exploratory_bucket"
             reason = f"residual cluster under single_cluster_dominance; largest cluster share {largest_share}%"
+        elif structural_support_status != "structurally_supported":
+            status = "review_visible_persona"
+            reason = (
+                f"sample size {int(size)} meets min_cluster_size {min_cluster_size}; "
+                f"review-visible because {structural_support_reason}"
+            )
         else:
             status = "promoted_persona"
-            reason = f"sample size {int(size)} meets min_cluster_size {min_cluster_size}"
+            reason = f"sample size {int(size)} meets min_cluster_size {min_cluster_size} and cluster robustness clears structural support gate"
+        base_status = "promoted_candidate_persona" if status in {"promoted_persona", "review_visible_persona"} else status
         status_by_persona[persona_key] = {
             "status": status,
             "reason": reason,
             "share": str(share),
-            "base_promotion_status": "promoted_candidate_persona" if status == "promoted_persona" else status,
-            "grounding_status": "not_evaluated" if status == "promoted_persona" else "not_applicable",
-            "promotion_grounding_status": status if status != "promoted_persona" else "promotion_pending_grounding_review",
+            "base_promotion_status": base_status,
+            "structural_support_status": structural_support_status if status != "exploratory_bucket" else "not_applicable",
+            "structural_support_reason": structural_support_reason if status != "exploratory_bucket" else "cluster did not clear the promotion size gate",
+            "cluster_stability_status": stability_status,
+            "cluster_evidence_status": evidence_status,
+            "cluster_concentration_status": str(robustness.get("concentration_status", "") or ""),
+            "tail_fragility_status": str(robustness.get("tail_fragility_status", "") or ""),
+            "cluster_separation": float(robustness.get("separation", 0.0) or 0.0),
+            "nearest_neighbor_similarity": float(robustness.get("nearest_neighbor_similarity", 0.0) or 0.0),
+            "pre_merge_anchor_count": int(robustness.get("pre_merge_anchor_count", 0) or 0),
+            "robustness_action_summary": str(robustness.get("robustness_action_summary", "") or ""),
+            "grounding_status": "not_evaluated" if base_status == "promoted_candidate_persona" else "not_applicable",
+            "promotion_grounding_status": "promotion_pending_grounding_review" if base_status == "promoted_candidate_persona" else status,
             "grounding_reason": "",
         }
     return {
@@ -701,6 +846,7 @@ def _merge_grounding_policy(
             payload["promotion_grounding_status"] = exploratory_status
             payload["grounding_reason"] = "grounding coverage is only enforced for promoted personas"
             continue
+        structurally_supported = str(payload.get("structural_support_status", "structurally_supported") or "structurally_supported") == "structurally_supported"
         combined_status = str(grounding.get("promotion_grounding_status", "promoted_but_ungrounded") or "promoted_but_ungrounded")
         payload["grounding_status"] = str(grounding.get("grounding_status", "ungrounded") or "ungrounded")
         payload["promotion_grounding_status"] = combined_status
@@ -712,18 +858,40 @@ def _merge_grounding_policy(
         if combined_status == downgraded_status:
             payload["status"] = exploratory_status
             payload["reason"] = f"{payload.get('reason', '')}; downgraded because no acceptable grounding evidence met policy".strip("; ")
+        elif not structurally_supported and combined_status == "promoted_and_grounded":
+            payload["status"] = "review_visible_persona"
+            payload["promotion_grounding_status"] = "grounded_but_structurally_weak"
+            payload["reason"] = f"{payload.get('reason', '')}; review-visible because cluster robustness remains structurally weak".strip("; ")
         elif combined_status == "promoted_but_ungrounded":
-            payload["status"] = "review_only_persona"
-            payload["reason"] = f"{payload.get('reason', '')}; review-only because no acceptable grounding evidence met policy".strip("; ")
+            payload["status"] = "review_visible_persona"
+            payload["reason"] = f"{payload.get('reason', '')}; review-visible because no acceptable grounding evidence met policy".strip("; ")
         elif combined_status == "promoted_but_weakly_grounded":
-            payload["status"] = "review_only_persona"
-            payload["reason"] = f"{payload.get('reason', '')}; review-only because only weak fallback evidence met policy".strip("; ")
+            payload["status"] = "review_visible_persona"
+            payload["reason"] = f"{payload.get('reason', '')}; review-visible because only weak fallback evidence met policy".strip("; ")
+        elif not structurally_supported:
+            payload["status"] = "review_visible_persona"
+            payload["reason"] = f"{payload.get('reason', '')}; review-visible because cluster robustness remains structurally weak".strip("; ")
         else:
             payload["status"] = "promoted_persona"
     merged["status_by_persona"] = status_by_persona
     merged["promoted_count"] = sum(1 for value in status_by_persona.values() if value.get("status") == "promoted_persona")
     merged["exploratory_count"] = sum(1 for value in status_by_persona.values() if value.get("status") != "promoted_persona")
     return merged
+
+
+def _structural_support_reason(robustness: dict[str, Any]) -> str:
+    """Explain why a cluster is or is not structurally supported for persona promotion."""
+    structural_support_status = str(robustness.get("structural_support_status", "structurally_supported") or "structurally_supported")
+    if structural_support_status == "structurally_supported":
+        return "cluster robustness clears stability, evidence, and separation checks"
+    stability_status = str(robustness.get("stability_status", "") or "")
+    evidence_status = str(robustness.get("evidence_status", "") or "")
+    separation = float(robustness.get("separation", 0.0) or 0.0)
+    if stability_status in {"fragile", "micro"}:
+        return f"cluster remains {stability_status} after robustness merging"
+    if evidence_status == "thin":
+        return f"cluster separation {separation:.4f} is too low to justify a standalone mature persona"
+    return "cluster robustness remains below the standalone support threshold"
 
 
 def _archetype_name(role: str, workflow: str, bottleneck: str, goal: str, output_mode: str, promotion_status: str) -> str:
@@ -748,8 +916,8 @@ def _archetype_name(role: str, workflow: str, bottleneck: str, goal: str, output
         "general_friction": "Blocked by Workflow Friction",
     }.get(str(bottleneck).strip().lower(), f"Blocked by {_titleize(bottleneck, 'Workflow Friction')}")
     name = f"{role_word} {job_word} {blocker_word}"
-    if promotion_status == "review_only_persona":
-        return f"Review-Only {name}"
+    if promotion_status == "review_visible_persona":
+        return f"Review-Visible {name}"
     if promotion_status != "promoted_persona":
         return f"Exploratory {name}"
     return name
