@@ -627,6 +627,61 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
     return frame[available].sort_values(["blended_influence_share_pct", "labeled_episode_count", "source"], ascending=[False, False, True]).reset_index(drop=True)
 
 
+def build_weak_source_triage(source_balance_audit_df: pd.DataFrame) -> pd.DataFrame:
+    """Build explicit weak-source triage actions with confidence labels."""
+    if source_balance_audit_df.empty:
+        return pd.DataFrame(
+            columns=[
+                "source",
+                "collapse_stage",
+                "failure_reason_top",
+                "raw_record_count",
+                "labeled_episode_count",
+                "grounded_promoted_persona_episode_count",
+                "blended_influence_share_pct",
+                "triage_recommendation",
+                "recommendation_confidence",
+                "triage_rationale",
+                "policy_action",
+            ]
+        )
+    frame = source_balance_audit_df.copy()
+    weak_mask = frame.get("weak_source_cost_center", pd.Series(dtype=bool)).fillna(False).astype(bool)
+    weak = frame[weak_mask].copy()
+    if weak.empty:
+        return pd.DataFrame(columns=[
+            "source",
+            "collapse_stage",
+            "failure_reason_top",
+            "raw_record_count",
+            "labeled_episode_count",
+            "grounded_promoted_persona_episode_count",
+            "blended_influence_share_pct",
+            "triage_recommendation",
+            "recommendation_confidence",
+            "triage_rationale",
+            "policy_action",
+        ])
+    triage = weak.apply(_triage_weak_source_row, axis=1, result_type="expand")
+    for column in triage.columns:
+        weak[column] = triage[column]
+    preferred = [
+        "source",
+        "collapse_stage",
+        "failure_reason_top",
+        "raw_record_count",
+        "labeled_episode_count",
+        "grounded_promoted_persona_episode_count",
+        "blended_influence_share_pct",
+        "triage_recommendation",
+        "recommendation_confidence",
+        "triage_rationale",
+        "policy_action",
+    ]
+    available = [column for column in preferred if column in weak.columns]
+    return weak[available].sort_values(["recommendation_confidence", "raw_record_count", "source"], ascending=[True, False, True]).reset_index(drop=True)
+
+
 def build_quality_failures(
     quality_checks: dict[str, Any],
     source_stage_counts_df: pd.DataFrame,
@@ -1107,6 +1162,39 @@ def _source_balance_action(row: pd.Series) -> str:
     if reason == "weak_diversity_contribution":
         return "raise_targeted_collection_on_underrepresented_source"
     return "monitor_source"
+
+
+def _triage_weak_source_row(row: pd.Series) -> dict[str, str]:
+    """Return keep/investigate/drop recommendation for one weak source row."""
+    collapse_stage = str(row.get("collapse_stage", "") or "")
+    raw_count = int(row.get("raw_record_count", 0) or 0)
+    prefilter_pct = float(row.get("prefiltered_valid_posts_per_valid_post_pct", 0.0) or 0.0)
+    labelable_pct = float(row.get("labelable_episode_ratio_pct", 0.0) or 0.0)
+    grounded = int(row.get("grounded_promoted_persona_episode_count", 0) or 0)
+    blended = float(row.get("blended_influence_share_pct", 0.0) or 0.0)
+    if collapse_stage == "relevance_prefilter" and raw_count >= 500 and prefilter_pct < 8.0 and grounded <= 0:
+        return {
+            "triage_recommendation": "DROP_OR_PAUSE_SOURCE",
+            "recommendation_confidence": "high",
+            "triage_rationale": "high raw input collapses in prefilter with no grounded contribution",
+        }
+    if collapse_stage in {"valid_filtering", "labelability", "episode_yield"} and raw_count >= 100:
+        return {
+            "triage_recommendation": "INVESTIGATE_RULES",
+            "recommendation_confidence": "medium",
+            "triage_rationale": "source has enough volume but loses yield in a fixable mid-pipeline stage",
+        }
+    if grounded > 0 or blended >= 2.0 or labelable_pct >= 60.0:
+        return {
+            "triage_recommendation": "KEEP_WITH_TARGETED_TUNING",
+            "recommendation_confidence": "medium",
+            "triage_rationale": "source already contributes downstream signal but needs focused tuning",
+        }
+    return {
+        "triage_recommendation": "INVESTIGATE_RULES",
+        "recommendation_confidence": "low",
+        "triage_rationale": "weak-source profile detected but bottleneck severity is mixed",
+    }
 
 
 def _validate_source_stage_counts(df: pd.DataFrame) -> None:

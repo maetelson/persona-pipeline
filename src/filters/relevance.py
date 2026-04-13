@@ -95,6 +95,7 @@ def apply_relevance_prefilter(
     result["rescue_reason"] = [item.rescue_reason for item in evaluations]
     result["dropped_reason"] = [item.dropped_reason for item in evaluations]
     result = _apply_optional_llm_hook(result, rules, llm_hook)
+    result = _apply_source_balance_reduction(result, rules)
 
     keep_df = result[result["relevance_decision"] == "keep"].copy().reset_index(drop=True)
     borderline_df = result[result["relevance_decision"] == "borderline"].copy().reset_index(drop=True)
@@ -394,6 +395,14 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
     rescue_reason = ""
     whitelist_hits = "|".join(whitelist_labels)
     decision = _classify_decision(scores, rules)
+    decision = _apply_source_specific_floor_override(
+        source=source,
+        source_cfg=source_cfg,
+        text=text,
+        source_reasons=source_reasons,
+        final_score=float(scores["final_relevance_score"]),
+        current_decision=decision,
+    )
     if decision == "drop" and whitelist_labels:
         rescue_reason = f"rescued_by_source_whitelist={whitelist_labels[0]}"
         decision = "borderline"
@@ -415,6 +424,69 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
         rescue_reason=rescue_reason,
         dropped_reason=dropped_reason,
     )
+
+
+def _apply_source_balance_reduction(result_df: pd.DataFrame, rules: dict[str, Any]) -> pd.DataFrame:
+    """Cap retained source dominance by demoting low-score overflow rows to drop."""
+    if result_df.empty:
+        return result_df
+    balance_cfg = rules.get("source_balance", {}) if isinstance(rules.get("source_balance", {}), dict) else {}
+    if not bool(balance_cfg.get("enabled", False)):
+        return result_df
+    max_share = float(balance_cfg.get("max_retained_source_share", 0.45))
+    min_total_retained = int(balance_cfg.get("min_total_retained_rows", 150))
+    protect_score = float(balance_cfg.get("protect_keep_score_at_or_above", 12.0))
+    protected_sources = {str(item) for item in list(balance_cfg.get("protected_sources", []) or [])}
+    if max_share <= 0.0 or max_share >= 1.0:
+        return result_df
+
+    frame = result_df.copy()
+    retained_mask = frame["relevance_decision"].astype(str).isin({"keep", "borderline"})
+    retained_total = int(retained_mask.sum())
+    if retained_total < min_total_retained:
+        return frame
+
+    retained = frame[retained_mask].copy()
+    if retained.empty:
+        return frame
+    max_allowed = max(int(retained_total * max_share), 1)
+    source_counts = retained["source"].astype(str).value_counts().to_dict()
+    for source, count in source_counts.items():
+        if source in protected_sources:
+            continue
+        overflow = int(count) - max_allowed
+        if overflow <= 0:
+            continue
+        source_mask = retained["source"].astype(str).eq(str(source))
+        candidates = retained[source_mask].copy()
+        if candidates.empty:
+            continue
+        candidates["_drop_priority"] = candidates["relevance_decision"].astype(str).map({"borderline": 0, "keep": 1}).fillna(2)
+        candidates = candidates.sort_values(
+            ["_drop_priority", "final_relevance_score", "raw_id"],
+            ascending=[True, True, True],
+        )
+        to_demote = candidates.head(overflow)
+        if to_demote.empty:
+            continue
+        protected_mask = (
+            to_demote["relevance_decision"].astype(str).eq("keep")
+            & pd.to_numeric(to_demote["final_relevance_score"], errors="coerce").fillna(0.0).ge(protect_score)
+        )
+        to_demote = to_demote[~protected_mask]
+        if to_demote.empty:
+            continue
+        demote_idx = to_demote.index
+        frame.loc[demote_idx, "relevance_decision"] = "drop"
+        frame.loc[demote_idx, "prefilter_status"] = "drop"
+        frame.loc[demote_idx, "dropped_reason"] = "rebalanced_for_source_diversity_cap"
+        frame.loc[demote_idx, "rescue_reason"] = ""
+        frame.loc[demote_idx, "source_specific_reason"] = (
+            frame.loc[demote_idx, "source_specific_reason"].fillna("").astype(str)
+            + "|rebalanced_source_cap"
+        ).str.strip("|")
+        frame.loc[demote_idx, "prefilter_reason"] = frame.loc[demote_idx, "source_specific_reason"]
+    return frame
 
 
 def _source_whitelist_hits(source: str, text: str, rules: dict[str, Any]) -> list[str]:
@@ -741,6 +813,39 @@ def _classify_decision(scores: dict[str, float], rules: dict[str, Any]) -> str:
     if final_score >= borderline_threshold:
         return "borderline"
     return "drop"
+
+
+def _apply_source_specific_floor_override(
+    source: str,
+    source_cfg: dict[str, Any],
+    text: str,
+    source_reasons: list[str],
+    final_score: float,
+    current_decision: str,
+) -> str:
+    """Apply narrow source-specific false-negative rescue floors for known discourse patterns."""
+    if current_decision != "drop":
+        return current_decision
+    lowered = str(text or "").lower()
+    if source == "stackoverflow":
+        floor = float(source_cfg.get("borderline_floor_with_tag_boost", 5.5))
+        has_tag_boost = any("stackoverflow_tag_boost:" in reason for reason in source_reasons)
+        has_persona_pain_language = any(
+            _text_contains_term(lowered, term)
+            for term in ["export", "excel", "pivot", "dashboard", "report", "mismatch", "not matching", "wrong values"]
+        )
+        if has_tag_boost and has_persona_pain_language and final_score >= floor:
+            return "borderline"
+    if source == "github_discussions":
+        floor = float(source_cfg.get("borderline_floor_with_workflow_context", 5.5))
+        has_workflow_context = any("github_discussions_workflow_context" in reason for reason in source_reasons)
+        has_persona_pain_language = any(
+            _text_contains_term(lowered, term)
+            for term in ["export", "excel", "pivot", "matrix", "metric definition", "numbers don't match", "report mismatch"]
+        )
+        if has_workflow_context and has_persona_pain_language and final_score >= floor:
+            return "borderline"
+    return current_decision
 
 
 def _signal_density(df: pd.DataFrame, rules: dict[str, Any] | None = None) -> dict[str, float]:

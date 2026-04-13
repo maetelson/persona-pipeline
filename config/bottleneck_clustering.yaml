@@ -292,6 +292,9 @@ robustness:
   same_base_name_absorb_similarity: 0.72
   same_name_absorb_similarity: 0.78
   general_absorb_similarity: 0.9
+  low_separation_absorb_similarity: 0.9
+  low_separation_ceiling: 0.1
+  low_separation_max_share: 0.45
   residual_bucket_by_primary: true
   residual_bucket_max_count: 4
   residual_fragile_cluster_size: 14

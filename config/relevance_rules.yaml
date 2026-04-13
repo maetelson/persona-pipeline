@@ -5,6 +5,12 @@ borderline_export_limit: 200
 technical_only_drop:
   min_negative_total: 5.0
   max_positive_total: 3.5
+source_balance:
+  enabled: true
+  max_retained_source_share: 0.45
+  min_total_retained_rows: 150
+  protect_keep_score_at_or_above: 12.0
+  protected_sources: []
 source_defaults:
   reddit:
     source_group: existing_forums
@@ -60,20 +66,24 @@ source_whitelist_terms:
       terms: [query, aggregation, group by, metric definition]
     - label: metabase_export_numbers
       terms: [export csv, wrong numbers]
+    - label: metabase_export_pivot_integrity
+      terms: [pivot, xlsx export, corrupted file, export to excel, wrong values]
   google_ads_community:
     - label: google_ads_conversion
       terms: [conversion, conversion action, click]
     - label: google_ads_reporting
-      terms: [attribution, campaign performance, reporting]
+      terms: [attribution, campaign performance, reporting, not spending budget, no traffic, no impressions, not delivering impressions]
     - label: google_ads_merchant_center
       terms: [merchant center, metrics discrepancy]
+    - label: google_ads_delivery_failure
+      terms: [ads not running, campaign is not delivering, zero impressions, no impressions]
   google_ads_help_community:
     - label: google_ads_help_conversion
-      terms: [conversion, conversion action, conversion not showing, cannot see conversions, conversion delay]
+      terms: [conversion, conversion action, conversion not showing, cannot see conversions, conversion delay, triggering properly, non-key events]
     - label: google_ads_help_reporting
-      terms: [google ads reporting wrong, report not matching, performance not matching, data discrepancy ads]
+      terms: [google ads reporting wrong, report not matching, performance not matching, data discrepancy ads, not spending budget, no traffic]
     - label: google_ads_help_performance
-      terms: [campaign performance drop, no impressions, zero impressions, not generating impressions]
+      terms: [campaign performance drop, no impressions, zero impressions, not generating impressions, campaign not delivering]
     - label: google_ads_help_click_mismatch
       terms: [click vs conversion mismatch, metrics discrepancy]
     - label: google_ads_help_attribution
@@ -81,10 +91,10 @@ source_whitelist_terms:
     - label: google_ads_help_merchant_center
       terms: [merchant center mismatch, merchant center, shopping reporting]
   merchant_center_community:
-    - label: merchant_center_disapproval
-      terms: [product disapproved, account suspended]
+    - label: merchant_center_diagnostics_mismatch
+      terms: [diagnostics mismatch, product data mismatch, availability mismatch, invalid value]
     - label: merchant_center_feed_sync
-      terms: [feed sync, products not syncing, local feed]
+      terms: [feed sync, products not syncing, local feed, 0 products, product feed not updating]
     - label: merchant_center_price
       terms: [price mismatch]
   shopify_community:
@@ -153,6 +163,7 @@ stackoverflow:
     playwright: 2.3
     sqlalchemy: 1.7
   accepted_answer_bonus: 0.2
+  borderline_floor_with_tag_boost: 5.45
 github_discussions:
   positive_repo_terms:
     - metabase
@@ -173,6 +184,11 @@ github_discussions:
     - leadership
     - segment
     - breakdown
+    - pivot
+    - matrix
+    - cross-tab
+    - row totals
+    - csv export
   technical_issue_patterns:
     - steps to reproduce
     - expected behavior
@@ -198,6 +214,7 @@ github_discussions:
     - enhancement
   maintainer_noise_penalty: 1.2
   low_context_extra_penalty: 1.0
+  borderline_floor_with_workflow_context: 4.3
 score_weights:
   biz_workflow_score: 1.0
   bi_tool_score: 1.0

@@ -31,6 +31,7 @@ from src.analysis.diagnostics import (
     build_source_diagnostics,
     build_source_stage_counts,
     build_survival_funnel_by_source,
+    build_weak_source_triage,
     finalize_quality_checks,
 )
 from src.analysis.pipeline_thresholds import evaluate_cluster_thresholds, load_threshold_profile, upsert_threshold_audit
@@ -195,6 +196,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
     )
     source_diagnostics_df = build_source_diagnostics(source_stage_counts_df)
     source_balance_audit_df = build_source_balance_audit(source_stage_counts_df)
+    weak_source_triage_df = build_weak_source_triage(source_balance_audit_df)
     quality_metrics = build_quality_metrics(
         stage_counts=stage_counts,
         labeled_df=labeled_df,
@@ -295,6 +297,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         "source_stage_counts_df": source_stage_counts_df,
         "source_diagnostics_df": source_diagnostics_df,
         "source_balance_audit_df": source_balance_audit_df,
+        "weak_source_triage_df": weak_source_triage_df,
         "survival_funnel_df": survival_funnel_df,
         "quality_failures_df": quality_failures_df,
         "metric_glossary_df": metric_glossary_df,
@@ -376,10 +379,12 @@ def persist_analysis_outputs(
         deterministic_outputs["taxonomy_summary_df"].to_csv(analysis_dir / "taxonomy_summary.csv", index=False)
         deterministic_outputs["source_diagnostics_df"].to_csv(analysis_dir / "source_diagnostics.csv", index=False)
         deterministic_outputs["source_balance_audit_df"].to_csv(analysis_dir / "source_balance_audit.csv", index=False)
+        deterministic_outputs["weak_source_triage_df"].to_csv(analysis_dir / "weak_source_triage.csv", index=False)
         deterministic_outputs["survival_funnel_df"].to_csv(analysis_dir / "survival_funnel_by_source.csv", index=False)
         deterministic_outputs["quality_failures_df"].to_csv(analysis_dir / "quality_failures.csv", index=False)
         deterministic_outputs["metric_glossary_df"].to_csv(analysis_dir / "metric_glossary.csv", index=False)
         write_parquet(deterministic_outputs["survival_funnel_df"], analysis_dir / "survival_funnel_by_source.parquet")
+        write_parquet(deterministic_outputs["weak_source_triage_df"], analysis_dir / "weak_source_triage.parquet")
         reddit_retention_paths = analyze_reddit_retention(root_dir)
         debug_paths.update(
             {
@@ -389,6 +394,8 @@ def persist_analysis_outputs(
                 "taxonomy_summary_csv": analysis_dir / "taxonomy_summary.csv",
                 "source_diagnostics_csv": analysis_dir / "source_diagnostics.csv",
                 "source_balance_audit_csv": analysis_dir / "source_balance_audit.csv",
+                "weak_source_triage_csv": analysis_dir / "weak_source_triage.csv",
+                "weak_source_triage_parquet": analysis_dir / "weak_source_triage.parquet",
                 "survival_funnel_csv": analysis_dir / "survival_funnel_by_source.csv",
                 "survival_funnel_parquet": analysis_dir / "survival_funnel_by_source.parquet",
                 "quality_failures_csv": analysis_dir / "quality_failures.csv",

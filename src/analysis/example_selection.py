@@ -156,6 +156,7 @@ def apply_promotion_grounding_policy(
                 fallback["example_rank"] = next_rank
                 fallback["selection_decision"] = "policy_fallback_selected"
                 fallback["fallback_selected"] = True
+                fallback["fallback_mode"] = "standard"
                 fallback["coverage_selection_reason"] = coverage_reason
                 fallback["grounding_warning"] = _fallback_grounding_warning(fallback)
                 if str(fallback.get("grounding_strength", "") or "") in {"strong", "grounded"}:
@@ -180,13 +181,42 @@ def apply_promotion_grounding_policy(
                 else:
                     grounded_selected = pd.DataFrame([fallback])
             else:
-                missing_persona_ids.append(persona_key)
-                grounding_status = "ungrounded"
-                grounding_reason = "no grounded or weak fallback candidate met policy thresholds"
-                if ungrounded_action == "downgrade":
-                    final_status = _policy_status(config, "downgraded_due_to_no_grounding_status", "downgraded_due_to_no_grounding")
+                salvage_fallback = _pick_promoted_salvage_fallback(persona_candidates, selected, selected_ids, config)
+                if salvage_fallback is not None:
+                    next_rank = (
+                        int(persona_selected["example_rank"].max()) + 1
+                        if not persona_selected.empty and "example_rank" in persona_selected.columns
+                        else 1
+                    )
+                    salvage_fallback["persona_id"] = persona_key
+                    salvage_fallback["example_rank"] = next_rank
+                    salvage_fallback["selection_decision"] = "policy_salvage_fallback_selected"
+                    salvage_fallback["fallback_selected"] = True
+                    salvage_fallback["fallback_mode"] = "salvage"
+                    salvage_fallback["coverage_selection_reason"] = coverage_reason
+                    salvage_fallback["selection_strength"] = weak_label
+                    salvage_fallback["grounding_strength"] = "weak"
+                    salvage_fallback["grounding_warning"] = _fallback_grounding_warning(salvage_fallback)
+                    salvage_fallback["why_selected"] = (
+                        "Coverage salvage selected this example because the promoted persona had no grounded or weak "
+                        "candidate under strict policy and this row still has strong bottleneck evidence. "
+                        + str(salvage_fallback.get("why_selected", "") or "")
+                        + (f" Weakness: {salvage_fallback['grounding_warning']}." if salvage_fallback["grounding_warning"] else "")
+                    ).strip()
+                    fallback_rows.append(salvage_fallback)
+                    selected_ids.add(str(salvage_fallback.get("episode_id", "")))
+                    weak_selected = pd.DataFrame([salvage_fallback])
+                    final_status = _policy_status(config, "promoted_but_weakly_grounded_status", "promoted_but_weakly_grounded")
+                    grounding_status = "weakly_grounded"
+                    grounding_reason = "salvage fallback selected a high-scoring near-grounded example for minimum promoted-persona coverage"
                 else:
-                    final_status = _policy_status(config, "promoted_but_ungrounded_status", "promoted_but_ungrounded")
+                    missing_persona_ids.append(persona_key)
+                    grounding_status = "ungrounded"
+                    grounding_reason = "no grounded or weak fallback candidate met policy thresholds"
+                    if ungrounded_action == "downgrade":
+                        final_status = _policy_status(config, "downgraded_due_to_no_grounding_status", "downgraded_due_to_no_grounding")
+                    else:
+                        final_status = _policy_status(config, "promoted_but_ungrounded_status", "promoted_but_ungrounded")
         elif grounded_selected.empty and not weak_selected.empty:
             final_status = _policy_status(config, "promoted_but_weakly_grounded_status", "promoted_but_weakly_grounded")
             grounding_status = "weakly_grounded"
@@ -219,6 +249,7 @@ def apply_promotion_grounding_policy(
                 audit.loc[mask, "why_selected"] = str(row.get("why_selected", "") or "")
                 audit.loc[mask, "fallback_selected"] = bool(row.get("fallback_selected", False))
                 audit.loc[mask, "coverage_selection_reason"] = str(row.get("coverage_selection_reason", "") or "")
+                audit.loc[mask, "fallback_mode"] = str(row.get("fallback_mode", "standard") or "standard")
     if not selected.empty:
         sort_columns = [column for column in ["persona_id", "example_rank", "final_example_score"] if column in selected.columns]
         ascending = [value for column, value in zip(["persona_id", "example_rank", "final_example_score"], [True, True, False]) if column in sort_columns]
@@ -876,6 +907,73 @@ def _pick_promoted_fallback(
     rows.sort(key=lambda item: (-float(item["_fallback_priority"]), -float(item.get("final_example_score", 0.0) or 0.0), str(item.get("episode_id", ""))))
     best = dict(rows[0])
     best.pop("_fallback_priority", None)
+    return best
+
+
+def _pick_promoted_salvage_fallback(
+    persona_candidates: pd.DataFrame,
+    selected_df: pd.DataFrame,
+    selected_ids: set[str],
+    config: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Pick a strict-but-salvageable fallback when all candidates were marked unacceptable."""
+    if persona_candidates.empty:
+        return None
+    fallback_cfg = dict(config.get("policy", {}).get("fallback", {}) or {})
+    promoted_statuses = {
+        str(config.get("policy", {}).get("promotion_grounding", {}).get("base_promoted_status", "promoted_persona")),
+        "promoted_candidate_persona",
+    }
+    if str(fallback_cfg.get("promoted_personas_only", True)).lower() == "true":
+        persona_statuses = set(persona_candidates.get("base_promotion_status", pd.Series(dtype=str)).astype(str).tolist())
+        if persona_statuses and persona_statuses.isdisjoint(promoted_statuses):
+            return None
+    min_score = float(fallback_cfg.get("salvage_min_score", 5.0))
+    max_mismatch_axes = int(fallback_cfg.get("salvage_max_mismatch_axes", 3))
+    max_critical_mismatch_axes = int(fallback_cfg.get("salvage_max_critical_mismatch_axes", 1))
+    allowed_reasons = {
+        "no clear user pain or workflow pressure",
+        "does not clearly expose the repeated work bottleneck",
+        "context is too weak or ambiguous for a strong representative example",
+    }
+    used_sources = set(selected_df.get("source", pd.Series(dtype=str)).astype(str).tolist()) if not selected_df.empty else set()
+    rows: list[dict[str, Any]] = []
+    for _, row in persona_candidates.iterrows():
+        candidate = row.to_dict()
+        if str(candidate.get("episode_id", "")) in selected_ids:
+            continue
+        if str(candidate.get("grounding_strength", "") or "") != "unacceptable":
+            continue
+        if float(candidate.get("final_example_score", 0.0) or 0.0) < min_score:
+            continue
+        if int(candidate.get("critical_mismatch_count", 0) or 0) > max_critical_mismatch_axes:
+            continue
+        if int(candidate.get("mismatch_count", 0) or 0) > max_mismatch_axes:
+            continue
+        rejection_reason = str(candidate.get("rejection_reason", "") or "").strip().lower()
+        if rejection_reason not in allowed_reasons:
+            continue
+        if str(candidate.get("quote_quality", "") or "") == "reject":
+            continue
+        source_bonus = 0.5 if str(candidate.get("source", "") or "") not in used_sources else 0.0
+        candidate["_salvage_priority"] = (
+            float(candidate.get("final_example_score", 0.0) or 0.0)
+            + source_bonus
+            - float(candidate.get("mismatch_count", 0) or 0) * 0.35
+            - float(candidate.get("critical_mismatch_count", 0) or 0) * 0.75
+        )
+        rows.append(candidate)
+    if not rows:
+        return None
+    rows.sort(
+        key=lambda item: (
+            -float(item["_salvage_priority"]),
+            -float(item.get("final_example_score", 0.0) or 0.0),
+            str(item.get("episode_id", "")),
+        )
+    )
+    best = dict(rows[0])
+    best.pop("_salvage_priority", None)
     return best
 
 

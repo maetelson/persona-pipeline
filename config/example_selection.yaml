@@ -39,6 +39,9 @@ policy:
     weak_selection_strength_label: weak_grounding_fallback
     coverage_selection_reason: minimum_coverage_policy
     max_examples_per_persona: 1
+    salvage_min_score: 5.0
+    salvage_max_mismatch_axes: 3
+    salvage_max_critical_mismatch_axes: 1
   promotion_grounding:
     base_promoted_status: promoted_persona
     exploratory_status: exploratory_bucket
