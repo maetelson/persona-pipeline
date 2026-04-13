@@ -164,6 +164,19 @@ stackoverflow:
     sqlalchemy: 1.7
   accepted_answer_bonus: 0.2
   borderline_floor_with_tag_boost: 5.45
+  borderline_floor_with_discourse_context: 5.0
+  discourse_rescue_terms:
+    - management dashboard
+    - kpi
+    - export to excel
+    - csv export
+    - spreadsheet
+    - source data
+    - manual upload
+    - manually upload
+    - workaround
+    - roll up
+    - pre-grouped
 github_discussions:
   positive_repo_terms:
     - metabase
@@ -189,6 +202,20 @@ github_discussions:
     - cross-tab
     - row totals
     - csv export
+  strong_workflow_context_terms:
+    - export all results
+    - source of truth
+    - metric formulas
+    - formula
+    - raw sql
+    - pre-grouped
+    - pivot table
+    - embedded dashboard
+    - csv export
+    - excel export
+    - row limit
+    - metric definition
+    - drill down
   technical_issue_patterns:
     - steps to reproduce
     - expected behavior
@@ -206,6 +233,7 @@ github_discussions:
     - build
     - deploy
   issue_template_penalty: 1.6
+  workflow_penalty_relief_multiplier: 0.35
   maintainer_noise_patterns:
     - feature request
     - bug report
@@ -215,6 +243,7 @@ github_discussions:
   maintainer_noise_penalty: 1.2
   low_context_extra_penalty: 1.0
   borderline_floor_with_workflow_context: 4.3
+  borderline_floor_with_strong_workflow_context: 2.9
 score_weights:
   biz_workflow_score: 1.0
   bi_tool_score: 1.0

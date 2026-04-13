@@ -19,6 +19,12 @@ core_seeds:
     reason: Targets breakdown limits that block diagnosis and reporting.
   - seed: dashboard is not enough for reporting
     reason: Pulls tool-limitation complaints tied to actual reporting work.
+  - seed: export all results to excel not just row limit
+    reason: Pulls spreadsheet fallback and export-completeness complaints from real table workflows.
+  - seed: pivot table support for raw sql query results
+    reason: Targets pre-grouped and workaround-heavy reporting threads that expose dashboard limits.
+  - seed: source of truth metric formulas hard to review
+    reason: Pulls KPI governance and metric-definition pain without broadening into generic maintainer chatter.
 negative_terms:
   - installation
   - deployment

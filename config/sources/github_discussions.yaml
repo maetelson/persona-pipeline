@@ -1,4 +1,9 @@
 source: github_discussions
+source_id: github_discussions
+source_name: github_discussions
+source_group: existing_forums
+collector_kind: existing_forums
+normalizer_kind: existing_forums
 enabled: true
 use_stub: false
 source_type: discussion

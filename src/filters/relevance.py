@@ -343,6 +343,9 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
         workflow_term_hits = sum(
             1 for term in github_cfg.get("workflow_context_terms", []) or [] if str(term).lower() in text
         )
+        strong_workflow_hits = sum(
+            1 for term in github_cfg.get("strong_workflow_context_terms", []) or [] if _text_contains_term(text, str(term).lower())
+        )
         repo_term_hits = sum(
             1 for term in github_cfg.get("positive_repo_terms", []) or [] if str(term).lower() in text
         )
@@ -357,13 +360,16 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
             scores["biz_workflow_score"] += bonus
             positive_hits.append(("github_workflow_context", bonus))
             source_reasons.append("github_discussions_workflow_context")
+        penalty_multiplier = 1.0
+        if workflow_term_hits and strong_workflow_hits:
+            penalty_multiplier = float(github_cfg.get("workflow_penalty_relief_multiplier", 0.35))
         if technical_issue_hits and workflow_term_hits < 2:
-            penalty = technical_issue_hits * float(github_cfg.get("issue_template_penalty", 1.6))
+            penalty = technical_issue_hits * float(github_cfg.get("issue_template_penalty", 1.6)) * penalty_multiplier
             scores["implementation_only_score"] += penalty
             negative_hits.append(("github_issue_template_noise", round(penalty, 2)))
             source_reasons.append("github_discussions_issue_template_downweight")
         if maintainer_noise_hits and workflow_term_hits < 2:
-            penalty = maintainer_noise_hits * float(github_cfg.get("maintainer_noise_penalty", 1.2))
+            penalty = maintainer_noise_hits * float(github_cfg.get("maintainer_noise_penalty", 1.2)) * penalty_multiplier
             scores["generic_programming_score"] += penalty
             negative_hits.append(("github_maintainer_noise", round(penalty, 2)))
             source_reasons.append("github_discussions_maintainer_downweight")
@@ -829,21 +835,58 @@ def _apply_source_specific_floor_override(
     lowered = str(text or "").lower()
     if source == "stackoverflow":
         floor = float(source_cfg.get("borderline_floor_with_tag_boost", 5.5))
+        discourse_floor = float(source_cfg.get("borderline_floor_with_discourse_context", floor))
         has_tag_boost = any("stackoverflow_tag_boost:" in reason for reason in source_reasons)
         has_persona_pain_language = any(
             _text_contains_term(lowered, term)
-            for term in ["export", "excel", "pivot", "dashboard", "report", "mismatch", "not matching", "wrong values"]
+            for term in [
+                "export",
+                "excel",
+                "pivot",
+                "dashboard",
+                "report",
+                "reporting",
+                "spreadsheet",
+                "manual upload",
+                "workaround",
+                "mismatch",
+                "not matching",
+                "wrong values",
+            ]
         )
         if has_tag_boost and has_persona_pain_language and final_score >= floor:
             return "borderline"
+        discourse_hits = sum(
+            1 for term in source_cfg.get("discourse_rescue_terms", []) or [] if _text_contains_term(lowered, str(term).lower())
+        )
+        if discourse_hits >= 2 and has_persona_pain_language and final_score >= discourse_floor:
+            return "borderline"
     if source == "github_discussions":
         floor = float(source_cfg.get("borderline_floor_with_workflow_context", 5.5))
+        strong_floor = float(source_cfg.get("borderline_floor_with_strong_workflow_context", floor))
         has_workflow_context = any("github_discussions_workflow_context" in reason for reason in source_reasons)
         has_persona_pain_language = any(
             _text_contains_term(lowered, term)
-            for term in ["export", "excel", "pivot", "matrix", "metric definition", "numbers don't match", "report mismatch"]
+            for term in [
+                "export",
+                "excel",
+                "csv",
+                "pivot",
+                "matrix",
+                "metric definition",
+                "source of truth",
+                "numbers don't match",
+                "report mismatch",
+            ]
         )
         if has_workflow_context and has_persona_pain_language and final_score >= floor:
+            return "borderline"
+        strong_workflow_hits = sum(
+            1
+            for term in source_cfg.get("strong_workflow_context_terms", []) or []
+            if _text_contains_term(lowered, str(term).lower())
+        )
+        if has_workflow_context and strong_workflow_hits >= 2 and final_score >= strong_floor:
             return "borderline"
     return current_decision
 
