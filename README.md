@@ -6,10 +6,11 @@ Local-only, file-based persona research pipeline for collecting public web data,
 
 - Collects public discussion data from enabled sources into raw JSONL files
 - Normalizes records into a common schema
-- Filters valid persona candidates
+- Filters by time window and invalid signal rules
+- Prefilters by relevance (keep / borderline / drop)
 - Builds episode-level units from posts
 - Labels episodes with rule-based and optional LLM-assisted tagging
-- Discovers persona axes and generates exploratory persona outputs
+- Discovers persona axes, clusters episodes, and generates exploratory persona outputs
 - Exports one final workbook to `data/output/persona_pipeline_output.xlsx`
 
 ## Non-goals
@@ -22,44 +23,61 @@ Local-only, file-based persona research pipeline for collecting public web data,
 
 ## Storage contract
 
-- Raw: `data/raw/{source}/*.jsonl`
-- Intermediate: parquet
-- Final output: `data/output/*.xlsx`
+| Layer | Format | Location |
+|---|---|---|
+| Raw | `jsonl` | `data/raw/{source}/` |
+| Intermediate | `parquet` | `data/normalized/`, `data/valid/`, `data/prefilter/`, `data/episodes/`, `data/labeled/`, `data/analysis/` |
+| Final output | `xlsx` | `data/output/` |
 
 ## Pipeline stages
 
+```
+raw → normalized → time-filtered → valid → relevance-prefiltered
+  → episodes → labeled episodes → analysis → final xlsx
+```
+
 1. `collectors`
 2. `normalizers`
-3. `filters`
+3. `filters` (time window + invalid rules + relevance prefilter)
 4. `episodes`
 5. `labeling`
-6. `analysis`
+6. `analysis` (axis discovery + clustering + scoring)
 7. `exporters`
 
-The main entrypoint is:
+## Running the pipeline
+
+Main entrypoint (runs all stages in order):
 
 ```bash
 python run/00_run_all.py
 ```
 
-Expanded execution order:
+Expanded stage-by-stage execution:
 
 ```bash
-python run/00_generate_time_slices.py
-python run/01_collect_all.py
-python run/01_5_expand_queries_from_raw.py
-python run/02_normalize_all.py
-python run/02.5_filter_time_window.py
-python run/03_filter_valid.py
-python run/03_5_prefilter_relevance.py
-python run/04_build_episodes.py
-python run/05_label_episodes.py
-python run/06_1_discover_persona_axes.py
-python run/06_cluster_and_score.py
-python run/07_export_xlsx.py
+python run/00_generate_time_slices.py      # build time window slices
+python run/01_collect_all.py               # collect raw JSONL per source
+python run/01_5_expand_queries_from_raw.py # surface query expansion candidates
+python run/02_normalize_all.py             # normalize to common schema
+python run/02.5_filter_time_window.py      # enforce date window
+python run/03_filter_valid.py              # invalid signal filter
+python run/03_5_prefilter_relevance.py     # relevance keep/borderline/drop
+python run/04_build_episodes.py            # episode segmentation
+python run/05_label_episodes.py            # rule + optional LLM labeling
+python run/06_1_discover_persona_axes.py   # persona axis discovery
+python run/06_cluster_and_score.py         # bottleneck clustering and scoring
+python run/07_export_xlsx.py               # export final workbook
 ```
 
-Source-group CLI for active BI-focused sources:
+Smoke test (fast end-to-end sanity check):
+
+```bash
+python run/08_smoke_pipeline.py
+```
+
+## CLI tools
+
+### Source workflow (`10_source_cli.py`)
 
 ```bash
 python run/10_source_cli.py collect --source-group reddit
@@ -67,78 +85,139 @@ python run/10_source_cli.py collect --source r/excel
 python run/10_source_cli.py prefilter --source-group reddit --export-borderline
 python run/10_source_cli.py prefilter --source reddit --export-borderline --limit 200
 python run/10_source_cli.py prefilter --source stackoverflow --export-borderline --limit 200
-python run/10_source_cli.py prefilter --source-group existing_forums --export-borderline --limit 200
 python run/10_source_cli.py qa-relevance --source reddit --limit 200
 python run/10_source_cli.py qa-relevance --source stackoverflow --limit 200
-python run/19_analyze_reddit_retention.py
 ```
 
-Important implementation note:
+### Axis / cluster / persona / label CLIs
 
-- Active source configs now focus on Reddit, subreddit-specific Reddit, Stack Overflow, GitHub discussions, and existing lightweight forum stubs.
-- Aggregate `reddit` now uses a curated source-config seed bank instead of the broad expanded query map.
-- The Reddit collector applies source-specific negative keywords, per-seed page caps, rolling-retention stop rules, and optional comment expansion before raw persistence.
-- Seed, subreddit, and seed-by-subreddit retention diagnostics are written under `data/analysis/` via `run/19_analyze_reddit_retention.py`.
-- Policy audit artifacts are also written under `data/analysis/`, including `reddit_collection_policy_audit.csv`, `reddit_collection_policy_audit.json`, and `reddit_collection_policy_report.md`.
-- Raw outputs remain source-specific under `data/raw/{source_id}/`.
-- Normalized outputs remain source-specific under `data/normalized/{source_id}.parquet`.
-- Coverage, keep/drop, and QA reports can still be calculated per source because each row keeps its own `source` value.
+| Script | Purpose |
+|---|---|
+| `run/11_axis_cli.py` | Audit and reduce persona axes from labeled episodes |
+| `run/12_example_cli.py` | Select and audit representative persona examples |
+| `run/13_cluster_cli.py` | Bottleneck-first clustering audit and export |
+| `run/14_persona_cli.py` | Persona naming, insight, and solution-linkage artifacts |
+| `run/15_label_cli.py` | Label-quality audit, rerun, repair, and QA exports |
+| `run/16_persona_workbook_audit.py` | Workbook metric provenance and denominator/grain audit |
+
+### Diagnostics and analysis
+
+| Script | Purpose |
+|---|---|
+| `run/17_profile_sources.py` | Source-stage timing from collection through labelability |
+| `run/18_analyze_reddit_yield.py` | Reddit yield-failure analysis and diagnostic artifacts |
+| `run/19_analyze_reddit_retention.py` | Seed and subreddit retention diagnostics for tuning |
+| `run/05_5_compare_labeling_coverage.py` | Compare labeling coverage across rule vs LLM paths |
+| `run/17_debug_openai_labeler_call.py` | Run one minimal live OpenAI call through the labeler |
+| `run/18_prove_cache_vs_live_calls.py` | Controlled experiment: cache vs live OpenAI call behavior |
 
 ## Current source status
 
 | Source | Status | Notes |
 |---|---|---|
-| Reddit | Implemented | Aggregate source now uses curated seeds plus collector-side pruning; live collection requires `REDDIT_USER_AGENT` |
-| Stack Overflow | Implemented | Legacy Stack Overflow collector remains available |
+| Reddit (aggregate) | Implemented | Curated seeds + collector-side pruning; requires `REDDIT_USER_AGENT` |
+| `r/excel` | Implemented | Source-specific config and outputs |
+| `r/analytics` | Implemented | Source-specific config and outputs |
+| `r/BusinessIntelligence` | Implemented | Source-specific config and outputs |
+| `r/MarketingAnalytics` | Implemented | Source-specific config and outputs |
+| Stack Overflow | Implemented | REST search based |
 | GitHub Issues | Implemented | REST search based |
 | GitHub Discussions | Conditionally implemented | Requires `GITHUB_TOKEN` |
 | Discourse | Stub | Placeholder collector/normalizer |
 | Hacker News | Stub | Placeholder collector/normalizer |
 | YouTube | Stub | Placeholder collector/normalizer |
-| `r/excel` | Implemented | Uses source-specific config and keeps source-specific outputs |
-| `r/analytics` | Implemented | Uses source-specific config and keeps source-specific outputs |
-| `r/BusinessIntelligence` | Implemented | Uses source-specific config and keeps source-specific outputs |
-| `r/MarketingAnalytics` | Implemented | Uses source-specific config and keeps source-specific outputs |
 
-## New BI-focused source groups
+Active BI-focused `reddit` source group:
+- `r/excel`
+- `r/analytics`
+- `r/BusinessIntelligence`
+- `r/MarketingAnalytics`
 
-- `reddit`
-  - `r/excel`
-  - `r/analytics`
-  - `r/BusinessIntelligence`
-  - `r/MarketingAnalytics`
+## Reddit collection policy
+
+Aggregate Reddit is treated as a low-yield/high-overhead source with explicit pruning controls.
+
+- Config: [config/sources/reddit.yaml](config/sources/reddit.yaml)
+- Curated seeds: [config/seeds/existing_forums/reddit.yaml](config/seeds/existing_forums/reddit.yaml)
+- Controls: subreddit allow/deny rules, per-seed page caps, minimum rolling-retention threshold, comment expansion mode, early-stop thresholds
+- Audit outputs under `data/analysis/`: policy snapshot, runtime stop counters, seed/subreddit retention tables, `reddit_collection_policy_audit.csv/json`, `reddit_collection_policy_report.md`
+
+## Policy documents
+
+Governance policies and workbook audit specs live in `docs/`:
+
+| Document | Purpose |
+|---|---|
+| `docs/persona_core_taxonomy.md` | Canonical persona axis taxonomy |
+| `docs/persona_core_coverage_policy.md` | Minimum corpus coverage requirements per persona |
+| `docs/persona_promotion_policy.md` | Criteria for promoting a candidate to a final persona |
+| `docs/persona_promotion_grounding_policy.md` | Evidence grounding rules for promotion |
+| `docs/persona_readiness_policy.md` | Readiness gate before workbook export |
+| `docs/persona_example_grounding_policy.md` | Example selection and grounding requirements |
+| `docs/cluster_robustness_policy.md` | Cluster quality and robustness thresholds |
+| `docs/quality_status_policy.md` | Quality status label definitions |
+| `docs/source_balance_policy.md` | Source diversity and balance requirements |
+| `docs/source_diagnostics_metric_contract.md` | Metric definitions for source diagnostics |
+| `docs/source_diagnostics_grain_policy.md` | Grain and aggregation rules for source metrics |
+| `docs/source_diagnostics_reason_policy.md` | Reason code definitions for source diagnostics |
+| `docs/workbook_metric_truth_table.md` | Authoritative truth table for workbook metrics |
+| `docs/workbook_semantic_changelog.md` | Semantic changelog for workbook schema changes |
+| `docs/persona_workbook_audit.md` | Workbook audit procedure and metric provenance |
+| `docs/persona_workbook_denominator_policy.md` | Denominator selection and grain rules |
+
+## Repository layout
+
+```text
+config/      Pipeline configuration, source settings, and scoring rules
+docs/        Policy documents and workbook audit specs
+run/         Runnable stage scripts and CLI tools
+src/         Pipeline implementation modules
+tests/       Tests
+data/        Local runtime artifacts and final workbook output
+```
+
+Key config files:
+
+```text
+config/query_map.yaml              Active query seed inventory (54 seeds across 3 sources)
+config/query_seed_taxonomy.yaml    Taxonomy for query design
+config/query_expansion_rules.yaml  Rules for raw-driven query expansion
+config/segmentation_rules.yaml     Episode segmentation thresholds
+config/labeling_policy.yaml        Labeling rules and codebook reference
+config/codebook.yaml               Label definitions
+config/scoring.yaml                Persona priority scoring weights
+config/pipeline_thresholds.yaml    Stage robustness thresholds
+config/export_schema.yaml          Workbook sheet and column contract
+```
+
+## Outputs
+
+Typical generated artifacts:
+
+- Raw source files: `data/raw/{source_id}/`
+- Stage parquets: `data/normalized/`, `data/valid/`, `data/prefilter/`, `data/episodes/`, `data/labeled/`
+- Analysis artifacts: `data/analysis/` (axis candidates, cluster summaries, diagnostics, audits)
+- Final workbook: `data/output/persona_pipeline_output.xlsx`
+
+Runtime data artifacts are local-only and should not be committed.
 
 ## Requirements
 
 - Python 3.11
-- Minimal dependencies from `requirements.txt`
+- Install: `pip install -r requirements.txt`
 
-Install:
-
-```bash
-pip install -r requirements.txt
-```
-
-Current dependencies:
-
-- `pandas`
-- `pyarrow`
-- `openpyxl`
-- `PyYAML`
+Core dependencies: `pandas`, `pyarrow`, `openpyxl`, `PyYAML`
 
 ## Environment variables
 
-Required for live Reddit collection:
-
-- `REDDIT_USER_AGENT`
-
-Optional depending on enabled sources and labeling mode:
-
-- `STACKEXCHANGE_KEY`
-- `GITHUB_TOKEN`
-- `OPENAI_API_KEY`
-- `LLM_MODEL` or `OPENAI_MODEL`
-- collector and labeling limit flags used in the run scripts
+| Variable | Required | Purpose |
+|---|---|---|
+| `REDDIT_USER_AGENT` | For Reddit collection | Identifies the collector to Reddit |
+| `STACKEXCHANGE_KEY` | Optional | Increases Stack Overflow rate limits |
+| `GITHUB_TOKEN` | For GitHub Discussions | REST API auth |
+| `OPENAI_API_KEY` | Optional | Enables LLM-assisted labeling |
+| `LLM_MODEL` / `OPENAI_MODEL` | Optional | Override default model |
+| `ENABLE_LLM_LABELER` | Optional | Set `true` to activate LLM labeling path |
 
 Example PowerShell setup:
 
@@ -148,36 +227,7 @@ $env:GITHUB_TOKEN=""
 $env:ENABLE_LLM_LABELER="false"
 ```
 
-You can also place these values in a repo-root `.env` file for local use.
-
-## Reddit policy
-
-Aggregate Reddit is treated as a source-specific low-yield/high-overhead collector rather than a generic forum source.
-
-- Policy lives in [config/sources/reddit.yaml](config/sources/reddit.yaml).
-- Curated aggregate seeds live in [config/seeds/existing_forums/reddit.yaml](config/seeds/existing_forums/reddit.yaml).
-- Configurable controls include subreddit allow/deny rules, per-seed page caps, minimum rolling retention threshold, comment expansion mode, and early-stop thresholds.
-- Auditable outputs include the latest policy snapshot, runtime stop counters, and seed/subreddit retention tables under `data/analysis/`.
-
-## Repository layout
-
-```text
-config/      Pipeline configuration and source settings
-run/         Runnable stage scripts
-src/         Pipeline implementation modules
-tests/       Tests
-data/        Local runtime artifacts and final workbook output
-```
-
-## Outputs
-
-Typical generated outputs include:
-
-- Raw source files under `data/raw/`
-- Normalized, valid, episode, labeled, and analysis parquet files under `data/`
-- Final workbook at `data/output/persona_pipeline_output.xlsx`
-
-Runtime data artifacts are local-only and should not be committed.
+Values can also be placed in a repo-root `.env` file for local use.
 
 ## Commit Messages
 

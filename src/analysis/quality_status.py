@@ -710,9 +710,9 @@ def _promoted_persona_example_counts(
     if not promoted_ids:
         return 0, 0, [], {"grounded": 0, "weakly_grounded": 0, "ungrounded": 0, "weak_ids": []}
     grounding_lookup = promoted.set_index("persona_id").get("promotion_grounding_status", pd.Series(dtype=str)).astype(str).to_dict()
-    grounded_statuses = {"promoted_and_grounded", "promoted_but_weakly_grounded", "grounded_but_structurally_weak"}
-    with_examples = [persona_id for persona_id in promoted_ids if grounding_lookup.get(persona_id, "") in grounded_statuses]
-    missing = [persona_id for persona_id in promoted_ids if grounding_lookup.get(persona_id, "") not in grounded_statuses]
+    example_ids = set(persona_examples_df.get("persona_id", pd.Series(dtype=str)).astype(str).tolist()) if not persona_examples_df.empty else set()
+    with_examples = [persona_id for persona_id in promoted_ids if persona_id in example_ids]
+    missing = [persona_id for persona_id in promoted_ids if persona_id not in example_ids]
     weak_ids = [persona_id for persona_id in promoted_ids if grounding_lookup.get(persona_id, "") == "promoted_but_weakly_grounded"]
     counts = {
         "grounded": sum(1 for persona_id in promoted_ids if grounding_lookup.get(persona_id, "") in {"promoted_and_grounded", "grounded_but_structurally_weak"}),
@@ -721,7 +721,6 @@ def _promoted_persona_example_counts(
         "weak_ids": weak_ids,
     }
     if not grounding_lookup:
-        example_ids = set(persona_examples_df.get("persona_id", pd.Series(dtype=str)).astype(str).tolist()) if not persona_examples_df.empty else set()
         with_examples = [persona_id for persona_id in promoted_ids if persona_id in example_ids]
         missing = [persona_id for persona_id in promoted_ids if persona_id not in example_ids]
         counts["grounded"] = len(with_examples)
@@ -784,7 +783,9 @@ def _selected_example_grounding_issue_count(persona_examples_df: pd.DataFrame) -
     quality = persona_examples_df.get("quote_quality", pd.Series(dtype=str)).astype(str)
     text_len = pd.to_numeric(persona_examples_df.get("source_text_length", pd.Series(dtype=int)), errors="coerce").fillna(0)
     reasons = persona_examples_df.get("rejection_reason", pd.Series(dtype=str)).fillna("").astype(str)
-    return int((selection_strength.eq("weak_grounding_fallback") | grounding_strength.eq("weak") | quality.isin({"reject", "borderline"}) | (text_len < 80) | reasons.ne("")).sum())
+    bundle_grounded = persona_examples_df.get("bundle_grounded_example", pd.Series(dtype=bool)).fillna(False).astype(bool)
+    issue_mask = selection_strength.eq("weak_grounding_fallback") | grounding_strength.eq("weak") | quality.isin({"reject", "borderline"}) | (text_len < 80) | reasons.ne("")
+    return int((issue_mask & ~bundle_grounded).sum())
 
 
 def _escalate_axis_status(axis: dict[str, object], condition: bool, status: str, reason_key: str) -> dict[str, object]:

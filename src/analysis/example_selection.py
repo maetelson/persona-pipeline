@@ -147,6 +147,48 @@ def apply_promotion_grounding_policy(
         grounding_status = "grounded_single"
         grounding_reason = "has at least one grounded representative example selected by score and diversity policy"
 
+        if grounded_selected.empty and bundle["bundle_grounding_status"] == "grounded_bundle":
+            bundle_example = _pick_bundle_materialized_example(
+                persona_candidates=persona_candidates,
+                selected_df=selected,
+                selected_ids=selected_ids,
+                bundle=bundle,
+                config=config,
+            )
+            if bundle_example is not None:
+                next_rank = (
+                    int(persona_selected["example_rank"].max()) + 1
+                    if not persona_selected.empty and "example_rank" in persona_selected.columns
+                    else 1
+                )
+                standalone_grounding_strength = str(bundle_example.get("grounding_strength", "") or "")
+                standalone_quote_quality = str(bundle_example.get("quote_quality", "") or "")
+                bundle_example["persona_id"] = persona_key
+                bundle_example["example_rank"] = next_rank
+                bundle_example["selection_decision"] = "policy_bundle_support_selected"
+                bundle_example["fallback_selected"] = True
+                bundle_example["fallback_mode"] = "bundle_materialization"
+                bundle_example["coverage_selection_reason"] = "bundle_grounding_materialization"
+                bundle_example["bundle_grounded_example"] = True
+                bundle_example["standalone_grounding_strength"] = standalone_grounding_strength
+                bundle_example["standalone_quote_quality"] = standalone_quote_quality
+                bundle_example["selection_strength"] = "grounded"
+                bundle_example["grounding_strength"] = "grounded"
+                bundle_example["grounding_reason"] = (
+                    "grounding_strength=grounded_via_bundle; "
+                    f"standalone_grounding_strength={standalone_grounding_strength}; "
+                    f"standalone_quote_quality={standalone_quote_quality}; "
+                    f"bundle_grounding_status={bundle['bundle_grounding_status']}"
+                )
+                bundle_example["why_selected"] = (
+                    "Bundle grounding materialized this representative example because the promoted persona "
+                    "was grounded by multi-episode evidence but had no selected representative row. "
+                    + str(bundle_example.get("why_selected", "") or "")
+                ).strip()
+                fallback_rows.append(bundle_example)
+                selected_ids.add(str(bundle_example.get("episode_id", "")))
+                grounded_selected = pd.DataFrame([bundle_example])
+
         if grounded_selected.empty:
             if bundle["bundle_grounding_status"] == "grounded_bundle":
                 grounding_status = "grounded_bundle"
@@ -962,6 +1004,71 @@ def _pick_promoted_fallback(
     return best
 
 
+def _pick_bundle_materialized_example(
+    persona_candidates: pd.DataFrame,
+    selected_df: pd.DataFrame,
+    selected_ids: set[str],
+    bundle: dict[str, Any],
+    config: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Pick one real support row to represent a persona that is grounded only via bundle evidence."""
+    if persona_candidates.empty:
+        return None
+    bundle_cfg = dict(config.get("policy", {}).get("bundle_grounding", {}) or {})
+    min_candidate_score = float(bundle_cfg.get("min_candidate_score", 3.0))
+    max_mismatch_axes = int(bundle_cfg.get("max_mismatch_axes", 3))
+    max_critical_mismatch_axes = int(bundle_cfg.get("max_critical_mismatch_axes", 1))
+    used_sources = set(selected_df.get("source", pd.Series(dtype=str)).astype(str).tolist()) if not selected_df.empty else set()
+    context_ids = set(_split_episode_ids(bundle.get("context_evidence_episode_ids", "")))
+    workaround_ids = set(_split_episode_ids(bundle.get("workaround_evidence_episode_ids", "")))
+    trust_ids = set(_split_episode_ids(bundle.get("trust_validation_evidence_episode_ids", "")))
+    preferred_ids = context_ids | workaround_ids | trust_ids
+    if not preferred_ids:
+        return None
+
+    rows: list[dict[str, Any]] = []
+    for _, row in persona_candidates.iterrows():
+        candidate = row.to_dict()
+        episode_id = str(candidate.get("episode_id", "") or "")
+        if not episode_id or episode_id in selected_ids or episode_id not in preferred_ids:
+            continue
+        if float(candidate.get("final_example_score", 0.0) or 0.0) < min_candidate_score:
+            continue
+        if int(candidate.get("mismatch_count", 0) or 0) > max_mismatch_axes:
+            continue
+        if int(candidate.get("critical_mismatch_count", 0) or 0) > max_critical_mismatch_axes:
+            continue
+        quality = str(candidate.get("quote_quality", "") or "")
+        grounding_strength = str(candidate.get("grounding_strength", "") or "")
+        if quality == "reject" and grounding_strength == "unacceptable":
+            continue
+        dimension_hits = int(episode_id in context_ids) + int(episode_id in workaround_ids) + int(episode_id in trust_ids)
+        quality_bonus = {"strong_representative": 3.0, "usable": 2.0, "borderline": 1.0, "reject": 0.0}.get(quality, 0.0)
+        source_bonus = 0.5 if str(candidate.get("source", "") or "") not in used_sources else 0.0
+        candidate["_bundle_priority"] = (
+            dimension_hits * 10.0
+            + float(candidate.get("final_example_score", 0.0) or 0.0)
+            + float(candidate.get("grounding_fit_score", 0.0) or 0.0)
+            + quality_bonus
+            + source_bonus
+            - float(candidate.get("mismatch_count", 0) or 0) * 0.5
+            - float(candidate.get("critical_mismatch_count", 0) or 0) * 1.5
+        )
+        rows.append(candidate)
+    if not rows:
+        return None
+    rows.sort(
+        key=lambda item: (
+            -float(item.get("_bundle_priority", 0.0) or 0.0),
+            -float(item.get("final_example_score", 0.0) or 0.0),
+            str(item.get("episode_id", "")),
+        )
+    )
+    best = dict(rows[0])
+    best.pop("_bundle_priority", None)
+    return best
+
+
 def _bundle_grounding_evidence(persona_candidates: pd.DataFrame, config: dict[str, Any]) -> dict[str, Any]:
     """Compute multi-episode grounding evidence for one promoted persona."""
     bundle_cfg = dict(config.get("policy", {}).get("bundle_grounding", {}) or {})
@@ -1160,6 +1267,12 @@ def _episode_ids(rows: list[dict[str, Any]], max_items: int) -> list[str]:
         if len(results) >= max_items:
             break
     return results
+
+
+def _split_episode_ids(value: Any) -> list[str]:
+    """Split pipe-delimited bundle episode ids into a stable list."""
+    parts = [part.strip() for part in str(value or "").split("|")]
+    return [part for part in parts if part]
 
 
 def _bundle_support_examples(rows: list[dict[str, Any]], max_items: int) -> list[str]:
