@@ -300,6 +300,9 @@ robustness:
   residual_fragile_cluster_size: 14
   sufficient_separation_floor: 0.12
   sufficient_cohesion_floor: 0.9
+  merge_broadened_separation_floor: 0.2
+  merge_broadened_cohesion_floor: 0.8
+  merge_broadened_min_anchor_count: 3
 
 persona_overlap_merge:
   enabled: true

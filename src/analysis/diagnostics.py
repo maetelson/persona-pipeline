@@ -7,7 +7,7 @@ from typing import Any
 
 import pandas as pd
 
-from src.analysis.quality_status import flatten_quality_status_result
+from src.analysis.quality_status import QUALITY_STATUS_POLICY, flatten_quality_status_result
 from src.utils.io import load_yaml, read_parquet
 from src.utils.pipeline_schema import (
     CLUSTER_DOMINANCE_SHARE_PCT,
@@ -103,7 +103,7 @@ def build_metric_glossary() -> pd.DataFrame:
         ("overall_unknown_ratio", DENOMINATOR_LABELED_EPISODE_ROWS, "Ratio of all labeled rows with unresolved core label families, including rows outside persona-core clustering."),
         ("persona_core_coverage_of_all_labeled_pct", DENOMINATOR_LABELED_EPISODE_ROWS, "Percentage of all labeled rows that remain inside the persona-core subset used for clustering."),
         ("effective_labeled_source_count", "effective_labeled_source_count", "Effective count of contributing labeled sources after fractional down-weighting for very small labeled-source volumes. This is a source-count metric, not a row-count metric."),
-        ("effective_balanced_source_count", "source_count", "Effective downstream source count after blending labeled, promoted, and grounded persona contribution shares. This drops when one source dominates actual influence even if many sources still produce some labeled rows."),
+        ("effective_balanced_source_count", "source_count", "Effective downstream source count after blending labeled share with persona-normalized promoted and grounded contribution shares. Promoted and grounded influence cap one source at the workbook source-influence ceiling within each persona before aggregation so one dominant source does not get counted as full downstream control across the same persona multiple times."),
         ("largest_cluster_share_of_core_labeled", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Largest promoted or exploratory persona cluster share over persona-core labeled rows."),
         ("top_3_cluster_share_of_core_labeled", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Combined share of the three largest persona clusters over persona-core labeled rows; high values indicate concentration even when the top cluster alone is below the dominance threshold."),
         ("robust_cluster_count", DENOMINATOR_PERSONA_CORE_LABELED_ROWS, "Count of final clusters remaining after the robustness merge policy absorbs fragile adjacent fragments and collapses only the smallest residual buckets."),
@@ -120,7 +120,7 @@ def build_metric_glossary() -> pd.DataFrame:
         ("largest_labeled_source_share_pct", DENOMINATOR_LABELED_EPISODE_ROWS, "Largest source contribution share over all labeled episode rows."),
         ("largest_promoted_source_share_pct", "promoted_cluster_rows", "Largest source contribution share over promoted persona episode contribution rows."),
         ("largest_grounded_source_share_pct", "grounded_persona_rows", "Largest source contribution share over grounded final-usable persona episode contribution rows."),
-        ("largest_source_influence_share_pct", "source_count", "Largest blended downstream influence share after averaging labeled, promoted, and grounded persona contribution shares per source."),
+        ("largest_source_influence_share_pct", "source_count", "Largest blended downstream influence share after averaging raw labeled share with persona-normalized promoted and grounded contribution shares per source. Promoted and grounded influence contributions are capped at the workbook source-influence ceiling within each persona before cross-persona aggregation."),
         ("weak_source_cost_center_count", "source_count", "Count of high-input sources that still collapse before they become meaningful downstream contributors under the source-balance policy."),
         ("weak_source_cost_centers", "source_count", "Pipe-delimited source ids classified as weak-source cost centers under the source-balance policy."),
         ("promoted_persona_example_coverage_pct", "promoted_persona_rows", "Percentage of promoted personas that have any accepted grounding state, including weakly grounded personas."),
@@ -230,6 +230,7 @@ def build_source_stage_counts(
     )
     promoted_assignments = persona_assignments_df[persona_assignments_df.get("persona_id", pd.Series(dtype=str)).astype(str).isin(promoted_ids)]
     promoted_with_source = _with_episode_source(promoted_assignments, episode_source)
+    normalized_promoted_contributions = _persona_capped_source_contributions(promoted_with_source, _source_influence_cap_pct())
     final_usable_series = cluster_stats_df.get("final_usable_persona", pd.Series(dtype=bool))
     if final_usable_series.empty:
         promotion_grounding_status = cluster_stats_df.get(
@@ -249,6 +250,7 @@ def build_source_stage_counts(
     )
     grounded_assignments = persona_assignments_df[persona_assignments_df.get("persona_id", pd.Series(dtype=str)).astype(str).isin(grounded_ids)]
     grounded_with_source = _with_episode_source(grounded_assignments, episode_source)
+    normalized_grounded_contributions = _persona_capped_source_contributions(grounded_with_source, _source_influence_cap_pct())
 
     sources = sorted(
         set(raw_counts_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name))
@@ -285,6 +287,8 @@ def build_source_stage_counts(
                 "effective_diversity_contribution": _effective_source_contribution(labeled_count),
                 "promoted_persona_episode_count": promoted_count,
                 "grounded_promoted_persona_episode_count": grounded_count,
+                "source_normalized_promoted_persona_contribution": round(float(normalized_promoted_contributions.get(source, 0.0) or 0.0), 4),
+                "source_normalized_grounded_persona_contribution": round(float(normalized_grounded_contributions.get(source, 0.0) or 0.0), 4),
                 "dominant_invalid_reason": "reason_unavailable",
                 "dominant_prefilter_reason": "reason_unavailable",
                 "valid_retention_reason": "healthy_valid_post_retention",
@@ -553,18 +557,20 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
         return pd.DataFrame()
     frame = source_stage_counts_df.copy()
     labeled_total = int(pd.to_numeric(frame.get("labeled_episode_count", pd.Series(dtype=int)), errors="coerce").fillna(0).sum())
-    promoted_total = int(pd.to_numeric(frame.get("promoted_persona_episode_count", pd.Series(dtype=int)), errors="coerce").fillna(0).sum())
-    grounded_total = int(pd.to_numeric(frame.get("grounded_promoted_persona_episode_count", pd.Series(dtype=int)), errors="coerce").fillna(0).sum())
+    promoted_contribution_column = "source_normalized_promoted_persona_contribution" if "source_normalized_promoted_persona_contribution" in frame.columns else "promoted_persona_episode_count"
+    grounded_contribution_column = "source_normalized_grounded_persona_contribution" if "source_normalized_grounded_persona_contribution" in frame.columns else "grounded_promoted_persona_episode_count"
+    promoted_total = float(pd.to_numeric(frame.get(promoted_contribution_column, pd.Series(dtype=float)), errors="coerce").fillna(0.0).sum())
+    grounded_total = float(pd.to_numeric(frame.get(grounded_contribution_column, pd.Series(dtype=float)), errors="coerce").fillna(0.0).sum())
     frame["labeled_share_pct"] = frame.apply(
         lambda row: round_pct(row.get("labeled_episode_count", 0), labeled_total) if labeled_total else 0.0,
         axis=1,
     )
-    frame["promoted_share_pct"] = frame.apply(
-        lambda row: round_pct(row.get("promoted_persona_episode_count", 0), promoted_total) if promoted_total else 0.0,
+    frame["promoted_influence_share_pct"] = frame.apply(
+        lambda row: round_pct(row.get(promoted_contribution_column, 0), promoted_total) if promoted_total else 0.0,
         axis=1,
     )
-    frame["grounded_share_pct"] = frame.apply(
-        lambda row: round_pct(row.get("grounded_promoted_persona_episode_count", 0), grounded_total) if grounded_total else 0.0,
+    frame["grounded_influence_share_pct"] = frame.apply(
+        lambda row: round_pct(row.get(grounded_contribution_column, 0), grounded_total) if grounded_total else 0.0,
         axis=1,
     )
     frame["valid_posts_per_normalized_post_pct"] = frame.apply(
@@ -591,8 +597,8 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
                 share
                 for share, total in [
                     (float(row.get("labeled_share_pct", 0.0) or 0.0), labeled_total),
-                    (float(row.get("promoted_share_pct", 0.0) or 0.0), promoted_total),
-                    (float(row.get("grounded_share_pct", 0.0) or 0.0), grounded_total),
+                    (float(row.get("promoted_influence_share_pct", 0.0) or 0.0), promoted_total),
+                    (float(row.get("grounded_influence_share_pct", 0.0) or 0.0), grounded_total),
                 ]
                 if total > 0
             )
@@ -616,8 +622,10 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
         "promoted_persona_episode_count",
         "grounded_promoted_persona_episode_count",
         "labeled_share_pct",
-        "promoted_share_pct",
-        "grounded_share_pct",
+        "source_normalized_promoted_persona_contribution",
+        "source_normalized_grounded_persona_contribution",
+        "promoted_influence_share_pct",
+        "grounded_influence_share_pct",
         "blended_influence_share_pct",
         "valid_posts_per_normalized_post_pct",
         "prefiltered_valid_posts_per_valid_post_pct",
@@ -835,6 +843,35 @@ def _with_episode_source(df: pd.DataFrame, episode_source: pd.DataFrame) -> pd.D
     if "episode_id" not in df.columns:
         return pd.DataFrame(columns=["source"])
     return df.merge(episode_source, on="episode_id", how="left")
+
+
+def _source_influence_cap_pct() -> float:
+    """Return the per-persona cap used when aggregating downstream source influence."""
+    return float(QUALITY_STATUS_POLICY["source_influence_concentration"]["fail_threshold"])
+
+
+def _persona_capped_source_contributions(assignments_with_source: pd.DataFrame, cap_share_pct: float) -> dict[str, float]:
+    """Return per-source downstream contribution after capping one source inside each persona."""
+    if assignments_with_source.empty or not {"persona_id", "source"}.issubset(assignments_with_source.columns):
+        return {}
+    grouped = (
+        assignments_with_source.assign(
+            persona_id=assignments_with_source["persona_id"].astype(str),
+            source=assignments_with_source["source"].astype(str).map(canonical_source_name),
+        )
+        .groupby(["source", "persona_id"], as_index=False)
+        .size()
+        .rename(columns={"size": "source_persona_episode_count"})
+    )
+    if grouped.empty:
+        return {}
+    persona_totals = grouped.groupby("persona_id", as_index=False)["source_persona_episode_count"].sum().rename(columns={"source_persona_episode_count": "persona_episode_total"})
+    grouped = grouped.merge(persona_totals, on="persona_id", how="left")
+    grouped["capped_contribution"] = grouped.apply(
+        lambda row: min(float(row.get("source_persona_episode_count", 0) or 0), float(row.get("persona_episode_total", 0) or 0) * cap_share_pct / 100.0),
+        axis=1,
+    )
+    return grouped.groupby("source")["capped_contribution"].sum().to_dict()
 
 
 def _source_count(df: pd.DataFrame, source: str, column: str) -> int:

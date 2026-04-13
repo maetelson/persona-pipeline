@@ -648,16 +648,18 @@ def _source_influence_frame(source_stage_counts_df: pd.DataFrame) -> pd.DataFram
     ]:
         if column not in frame.columns:
             frame[column] = 0
+    promoted_contribution_column = "source_normalized_promoted_persona_contribution" if "source_normalized_promoted_persona_contribution" in frame.columns else "promoted_persona_episode_count"
+    grounded_contribution_column = "source_normalized_grounded_persona_contribution" if "source_normalized_grounded_persona_contribution" in frame.columns else "grounded_promoted_persona_episode_count"
     labeled_total = float(pd.to_numeric(frame.get("labeled_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).sum())
-    promoted_total = float(pd.to_numeric(frame.get("promoted_persona_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).sum())
-    grounded_total = float(pd.to_numeric(frame.get("grounded_promoted_persona_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).sum())
+    promoted_total = float(pd.to_numeric(frame.get(promoted_contribution_column, pd.Series(dtype=float)), errors="coerce").fillna(0.0).sum())
+    grounded_total = float(pd.to_numeric(frame.get(grounded_contribution_column, pd.Series(dtype=float)), errors="coerce").fillna(0.0).sum())
     frame["labeled_share_pct"] = pd.to_numeric(frame.get("labeled_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).map(
         lambda value: round(float(value) / labeled_total * 100.0, 1) if labeled_total > 0.0 else 0.0
     )
-    frame["promoted_share_pct"] = pd.to_numeric(frame.get("promoted_persona_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).map(
+    frame["promoted_share_pct"] = pd.to_numeric(frame.get(promoted_contribution_column, pd.Series(dtype=float)), errors="coerce").fillna(0.0).map(
         lambda value: round(float(value) / promoted_total * 100.0, 1) if promoted_total > 0.0 else 0.0
     )
-    frame["grounded_share_pct"] = pd.to_numeric(frame.get("grounded_promoted_persona_episode_count", pd.Series(dtype=float)), errors="coerce").fillna(0.0).map(
+    frame["grounded_share_pct"] = pd.to_numeric(frame.get(grounded_contribution_column, pd.Series(dtype=float)), errors="coerce").fillna(0.0).map(
         lambda value: round(float(value) / grounded_total * 100.0, 1) if grounded_total > 0.0 else 0.0
     )
     active_columns = [column for column, total in [("labeled_share_pct", labeled_total), ("promoted_share_pct", promoted_total), ("grounded_share_pct", grounded_total)] if total > 0.0]

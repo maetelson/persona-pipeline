@@ -120,6 +120,7 @@ def apply_promotion_grounding_policy(
     fallback_rows: list[dict[str, Any]] = []
     missing_persona_ids: list[str] = []
     grounding_rows: list[dict[str, Any]] = []
+    grounding_debug_rows: list[dict[str, Any]] = []
     for persona_id in promoted_persona_ids:
         persona_key = str(persona_id)
         persona_selected = selected[selected.get("persona_id", pd.Series(dtype=str)).astype(str).eq(persona_key)].copy() if not selected.empty else pd.DataFrame()
@@ -140,6 +141,7 @@ def apply_promotion_grounding_policy(
             persona_candidates.get("grounding_strength", pd.Series(dtype=str)).astype(str).eq("unacceptable").sum()
         ) if not persona_candidates.empty else 0
         bundle = _bundle_grounding_evidence(persona_candidates, config)
+        rejected_by_diversity_count = _grounding_diversity_rejection_count(persona_candidates)
 
         final_status = _policy_status(config, "promoted_and_grounded_status", "promoted_and_grounded")
         grounding_status = "grounded_single"
@@ -256,6 +258,29 @@ def apply_promotion_grounding_policy(
                 "fallback_selected_count": int(len(weak_selected)),
             }
         )
+        grounding_debug_rows.append(
+            {
+                "persona_id": persona_key,
+                "candidate_count_before_filter": int(bundle.get("candidate_count_before_filter", 0) or 0),
+                "candidate_count_after_filter": int(bundle.get("candidate_count_after_filter", 0) or 0),
+                "context_evidence_count": int(bundle.get("context_evidence_count", 0) or 0),
+                "workaround_evidence_count": int(bundle.get("workaround_evidence_count", 0) or 0),
+                "trust_validation_evidence_count": int(bundle.get("trust_validation_evidence_count", 0) or 0),
+                "rejected_by_threshold_count": int(bundle.get("rejected_by_threshold_count", 0) or 0),
+                "rejected_by_diversity_count": int(rejected_by_diversity_count),
+                "rejected_by_mismatch_count": int(bundle.get("rejected_by_mismatch_count", 0) or 0),
+                "grounding_status": grounding_status,
+                "promotion_grounding_status": final_status,
+                "bundle_grounding_status": str(bundle.get("bundle_grounding_status", "") or ""),
+                "bundle_episode_count": int(bundle.get("bundle_episode_count", 0) or 0),
+                "bundle_support_examples": str(bundle.get("bundle_support_examples", "") or ""),
+                "context_evidence_episode_ids": str(bundle.get("context_evidence_episode_ids", "") or ""),
+                "workaround_evidence_episode_ids": str(bundle.get("workaround_evidence_episode_ids", "") or ""),
+                "trust_validation_evidence_episode_ids": str(bundle.get("trust_validation_evidence_episode_ids", "") or ""),
+                "selected_example_count": int(len(persona_selected)) + (1 if fallback_rows and str(fallback_rows[-1].get("persona_id", "")) == persona_key else 0),
+                "final_grounding_fail_reason": "" if final_status == _policy_status(config, "promoted_and_grounded_status", "promoted_and_grounded") else grounding_reason,
+            }
+        )
     if fallback_rows:
         fallback_df = pd.DataFrame(fallback_rows)
         selected = pd.concat([selected, fallback_df], ignore_index=True) if not selected.empty else fallback_df
@@ -284,6 +309,7 @@ def apply_promotion_grounding_policy(
         "audit_df": audit,
         "missing_persona_ids": missing_persona_ids,
         "persona_grounding_df": pd.DataFrame(grounding_rows),
+        "grounding_debug_df": pd.DataFrame(grounding_debug_rows),
     }
 
 
@@ -483,10 +509,13 @@ def _select_diverse_examples(candidates: list[dict[str, Any]], max_items: int, c
     diversify_fraction = float(config.get("policy", {}).get("diversity", {}).get("diversify_subpatterns_until_slot_fraction", 0.5))
     for candidate in candidates:
         if candidate.get("grounding_strength") not in {"strong", "grounded"}:
+            candidate["rejection_reason"] = str(candidate.get("rejection_reason", "") or "grounding strength below grounded selection floor")
             continue
         if int(candidate.get("mismatch_count", 0) or 0) > max_mismatch_axes:
+            candidate["rejection_reason"] = "rejected by mismatch ceiling"
             continue
         if int(candidate.get("critical_mismatch_count", 0) or 0) > max_critical_mismatch_axes:
+            candidate["rejection_reason"] = "rejected by critical mismatch ceiling"
             continue
         text = str(candidate["grounded_text"])
         duplicate_penalty = 0.0
@@ -510,8 +539,10 @@ def _select_diverse_examples(candidates: list[dict[str, Any]], max_items: int, c
                 for other in candidates
             )
             if better_source_option:
+                candidate["rejection_reason"] = "held out for source diversity"
                 continue
         if subpattern in used_subpatterns and len(selected) < max(1, int(max_items * diversify_fraction)):
+            candidate["rejection_reason"] = "held out for subpattern diversity"
             continue
         selected.append(candidate)
         selected_texts.append(text)
@@ -936,6 +967,10 @@ def _bundle_grounding_evidence(persona_candidates: pd.DataFrame, config: dict[st
     bundle_cfg = dict(config.get("policy", {}).get("bundle_grounding", {}) or {})
     if not bool(bundle_cfg.get("enabled", True)) or persona_candidates.empty:
         return {
+            "candidate_count_before_filter": int(len(persona_candidates)),
+            "candidate_count_after_filter": 0,
+            "rejected_by_threshold_count": int(len(persona_candidates)),
+            "rejected_by_mismatch_count": 0,
             "context_evidence_count": 0,
             "workaround_evidence_count": 0,
             "trust_validation_evidence_count": 0,
@@ -953,23 +988,35 @@ def _bundle_grounding_evidence(persona_candidates: pd.DataFrame, config: dict[st
     min_candidate_score = float(bundle_cfg.get("min_candidate_score", 3.0))
     max_mismatch_axes = int(bundle_cfg.get("max_mismatch_axes", 3))
     max_critical_mismatch_axes = int(bundle_cfg.get("max_critical_mismatch_axes", 1))
+    candidate_count_before_filter = int(len(persona_candidates))
+    rejected_by_threshold_count = 0
+    rejected_by_mismatch_count = 0
     pool_rows: list[dict[str, Any]] = []
     for _, row in persona_candidates.iterrows():
         candidate = row.to_dict()
         if float(candidate.get("final_example_score", 0.0) or 0.0) < min_candidate_score:
+            rejected_by_threshold_count += 1
             continue
         if int(candidate.get("mismatch_count", 0) or 0) > max_mismatch_axes:
+            rejected_by_mismatch_count += 1
             continue
         if int(candidate.get("critical_mismatch_count", 0) or 0) > max_critical_mismatch_axes:
+            rejected_by_mismatch_count += 1
             continue
         if str(candidate.get("quote_quality", "") or "") == "reject":
+            rejected_by_threshold_count += 1
             continue
         if str(candidate.get("grounding_strength", "") or "") == "unacceptable" and str(candidate.get("quote_quality", "") or "") not in {"borderline", "usable", "strong_representative"}:
+            rejected_by_threshold_count += 1
             continue
         pool_rows.append(candidate)
 
     if not pool_rows:
         return {
+            "candidate_count_before_filter": candidate_count_before_filter,
+            "candidate_count_after_filter": 0,
+            "rejected_by_threshold_count": rejected_by_threshold_count,
+            "rejected_by_mismatch_count": rejected_by_mismatch_count,
             "context_evidence_count": 0,
             "workaround_evidence_count": 0,
             "trust_validation_evidence_count": 0,
@@ -1040,6 +1087,10 @@ def _bundle_grounding_evidence(persona_candidates: pd.DataFrame, config: dict[st
     max_supporting_examples = int(bundle_cfg.get("max_supporting_examples", 3))
     support_examples = _bundle_support_examples(pool_rows, max_items=max_supporting_examples)
     return {
+        "candidate_count_before_filter": candidate_count_before_filter,
+        "candidate_count_after_filter": int(len(pool_rows)),
+        "rejected_by_threshold_count": rejected_by_threshold_count,
+        "rejected_by_mismatch_count": rejected_by_mismatch_count,
         "context_evidence_count": context_count,
         "workaround_evidence_count": workaround_count,
         "trust_validation_evidence_count": trust_count,
@@ -1081,6 +1132,7 @@ def _candidate_has_workaround_evidence(candidate: dict[str, Any], breakdown: dic
         or float(breakdown.get("bottleneck_specificity_score", 0.0) or 0.0) > 0.0
         or float(breakdown.get("excel_rework_score", 0.0) or 0.0) > 0.0
         or float(breakdown.get("root_cause_score", 0.0) or 0.0) > 0.0
+        or _bundle_workaround_text_evidence(candidate, breakdown)
     )
 
 
@@ -1208,3 +1260,54 @@ def _fallback_grounding_warning(candidate: dict[str, Any]) -> str:
     if rejection_reason:
         reasons.append(rejection_reason)
     return " | ".join(reasons)
+
+
+def _grounding_diversity_rejection_count(persona_candidates: pd.DataFrame) -> int:
+    """Count candidates held out by diversity or duplicate suppression after clearing base quality."""
+    if persona_candidates.empty or "rejection_reason" not in persona_candidates.columns:
+        return 0
+    reasons = persona_candidates["rejection_reason"].fillna("").astype(str).str.strip().str.lower()
+    return int(
+        reasons.isin(
+            {
+                "near-duplicate of a stronger selected example",
+                "held out for source diversity",
+                "held out for subpattern diversity",
+            }
+        ).sum()
+    )
+
+
+def _bundle_workaround_text_evidence(candidate: dict[str, Any], breakdown: dict[str, Any]) -> bool:
+    """Detect workaround evidence for bundle grounding when explicit workaround scoring misses tool-limitation language."""
+    text = str(candidate.get("grounded_text", "") or "").lower()
+    workaround_markers = [
+        "manual",
+        "manually",
+        "workaround",
+        "duplicate",
+        "replace",
+        "rebuild",
+        "alter",
+        "update all",
+        "tedious",
+        "save the chart as a duplicate",
+    ]
+    tool_block_markers = [
+        "dashboard",
+        "table",
+        "filter",
+        "query",
+        "field",
+        "column",
+        "chart",
+    ]
+    if not any(marker in text for marker in workaround_markers):
+        return False
+    if any(marker in text for marker in tool_block_markers):
+        return True
+    return (
+        float(breakdown.get("dashboard_trust_score", 0.0) or 0.0) > 0.0
+        or float(breakdown.get("explicit_workflow_pain_score", 0.0) or 0.0) > 0.0
+        or float(breakdown.get("output_need_score", 0.0) or 0.0) > 0.0
+    )

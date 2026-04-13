@@ -664,6 +664,9 @@ def build_cluster_robustness_outputs(
     min_stable_cluster_share = float(robustness_config.get("min_stable_cluster_share", 0.06))
     sufficient_separation_floor = float(robustness_config.get("sufficient_separation_floor", 0.12))
     sufficient_cohesion_floor = float(robustness_config.get("sufficient_cohesion_floor", 0.9))
+    broad_parent_separation_floor = float(robustness_config.get("merge_broadened_separation_floor", max(sufficient_separation_floor, 0.2)))
+    broad_parent_cohesion_floor = float(robustness_config.get("merge_broadened_cohesion_floor", 0.8))
+    broad_parent_min_anchor_count = int(robustness_config.get("merge_broadened_min_anchor_count", 3))
 
     action_counts = (
         persona_assignments_df.groupby("persona_id", dropna=False)["robustness_action"]
@@ -680,6 +683,7 @@ def build_cluster_robustness_outputs(
         share_of_core_labeled = round(cluster_size / total_rows, 4)
         cohesion = float(row.get("cohesion", 0.0) or 0.0)
         separation = float(row.get("separation", 0.0) or 0.0)
+        pre_merge_anchor_count = int(initial_anchor_counts.get(persona_id, 0))
         if cluster_size >= min_stable_cluster_size or share_of_core_labeled >= min_stable_cluster_share:
             stability_status = "stable"
         elif cluster_size <= max(1, min_stable_cluster_size // 3):
@@ -687,19 +691,32 @@ def build_cluster_robustness_outputs(
         else:
             stability_status = "fragile"
         evidence_status = "sufficient" if cohesion >= sufficient_cohesion_floor and separation >= sufficient_separation_floor else "thin"
-        structural_support_status = "structurally_supported" if stability_status == "stable" and evidence_status == "sufficient" else "review_visible_only"
         weak_separation_status = "weakly_separated" if separation < sufficient_separation_floor else "separation_clear"
         concentration_status = "dominant" if cluster_size == largest_cluster_size and share_of_core_labeled >= 0.4 else "distributed"
         tail_fragility_status = "tail_fragile" if stability_status in {"fragile", "micro"} else "tail_clear"
         actions = action_counts.loc[persona_id] if persona_id in action_counts.index else pd.Series(dtype=int)
         action_summary = " | ".join(f"{action}:{int(count)}" for action, count in actions.items() if int(count) > 0)
+        broadened_parent = any(token in action_summary for token in ["merged_overlap_persona", "merged_low_separation_cluster"])
+        broad_parent_supported = (
+            stability_status == "stable"
+            and broadened_parent
+            and pre_merge_anchor_count >= broad_parent_min_anchor_count
+            and separation >= broad_parent_separation_floor
+            and cohesion >= broad_parent_cohesion_floor
+        )
+        if stability_status == "stable" and evidence_status == "sufficient":
+            structural_support_status = "structurally_supported"
+        elif broad_parent_supported:
+            structural_support_status = "structurally_supported_broad_parent"
+        else:
+            structural_support_status = "review_visible_only"
         rows.append(
             {
                 "persona_id": persona_id,
                 "cluster_name": str(row.get("cluster_name", "")),
                 "cluster_size": cluster_size,
                 "share_of_core_labeled": share_of_core_labeled,
-                "pre_merge_anchor_count": int(initial_anchor_counts.get(persona_id, 0)),
+                "pre_merge_anchor_count": pre_merge_anchor_count,
                 "stability_status": stability_status,
                 "evidence_status": evidence_status,
                 "structural_support_status": structural_support_status,

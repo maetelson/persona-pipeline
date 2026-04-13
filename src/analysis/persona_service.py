@@ -80,7 +80,7 @@ def build_persona_outputs(
         promoted_persona_ids=[
             persona_id
             for persona_id, payload in cluster_policy["status_by_persona"].items()
-            if str(payload.get("status", "") or "") == "promoted_persona"
+            if _is_promoted_candidate_persona(payload)
         ],
         config=example_config,
         max_items_per_persona=int(example_config.get("policy", {}).get("fallback", {}).get("max_examples_per_persona", 1)),
@@ -116,6 +116,13 @@ def build_persona_outputs(
         cluster_outputs["cluster_meaning_audit_df"],
     )
     persona_promotion_score_df = _build_persona_promotion_score_df(persona_source_df, cluster_policy)
+    persona_promotion_path_debug_df = _build_persona_promotion_path_debug_df(cluster_policy)
+    structural_support_debug_df = _build_structural_support_debug_df(
+        persona_source_df=persona_source_df,
+        cluster_policy=cluster_policy,
+        config=bottleneck_config,
+    )
+    structural_support_distribution_df = _build_structural_support_distribution_df(cluster_policy)
 
     outputs = {
         "overview_df": pd.DataFrame(columns=["metric", "value"]),
@@ -127,9 +134,13 @@ def build_persona_outputs(
         "cluster_stats_df": cluster_stats_df,
         "persona_promotion_grounding_audit_df": _build_persona_promotion_grounding_audit_df(persona_summary_df),
         "persona_promotion_score_df": persona_promotion_score_df,
+        "persona_promotion_path_debug_df": persona_promotion_path_debug_df,
+        "structural_support_debug_df": structural_support_debug_df,
+        "structural_support_distribution_df": structural_support_distribution_df,
         "quality_checks_df": pd.DataFrame(columns=["metric", "value", "threshold", "status", "level", "denominator_type", "denominator_value", "notes"]),
         "persona_assignments_df": persona_assignments_df,
         "persona_grounding_df": grounding_outputs["persona_grounding_df"],
+        "grounding_debug_df": grounding_outputs.get("grounding_debug_df", pd.DataFrame()),
         "axis_wide_df": axis_wide_df,
         "axis_long_df": axis_long_df,
         "representative_examples_v2_df": cluster_outputs["selected_examples_df"],
@@ -167,9 +178,13 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
         "persona_cooccurrence_csv": output_dir / "persona_cooccurrence.csv",
         "persona_examples_csv": output_dir / "persona_examples.csv",
         "persona_grounding_csv": output_dir / "persona_grounding.csv",
+        "grounding_debug_csv": output_dir / "grounding_debug.csv",
         "cluster_stats_csv": output_dir / "cluster_stats.csv",
         "persona_promotion_grounding_audit_csv": output_dir / "persona_promotion_grounding_audit.csv",
         "persona_promotion_score_csv": output_dir / "persona_promotion_score.csv",
+        "persona_promotion_path_debug_csv": output_dir / "persona_promotion_path_debug.csv",
+        "structural_support_debug_csv": output_dir / "structural_support_debug.csv",
+        "structural_support_distribution_csv": output_dir / "structural_support_distribution.csv",
         "quality_checks_csv": output_dir / "quality_checks.csv",
         "overview_csv": output_dir / "overview.csv",
         "persona_assignments_parquet": output_dir / "persona_assignments.parquet",
@@ -200,9 +215,13 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
     outputs["persona_cooccurrence_df"].to_csv(paths["persona_cooccurrence_csv"], index=False)
     outputs["persona_examples_df"].to_csv(paths["persona_examples_csv"], index=False)
     outputs["persona_grounding_df"].to_csv(paths["persona_grounding_csv"], index=False)
+    outputs["grounding_debug_df"].to_csv(paths["grounding_debug_csv"], index=False)
     outputs["cluster_stats_df"].to_csv(paths["cluster_stats_csv"], index=False)
     outputs["persona_promotion_grounding_audit_df"].to_csv(paths["persona_promotion_grounding_audit_csv"], index=False)
     outputs["persona_promotion_score_df"].to_csv(paths["persona_promotion_score_csv"], index=False)
+    outputs["persona_promotion_path_debug_df"].to_csv(paths["persona_promotion_path_debug_csv"], index=False)
+    outputs["structural_support_debug_df"].to_csv(paths["structural_support_debug_csv"], index=False)
+    outputs["structural_support_distribution_df"].to_csv(paths["structural_support_distribution_csv"], index=False)
     outputs["quality_checks_df"].to_csv(paths["quality_checks_csv"], index=False)
     outputs["overview_df"].to_csv(paths["overview_csv"], index=False)
     outputs["persona_assignments_df"].to_parquet(paths["persona_assignments_parquet"], index=False)
@@ -633,9 +652,13 @@ def _empty_outputs() -> dict[str, Any]:
         "persona_cooccurrence_df": empty,
         "persona_examples_df": empty,
         "persona_grounding_df": empty,
+        "grounding_debug_df": empty,
         "cluster_stats_df": empty,
         "persona_promotion_grounding_audit_df": empty,
         "persona_promotion_score_df": empty,
+        "persona_promotion_path_debug_df": empty,
+        "structural_support_debug_df": empty,
+        "structural_support_distribution_df": empty,
         "quality_checks_df": empty,
         "persona_assignments_df": empty,
         "axis_wide_df": empty,
@@ -1122,10 +1145,17 @@ def _is_workbook_review_visible(payload: dict[str, Any]) -> bool:
     return str(payload.get("status", "") or "") in {"promoted_persona", "review_visible_persona"}
 
 
+def _has_structural_support(payload: dict[str, Any]) -> bool:
+    """Return whether a persona cleared structural support for final use."""
+    return str(payload.get("structural_support_status", "structurally_supported") or "structurally_supported") in {
+        "structurally_supported",
+        "structurally_supported_broad_parent",
+    }
+
+
 def _is_final_usable_persona(payload: dict[str, Any]) -> bool:
     """Return whether a persona is usable for downstream reporting."""
-    structurally_supported = str(payload.get("structural_support_status", "structurally_supported") or "structurally_supported") == "structurally_supported"
-    return structurally_supported and str(payload.get("promotion_grounding_status", "") or "") == "promoted_and_grounded"
+    return _has_structural_support(payload) and str(payload.get("promotion_grounding_status", "") or "") == "promoted_and_grounded"
 
 
 def _visibility_state(payload: dict[str, Any]) -> str:
@@ -1210,6 +1240,204 @@ def _build_persona_promotion_score_df(persona_source_df: pd.DataFrame, cluster_p
     return pd.DataFrame(rows).sort_values(["promotion_score", "persona_id"], ascending=[False, True]).reset_index(drop=True) if rows else pd.DataFrame()
 
 
+def _build_persona_promotion_path_debug_df(cluster_policy: dict[str, Any]) -> pd.DataFrame:
+    """Build a compact debug table for the promotion-to-grounding failure path."""
+    rows: list[dict[str, Any]] = []
+    for persona_id, payload in dict(cluster_policy.get("status_by_persona", {})).items():
+        base_promotion_status = str(payload.get("base_promotion_status", payload.get("status", "")) or "")
+        promotion_status = str(payload.get("status", "") or "")
+        if base_promotion_status not in {"promoted_candidate_persona", "promoted_persona"} and promotion_status not in {"promoted_persona", "review_visible_persona"}:
+            continue
+        rows.append(
+            {
+                "persona_id": str(persona_id),
+                "base_promotion_status": base_promotion_status,
+                "structural_support_status": str(payload.get("structural_support_status", "") or ""),
+                "structural_support_fail_reason": _structural_support_fail_reason(payload),
+                "grounding_status": str(payload.get("grounding_status", "") or ""),
+                "promotion_grounding_status": str(payload.get("promotion_grounding_status", "") or ""),
+                "grounding_fail_reason": _grounding_fail_reason(payload),
+                "grounding_penalty_counted_separately": bool(_grounding_penalty_counted_separately(payload)),
+                "structural_grounding_overlap": _structural_grounding_overlap(payload),
+                "promotion_status": promotion_status,
+                "final_usable_persona": bool(_is_final_usable_persona(payload)),
+                "deck_ready_persona": bool(_is_final_usable_persona(payload)),
+                "fail_reason": _promotion_fail_reason(payload),
+            }
+        )
+    return pd.DataFrame(rows).sort_values(["base_promotion_status", "persona_id"], ascending=[False, True]).reset_index(drop=True) if rows else pd.DataFrame(
+        columns=[
+            "persona_id",
+            "base_promotion_status",
+            "structural_support_status",
+            "structural_support_fail_reason",
+            "grounding_status",
+            "promotion_grounding_status",
+            "grounding_fail_reason",
+            "grounding_penalty_counted_separately",
+            "structural_grounding_overlap",
+            "promotion_status",
+            "final_usable_persona",
+            "deck_ready_persona",
+            "fail_reason",
+        ]
+    )
+
+
+def _build_structural_support_debug_df(
+    persona_source_df: pd.DataFrame,
+    cluster_policy: dict[str, Any],
+    config: dict[str, Any],
+) -> pd.DataFrame:
+    """Export the exact structural support inputs, thresholds, and failed conditions for each persona."""
+    robustness_config = dict(config.get("robustness", {}) or {})
+    size_threshold = int(robustness_config.get("min_stable_cluster_size", config.get("clustering", {}).get("min_anchor_size", 24)))
+    share_threshold = float(robustness_config.get("min_stable_cluster_share", 0.08))
+    cohesion_threshold = float(robustness_config.get("sufficient_cohesion_floor", 0.9))
+    separation_threshold = float(robustness_config.get("sufficient_separation_floor", 0.12))
+    broad_parent_cohesion_threshold = float(robustness_config.get("merge_broadened_cohesion_floor", 0.8))
+    broad_parent_separation_threshold = float(robustness_config.get("merge_broadened_separation_floor", max(separation_threshold, 0.2)))
+    broad_parent_anchor_threshold = int(robustness_config.get("merge_broadened_min_anchor_count", 3))
+    size_lookup = persona_source_df.groupby("persona_id")["episode_id"].nunique().to_dict() if not persona_source_df.empty and "episode_id" in persona_source_df.columns else {}
+    source_count_lookup = persona_source_df.groupby("persona_id")["source"].nunique().to_dict() if not persona_source_df.empty and "source" in persona_source_df.columns else {}
+    rows: list[dict[str, Any]] = []
+    for persona_id, payload in dict(cluster_policy.get("status_by_persona", {})).items():
+        cluster_size = int(size_lookup.get(persona_id, 0) or 0)
+        share_of_core_labeled = float(str(payload.get("share", "0") or "0") or 0.0) / 100.0
+        stability_status = str(payload.get("cluster_stability_status", "") or "")
+        evidence_status = str(payload.get("cluster_evidence_status", "") or "")
+        structural_support_status = str(payload.get("structural_support_status", "") or "")
+        cluster_cohesion = float(payload.get("cluster_cohesion", 0.0) or 0.0)
+        cluster_separation = float(payload.get("cluster_separation", 0.0) or 0.0)
+        pre_merge_anchor_count = int(payload.get("pre_merge_anchor_count", 0) or 0)
+        action_summary = str(payload.get("robustness_action_summary", "") or "")
+        broadened_parent = any(token in action_summary for token in ["merged_overlap_persona", "merged_low_separation_cluster"])
+        raw_structural_support_status = _raw_structural_support_status(
+            stability_status=stability_status,
+            cluster_cohesion=cluster_cohesion,
+            cluster_separation=cluster_separation,
+            pre_merge_anchor_count=pre_merge_anchor_count,
+            broadened_parent=broadened_parent,
+            cohesion_threshold=cohesion_threshold,
+            separation_threshold=separation_threshold,
+            broad_parent_cohesion_threshold=broad_parent_cohesion_threshold,
+            broad_parent_separation_threshold=broad_parent_separation_threshold,
+            broad_parent_anchor_threshold=broad_parent_anchor_threshold,
+        )
+        failed_conditions = _structural_failed_conditions(
+            cluster_size=cluster_size,
+            share_of_core_labeled=share_of_core_labeled,
+            stability_status=stability_status,
+            cluster_cohesion=cluster_cohesion,
+            cluster_separation=cluster_separation,
+            pre_merge_anchor_count=pre_merge_anchor_count,
+            broadened_parent=broadened_parent,
+            size_threshold=size_threshold,
+            share_threshold=share_threshold,
+            cohesion_threshold=cohesion_threshold,
+            separation_threshold=separation_threshold,
+            broad_parent_cohesion_threshold=broad_parent_cohesion_threshold,
+            broad_parent_separation_threshold=broad_parent_separation_threshold,
+            broad_parent_anchor_threshold=broad_parent_anchor_threshold,
+        )
+        rows.append(
+            {
+                "persona_id": str(persona_id),
+                "raw_structural_support_status": raw_structural_support_status,
+                "promotion_structural_support_status": structural_support_status,
+                "promotion_gate_overrode_structural_status": bool(structural_support_status == "not_applicable" and raw_structural_support_status != "not_applicable"),
+                "structural_support_reason": str(payload.get("structural_support_reason", "") or ""),
+                "cluster_size": cluster_size,
+                "min_stable_cluster_size_threshold": size_threshold,
+                "cluster_size_pass": bool(cluster_size >= size_threshold),
+                "share_of_core_labeled": round(share_of_core_labeled, 4),
+                "min_stable_cluster_share_threshold": share_threshold,
+                "cluster_share_pass": bool(share_of_core_labeled >= share_threshold),
+                "stability_status": stability_status,
+                "internal_coherence": cluster_cohesion,
+                "sufficient_cohesion_threshold": cohesion_threshold,
+                "cohesion_pass": bool(cluster_cohesion >= cohesion_threshold),
+                "separation": cluster_separation,
+                "sufficient_separation_threshold": separation_threshold,
+                "separation_pass": bool(cluster_separation >= separation_threshold),
+                "evidence_status": evidence_status,
+                "pre_merge_anchor_count": pre_merge_anchor_count,
+                "merge_broadened_min_anchor_count_threshold": broad_parent_anchor_threshold,
+                "merge_anchor_pass": bool(pre_merge_anchor_count >= broad_parent_anchor_threshold),
+                "merge_broadened_parent_detected": bool(broadened_parent),
+                "merge_broadened_cohesion_threshold": broad_parent_cohesion_threshold,
+                "merge_broadened_separation_threshold": broad_parent_separation_threshold,
+                "source_diversity_count": int(source_count_lookup.get(persona_id, 0) or 0),
+                "source_diversity_used": False,
+                "representative_example_count": int(payload.get("selected_example_count", 0) or 0),
+                "representative_examples_used": False,
+                "grounded_candidate_count": int(payload.get("grounded_candidate_count", 0) or 0),
+                "grounding_used": False,
+                "merge_stability_used": True,
+                "failed_conditions": " | ".join(failed_conditions),
+                "failed_condition_count": int(len(failed_conditions)),
+                "grounding_status": str(payload.get("grounding_status", "") or ""),
+                "promotion_grounding_status": str(payload.get("promotion_grounding_status", "") or ""),
+                "structural_grounding_overlap": _structural_grounding_overlap(payload),
+                "grounding_penalty_counted_separately": bool(_grounding_penalty_counted_separately(payload)),
+            }
+        )
+    return pd.DataFrame(rows).sort_values(["raw_structural_support_status", "persona_id"], ascending=[True, True]).reset_index(drop=True) if rows else pd.DataFrame()
+
+
+def _build_structural_support_distribution_df(cluster_policy: dict[str, Any]) -> pd.DataFrame:
+    """Export the current structural support status distribution."""
+    status_values = [
+        _raw_structural_support_status(
+            stability_status=str(payload.get("cluster_stability_status", "") or ""),
+            cluster_cohesion=float(payload.get("cluster_cohesion", 0.0) or 0.0),
+            cluster_separation=float(payload.get("cluster_separation", 0.0) or 0.0),
+            pre_merge_anchor_count=int(payload.get("pre_merge_anchor_count", 0) or 0),
+            broadened_parent=any(token in str(payload.get("robustness_action_summary", "") or "") for token in ["merged_overlap_persona", "merged_low_separation_cluster"]),
+            cohesion_threshold=0.9,
+            separation_threshold=0.12,
+            broad_parent_cohesion_threshold=0.8,
+            broad_parent_separation_threshold=0.2,
+            broad_parent_anchor_threshold=3,
+        )
+        for payload in dict(cluster_policy.get("status_by_persona", {})).values()
+    ]
+    if not status_values:
+        return pd.DataFrame(columns=["structural_support_status", "persona_count"])
+    distribution = pd.Series(status_values).value_counts().rename_axis("structural_support_status").reset_index(name="persona_count")
+    return distribution.sort_values(["persona_count", "structural_support_status"], ascending=[False, True]).reset_index(drop=True)
+
+
+def _promotion_fail_reason(payload: dict[str, Any]) -> str:
+    """Return the exact condition that blocks final usability for one persona."""
+    if _is_final_usable_persona(payload):
+        return "final_usable"
+    promotion_grounding_status = str(payload.get("promotion_grounding_status", "") or "")
+    grounding_status = str(payload.get("grounding_status", "") or "")
+    promotion_status = str(payload.get("status", "") or "")
+    reasons: list[str] = []
+    structural_fail_reason = _structural_support_fail_reason(payload)
+    if structural_fail_reason:
+        reasons.append(f"missing structural support: {structural_fail_reason}")
+    grounding_fail_reason = _grounding_fail_reason(payload)
+    if _grounding_penalty_counted_separately(payload) and (
+        promotion_grounding_status in {"promoted_but_ungrounded", "promoted_but_weakly_grounded", "downgraded_due_to_no_grounding"}
+        or grounding_status in {"ungrounded", "weak_bundle"}
+    ):
+        reasons.append(f"missing grounding: {grounding_fail_reason or 'no acceptable grounding evidence met policy'}")
+    if promotion_status == "review_visible_persona" and promotion_grounding_status in {
+        "promoted_but_ungrounded",
+        "promoted_but_weakly_grounded",
+        "grounded_but_structurally_weak",
+        "review_visible_persona",
+        "downgraded_due_to_no_grounding",
+    }:
+        reasons.append("downgraded by merge grounding policy")
+    if not reasons:
+        reasons.append("blocked by deck-ready rule")
+    return " | ".join(reasons)
+
+
 def _cluster_promotion_policy(
     persona_source_df: pd.DataFrame,
     total_labeled_records: int,
@@ -1238,6 +1466,7 @@ def _cluster_promotion_policy(
         evidence_status = str(robustness.get("evidence_status", "not_evaluated") or "not_evaluated")
         structural_support_status = str(robustness.get("structural_support_status", "structurally_supported") or "structurally_supported")
         structural_support_reason = _structural_support_reason(robustness)
+        structurally_supported = _has_structural_support({"structural_support_status": structural_support_status})
         scorecard = _promotion_scorecard(
             profile=profiles.get(persona_key, {}),
             size=int(size),
@@ -1251,7 +1480,7 @@ def _cluster_promotion_policy(
         elif single_cluster_dominance and persona_key != dominant_persona:
             status = "exploratory_bucket"
             reason = f"residual cluster under single_cluster_dominance; largest cluster share {largest_share}%"
-        elif structural_support_status != "structurally_supported":
+        elif not structurally_supported:
             status = "review_visible_persona"
             reason = (
                 f"sample size {int(size)} meets min_cluster_size {min_cluster_size}; "
@@ -1299,6 +1528,7 @@ def _cluster_promotion_policy(
             "cluster_evidence_status": evidence_status,
             "cluster_concentration_status": str(robustness.get("concentration_status", "") or ""),
             "tail_fragility_status": str(robustness.get("tail_fragility_status", "") or ""),
+            "cluster_cohesion": float(robustness.get("cohesion", 0.0) or 0.0),
             "cluster_separation": float(robustness.get("separation", 0.0) or 0.0),
             "nearest_neighbor_similarity": float(robustness.get("nearest_neighbor_similarity", 0.0) or 0.0),
             "pre_merge_anchor_count": int(robustness.get("pre_merge_anchor_count", 0) or 0),
@@ -1345,14 +1575,14 @@ def _promotion_profiles(
         profiles[persona_key] = {
             "persona_id": persona_key,
             "size": int(group["episode_id"].nunique()),
-            "role_terms": _top_terms(group.get("role_context", pd.Series(dtype=str))),
-            "work_terms": _top_terms(group.get("work_loop", pd.Series(dtype=str))),
-            "output_terms": _top_terms(group.get("expected_output", pd.Series(dtype=str))),
-            "bottleneck_terms": _top_terms(group.get("bottleneck_pattern", pd.Series(dtype=str))),
-            "workaround_terms": _top_terms(group.get("current_workaround", pd.Series(dtype=str))),
-            "trust_terms": _top_terms(group.get("trust_failure", pd.Series(dtype=str))),
-            "product_terms": _top_terms(group.get("product_relevance", pd.Series(dtype=str))),
-            "solution_terms": _top_terms(group.get("solution_type", pd.Series(dtype=str))),
+            "role_terms": _top_terms(_series_from_candidates(group, ["role_context", "user_role", "role_clue"])),
+            "work_terms": _top_terms(_series_from_candidates(group, ["work_loop", "workflow_stage", "analysis_goal", "work_moment"])),
+            "output_terms": _top_terms(_series_from_candidates(group, ["expected_output", "desired_output", "output_mode", "expected_output_artifact"])),
+            "bottleneck_terms": _top_terms(_series_from_candidates(group, ["bottleneck_pattern", "bottleneck_type", "bottleneck_text"])),
+            "workaround_terms": _top_terms(_series_from_candidates(group, ["current_workaround", "workaround_pattern", "workaround_text"])),
+            "trust_terms": _top_terms(_series_from_candidates(group, ["trust_failure", "trust_failure_mode", "business_question"])),
+            "product_terms": _top_terms(_series_from_candidates(group, ["product_relevance", "solution_type", "tool_env", "desired_output"])),
+            "solution_terms": _top_terms(_series_from_candidates(group, ["solution_type", "tool_env"])),
             "source_count": int(source_counts.size),
             "primary_source_share": float(source_counts.iloc[0] / max(1, int(source_counts.sum()))) if not source_counts.empty else 1.0,
             "nearest_persona_id": str(robustness.get("nearest_neighbor_id", "") or ""),
@@ -1361,6 +1591,17 @@ def _promotion_profiles(
             "robustness": robustness,
         }
     return profiles
+
+
+def _series_from_candidates(frame: pd.DataFrame, candidates: list[str]) -> pd.Series:
+    """Return the first populated series from a list of candidate column names."""
+    for column in candidates:
+        if column not in frame.columns:
+            continue
+        series = frame[column]
+        if series.dropna().astype(str).str.strip().ne("").any():
+            return series
+    return pd.Series(dtype=str)
 
 
 def _top_terms(series: pd.Series, limit: int = 4) -> list[str]:
@@ -1560,7 +1801,7 @@ def _merge_grounding_policy(
             payload["promotion_grounding_status"] = exploratory_status
             payload["grounding_reason"] = "grounding coverage is only enforced for promoted personas"
             continue
-        structurally_supported = str(payload.get("structural_support_status", "structurally_supported") or "structurally_supported") == "structurally_supported"
+        structurally_supported = _has_structural_support(payload)
         combined_status = str(grounding.get("promotion_grounding_status", "promoted_but_ungrounded") or "promoted_but_ungrounded")
         payload["grounding_status"] = str(grounding.get("grounding_status", "ungrounded") or "ungrounded")
         payload["promotion_grounding_status"] = combined_status
@@ -1599,7 +1840,11 @@ def _merge_grounding_policy(
             ]
         )
         payload["promotion_score"] = float(weighted_sum / max(weight_total, 1e-9))
-        if combined_status == downgraded_status:
+        if _grounding_is_derivative_of_structural_weakness(payload, combined_status):
+            payload["status"] = "review_visible_persona"
+            payload["promotion_grounding_status"] = "structurally_weak_primary_blocker"
+            payload["reason"] = f"{payload.get('reason', '')}; review-visible because structural fragility is the primary blocker and weak grounding appears to come from the same low-volume scarcity".strip("; ")
+        elif combined_status == downgraded_status:
             payload["status"] = exploratory_status
             payload["reason"] = f"{payload.get('reason', '')}; downgraded because no acceptable grounding evidence met policy".strip("; ")
         elif str(payload.get("strategic_redundancy_status", "")) == "strategically_redundant":
@@ -1639,14 +1884,132 @@ def _structural_support_reason(robustness: dict[str, Any]) -> str:
     structural_support_status = str(robustness.get("structural_support_status", "structurally_supported") or "structurally_supported")
     if structural_support_status == "structurally_supported":
         return "cluster robustness clears stability, evidence, and separation checks"
+    if structural_support_status == "structurally_supported_broad_parent":
+        return "stable merge-broadened parent clears separation and anchor checks despite a slightly lower cohesion score"
     stability_status = str(robustness.get("stability_status", "") or "")
     evidence_status = str(robustness.get("evidence_status", "") or "")
+    cohesion = float(robustness.get("cohesion", 0.0) or 0.0)
     separation = float(robustness.get("separation", 0.0) or 0.0)
+    action_summary = str(robustness.get("robustness_action_summary", "") or "")
     if stability_status in {"fragile", "micro"}:
         return f"cluster remains {stability_status} after robustness merging"
     if evidence_status == "thin":
-        return f"cluster separation {separation:.4f} is too low to justify a standalone mature persona"
+        if separation < 0.12:
+            return f"cluster separation {separation:.4f} remains below the standalone support floor"
+        if "merged_" in action_summary:
+            return f"stable merged parent keeps strong separation {separation:.4f} but cohesion {cohesion:.4f} remains below the standalone support floor"
+        return f"cluster cohesion {cohesion:.4f} remains below the standalone support floor"
     return "cluster robustness remains below the standalone support threshold"
+
+
+def _structural_support_fail_reason(payload: dict[str, Any]) -> str:
+    """Return the structural blocker only when the persona lacks final structural support."""
+    return "" if _has_structural_support(payload) else str(payload.get("structural_support_reason", "") or "")
+
+
+def _grounding_fail_reason(payload: dict[str, Any]) -> str:
+    """Return the grounding blocker only when grounding still blocks promotion."""
+    promotion_grounding_status = str(payload.get("promotion_grounding_status", "") or "")
+    grounding_status = str(payload.get("grounding_status", "") or "")
+    if promotion_grounding_status == "promoted_and_grounded":
+        return ""
+    if grounding_status == "not_evaluated":
+        return "grounding review was skipped before representative evidence could be evaluated"
+    return str(payload.get("grounding_reason", "") or "")
+
+
+def _grounding_is_derivative_of_structural_weakness(payload: dict[str, Any], combined_status: str) -> bool:
+    """Return whether weak grounding is likely caused by the same low-volume fragility that already failed structure."""
+    if _has_structural_support(payload):
+        return False
+    if str(payload.get("cluster_stability_status", "") or "") not in {"fragile", "micro"}:
+        return False
+    return combined_status in {"promoted_but_ungrounded", "promoted_but_weakly_grounded", "downgraded_due_to_no_grounding"}
+
+
+def _grounding_penalty_counted_separately(payload: dict[str, Any]) -> bool:
+    """Return whether grounding should remain an independent blocker next to structure."""
+    combined_status = str(payload.get("promotion_grounding_status", "") or "")
+    return combined_status != "structurally_weak_primary_blocker"
+
+
+def _structural_grounding_overlap(payload: dict[str, Any]) -> str:
+    """Classify whether structural and grounding weakness are independent or likely the same scarcity signal."""
+    if _has_structural_support(payload):
+        return "no_structural_overlap"
+    if _grounding_is_derivative_of_structural_weakness(payload, str(payload.get("promotion_grounding_status", "") or "")):
+        return "shared_low_volume_scarcity"
+    grounding_status = str(payload.get("grounding_status", "") or "")
+    if grounding_status in {"ungrounded", "weak_bundle", "grounded_single", "grounded_bundle"}:
+        return "largely_independent_from_grounding"
+    return "not_evaluated"
+
+
+def _structural_failed_conditions(
+    cluster_size: int,
+    share_of_core_labeled: float,
+    stability_status: str,
+    cluster_cohesion: float,
+    cluster_separation: float,
+    pre_merge_anchor_count: int,
+    broadened_parent: bool,
+    size_threshold: int,
+    share_threshold: float,
+    cohesion_threshold: float,
+    separation_threshold: float,
+    broad_parent_cohesion_threshold: float,
+    broad_parent_separation_threshold: float,
+    broad_parent_anchor_threshold: int,
+) -> list[str]:
+    """Return the exact structural conditions that failed for a persona."""
+    failures: list[str] = []
+    stable_by_size_or_share = cluster_size >= size_threshold or share_of_core_labeled >= share_threshold
+    if not stable_by_size_or_share:
+        failures.append("stability gate: cluster size/share below stable floor")
+    if cluster_cohesion < cohesion_threshold:
+        failures.append("evidence gate: cohesion below sufficient floor")
+    if cluster_separation < separation_threshold:
+        failures.append("evidence gate: separation below sufficient floor")
+    if stable_by_size_or_share and cluster_cohesion < cohesion_threshold and cluster_separation >= separation_threshold:
+        if not broadened_parent:
+            failures.append("broad-parent relief unavailable: persona was not merge-broadened")
+        if pre_merge_anchor_count < broad_parent_anchor_threshold:
+            failures.append("broad-parent relief unavailable: pre-merge anchor count below floor")
+        if cluster_cohesion < broad_parent_cohesion_threshold:
+            failures.append("broad-parent relief unavailable: cohesion below broadened-parent floor")
+        if cluster_separation < broad_parent_separation_threshold:
+            failures.append("broad-parent relief unavailable: separation below broadened-parent floor")
+    if stability_status in {"fragile", "micro"}:
+        failures.append(f"cluster classified as {stability_status}")
+    return list(dict.fromkeys(failures))
+
+
+def _raw_structural_support_status(
+    stability_status: str,
+    cluster_cohesion: float,
+    cluster_separation: float,
+    pre_merge_anchor_count: int,
+    broadened_parent: bool,
+    cohesion_threshold: float,
+    separation_threshold: float,
+    broad_parent_cohesion_threshold: float,
+    broad_parent_separation_threshold: float,
+    broad_parent_anchor_threshold: int,
+) -> str:
+    """Recompute structural support independent of later promotion gating."""
+    if stability_status == "stable" and cluster_cohesion >= cohesion_threshold and cluster_separation >= separation_threshold:
+        return "structurally_supported"
+    if (
+        stability_status == "stable"
+        and broadened_parent
+        and pre_merge_anchor_count >= broad_parent_anchor_threshold
+        and cluster_separation >= broad_parent_separation_threshold
+        and cluster_cohesion >= broad_parent_cohesion_threshold
+    ):
+        return "structurally_supported_broad_parent"
+    if stability_status:
+        return "review_visible_only"
+    return "not_applicable"
 
 
 def _archetype_name(role: str, workflow: str, bottleneck: str, goal: str, output_mode: str, promotion_status: str) -> str:
