@@ -50,6 +50,18 @@ policy:
     promoted_but_ungrounded_status: promoted_but_ungrounded
     downgraded_due_to_no_grounding_status: downgraded_due_to_no_grounding
     ungrounded_action: flag
+  bundle_grounding:
+    enabled: true
+    min_candidate_score: 3.0
+    max_mismatch_axes: 3
+    max_critical_mismatch_axes: 1
+    min_context_evidence_count: 2
+    min_workaround_evidence_count: 2
+    min_trust_validation_evidence_count: 1
+    min_bundle_episode_count: 3
+    weak_bundle_min_dimension_hits: 2
+    weak_bundle_min_total_strength: 3
+    max_supporting_examples: 3
   diversity:
     prefer_new_source_within_score_margin: 1.25
     diversify_subpatterns_until_slot_fraction: 0.5

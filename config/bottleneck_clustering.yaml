@@ -301,6 +301,40 @@ robustness:
   sufficient_separation_floor: 0.12
   sufficient_cohesion_floor: 0.9
 
+persona_overlap_merge:
+  enabled: true
+  min_parent_cluster_size: 24
+  compatible_profile_score_floor: 4
+  similarity_floor: 0.50
+  max_role_share_gap: 0.35
+  merge_role_families:
+    - analyst_operator
+    - workflow_operator
+  compatible_trust_families:
+    - visible_but_not_explainable
+    - delivery_or_explanation_breakdown
+  compatible_workaround_families:
+    - dashboard_workaround_patch
+    - out_of_tool_workaround
+    - manual_patch_and_rebuild
+
+promotion_scoring:
+  enabled: true
+  promote_score_min: 0.72
+  candidate_score_min: 0.58
+  minimum_actionability_score: 0.55
+  minimum_distinctiveness_score: 0.18
+  minimum_output_consistency_score: 0.55
+  minimum_cross_source_robustness_score: 0.35
+  redundancy_similarity_ceiling: 0.85
+  weights:
+    structural_stability: 0.26
+    grounding_quality: 0.22
+    distinctiveness: 0.18
+    actionability: 0.18
+    output_consistency: 0.08
+    cross_source_robustness: 0.08
+
 naming:
   manual_reporting: "Manual Reporting Burden"
   spreadsheet_rework: "Spreadsheet Rework Burden"

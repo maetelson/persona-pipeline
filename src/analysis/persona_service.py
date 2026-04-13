@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from src.analysis.bottleneck_clustering import (
@@ -27,7 +29,7 @@ from src.utils.pipeline_schema import (
     top_non_unknown_value,
     unique_record_count,
 )
-from src.utils.io import ensure_dir
+from src.utils.io import ensure_dir, load_yaml
 
 
 def build_persona_outputs(
@@ -64,11 +66,13 @@ def build_persona_outputs(
     )
     total_labeled_records = int(quality_checks.get("labeled_episode_rows", len(labeled_df)))
     persona_core_labeled_records = int(quality_checks.get("persona_core_labeled_rows", len(labeled_df)))
+    bottleneck_config = load_yaml(Path(__file__).resolve().parents[2] / "config" / "bottleneck_clustering.yaml")
     example_config = load_example_selection_config(Path(__file__).resolve().parents[2])
     cluster_policy = _cluster_promotion_policy(
         persona_source_df,
         total_labeled_records,
         cluster_outputs.get("cluster_robustness_audit_df"),
+        promotion_config=dict(bottleneck_config.get("promotion_scoring", {}) or {}),
     )
     grounding_outputs = apply_promotion_grounding_policy(
         selected_df=cluster_outputs["selected_examples_df"],
@@ -87,6 +91,7 @@ def build_persona_outputs(
         cluster_policy=cluster_policy,
         persona_grounding_df=grounding_outputs["persona_grounding_df"],
         config=example_config,
+        promotion_config=dict(bottleneck_config.get("promotion_scoring", {}) or {}),
     )
 
     persona_summary_df = _build_persona_summary_df(
@@ -110,6 +115,7 @@ def build_persona_outputs(
         cluster_policy,
         cluster_outputs["cluster_meaning_audit_df"],
     )
+    persona_promotion_score_df = _build_persona_promotion_score_df(persona_source_df, cluster_policy)
 
     outputs = {
         "overview_df": pd.DataFrame(columns=["metric", "value"]),
@@ -120,6 +126,7 @@ def build_persona_outputs(
         "persona_examples_df": persona_examples_df,
         "cluster_stats_df": cluster_stats_df,
         "persona_promotion_grounding_audit_df": _build_persona_promotion_grounding_audit_df(persona_summary_df),
+        "persona_promotion_score_df": persona_promotion_score_df,
         "quality_checks_df": pd.DataFrame(columns=["metric", "value", "threshold", "status", "level", "denominator_type", "denominator_value", "notes"]),
         "persona_assignments_df": persona_assignments_df,
         "persona_grounding_df": grounding_outputs["persona_grounding_df"],
@@ -143,6 +150,8 @@ def build_persona_outputs(
         "role_feature_importance_before_after_df": cluster_outputs["role_feature_importance_before_after_df"],
         "cluster_comparison_before_after_df": cluster_outputs["cluster_comparison_before_after_df"],
         "cluster_comparison_before_after_md": cluster_outputs["cluster_comparison_before_after_md"],
+        "persona_overlap_merge_audit_df": cluster_outputs["persona_overlap_merge_audit_df"],
+        "persona_overlap_merge_summary_df": cluster_outputs["persona_overlap_merge_summary_df"],
         "cluster_profiles": cluster_outputs["cluster_profiles"],
     }
     return outputs
@@ -160,6 +169,7 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
         "persona_grounding_csv": output_dir / "persona_grounding.csv",
         "cluster_stats_csv": output_dir / "cluster_stats.csv",
         "persona_promotion_grounding_audit_csv": output_dir / "persona_promotion_grounding_audit.csv",
+        "persona_promotion_score_csv": output_dir / "persona_promotion_score.csv",
         "quality_checks_csv": output_dir / "quality_checks.csv",
         "overview_csv": output_dir / "overview.csv",
         "persona_assignments_parquet": output_dir / "persona_assignments.parquet",
@@ -181,6 +191,8 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
         "role_feature_importance_before_after_csv": output_dir / "role_feature_importance_before_after.csv",
         "cluster_comparison_before_after_csv": output_dir / "cluster_comparison_before_after.csv",
         "cluster_comparison_before_after_md": output_dir / "cluster_comparison_before_after.md",
+        "persona_overlap_merge_audit_csv": output_dir / "persona_overlap_merge_audit.csv",
+        "persona_overlap_merge_summary_csv": output_dir / "persona_overlap_merge_summary.csv",
     }
     outputs["persona_summary_df"].to_csv(paths["persona_summary_csv"], index=False)
     outputs["persona_axes_df"].to_csv(paths["persona_axes_csv"], index=False)
@@ -190,6 +202,7 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
     outputs["persona_grounding_df"].to_csv(paths["persona_grounding_csv"], index=False)
     outputs["cluster_stats_df"].to_csv(paths["cluster_stats_csv"], index=False)
     outputs["persona_promotion_grounding_audit_df"].to_csv(paths["persona_promotion_grounding_audit_csv"], index=False)
+    outputs["persona_promotion_score_df"].to_csv(paths["persona_promotion_score_csv"], index=False)
     outputs["quality_checks_df"].to_csv(paths["quality_checks_csv"], index=False)
     outputs["overview_df"].to_csv(paths["overview_csv"], index=False)
     outputs["persona_assignments_df"].to_parquet(paths["persona_assignments_parquet"], index=False)
@@ -207,6 +220,8 @@ def write_persona_outputs(root_dir: Path, outputs: dict[str, Any]) -> dict[str, 
     outputs["bottleneck_feature_importance_df"].to_csv(paths["bottleneck_feature_importance_csv"], index=False)
     outputs["role_feature_importance_before_after_df"].to_csv(paths["role_feature_importance_before_after_csv"], index=False)
     outputs["cluster_comparison_before_after_df"].to_csv(paths["cluster_comparison_before_after_csv"], index=False)
+    outputs["persona_overlap_merge_audit_df"].to_csv(paths["persona_overlap_merge_audit_csv"], index=False)
+    outputs["persona_overlap_merge_summary_df"].to_csv(paths["persona_overlap_merge_summary_csv"], index=False)
     paths["representative_examples_by_persona_md"].write_text(outputs["representative_examples_markdown"], encoding="utf-8")
     paths["representative_examples_by_new_cluster_md"].write_text(outputs["representative_examples_by_new_cluster_md"], encoding="utf-8")
     paths["cluster_comparison_before_after_md"].write_text(outputs["cluster_comparison_before_after_md"], encoding="utf-8")
@@ -262,13 +277,30 @@ def _build_persona_summary_df(
         trust = top_non_unknown_value(group, "trust_validation_need")
         tool_mode = top_non_unknown_value(group, "tool_dependency_mode")
         output_mode = top_non_unknown_value(group, "output_expectation")
+        top_pain_points = _top_themes(group, ["pain_codes", "question_codes"], limit=4)
+        representative_examples = summary_examples_lookup.get(str(persona_id), [])
         cluster_name = naming_lookup.get(str(persona_id), str(group.get("cluster_name", pd.Series([persona_id])).iloc[0]))
         promotion = cluster_policy["status_by_persona"].get(str(persona_id), {})
-        persona_name = _archetype_name(role, workflow, bottleneck, goal, output_mode, promotion.get("status", "exploratory_bucket"))
+        legacy_persona_name = _archetype_name(role, workflow, bottleneck, goal, output_mode, promotion.get("status", "exploratory_bucket"))
+        schema_fields = _persona_schema_fields(
+            group=group,
+            role=role,
+            workflow=workflow,
+            goal=goal,
+            bottleneck=bottleneck,
+            trust=trust,
+            tool_mode=tool_mode,
+            output_mode=output_mode,
+            top_pain_points=top_pain_points,
+            representative_examples=representative_examples,
+        )
+        persona_name = str(schema_fields.get("persona_profile_name", "") or legacy_persona_name)
         rows.append(
             {
                 "persona_id": persona_id,
+                "persona_schema_version": "b2b_workflow_persona_v2",
                 "persona_name": persona_name,
+                "legacy_persona_name": legacy_persona_name,
                 "persona_size": persona_size,
                 "share_of_core_labeled": round_pct(persona_size, persona_core_labeled_records),
                 "share_of_all_labeled": round_pct(persona_size, total_labeled_records),
@@ -294,6 +326,28 @@ def _build_persona_summary_df(
                 "grounding_reason": promotion.get("grounding_reason", ""),
                 "grounded_candidate_count": int(promotion.get("grounded_candidate_count", 0) or 0),
                 "weak_candidate_count": int(promotion.get("weak_candidate_count", 0) or 0),
+                "structural_stability_score": float(promotion.get("structural_stability_score", 0.0) or 0.0),
+                "grounding_quality_score": float(promotion.get("grounding_quality_score", 0.0) or 0.0),
+                "distinctiveness_score": float(promotion.get("distinctiveness_score", 0.0) or 0.0),
+                "actionability_score": float(promotion.get("actionability_score", 0.0) or 0.0),
+                "output_consistency_score": float(promotion.get("output_consistency_score", 0.0) or 0.0),
+                "cross_source_robustness_score": float(promotion.get("cross_source_robustness_score", 0.0) or 0.0),
+                "promotion_score": float(promotion.get("promotion_score", 0.0) or 0.0),
+                "product_value_proposition": promotion.get("product_value_proposition", ""),
+                "activation_moment": promotion.get("activation_moment", ""),
+                "ux_feature_need": promotion.get("ux_feature_need", ""),
+                "nearest_persona_id": promotion.get("nearest_persona_id", ""),
+                "strategic_redundancy_status": promotion.get("strategic_redundancy_status", ""),
+                "strategic_redundancy_reason": promotion.get("strategic_redundancy_reason", ""),
+                "context_evidence_count": int(promotion.get("context_evidence_count", 0) or 0),
+                "workaround_evidence_count": int(promotion.get("workaround_evidence_count", 0) or 0),
+                "trust_validation_evidence_count": int(promotion.get("trust_validation_evidence_count", 0) or 0),
+                "bundle_episode_count": int(promotion.get("bundle_episode_count", 0) or 0),
+                "bundle_dimension_hits": int(promotion.get("bundle_dimension_hits", 0) or 0),
+                "total_bundle_strength": int(promotion.get("total_bundle_strength", 0) or 0),
+                "bundle_grounding_status": promotion.get("bundle_grounding_status", ""),
+                "bundle_grounding_reason": promotion.get("bundle_grounding_reason", ""),
+                "bundle_support_examples": promotion.get("bundle_support_examples", ""),
                 "selected_example_count": int(promotion.get("selected_example_count", 0) or 0),
                 "fallback_selected_count": int(promotion.get("fallback_selected_count", 0) or 0),
                 "cluster_stability_status": promotion.get("cluster_stability_status", ""),
@@ -319,10 +373,11 @@ def _build_persona_summary_df(
                 "trust_explanation_need": trust,
                 "current_tool_dependency": tool_mode,
                 "primary_output_expectation": output_mode,
-                "top_pain_points": " | ".join(_top_themes(group, ["pain_codes", "question_codes"], limit=4)),
-                "representative_examples": " | ".join(summary_examples_lookup.get(str(persona_id), [])),
+                "top_pain_points": " | ".join(top_pain_points),
+                "representative_examples": " | ".join(representative_examples),
                 "why_this_persona_matters": _why_persona_matters(group, bottleneck, goal, output_mode),
                 "legacy_cluster_name": cluster_name,
+                **schema_fields,
             }
         )
     return pd.DataFrame(rows).sort_values(["persona_size", "persona_id"], ascending=[False, True]).reset_index(drop=True)
@@ -441,8 +496,30 @@ def _build_persona_promotion_grounding_audit_df(persona_summary_df: pd.DataFrame
         "grounding_status",
         "promotion_grounding_status",
         "grounding_reason",
+        "structural_stability_score",
+        "grounding_quality_score",
+        "distinctiveness_score",
+        "actionability_score",
+        "output_consistency_score",
+        "cross_source_robustness_score",
+        "promotion_score",
+        "product_value_proposition",
+        "activation_moment",
+        "ux_feature_need",
+        "nearest_persona_id",
+        "strategic_redundancy_status",
+        "strategic_redundancy_reason",
         "grounded_candidate_count",
         "weak_candidate_count",
+        "context_evidence_count",
+        "workaround_evidence_count",
+        "trust_validation_evidence_count",
+        "bundle_episode_count",
+        "bundle_dimension_hits",
+        "total_bundle_strength",
+        "bundle_grounding_status",
+        "bundle_grounding_reason",
+        "bundle_support_examples",
         "selected_example_count",
         "fallback_selected_count",
         "cluster_stability_status",
@@ -506,6 +583,27 @@ def _build_cluster_stats_df(
                 "grounding_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("grounding_reason", ""),
                 "grounded_candidate_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("grounded_candidate_count", 0) or 0),
                 "weak_candidate_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("weak_candidate_count", 0) or 0),
+                "structural_stability_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("structural_stability_score", 0.0) or 0.0),
+                "grounding_quality_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("grounding_quality_score", 0.0) or 0.0),
+                "distinctiveness_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("distinctiveness_score", 0.0) or 0.0),
+                "actionability_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("actionability_score", 0.0) or 0.0),
+                "output_consistency_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("output_consistency_score", 0.0) or 0.0),
+                "cross_source_robustness_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cross_source_robustness_score", 0.0) or 0.0),
+                "promotion_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("promotion_score", 0.0) or 0.0),
+                "product_value_proposition": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("product_value_proposition", ""),
+                "activation_moment": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("activation_moment", ""),
+                "ux_feature_need": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("ux_feature_need", ""),
+                "nearest_persona_id": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("nearest_persona_id", ""),
+                "strategic_redundancy_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("strategic_redundancy_status", ""),
+                "strategic_redundancy_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("strategic_redundancy_reason", ""),
+                "context_evidence_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("context_evidence_count", 0) or 0),
+                "workaround_evidence_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("workaround_evidence_count", 0) or 0),
+                "trust_validation_evidence_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("trust_validation_evidence_count", 0) or 0),
+                "bundle_episode_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("bundle_episode_count", 0) or 0),
+                "bundle_dimension_hits": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("bundle_dimension_hits", 0) or 0),
+                "total_bundle_strength": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("total_bundle_strength", 0) or 0),
+                "bundle_grounding_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("bundle_grounding_status", ""),
+                "bundle_grounding_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("bundle_grounding_reason", ""),
                 "selected_example_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("selected_example_count", 0) or 0),
                 "fallback_selected_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("fallback_selected_count", 0) or 0),
                 "cluster_stability_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_stability_status", ""),
@@ -537,6 +635,7 @@ def _empty_outputs() -> dict[str, Any]:
         "persona_grounding_df": empty,
         "cluster_stats_df": empty,
         "persona_promotion_grounding_audit_df": empty,
+        "persona_promotion_score_df": empty,
         "quality_checks_df": empty,
         "persona_assignments_df": empty,
         "axis_wide_df": empty,
@@ -556,6 +655,8 @@ def _empty_outputs() -> dict[str, Any]:
         "role_feature_importance_before_after_df": empty,
         "cluster_comparison_before_after_df": empty,
         "cluster_comparison_before_after_md": "",
+        "persona_overlap_merge_audit_df": empty,
+        "persona_overlap_merge_summary_df": empty,
         "cluster_profiles": [],
     }
 
@@ -657,6 +758,328 @@ def _why_persona_matters(group: pd.DataFrame, bottleneck: str, goal: str, output
     )
 
 
+def _persona_schema_fields(
+    group: pd.DataFrame,
+    role: str,
+    workflow: str,
+    goal: str,
+    bottleneck: str,
+    trust: str,
+    tool_mode: str,
+    output_mode: str,
+    top_pain_points: list[str],
+    representative_examples: list[str],
+) -> dict[str, str]:
+    """Derive layered B2B workflow-persona fields from current labels and evidence."""
+    secondary_bottleneck = _secondary_bottleneck(group, primary=bottleneck)
+    trust_failure_mode = _trust_failure_mode(group, bottleneck=bottleneck, trust=trust)
+    workaround_pattern = _workaround_pattern(group, bottleneck=bottleneck, tool_mode=tool_mode, output_mode=output_mode)
+    user_role_family = _user_role_family(role)
+    functional_context = _functional_context(workflow, goal, output_mode)
+    stakeholder_exposure = _stakeholder_exposure(group, workflow, goal, output_mode, trust)
+    decision_responsibility = _decision_responsibility(goal, workflow, trust)
+    recurring_job_to_be_done = _recurring_job_to_be_done(goal, workflow, output_mode)
+    typical_trigger_event = _typical_trigger_event(group, goal, workflow, bottleneck, trust)
+    expected_output_artifact = _expected_output_artifact(output_mode, workflow)
+    frequency_of_need = _frequency_of_need(goal, workflow, bottleneck)
+    why_current_tools_fail = _why_current_tools_fail(bottleneck, trust_failure_mode, workaround_pattern, tool_mode)
+    why_this_persona_would_use_our_product = _why_this_persona_would_use_our_product(
+        recurring_job_to_be_done,
+        primary_bottleneck=bottleneck,
+        expected_output_artifact=expected_output_artifact,
+        trust_failure_mode=trust_failure_mode,
+    )
+    activation_moment = _activation_moment(typical_trigger_event, primary_bottleneck=bottleneck, trust_failure_mode=trust_failure_mode)
+    success_signal = _success_signal(recurring_job_to_be_done, expected_output_artifact, primary_bottleneck=bottleneck)
+    role_context = {
+        "user_role_family": user_role_family,
+        "functional_context": functional_context,
+        "stakeholder_exposure": stakeholder_exposure,
+        "decision_responsibility": decision_responsibility,
+    }
+    work_loop = {
+        "recurring_job_to_be_done": recurring_job_to_be_done,
+        "typical_trigger_event": typical_trigger_event,
+        "expected_output_artifact": expected_output_artifact,
+        "frequency_of_need": frequency_of_need,
+    }
+    bottleneck_pattern = {
+        "primary_bottleneck": bottleneck,
+        "secondary_bottleneck": secondary_bottleneck,
+        "trust_failure_mode": trust_failure_mode,
+        "workaround_pattern": workaround_pattern,
+    }
+    product_relevance = {
+        "why_current_tools_fail": why_current_tools_fail,
+        "why_this_persona_would_use_our_product": why_this_persona_would_use_our_product,
+        "activation_moment": activation_moment,
+        "success_signal": success_signal,
+    }
+    return {
+        "persona_profile_name": _persona_profile_name(user_role_family, recurring_job_to_be_done, functional_context),
+        "user_role_family": user_role_family,
+        "functional_context": functional_context,
+        "stakeholder_exposure": stakeholder_exposure,
+        "decision_responsibility": decision_responsibility,
+        "recurring_job_to_be_done": recurring_job_to_be_done,
+        "typical_trigger_event": typical_trigger_event,
+        "expected_output_artifact": expected_output_artifact,
+        "frequency_of_need": frequency_of_need,
+        "primary_bottleneck": bottleneck,
+        "secondary_bottleneck": secondary_bottleneck,
+        "trust_failure_mode": trust_failure_mode,
+        "workaround_pattern": workaround_pattern,
+        "why_current_tools_fail": why_current_tools_fail,
+        "why_this_persona_would_use_our_product": why_this_persona_would_use_our_product,
+        "activation_moment": activation_moment,
+        "success_signal": success_signal,
+        "role_context_json": json.dumps(role_context, ensure_ascii=False, sort_keys=True),
+        "work_loop_json": json.dumps(work_loop, ensure_ascii=False, sort_keys=True),
+        "bottleneck_pattern_json": json.dumps(bottleneck_pattern, ensure_ascii=False, sort_keys=True),
+        "product_relevance_json": json.dumps(product_relevance, ensure_ascii=False, sort_keys=True),
+        "derivation_basis": "labels_plus_episode_text",
+        "derivation_evidence_summary": " | ".join((top_pain_points + representative_examples)[:4]),
+    }
+
+
+def _top_non_unknown_values(group: pd.DataFrame, column: str, limit: int) -> list[str]:
+    """Return the most common non-unknown values for one grouped column."""
+    if column not in group.columns:
+        return []
+    counts = Counter(
+        str(value).strip()
+        for value in group[column].tolist()
+        if str(value).strip() and not is_unknown_like(value)
+    )
+    return [value for value, _ in counts.most_common(limit)]
+
+
+def _secondary_bottleneck(group: pd.DataFrame, primary: str) -> str:
+    """Return the next strongest bottleneck label when available."""
+    for value in _top_non_unknown_values(group, "bottleneck_type", 4):
+        if value != primary:
+            return value
+    theme_map = {
+        "manual_reporting": "tool_limitation",
+        "tool_limitation": "handoff_dependency",
+        "data_quality": "manual_reporting",
+        "handoff_dependency": "data_quality",
+        "general_friction": "tool_limitation",
+    }
+    return theme_map.get(str(primary or "").strip(), "unassigned")
+
+
+def _user_role_family(role: str) -> str:
+    """Normalize dominant role into a reusable workflow persona family."""
+    mapping = {
+        "analyst": "analyst_operator",
+        "manager": "manager_operator",
+        "marketer": "marketing_operator",
+        "business_user": "business_operator",
+    }
+    return mapping.get(str(role).strip().lower(), "workflow_operator")
+
+
+def _functional_context(workflow: str, goal: str, output_mode: str) -> str:
+    """Describe the stable functional context around the recurring work."""
+    workflow_key = str(workflow).strip().lower()
+    goal_key = str(goal).strip().lower()
+    output_key = str(output_mode).strip().lower()
+    if workflow_key == "reporting" or goal_key == "report_speed" or output_key == "excel_ready_output":
+        return "reporting_and_performance_management"
+    if workflow_key == "validation" or goal_key == "validate_numbers":
+        return "metric_governance_and_validation"
+    if workflow_key == "automation" or goal_key == "automate_workflow":
+        return "analytics_operations_and_automation"
+    if workflow_key == "triage" or goal_key == "diagnose_change":
+        return "performance_monitoring_and_issue_triage"
+    return "analytics_workflow_execution"
+
+
+def _stakeholder_exposure(group: pd.DataFrame, workflow: str, goal: str, output_mode: str, trust: str) -> str:
+    """Estimate how visible the work is to external stakeholders inside the business."""
+    themes = set(_top_themes(group, ["pain_codes", "question_codes", "output_codes"], limit=8))
+    if str(output_mode).strip().lower() == "excel_ready_output" or str(goal).strip().lower() == "report_speed":
+        return "cross_functional_reporting_delivery"
+    if str(trust).strip().lower() == "high" or "Q_VALIDATE_NUMBERS" in themes:
+        return "decision_support_with_signoff_pressure"
+    if str(workflow).strip().lower() == "triage":
+        return "operational_visibility_and_explanation"
+    return "team_internal_workflow"
+
+
+def _decision_responsibility(goal: str, workflow: str, trust: str) -> str:
+    """Describe the persona's recurring decision burden."""
+    goal_key = str(goal).strip().lower()
+    workflow_key = str(workflow).strip().lower()
+    trust_key = str(trust).strip().lower()
+    if goal_key == "validate_numbers" or workflow_key == "validation" or trust_key == "high":
+        return "metric_signoff_and_pre_share_validation"
+    if goal_key == "diagnose_change" or workflow_key == "triage":
+        return "investigate_and_explain_variance"
+    if goal_key == "automate_workflow" or workflow_key == "automation":
+        return "operationalize_repeatable_analysis_work"
+    if goal_key == "report_speed" or workflow_key == "reporting":
+        return "package_and_deliver_recurring_reporting"
+    return "support_operational_analysis_execution"
+
+
+def _recurring_job_to_be_done(goal: str, workflow: str, output_mode: str) -> str:
+    """Express the main recurring work loop in action terms."""
+    goal_key = str(goal).strip().lower()
+    workflow_key = str(workflow).strip().lower()
+    output_key = str(output_mode).strip().lower()
+    if goal_key == "report_speed" or workflow_key == "reporting":
+        return "deliver_recurring_reporting_without_manual_repackaging"
+    if goal_key == "diagnose_change" or workflow_key == "triage":
+        return "explain_metric_or_dashboard_changes_fast"
+    if goal_key == "validate_numbers" or workflow_key == "validation":
+        return "validate_numbers_before_sharing_or_acting"
+    if goal_key == "automate_workflow" or workflow_key == "automation" or output_key == "automation_output":
+        return "turn_repeated_analysis_work_into_repeatable_ops"
+    return "move_analysis_work_to_a_shareable_output"
+
+
+def _typical_trigger_event(group: pd.DataFrame, goal: str, workflow: str, bottleneck: str, trust: str) -> str:
+    """Infer the event that typically starts this persona's work loop."""
+    themes = set(_top_themes(group, ["question_codes", "pain_codes"], limit=8))
+    if str(goal).strip().lower() == "report_speed" or str(workflow).strip().lower() == "reporting":
+        return "scheduled_reporting_cycle_or_stakeholder_request"
+    if str(goal).strip().lower() == "diagnose_change" or str(workflow).strip().lower() == "triage":
+        return "unexpected_metric_shift_or_dashboard_question"
+    if str(goal).strip().lower() == "validate_numbers" or str(trust).strip().lower() == "high":
+        return "numbers_do_not_reconcile_before_distribution"
+    if str(goal).strip().lower() == "automate_workflow" or str(workflow).strip().lower() == "automation":
+        return "repeated_manual_work_becomes_operationally_unacceptable"
+    if str(bottleneck).strip().lower() == "handoff_dependency" or "P_HANDOFF" in themes:
+        return "cross_team_follow_up_blocks_delivery"
+    return "analysis_delivery_deadline_or_escalation"
+
+
+def _expected_output_artifact(output_mode: str, workflow: str) -> str:
+    """Normalize the end artifact this persona is trying to produce."""
+    mapping = {
+        "excel_ready_output": "stakeholder_ready_export_or_packaged_report",
+        "dashboard_update": "updated_dashboard_or_explanation_for_existing_dashboard",
+        "automation_output": "repeatable_workflow_or_scheduled_delivery",
+    }
+    output_key = str(output_mode).strip().lower()
+    if output_key in mapping:
+        return mapping[output_key]
+    if str(workflow).strip().lower() == "validation":
+        return "validated_metric_pack_before_distribution"
+    return "shareable_analysis_output"
+
+
+def _frequency_of_need(goal: str, workflow: str, bottleneck: str) -> str:
+    """Estimate whether the need is cyclical, event-driven, or continuous."""
+    goal_key = str(goal).strip().lower()
+    workflow_key = str(workflow).strip().lower()
+    bottleneck_key = str(bottleneck).strip().lower()
+    if goal_key == "report_speed" or workflow_key == "reporting":
+        return "scheduled_recurring"
+    if goal_key == "diagnose_change" or workflow_key == "triage":
+        return "event_driven"
+    if goal_key == "validate_numbers" or workflow_key == "validation":
+        return "pre_share_or_pre_decision"
+    if goal_key == "automate_workflow" or workflow_key == "automation" or bottleneck_key == "general_friction":
+        return "continuous_operational"
+    return "recurring_operational"
+
+
+def _trust_failure_mode(group: pd.DataFrame, bottleneck: str, trust: str) -> str:
+    """Describe how trust breaks in the current workflow."""
+    themes = set(_top_themes(group, ["pain_codes", "question_codes"], limit=10))
+    bottleneck_key = str(bottleneck).strip().lower()
+    trust_key = str(trust).strip().lower()
+    if bottleneck_key == "data_quality" or trust_key == "high" or "Q_VALIDATE_NUMBERS" in themes:
+        return "numbers_do_not_reconcile_or_feel_safe_to_share"
+    if bottleneck_key == "handoff_dependency" or "P_HANDOFF" in themes:
+        return "context_is_not_explainable_without_manual_follow_up"
+    if bottleneck_key == "tool_limitation":
+        return "tool_outputs_do_not_support_confident_explanation"
+    if bottleneck_key == "manual_reporting":
+        return "delivery_depends_on_manual_rework_and_can_drift"
+    return "workflow_breaks_before_a_trusted_output_exists"
+
+
+def _workaround_pattern(group: pd.DataFrame, bottleneck: str, tool_mode: str, output_mode: str) -> str:
+    """Describe the repeatable workaround pattern implied by current evidence."""
+    workaround_counts = Counter(_theme_values(group, ["workaround_codes", "env_codes", "output_codes"]))
+    dominant_workarounds = [value for value, _ in workaround_counts.most_common(4)]
+    tool_key = str(tool_mode).strip().lower()
+    bottleneck_key = str(bottleneck).strip().lower()
+    output_key = str(output_mode).strip().lower()
+    if tool_key == "spreadsheet_heavy" or bottleneck_key == "manual_reporting":
+        return "export_then_patch_in_spreadsheet"
+    if "W_SCRIPT" in dominant_workarounds or tool_key == "script_assisted":
+        return "fill_gaps_with_custom_scripts_or_manual_queries"
+    if bottleneck_key == "handoff_dependency":
+        return "escalate_to_other_teams_for_context_and_validation"
+    if bottleneck_key == "tool_limitation" or output_key == "dashboard_update":
+        return "rebuild_or_explain_results_outside_the_primary_tool"
+    return "manual_reconciliation_and_tool_hopping"
+
+
+def _why_current_tools_fail(bottleneck: str, trust_failure_mode: str, workaround_pattern: str, tool_mode: str) -> str:
+    """Summarize product failure as an operational gap rather than a demographic story."""
+    bottleneck_label = _titleize(bottleneck, "workflow friction").lower()
+    tool_label = _titleize(tool_mode, "current tools").lower()
+    return (
+        f"Current {tool_label} workflows do not remove {bottleneck_label}; "
+        f"the team still relies on {workaround_pattern.replace('_', ' ')} because {trust_failure_mode.replace('_', ' ')}."
+    )
+
+
+def _why_this_persona_would_use_our_product(
+    recurring_job_to_be_done: str,
+    primary_bottleneck: str,
+    expected_output_artifact: str,
+    trust_failure_mode: str,
+) -> str:
+    """State the product reason in workflow terms."""
+    return (
+        f"They would adopt a product that helps them {recurring_job_to_be_done.replace('_', ' ')}, "
+        f"eliminates {str(primary_bottleneck).replace('_', ' ')}, and reliably produces {expected_output_artifact.replace('_', ' ')} "
+        f"without {trust_failure_mode.replace('_', ' ')}."
+    )
+
+
+def _activation_moment(typical_trigger_event: str, primary_bottleneck: str, trust_failure_mode: str) -> str:
+    """Describe when product pull is strongest for this persona."""
+    return (
+        f"Activation happens when {typical_trigger_event.replace('_', ' ')} and "
+        f"{str(primary_bottleneck).replace('_', ' ')} turns into {trust_failure_mode.replace('_', ' ')}."
+    )
+
+
+def _success_signal(recurring_job_to_be_done: str, expected_output_artifact: str, primary_bottleneck: str) -> str:
+    """Describe success in operational terms."""
+    return (
+        f"Success means the team can {recurring_job_to_be_done.replace('_', ' ')}, produce {expected_output_artifact.replace('_', ' ')}, "
+        f"and no longer depend on {str(primary_bottleneck).replace('_', ' ')} workarounds."
+    )
+
+
+def _persona_profile_name(user_role_family: str, recurring_job_to_be_done: str, functional_context: str) -> str:
+    """Name the persona as a reusable operator profile rather than a pain fragment."""
+    role_label = {
+        "analyst_operator": "Analyst",
+        "manager_operator": "Manager",
+        "marketing_operator": "Marketing Operator",
+        "business_operator": "Business Operator",
+        "workflow_operator": "Workflow Operator",
+    }.get(str(user_role_family).strip().lower(), "Workflow Operator")
+    job_label = {
+        "deliver_recurring_reporting_without_manual_repackaging": "Reporting Operator",
+        "explain_metric_or_dashboard_changes_fast": "Performance Investigator",
+        "validate_numbers_before_sharing_or_acting": "Metric Steward",
+        "turn_repeated_analysis_work_into_repeatable_ops": "Workflow Automator",
+        "move_analysis_work_to_a_shareable_output": "Analysis Operator",
+    }.get(str(recurring_job_to_be_done).strip().lower(), _titleize(functional_context, "analysis operations"))
+    return f"{role_label} {job_label}".strip()
+
+
 def _summary_examples_lookup(selected_examples_df: pd.DataFrame) -> dict[str, list[str]]:
     """Build short representative-example lists keyed by persona id."""
     if selected_examples_df is None or selected_examples_df.empty:
@@ -753,10 +1176,45 @@ def _reporting_readiness_status(payload: dict[str, Any]) -> str:
     return "not_final_usable"
 
 
+def _build_persona_promotion_score_df(persona_source_df: pd.DataFrame, cluster_policy: dict[str, Any]) -> pd.DataFrame:
+    """Build explicit promotion-score breakdown rows for every persona."""
+    rows: list[dict[str, Any]] = []
+    size_lookup = persona_source_df.groupby("persona_id")["episode_id"].nunique().to_dict() if not persona_source_df.empty else {}
+    for persona_id, payload in dict(cluster_policy.get("status_by_persona", {})).items():
+        rows.append(
+            {
+                "persona_id": str(persona_id),
+                "persona_size": int(size_lookup.get(persona_id, 0) or 0),
+                "base_promotion_status": payload.get("base_promotion_status", ""),
+                "promotion_status": payload.get("status", ""),
+                "promotion_action": _promotion_action(payload),
+                "structural_stability_score": float(payload.get("structural_stability_score", 0.0) or 0.0),
+                "grounding_quality_score": float(payload.get("grounding_quality_score", 0.0) or 0.0),
+                "distinctiveness_score": float(payload.get("distinctiveness_score", 0.0) or 0.0),
+                "actionability_score": float(payload.get("actionability_score", 0.0) or 0.0),
+                "output_consistency_score": float(payload.get("output_consistency_score", 0.0) or 0.0),
+                "cross_source_robustness_score": float(payload.get("cross_source_robustness_score", 0.0) or 0.0),
+                "promotion_score": float(payload.get("promotion_score", 0.0) or 0.0),
+                "product_value_proposition": payload.get("product_value_proposition", ""),
+                "activation_moment": payload.get("activation_moment", ""),
+                "ux_feature_need": payload.get("ux_feature_need", ""),
+                "nearest_persona_id": payload.get("nearest_persona_id", ""),
+                "strategic_redundancy_status": payload.get("strategic_redundancy_status", ""),
+                "strategic_redundancy_reason": payload.get("strategic_redundancy_reason", ""),
+                "promotion_reason": payload.get("reason", ""),
+                "grounding_status": payload.get("grounding_status", ""),
+                "promotion_grounding_status": payload.get("promotion_grounding_status", ""),
+                "grounding_reason": payload.get("grounding_reason", ""),
+            }
+        )
+    return pd.DataFrame(rows).sort_values(["promotion_score", "persona_id"], ascending=[False, True]).reset_index(drop=True) if rows else pd.DataFrame()
+
+
 def _cluster_promotion_policy(
     persona_source_df: pd.DataFrame,
     total_labeled_records: int,
     cluster_robustness_df: pd.DataFrame | None = None,
+    promotion_config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Classify clusters as promoted personas or exploratory residual buckets."""
     sizes = persona_source_df.groupby("persona_id")["episode_id"].nunique().sort_values(ascending=False)
@@ -764,11 +1222,13 @@ def _cluster_promotion_policy(
     largest_share = round_pct(int(sizes.iloc[0]) if not sizes.empty else 0, total_labeled_records)
     single_cluster_dominance = is_single_cluster_dominant(largest_share)
     dominant_persona = str(sizes.index[0]) if not sizes.empty else ""
+    config = dict(promotion_config or {})
     robustness_lookup = (
         cluster_robustness_df.set_index("persona_id").to_dict(orient="index")
         if cluster_robustness_df is not None and not cluster_robustness_df.empty and "persona_id" in cluster_robustness_df.columns
         else {}
     )
+    profiles = _promotion_profiles(persona_source_df, robustness_lookup)
     status_by_persona: dict[str, dict[str, str]] = {}
     for persona_id, size in sizes.items():
         persona_key = str(persona_id)
@@ -778,6 +1238,13 @@ def _cluster_promotion_policy(
         evidence_status = str(robustness.get("evidence_status", "not_evaluated") or "not_evaluated")
         structural_support_status = str(robustness.get("structural_support_status", "structurally_supported") or "structurally_supported")
         structural_support_reason = _structural_support_reason(robustness)
+        scorecard = _promotion_scorecard(
+            profile=profiles.get(persona_key, {}),
+            size=int(size),
+            min_cluster_size=min_cluster_size,
+            total_labeled_records=total_labeled_records,
+            config=config,
+        )
         if int(size) < min_cluster_size:
             status = "exploratory_bucket"
             reason = f"sample size {int(size)} below min_cluster_size {min_cluster_size}"
@@ -790,9 +1257,36 @@ def _cluster_promotion_policy(
                 f"sample size {int(size)} meets min_cluster_size {min_cluster_size}; "
                 f"review-visible because {structural_support_reason}"
             )
-        else:
+        elif str(scorecard.get("strategic_redundancy_status", "")) == "strategically_redundant":
+            status = "review_visible_persona"
+            reason = str(scorecard.get("strategic_redundancy_reason", "strategically redundant with a stronger neighboring persona") or "strategically redundant with a stronger neighboring persona")
+        elif float(scorecard.get("pre_grounding_promotion_score", 0.0) or 0.0) < float(config.get("candidate_score_min", 0.58)):
+            status = "exploratory_bucket"
+            reason = (
+                f"promotion score {float(scorecard.get('pre_grounding_promotion_score', 0.0) or 0.0):.3f} below candidate threshold "
+                f"{float(config.get('candidate_score_min', 0.58)):.2f}"
+            )
+        elif float(scorecard.get("actionability_score", 0.0) or 0.0) < float(config.get("minimum_actionability_score", 0.55)):
+            status = "review_visible_persona"
+            reason = "review-visible because the persona does not yet imply a clear product strategy, activation moment, and UX need"
+        elif float(scorecard.get("distinctiveness_score", 0.0) or 0.0) < float(config.get("minimum_distinctiveness_score", 0.18)):
+            status = "review_visible_persona"
+            reason = "review-visible because the persona is too close to a neighboring persona to justify separate promotion"
+        elif float(scorecard.get("output_consistency_score", 0.0) or 0.0) < float(config.get("minimum_output_consistency_score", 0.55)):
+            status = "review_visible_persona"
+            reason = "review-visible because output expectations remain too mixed to support a stable product-facing persona"
+        elif float(scorecard.get("cross_source_robustness_score", 0.0) or 0.0) < float(config.get("minimum_cross_source_robustness_score", 0.35)):
+            status = "review_visible_persona"
+            reason = "review-visible because evidence is too source-concentrated for a promoted product persona"
+        elif float(scorecard.get("pre_grounding_promotion_score", 0.0) or 0.0) >= float(config.get("promote_score_min", 0.72)):
             status = "promoted_persona"
-            reason = f"sample size {int(size)} meets min_cluster_size {min_cluster_size} and cluster robustness clears structural support gate"
+            reason = (
+                f"promotion score {float(scorecard.get('pre_grounding_promotion_score', 0.0) or 0.0):.3f} clears promotion threshold "
+                f"{float(config.get('promote_score_min', 0.72)):.2f} with structurally supported and product-actionable evidence"
+            )
+        else:
+            status = "review_visible_persona"
+            reason = "review-visible because the persona is structurally sound but not yet strong enough on the combined promotion score"
         base_status = "promoted_candidate_persona" if status in {"promoted_persona", "review_visible_persona"} else status
         status_by_persona[persona_key] = {
             "status": status,
@@ -809,6 +1303,20 @@ def _cluster_promotion_policy(
             "nearest_neighbor_similarity": float(robustness.get("nearest_neighbor_similarity", 0.0) or 0.0),
             "pre_merge_anchor_count": int(robustness.get("pre_merge_anchor_count", 0) or 0),
             "robustness_action_summary": str(robustness.get("robustness_action_summary", "") or ""),
+            "structural_stability_score": float(scorecard.get("structural_stability_score", 0.0) or 0.0),
+            "grounding_quality_score": 0.0,
+            "distinctiveness_score": float(scorecard.get("distinctiveness_score", 0.0) or 0.0),
+            "actionability_score": float(scorecard.get("actionability_score", 0.0) or 0.0),
+            "output_consistency_score": float(scorecard.get("output_consistency_score", 0.0) or 0.0),
+            "cross_source_robustness_score": float(scorecard.get("cross_source_robustness_score", 0.0) or 0.0),
+            "pre_grounding_promotion_score": float(scorecard.get("pre_grounding_promotion_score", 0.0) or 0.0),
+            "promotion_score": float(scorecard.get("pre_grounding_promotion_score", 0.0) or 0.0),
+            "product_value_proposition": str(scorecard.get("product_value_proposition", "") or ""),
+            "activation_moment": str(scorecard.get("activation_moment", "") or ""),
+            "ux_feature_need": str(scorecard.get("ux_feature_need", "") or ""),
+            "nearest_persona_id": str(scorecard.get("nearest_persona_id", "") or ""),
+            "strategic_redundancy_status": str(scorecard.get("strategic_redundancy_status", "") or ""),
+            "strategic_redundancy_reason": str(scorecard.get("strategic_redundancy_reason", "") or ""),
             "grounding_status": "not_evaluated" if base_status == "promoted_candidate_persona" else "not_applicable",
             "promotion_grounding_status": "promotion_pending_grounding_review" if base_status == "promoted_candidate_persona" else status,
             "grounding_reason": "",
@@ -823,10 +1331,214 @@ def _cluster_promotion_policy(
     }
 
 
+def _promotion_profiles(
+    persona_source_df: pd.DataFrame,
+    robustness_lookup: dict[str, dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    profiles: dict[str, dict[str, Any]] = {}
+    if persona_source_df.empty:
+        return profiles
+    for persona_id, group in persona_source_df.groupby("persona_id"):
+        persona_key = str(persona_id)
+        source_counts = group.groupby("source")["episode_id"].nunique().sort_values(ascending=False) if "source" in group.columns else pd.Series(dtype=float)
+        robustness = dict(robustness_lookup.get(persona_key, {}) or {})
+        profiles[persona_key] = {
+            "persona_id": persona_key,
+            "size": int(group["episode_id"].nunique()),
+            "role_terms": _top_terms(group.get("role_context", pd.Series(dtype=str))),
+            "work_terms": _top_terms(group.get("work_loop", pd.Series(dtype=str))),
+            "output_terms": _top_terms(group.get("expected_output", pd.Series(dtype=str))),
+            "bottleneck_terms": _top_terms(group.get("bottleneck_pattern", pd.Series(dtype=str))),
+            "workaround_terms": _top_terms(group.get("current_workaround", pd.Series(dtype=str))),
+            "trust_terms": _top_terms(group.get("trust_failure", pd.Series(dtype=str))),
+            "product_terms": _top_terms(group.get("product_relevance", pd.Series(dtype=str))),
+            "solution_terms": _top_terms(group.get("solution_type", pd.Series(dtype=str))),
+            "source_count": int(source_counts.size),
+            "primary_source_share": float(source_counts.iloc[0] / max(1, int(source_counts.sum()))) if not source_counts.empty else 1.0,
+            "nearest_persona_id": str(robustness.get("nearest_neighbor_id", "") or ""),
+            "nearest_neighbor_similarity": float(robustness.get("nearest_neighbor_similarity", 0.0) or 0.0),
+            "separation": float(robustness.get("separation", 0.0) or 0.0),
+            "robustness": robustness,
+        }
+    return profiles
+
+
+def _top_terms(series: pd.Series, limit: int = 4) -> list[str]:
+    terms: list[str] = []
+    if series is None:
+        return terms
+    for raw_value in series.dropna().astype(str):
+        parts = [part.strip().lower() for part in re.split(r"[|;/,]", raw_value) if part.strip()]
+        terms.extend(parts)
+    if not terms:
+        return []
+    counts = pd.Series(terms).value_counts()
+    return [str(idx) for idx in counts.index[:limit]]
+
+
+def _promotion_scorecard(
+    profile: dict[str, Any],
+    size: int,
+    min_cluster_size: int,
+    total_labeled_records: int,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    structural_stability = _structural_stability_score(profile, size, min_cluster_size, total_labeled_records)
+    distinctiveness = _distinctiveness_score(profile)
+    actionability, product_value_proposition, activation_moment, ux_feature_need = _actionability_scorecard(profile)
+    output_consistency = _output_consistency_score(profile)
+    cross_source_robustness = _cross_source_robustness_score(profile)
+    weights = dict(config.get("weights", {}) or {})
+    component_scores = {
+        "structural_stability": structural_stability,
+        "distinctiveness": distinctiveness,
+        "actionability": actionability,
+        "output_consistency": output_consistency,
+        "cross_source_robustness": cross_source_robustness,
+    }
+    weight_total = sum(float(weights.get(key, 0.0) or 0.0) for key in component_scores)
+    if weight_total <= 0.0:
+        weight_total = float(len(component_scores))
+        weights = {key: 1.0 for key in component_scores}
+    pre_grounding_promotion_score = sum(
+        component_scores[key] * float(weights.get(key, 0.0) or 0.0)
+        for key in component_scores
+    ) / weight_total
+    strategic_redundancy_status, strategic_redundancy_reason = _strategic_redundancy_status(profile, config)
+    return {
+        "structural_stability_score": structural_stability,
+        "distinctiveness_score": distinctiveness,
+        "actionability_score": actionability,
+        "output_consistency_score": output_consistency,
+        "cross_source_robustness_score": cross_source_robustness,
+        "pre_grounding_promotion_score": float(pre_grounding_promotion_score),
+        "product_value_proposition": product_value_proposition,
+        "activation_moment": activation_moment,
+        "ux_feature_need": ux_feature_need,
+        "nearest_persona_id": str(profile.get("nearest_persona_id", "") or ""),
+        "strategic_redundancy_status": strategic_redundancy_status,
+        "strategic_redundancy_reason": strategic_redundancy_reason,
+    }
+
+
+def _structural_stability_score(
+    profile: dict[str, Any],
+    size: int,
+    min_cluster_size: int,
+    total_labeled_records: int,
+) -> float:
+    robustness = dict(profile.get("robustness", {}) or {})
+    size_ratio = min(1.0, float(size) / max(1.0, float(min_cluster_size)))
+    share_ratio = min(1.0, float(size) / max(1.0, float(total_labeled_records) * 0.2))
+    anchor_ratio = min(1.0, float(robustness.get("pre_merge_anchor_count", 0) or 0) / 4.0)
+    robustness_ratio = min(1.0, max(0.0, float(robustness.get("robustness_score", 0.0) or 0.0)))
+    separation_ratio = min(1.0, max(0.0, float(profile.get("separation", 0.0) or 0.0) / 0.35))
+    return float(np.mean([size_ratio, share_ratio, anchor_ratio, robustness_ratio, separation_ratio]))
+
+
+def _distinctiveness_score(profile: dict[str, Any]) -> float:
+    nearest_similarity = float(profile.get("nearest_neighbor_similarity", 0.0) or 0.0)
+    role_density = min(1.0, len(profile.get("role_terms", [])) / 3.0)
+    work_density = min(1.0, len(profile.get("work_terms", [])) / 3.0)
+    bottleneck_density = min(1.0, len(profile.get("bottleneck_terms", [])) / 3.0)
+    return float(np.mean([1.0 - min(1.0, nearest_similarity), role_density, work_density, bottleneck_density]))
+
+
+def _actionability_scorecard(profile: dict[str, Any]) -> tuple[float, str, str, str]:
+    role_terms = list(profile.get("role_terms", []))
+    work_terms = list(profile.get("work_terms", []))
+    output_terms = list(profile.get("output_terms", []))
+    bottleneck_terms = list(profile.get("bottleneck_terms", []))
+    product_terms = list(profile.get("product_terms", []))
+    workaround_terms = list(profile.get("workaround_terms", []))
+    trust_terms = list(profile.get("trust_terms", []))
+    if role_terms and output_terms and bottleneck_terms:
+        value_prop = f"Help {role_terms[0]} deliver {output_terms[0]} without {bottleneck_terms[0]}"
+    elif role_terms and work_terms:
+        value_prop = f"Support {role_terms[0]} through the {work_terms[0]} workflow"
+    else:
+        value_prop = ""
+    if work_terms and bottleneck_terms:
+        activation_moment = f"When {work_terms[0]} is blocked by {bottleneck_terms[0]}"
+    elif bottleneck_terms:
+        activation_moment = f"When {bottleneck_terms[0]} becomes the limiting step"
+    else:
+        activation_moment = ""
+    ux_signals = [term for term in [product_terms[0] if product_terms else "", workaround_terms[0] if workaround_terms else "", trust_terms[0] if trust_terms else ""] if term]
+    ux_feature_need = "; ".join(ux_signals[:2]) if ux_signals else ""
+    return (
+        float(np.mean([
+            1.0 if value_prop else 0.0,
+            1.0 if activation_moment else 0.0,
+            1.0 if ux_feature_need else 0.0,
+            min(1.0, len(product_terms) / 2.0),
+        ])),
+        value_prop,
+        activation_moment,
+        ux_feature_need,
+    )
+
+
+def _output_consistency_score(profile: dict[str, Any]) -> float:
+    scores = [
+        min(1.0, len(profile.get("output_terms", [])) / 2.0),
+        min(1.0, len(profile.get("work_terms", [])) / 2.0),
+        1.0 if profile.get("workaround_terms") else 0.0,
+        1.0 if profile.get("trust_terms") else 0.0,
+    ]
+    return float(np.mean(scores))
+
+
+def _cross_source_robustness_score(profile: dict[str, Any]) -> float:
+    source_count = int(profile.get("source_count", 0) or 0)
+    primary_source_share = float(profile.get("primary_source_share", 1.0) or 1.0)
+    return float(np.mean([
+        min(1.0, source_count / 3.0),
+        1.0 - min(1.0, primary_source_share),
+    ]))
+
+
+def _strategic_redundancy_status(profile: dict[str, Any], config: dict[str, Any]) -> tuple[str, str]:
+    nearest_persona_id = str(profile.get("nearest_persona_id", "") or "")
+    nearest_similarity = float(profile.get("nearest_neighbor_similarity", 0.0) or 0.0)
+    redundancy_similarity_ceiling = float(config.get("redundancy_similarity_ceiling", 0.82))
+    if nearest_persona_id and nearest_similarity >= redundancy_similarity_ceiling:
+        return "strategically_redundant", f"too similar to {nearest_persona_id} for separate promotion"
+    if nearest_persona_id:
+        return "distinct_enough", f"nearest persona {nearest_persona_id} remains sufficiently differentiated"
+    return "not_evaluated", "nearest persona not available"
+
+
+def _grounding_quality_score(payload: dict[str, Any]) -> float:
+    grounding_status = str(payload.get("grounding_status", "") or "")
+    promotion_grounding_status = str(payload.get("promotion_grounding_status", "") or "")
+    bundle_episode_count = int(payload.get("bundle_episode_count", 0) or 0)
+    selected_example_count = int(payload.get("selected_example_count", 0) or 0)
+    status_floor = {
+        "grounded_bundle": 1.0,
+        "grounded_quote": 0.8,
+        "grounded_candidate": 0.8,
+        "weak_bundle": 0.6,
+        "weak_quote": 0.45,
+        "promoted_but_weakly_grounded": 0.45,
+        "promoted_but_ungrounded": 0.15,
+        "promotion_pending_grounding_review": 0.15,
+        "not_evaluated": 0.0,
+        "not_applicable": 0.0,
+    }
+    status_score = max(status_floor.get(grounding_status, 0.0), status_floor.get(promotion_grounding_status, 0.0))
+    return float(np.mean([
+        status_score,
+        min(1.0, bundle_episode_count / 3.0),
+        min(1.0, selected_example_count / 3.0),
+    ]))
+
+
 def _merge_grounding_policy(
     cluster_policy: dict[str, Any],
     persona_grounding_df: pd.DataFrame,
     config: dict[str, Any],
+    promotion_config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Merge explicit grounding outcomes into the promotion policy map."""
     merged = dict(cluster_policy)
@@ -836,6 +1548,8 @@ def _merge_grounding_policy(
         if persona_grounding_df is not None and not persona_grounding_df.empty and "persona_id" in persona_grounding_df.columns
         else {}
     )
+    score_config = dict(promotion_config or {})
+    weights = dict(score_config.get("weights", {}) or {})
     exploratory_status = str(config.get("policy", {}).get("promotion_grounding", {}).get("exploratory_status", "exploratory_bucket"))
     downgraded_status = str(config.get("policy", {}).get("promotion_grounding", {}).get("downgraded_due_to_no_grounding_status", "downgraded_due_to_no_grounding"))
     for persona_id, payload in status_by_persona.items():
@@ -853,11 +1567,45 @@ def _merge_grounding_policy(
         payload["grounding_reason"] = str(grounding.get("grounding_reason", "") or "")
         payload["grounded_candidate_count"] = int(grounding.get("grounded_candidate_count", 0) or 0)
         payload["weak_candidate_count"] = int(grounding.get("weak_candidate_count", 0) or 0)
+        payload["context_evidence_count"] = int(grounding.get("context_evidence_count", 0) or 0)
+        payload["workaround_evidence_count"] = int(grounding.get("workaround_evidence_count", 0) or 0)
+        payload["trust_validation_evidence_count"] = int(grounding.get("trust_validation_evidence_count", 0) or 0)
+        payload["bundle_episode_count"] = int(grounding.get("bundle_episode_count", 0) or 0)
+        payload["bundle_dimension_hits"] = int(grounding.get("bundle_dimension_hits", 0) or 0)
+        payload["total_bundle_strength"] = int(grounding.get("total_bundle_strength", 0) or 0)
+        payload["bundle_grounding_status"] = str(grounding.get("bundle_grounding_status", "") or "")
+        payload["bundle_grounding_reason"] = str(grounding.get("bundle_grounding_reason", "") or "")
+        payload["bundle_support_examples"] = str(grounding.get("bundle_support_examples", "") or "")
         payload["selected_example_count"] = int(grounding.get("selected_example_count", 0) or 0)
         payload["fallback_selected_count"] = int(grounding.get("fallback_selected_count", 0) or 0)
+        payload["grounding_quality_score"] = _grounding_quality_score(payload)
+        weighted_sum = (
+            float(payload.get("structural_stability_score", 0.0) or 0.0) * float(weights.get("structural_stability", 1.0) or 1.0)
+            + float(payload.get("grounding_quality_score", 0.0) or 0.0) * float(weights.get("grounding_quality", 1.0) or 1.0)
+            + float(payload.get("distinctiveness_score", 0.0) or 0.0) * float(weights.get("distinctiveness", 1.0) or 1.0)
+            + float(payload.get("actionability_score", 0.0) or 0.0) * float(weights.get("actionability", 1.0) or 1.0)
+            + float(payload.get("output_consistency_score", 0.0) or 0.0) * float(weights.get("output_consistency", 1.0) or 1.0)
+            + float(payload.get("cross_source_robustness_score", 0.0) or 0.0) * float(weights.get("cross_source_robustness", 1.0) or 1.0)
+        )
+        weight_total = sum(
+            float(weights.get(key, 1.0) or 1.0)
+            for key in [
+                "structural_stability",
+                "grounding_quality",
+                "distinctiveness",
+                "actionability",
+                "output_consistency",
+                "cross_source_robustness",
+            ]
+        )
+        payload["promotion_score"] = float(weighted_sum / max(weight_total, 1e-9))
         if combined_status == downgraded_status:
             payload["status"] = exploratory_status
             payload["reason"] = f"{payload.get('reason', '')}; downgraded because no acceptable grounding evidence met policy".strip("; ")
+        elif str(payload.get("strategic_redundancy_status", "")) == "strategically_redundant":
+            payload["status"] = "review_visible_persona"
+            payload["promotion_grounding_status"] = "review_visible_persona"
+            payload["reason"] = str(payload.get("strategic_redundancy_reason", "strategically redundant with a stronger neighboring persona") or "strategically redundant with a stronger neighboring persona")
         elif not structurally_supported and combined_status == "promoted_and_grounded":
             payload["status"] = "review_visible_persona"
             payload["promotion_grounding_status"] = "grounded_but_structurally_weak"
@@ -871,6 +1619,13 @@ def _merge_grounding_policy(
         elif not structurally_supported:
             payload["status"] = "review_visible_persona"
             payload["reason"] = f"{payload.get('reason', '')}; review-visible because cluster robustness remains structurally weak".strip("; ")
+        elif float(payload.get("promotion_score", 0.0) or 0.0) < float(score_config.get("promote_score_min", 0.72)):
+            payload["status"] = "review_visible_persona"
+            payload["promotion_grounding_status"] = "review_visible_persona"
+            payload["reason"] = (
+                f"{payload.get('reason', '')}; review-visible because final promotion score {float(payload.get('promotion_score', 0.0) or 0.0):.3f} "
+                f"is below {float(score_config.get('promote_score_min', 0.72)):.2f} after grounding quality is applied"
+            ).strip("; ")
         else:
             payload["status"] = "promoted_persona"
     merged["status_by_persona"] = status_by_persona

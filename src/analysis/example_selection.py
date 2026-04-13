@@ -139,88 +139,97 @@ def apply_promotion_grounding_policy(
         rejected_candidate_count = int(
             persona_candidates.get("grounding_strength", pd.Series(dtype=str)).astype(str).eq("unacceptable").sum()
         ) if not persona_candidates.empty else 0
+        bundle = _bundle_grounding_evidence(persona_candidates, config)
 
         final_status = _policy_status(config, "promoted_and_grounded_status", "promoted_and_grounded")
-        grounding_status = "grounded"
+        grounding_status = "grounded_single"
         grounding_reason = "has at least one grounded representative example selected by score and diversity policy"
 
-        if grounded_selected.empty and weak_selected.empty:
-            fallback = _pick_promoted_fallback(persona_candidates, selected, selected_ids, config)
-            if fallback is not None:
-                next_rank = (
-                    int(persona_selected["example_rank"].max()) + 1
-                    if not persona_selected.empty and "example_rank" in persona_selected.columns
-                    else 1
-                )
-                fallback["persona_id"] = persona_key
-                fallback["example_rank"] = next_rank
-                fallback["selection_decision"] = "policy_fallback_selected"
-                fallback["fallback_selected"] = True
-                fallback["fallback_mode"] = "standard"
-                fallback["coverage_selection_reason"] = coverage_reason
-                fallback["grounding_warning"] = _fallback_grounding_warning(fallback)
-                if str(fallback.get("grounding_strength", "") or "") in {"strong", "grounded"}:
-                    fallback["selection_strength"] = "grounded"
-                    final_status = _policy_status(config, "promoted_and_grounded_status", "promoted_and_grounded")
-                    grounding_status = "grounded"
-                    grounding_reason = "coverage policy selected an additional grounded example because the promoted persona had no selected grounding row"
-                else:
-                    fallback["selection_strength"] = weak_label
-                    final_status = _policy_status(config, "promoted_but_weakly_grounded_status", "promoted_but_weakly_grounded")
-                    grounding_status = "weakly_grounded"
-                    grounding_reason = "only weak fallback evidence met policy; workbook must label the persona as weakly grounded"
-                fallback["why_selected"] = (
-                    "Coverage policy selected this example because the promoted persona lacked grounded coverage. "
-                    + str(fallback.get("why_selected", "") or "")
-                    + (f" Weakness: {fallback['grounding_warning']}." if fallback["grounding_warning"] else "")
-                ).strip()
-                fallback_rows.append(fallback)
-                selected_ids.add(str(fallback.get("episode_id", "")))
-                if str(fallback.get("selection_strength", "") or "") == weak_label:
-                    weak_selected = pd.DataFrame([fallback])
-                else:
-                    grounded_selected = pd.DataFrame([fallback])
+        if grounded_selected.empty:
+            if bundle["bundle_grounding_status"] == "grounded_bundle":
+                grounding_status = "grounded_bundle"
+                grounding_reason = str(bundle["bundle_grounding_reason"])
+                final_status = _policy_status(config, "promoted_and_grounded_status", "promoted_and_grounded")
             else:
-                salvage_fallback = _pick_promoted_salvage_fallback(persona_candidates, selected, selected_ids, config)
-                if salvage_fallback is not None:
-                    next_rank = (
-                        int(persona_selected["example_rank"].max()) + 1
-                        if not persona_selected.empty and "example_rank" in persona_selected.columns
-                        else 1
-                    )
-                    salvage_fallback["persona_id"] = persona_key
-                    salvage_fallback["example_rank"] = next_rank
-                    salvage_fallback["selection_decision"] = "policy_salvage_fallback_selected"
-                    salvage_fallback["fallback_selected"] = True
-                    salvage_fallback["fallback_mode"] = "salvage"
-                    salvage_fallback["coverage_selection_reason"] = coverage_reason
-                    salvage_fallback["selection_strength"] = weak_label
-                    salvage_fallback["grounding_strength"] = "weak"
-                    salvage_fallback["grounding_warning"] = _fallback_grounding_warning(salvage_fallback)
-                    salvage_fallback["why_selected"] = (
-                        "Coverage salvage selected this example because the promoted persona had no grounded or weak "
-                        "candidate under strict policy and this row still has strong bottleneck evidence. "
-                        + str(salvage_fallback.get("why_selected", "") or "")
-                        + (f" Weakness: {salvage_fallback['grounding_warning']}." if salvage_fallback["grounding_warning"] else "")
-                    ).strip()
-                    fallback_rows.append(salvage_fallback)
-                    selected_ids.add(str(salvage_fallback.get("episode_id", "")))
-                    weak_selected = pd.DataFrame([salvage_fallback])
-                    final_status = _policy_status(config, "promoted_but_weakly_grounded_status", "promoted_but_weakly_grounded")
-                    grounding_status = "weakly_grounded"
-                    grounding_reason = "salvage fallback selected a high-scoring near-grounded example for minimum promoted-persona coverage"
-                else:
-                    missing_persona_ids.append(persona_key)
-                    grounding_status = "ungrounded"
-                    grounding_reason = "no grounded or weak fallback candidate met policy thresholds"
-                    if ungrounded_action == "downgrade":
-                        final_status = _policy_status(config, "downgraded_due_to_no_grounding_status", "downgraded_due_to_no_grounding")
+                if weak_selected.empty:
+                    fallback = _pick_promoted_fallback(persona_candidates, selected, selected_ids, config)
+                    if fallback is not None:
+                        next_rank = (
+                            int(persona_selected["example_rank"].max()) + 1
+                            if not persona_selected.empty and "example_rank" in persona_selected.columns
+                            else 1
+                        )
+                        fallback["persona_id"] = persona_key
+                        fallback["example_rank"] = next_rank
+                        fallback["selection_decision"] = "policy_fallback_selected"
+                        fallback["fallback_selected"] = True
+                        fallback["fallback_mode"] = "standard"
+                        fallback["coverage_selection_reason"] = coverage_reason
+                        fallback["grounding_warning"] = _fallback_grounding_warning(fallback)
+                        if str(fallback.get("grounding_strength", "") or "") in {"strong", "grounded"}:
+                            fallback["selection_strength"] = "grounded"
+                            final_status = _policy_status(config, "promoted_and_grounded_status", "promoted_and_grounded")
+                            grounding_status = "grounded_single"
+                            grounding_reason = "coverage policy selected an additional grounded example because the promoted persona had no selected grounding row"
+                        else:
+                            fallback["selection_strength"] = weak_label
+                            final_status = _policy_status(config, "promoted_but_weakly_grounded_status", "promoted_but_weakly_grounded")
+                            grounding_status = "weak_bundle"
+                            grounding_reason = "only weak fallback evidence met policy; workbook must label the persona as weakly grounded"
+                        fallback["why_selected"] = (
+                            "Coverage policy selected this example because the promoted persona lacked grounded coverage. "
+                            + str(fallback.get("why_selected", "") or "")
+                            + (f" Weakness: {fallback['grounding_warning']}." if fallback["grounding_warning"] else "")
+                        ).strip()
+                        fallback_rows.append(fallback)
+                        selected_ids.add(str(fallback.get("episode_id", "")))
+                        if str(fallback.get("selection_strength", "") or "") == weak_label:
+                            weak_selected = pd.DataFrame([fallback])
+                        else:
+                            grounded_selected = pd.DataFrame([fallback])
                     else:
-                        final_status = _policy_status(config, "promoted_but_ungrounded_status", "promoted_but_ungrounded")
-        elif grounded_selected.empty and not weak_selected.empty:
-            final_status = _policy_status(config, "promoted_but_weakly_grounded_status", "promoted_but_weakly_grounded")
-            grounding_status = "weakly_grounded"
-            grounding_reason = "only weak fallback evidence is selected for this promoted persona"
+                        salvage_fallback = _pick_promoted_salvage_fallback(persona_candidates, selected, selected_ids, config)
+                        if salvage_fallback is not None:
+                            next_rank = (
+                                int(persona_selected["example_rank"].max()) + 1
+                                if not persona_selected.empty and "example_rank" in persona_selected.columns
+                                else 1
+                            )
+                            salvage_fallback["persona_id"] = persona_key
+                            salvage_fallback["example_rank"] = next_rank
+                            salvage_fallback["selection_decision"] = "policy_salvage_fallback_selected"
+                            salvage_fallback["fallback_selected"] = True
+                            salvage_fallback["fallback_mode"] = "salvage"
+                            salvage_fallback["coverage_selection_reason"] = coverage_reason
+                            salvage_fallback["selection_strength"] = weak_label
+                            salvage_fallback["grounding_strength"] = "weak"
+                            salvage_fallback["grounding_warning"] = _fallback_grounding_warning(salvage_fallback)
+                            salvage_fallback["why_selected"] = (
+                                "Coverage salvage selected this example because the promoted persona had no grounded or weak "
+                                "candidate under strict policy and this row still has strong bottleneck evidence. "
+                                + str(salvage_fallback.get("why_selected", "") or "")
+                                + (f" Weakness: {salvage_fallback['grounding_warning']}." if salvage_fallback["grounding_warning"] else "")
+                            ).strip()
+                            fallback_rows.append(salvage_fallback)
+                            selected_ids.add(str(salvage_fallback.get("episode_id", "")))
+                            weak_selected = pd.DataFrame([salvage_fallback])
+                if grounded_selected.empty:
+                    if bundle["bundle_grounding_status"] == "weak_bundle":
+                        final_status = _policy_status(config, "promoted_but_weakly_grounded_status", "promoted_but_weakly_grounded")
+                        grounding_status = "weak_bundle"
+                        grounding_reason = str(bundle["bundle_grounding_reason"])
+                    elif not weak_selected.empty:
+                        final_status = _policy_status(config, "promoted_but_weakly_grounded_status", "promoted_but_weakly_grounded")
+                        grounding_status = "weak_bundle"
+                        grounding_reason = "only weak fallback evidence is selected for this promoted persona"
+                    else:
+                        missing_persona_ids.append(persona_key)
+                        grounding_status = "ungrounded"
+                        grounding_reason = str(bundle["bundle_grounding_reason"] or "no grounded or weak fallback candidate met policy thresholds")
+                        if ungrounded_action == "downgrade":
+                            final_status = _policy_status(config, "downgraded_due_to_no_grounding_status", "downgraded_due_to_no_grounding")
+                        else:
+                            final_status = _policy_status(config, "promoted_but_ungrounded_status", "promoted_but_ungrounded")
 
         grounding_rows.append(
             {
@@ -231,6 +240,18 @@ def apply_promotion_grounding_policy(
                 "grounded_candidate_count": grounded_candidate_count,
                 "weak_candidate_count": weak_candidate_count,
                 "rejected_candidate_count": rejected_candidate_count,
+                "context_evidence_count": int(bundle["context_evidence_count"]),
+                "workaround_evidence_count": int(bundle["workaround_evidence_count"]),
+                "trust_validation_evidence_count": int(bundle["trust_validation_evidence_count"]),
+                "bundle_episode_count": int(bundle["bundle_episode_count"]),
+                "bundle_dimension_hits": int(bundle["bundle_dimension_hits"]),
+                "total_bundle_strength": int(bundle["total_bundle_strength"]),
+                "bundle_grounding_status": str(bundle["bundle_grounding_status"]),
+                "bundle_grounding_reason": str(bundle["bundle_grounding_reason"]),
+                "context_evidence_episode_ids": str(bundle["context_evidence_episode_ids"]),
+                "workaround_evidence_episode_ids": str(bundle["workaround_evidence_episode_ids"]),
+                "trust_validation_evidence_episode_ids": str(bundle["trust_validation_evidence_episode_ids"]),
+                "bundle_support_examples": str(bundle["bundle_support_examples"]),
                 "selected_example_count": int(len(persona_selected)) + (1 if fallback_rows and str(fallback_rows[-1].get("persona_id", "")) == persona_key else 0),
                 "fallback_selected_count": int(len(weak_selected)),
             }
@@ -908,6 +929,201 @@ def _pick_promoted_fallback(
     best = dict(rows[0])
     best.pop("_fallback_priority", None)
     return best
+
+
+def _bundle_grounding_evidence(persona_candidates: pd.DataFrame, config: dict[str, Any]) -> dict[str, Any]:
+    """Compute multi-episode grounding evidence for one promoted persona."""
+    bundle_cfg = dict(config.get("policy", {}).get("bundle_grounding", {}) or {})
+    if not bool(bundle_cfg.get("enabled", True)) or persona_candidates.empty:
+        return {
+            "context_evidence_count": 0,
+            "workaround_evidence_count": 0,
+            "trust_validation_evidence_count": 0,
+            "bundle_episode_count": 0,
+            "bundle_dimension_hits": 0,
+            "total_bundle_strength": 0,
+            "bundle_grounding_status": "ungrounded",
+            "bundle_grounding_reason": "bundle grounding disabled or no candidate episodes available",
+            "context_evidence_episode_ids": "",
+            "workaround_evidence_episode_ids": "",
+            "trust_validation_evidence_episode_ids": "",
+            "bundle_support_examples": "",
+        }
+
+    min_candidate_score = float(bundle_cfg.get("min_candidate_score", 3.0))
+    max_mismatch_axes = int(bundle_cfg.get("max_mismatch_axes", 3))
+    max_critical_mismatch_axes = int(bundle_cfg.get("max_critical_mismatch_axes", 1))
+    pool_rows: list[dict[str, Any]] = []
+    for _, row in persona_candidates.iterrows():
+        candidate = row.to_dict()
+        if float(candidate.get("final_example_score", 0.0) or 0.0) < min_candidate_score:
+            continue
+        if int(candidate.get("mismatch_count", 0) or 0) > max_mismatch_axes:
+            continue
+        if int(candidate.get("critical_mismatch_count", 0) or 0) > max_critical_mismatch_axes:
+            continue
+        if str(candidate.get("quote_quality", "") or "") == "reject":
+            continue
+        if str(candidate.get("grounding_strength", "") or "") == "unacceptable" and str(candidate.get("quote_quality", "") or "") not in {"borderline", "usable", "strong_representative"}:
+            continue
+        pool_rows.append(candidate)
+
+    if not pool_rows:
+        return {
+            "context_evidence_count": 0,
+            "workaround_evidence_count": 0,
+            "trust_validation_evidence_count": 0,
+            "bundle_episode_count": 0,
+            "bundle_dimension_hits": 0,
+            "total_bundle_strength": 0,
+            "bundle_grounding_status": "ungrounded",
+            "bundle_grounding_reason": "no multi-episode evidence rows cleared bundle grounding thresholds",
+            "context_evidence_episode_ids": "",
+            "workaround_evidence_episode_ids": "",
+            "trust_validation_evidence_episode_ids": "",
+            "bundle_support_examples": "",
+        }
+
+    context_rows: list[dict[str, Any]] = []
+    workaround_rows: list[dict[str, Any]] = []
+    trust_rows: list[dict[str, Any]] = []
+    for candidate in pool_rows:
+        breakdown = _score_breakdown_dict(candidate)
+        if _candidate_has_context_evidence(candidate, breakdown):
+            context_rows.append(candidate)
+        if _candidate_has_workaround_evidence(candidate, breakdown):
+            workaround_rows.append(candidate)
+        if _candidate_has_trust_validation_evidence(candidate, breakdown):
+            trust_rows.append(candidate)
+
+    context_count = len({str(item.get("episode_id", "")) for item in context_rows if str(item.get("episode_id", ""))})
+    workaround_count = len({str(item.get("episode_id", "")) for item in workaround_rows if str(item.get("episode_id", ""))})
+    trust_count = len({str(item.get("episode_id", "")) for item in trust_rows if str(item.get("episode_id", ""))})
+    bundle_episode_ids = sorted(
+        {
+            str(item.get("episode_id", ""))
+            for item in [*context_rows, *workaround_rows, *trust_rows]
+            if str(item.get("episode_id", ""))
+        }
+    )
+    dimension_hits = sum(1 for count in [context_count, workaround_count, trust_count] if count > 0)
+    total_bundle_strength = context_count + workaround_count + trust_count
+    grounded_bundle = (
+        context_count >= int(bundle_cfg.get("min_context_evidence_count", 2))
+        and workaround_count >= int(bundle_cfg.get("min_workaround_evidence_count", 2))
+        and trust_count >= int(bundle_cfg.get("min_trust_validation_evidence_count", 1))
+        and len(bundle_episode_ids) >= int(bundle_cfg.get("min_bundle_episode_count", 3))
+    )
+    weak_bundle = (
+        not grounded_bundle
+        and dimension_hits >= int(bundle_cfg.get("weak_bundle_min_dimension_hits", 2))
+        and total_bundle_strength >= int(bundle_cfg.get("weak_bundle_min_total_strength", 3))
+    )
+    if grounded_bundle:
+        bundle_status = "grounded_bundle"
+        bundle_reason = (
+            f"bundle grounding satisfied by {context_count} context episodes, {workaround_count} workaround episodes, "
+            f"and {trust_count} trust/output episodes across {len(bundle_episode_ids)} distinct episodes"
+        )
+    elif weak_bundle:
+        bundle_status = "weak_bundle"
+        bundle_reason = (
+            f"bundle evidence is directionally present but incomplete: context={context_count}, workaround={workaround_count}, "
+            f"trust_or_output={trust_count}, episodes={len(bundle_episode_ids)}"
+        )
+    else:
+        bundle_status = "ungrounded"
+        bundle_reason = (
+            f"bundle evidence is insufficient: context={context_count}, workaround={workaround_count}, "
+            f"trust_or_output={trust_count}, episodes={len(bundle_episode_ids)}"
+        )
+    max_supporting_examples = int(bundle_cfg.get("max_supporting_examples", 3))
+    support_examples = _bundle_support_examples(pool_rows, max_items=max_supporting_examples)
+    return {
+        "context_evidence_count": context_count,
+        "workaround_evidence_count": workaround_count,
+        "trust_validation_evidence_count": trust_count,
+        "bundle_episode_count": len(bundle_episode_ids),
+        "bundle_dimension_hits": dimension_hits,
+        "total_bundle_strength": total_bundle_strength,
+        "bundle_grounding_status": bundle_status,
+        "bundle_grounding_reason": bundle_reason,
+        "context_evidence_episode_ids": " | ".join(_episode_ids(context_rows, max_supporting_examples)),
+        "workaround_evidence_episode_ids": " | ".join(_episode_ids(workaround_rows, max_supporting_examples)),
+        "trust_validation_evidence_episode_ids": " | ".join(_episode_ids(trust_rows, max_supporting_examples)),
+        "bundle_support_examples": " | ".join(support_examples),
+    }
+
+
+def _score_breakdown_dict(candidate: dict[str, Any]) -> dict[str, Any]:
+    """Parse one candidate's score_breakdown JSON safely."""
+    try:
+        parsed = json.loads(str(candidate.get("score_breakdown", "{}") or "{}"))
+    except json.JSONDecodeError:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _candidate_has_context_evidence(candidate: dict[str, Any], breakdown: dict[str, Any]) -> bool:
+    """Return whether a row demonstrates the recurring job context."""
+    return (
+        float(breakdown.get("workflow_context_score", 0.0) or 0.0) > 0.0
+        or float(breakdown.get("business_context_score", 0.0) or 0.0) > 0.0
+        or float(breakdown.get("explicit_workflow_pain_score", 0.0) or 0.0) > 0.0
+        or int(candidate.get("matched_axis_count", 0) or 0) >= 2
+    )
+
+
+def _candidate_has_workaround_evidence(candidate: dict[str, Any], breakdown: dict[str, Any]) -> bool:
+    """Return whether a row shows the bottleneck/workaround repeating in practice."""
+    return (
+        float(breakdown.get("repeated_manual_workaround_score", 0.0) or 0.0) > 0.0
+        or float(breakdown.get("bottleneck_specificity_score", 0.0) or 0.0) > 0.0
+        or float(breakdown.get("excel_rework_score", 0.0) or 0.0) > 0.0
+        or float(breakdown.get("root_cause_score", 0.0) or 0.0) > 0.0
+    )
+
+
+def _candidate_has_trust_validation_evidence(candidate: dict[str, Any], breakdown: dict[str, Any]) -> bool:
+    """Return whether a row exposes trust, validation, or output-delivery pressure."""
+    return (
+        float(breakdown.get("validation_pressure_score", 0.0) or 0.0) > 0.0
+        or float(breakdown.get("stakeholder_pressure_score", 0.0) or 0.0) > 0.0
+        or float(breakdown.get("output_need_score", 0.0) or 0.0) > 0.0
+        or float(breakdown.get("dashboard_trust_score", 0.0) or 0.0) > 0.0
+        or float(breakdown.get("metric_definition_score", 0.0) or 0.0) > 0.0
+    )
+
+
+def _episode_ids(rows: list[dict[str, Any]], max_items: int) -> list[str]:
+    """Return unique episode ids in stable order."""
+    seen: set[str] = set()
+    results: list[str] = []
+    for row in sorted(rows, key=lambda item: (-float(item.get("final_example_score", 0.0) or 0.0), str(item.get("episode_id", "")))):
+        episode_id = str(row.get("episode_id", "") or "")
+        if not episode_id or episode_id in seen:
+            continue
+        seen.add(episode_id)
+        results.append(episode_id)
+        if len(results) >= max_items:
+            break
+    return results
+
+
+def _bundle_support_examples(rows: list[dict[str, Any]], max_items: int) -> list[str]:
+    """Return short support snippets for bundle-grounding diagnostics."""
+    examples: list[str] = []
+    seen: set[str] = set()
+    ordered = sorted(rows, key=lambda item: (-float(item.get("final_example_score", 0.0) or 0.0), str(item.get("episode_id", ""))))
+    for row in ordered:
+        text = clean_text(str(row.get("grounded_text", "") or ""))
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        examples.append(text[:160])
+        if len(examples) >= max_items:
+            break
+    return examples
 
 
 def _pick_promoted_salvage_fallback(

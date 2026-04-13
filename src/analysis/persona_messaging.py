@@ -40,9 +40,11 @@ def build_persona_messaging_outputs(
         dominant_signals = _split_pipe(audit_row.get("dominant_bottleneck_signals", ""))
         primary_signal = dominant_signals[0] if dominant_signals else "mixed_workflow_friction"
         secondary_signals = dominant_signals[1:3]
-        proposed_name = str(naming.get("recommended_cluster_name", "") or naming.get("current_cluster_name", "") or audit_row.get("cluster_name", "") or _template_for(primary_signal, config).get("primary_name", "Mixed Workflow Friction"))
+        proposed_name = str(summary.get("persona_name", "") or "").strip()
+        if not proposed_name:
+            proposed_name = str(naming.get("recommended_cluster_name", "") or naming.get("current_cluster_name", "") or audit_row.get("cluster_name", "") or _template_for(primary_signal, config).get("primary_name", "Mixed Workflow Friction"))
         if _is_generic_name(proposed_name) or _name_centering_type(proposed_name, config) != "bottleneck-centered":
-            proposed_name = _fallback_name(primary_signal, secondary_signals, config)
+            proposed_name = str(summary.get("persona_name", "") or _fallback_name(primary_signal, secondary_signals, config))
         subtitle = _build_subtitle(primary_signal, secondary_signals, config)
         examples = example_lookup.get(persona_id, [])[:4]
         template = _template_for(primary_signal, config)
@@ -61,6 +63,24 @@ def build_persona_messaging_outputs(
             {
                 "persona_id": persona_id,
                 "primary_persona_name": proposed_name,
+                "persona_schema_version": summary.get("persona_schema_version", ""),
+                "persona_profile_name": summary.get("persona_profile_name", proposed_name),
+                "user_role_family": summary.get("user_role_family", ""),
+                "functional_context": summary.get("functional_context", ""),
+                "stakeholder_exposure": summary.get("stakeholder_exposure", ""),
+                "decision_responsibility": summary.get("decision_responsibility", ""),
+                "recurring_job_to_be_done": summary.get("recurring_job_to_be_done", ""),
+                "typical_trigger_event": summary.get("typical_trigger_event", ""),
+                "expected_output_artifact": summary.get("expected_output_artifact", ""),
+                "frequency_of_need": summary.get("frequency_of_need", ""),
+                "primary_bottleneck": summary.get("primary_bottleneck", primary_signal),
+                "secondary_bottleneck": summary.get("secondary_bottleneck", ""),
+                "trust_failure_mode": summary.get("trust_failure_mode", ""),
+                "workaround_pattern": summary.get("workaround_pattern", ""),
+                "why_current_tools_fail": summary.get("why_current_tools_fail", why_existing_workflow_fails),
+                "why_this_persona_would_use_our_product": summary.get("why_this_persona_would_use_our_product", solution_direction),
+                "activation_moment": summary.get("activation_moment", ""),
+                "success_signal": summary.get("success_signal", expected_user_value),
                 "persona_subtitle": subtitle,
                 "bottleneck_signature": " | ".join(dominant_signals),
                 "core_insight": core_insight,

@@ -31,6 +31,15 @@ def build_bottleneck_cluster_outputs(
         .merge(persona_assignments_df, on="episode_id", how="inner")
         .fillna("")
     )
+    overlap_merge_outputs = merge_overlapping_personas(merged, persona_assignments_df, feature_df, config)
+    persona_assignments_df = overlap_merge_outputs["assignments_df"]
+    merged = (
+        episodes_df.merge(labeled_df, on="episode_id", how="inner")
+        .merge(axis_wide_df, on="episode_id", how="left")
+        .merge(feature_df, on="episode_id", how="left")
+        .merge(persona_assignments_df, on="episode_id", how="inner")
+        .fillna("")
+    )
     axis_names = [str(row.get("axis_name", "")).strip() for row in final_axis_schema if str(row.get("axis_name", "")).strip()]
     example_outputs = select_persona_representative_examples(
         merged,
@@ -56,8 +65,402 @@ def build_bottleneck_cluster_outputs(
         "cluster_robustness_summary_df": robustness_outputs["summary_df"],
         "cluster_naming_recommendations_df": naming_df,
         "cluster_profiles": cluster_profiles,
+        "persona_overlap_merge_audit_df": overlap_merge_outputs["audit_df"],
+        "persona_overlap_merge_summary_df": overlap_merge_outputs["summary_df"],
         **comparison_outputs,
     }
+
+
+def merge_overlapping_personas(
+    merged_df: pd.DataFrame,
+    assignments_df: pd.DataFrame,
+    feature_df: pd.DataFrame,
+    config: dict[str, Any],
+) -> dict[str, pd.DataFrame]:
+    """Merge near-duplicate personas when they represent the same underlying user type."""
+    merge_cfg = dict(config.get("persona_overlap_merge", {}) or {})
+    if merged_df.empty or assignments_df.empty or not bool(merge_cfg.get("enabled", True)):
+        empty_audit = pd.DataFrame(columns=[
+            "persona_id",
+            "merge_action",
+            "merged_into_persona_id",
+            "before_persona_count",
+            "after_persona_count",
+            "role_context",
+            "recurring_job",
+            "expected_output",
+            "workaround_pattern",
+            "trust_failure_mode",
+            "differentiating_axis",
+            "merge_rationale",
+            "new_persona_name",
+            "new_persona_naming_rationale",
+        ])
+        empty_summary = pd.DataFrame(columns=["metric", "value"])
+        updated = assignments_df.copy()
+        return {"assignments_df": updated, "audit_df": empty_audit, "summary_df": empty_summary}
+
+    before_count = int(assignments_df["persona_id"].astype(str).nunique())
+    feature_columns = [column for column in _feature_columns(config) if column in feature_df.columns]
+    feature_lookup = (
+        feature_df.set_index("episode_id")[feature_columns]
+        if feature_columns and not feature_df.empty and "episode_id" in feature_df.columns
+        else pd.DataFrame()
+    )
+    profiles = _persona_overlap_profiles(merged_df, feature_lookup)
+    if not profiles:
+        empty_summary = pd.DataFrame([
+            {"metric": "before_persona_count", "value": before_count},
+            {"metric": "after_persona_count", "value": before_count},
+            {"metric": "merged_persona_count", "value": 0},
+        ])
+        return {"assignments_df": assignments_df.copy(), "audit_df": pd.DataFrame(), "summary_df": empty_summary}
+
+    ordered_profiles = sorted(profiles.values(), key=lambda item: (-int(item["cluster_size"]), str(item["persona_id"])))
+    merge_map = {str(profile["persona_id"]): str(profile["persona_id"]) for profile in ordered_profiles}
+    audit_rows: list[dict[str, Any]] = []
+    merge_role_families = {str(value) for value in list(merge_cfg.get("merge_role_families", []) or [])}
+    for profile in ordered_profiles:
+        persona_id = str(profile["persona_id"])
+        if int(profile["cluster_size"]) >= int(merge_cfg.get("min_parent_cluster_size", 24)):
+            best_target = ""
+            best_comparison: dict[str, Any] | None = None
+            for candidate in ordered_profiles:
+                target_id = str(candidate["persona_id"])
+                if target_id == persona_id:
+                    continue
+                if int(candidate["cluster_size"]) < int(profile["cluster_size"]):
+                    continue
+                if merge_role_families and str(profile["role_context"]) not in merge_role_families and str(candidate["role_context"]) not in merge_role_families:
+                    continue
+                comparison = _overlap_merge_comparison(profile, candidate, merge_cfg)
+                if not comparison["should_merge"]:
+                    continue
+                if best_comparison is None or int(comparison["profile_match_score"]) > int(best_comparison["profile_match_score"]):
+                    best_target = target_id
+                    best_comparison = comparison
+            if best_target and best_target != persona_id and best_comparison is not None:
+                merge_map[persona_id] = best_target
+                parent = profiles[best_target]
+                audit_rows.append(
+                    {
+                        "persona_id": persona_id,
+                        "merge_action": "merged_into_parent_persona",
+                        "merged_into_persona_id": best_target,
+                        "before_persona_count": before_count,
+                        "after_persona_count": 0,
+                        "role_context": profile["role_context"],
+                        "recurring_job": profile["recurring_job"],
+                        "expected_output": profile["expected_output"],
+                        "workaround_pattern": profile["workaround_pattern"],
+                        "trust_failure_mode": profile["trust_failure_mode"],
+                        "differentiating_axis": "",
+                        "merge_rationale": best_comparison["merge_rationale"],
+                        "new_persona_name": parent["parent_persona_name"],
+                        "new_persona_naming_rationale": parent["naming_rationale"],
+                    }
+                )
+
+    updated = assignments_df.copy()
+    updated["pre_overlap_persona_id"] = updated["persona_id"].astype(str)
+    updated["persona_id"] = updated["persona_id"].astype(str).map(lambda value: merge_map.get(str(value), str(value)))
+    parent_name_lookup = {persona_id: profile["parent_persona_name"] for persona_id, profile in profiles.items()}
+    for persona_id, target_id in merge_map.items():
+        if persona_id == target_id:
+            continue
+        parent_name_lookup[persona_id] = parent_name_lookup.get(target_id, target_id)
+    updated["cluster_name"] = updated["persona_id"].astype(str).map(lambda value: parent_name_lookup.get(str(value), str(value)))
+    update_mask = updated["pre_overlap_persona_id"].astype(str) != updated["persona_id"].astype(str)
+    if "robustness_action" in updated.columns:
+        updated.loc[update_mask, "robustness_action"] = updated.loc[update_mask, "robustness_action"].fillna("").astype(str).map(
+            lambda value: f"{value} | merged_overlap_persona".strip(" |")
+        )
+    if "robustness_reason" in updated.columns:
+        updated.loc[update_mask, "robustness_reason"] = updated.loc[update_mask].apply(
+            lambda row: f"{str(row.get('robustness_reason', '') or '').strip('; ')}; merged into overlapping parent persona {row['persona_id']} because the role, job, output, and workaround pattern did not materially change product implication".strip("; "),
+            axis=1,
+        )
+
+    after_count = int(updated["persona_id"].astype(str).nunique())
+    parent_ids = {str(value) for value in updated["persona_id"].astype(str).tolist()}
+    for row in audit_rows:
+        row["after_persona_count"] = after_count
+    kept_ids = sorted(parent_ids)
+    merged_children = {str(row["persona_id"]) for row in audit_rows}
+    for persona_id in kept_ids:
+        profile = profiles.get(str(persona_id))
+        if profile is None:
+            continue
+        action = "parent_persona_retained" if any(str(row["merged_into_persona_id"]) == str(persona_id) for row in audit_rows) else "kept_distinct"
+        differentiating_axis = ""
+        merge_rationale = "retained as broader parent persona after overlap merge" if action == "parent_persona_retained" else "kept distinct because no larger persona shared the same product implication profile"
+        if action == "kept_distinct":
+            best_candidate = _best_distinct_candidate(profile, profiles, merge_cfg)
+            if best_candidate is not None:
+                differentiating_axis = str(best_candidate.get("differentiating_axis", "") or "")
+                merge_rationale = str(best_candidate.get("distinct_rationale", merge_rationale))
+        if str(persona_id) in merged_children:
+            continue
+        audit_rows.append(
+            {
+                "persona_id": persona_id,
+                "merge_action": action,
+                "merged_into_persona_id": str(persona_id) if action == "parent_persona_retained" else "",
+                "before_persona_count": before_count,
+                "after_persona_count": after_count,
+                "role_context": profile["role_context"],
+                "recurring_job": profile["recurring_job"],
+                "expected_output": profile["expected_output"],
+                "workaround_pattern": profile["workaround_pattern"],
+                "trust_failure_mode": profile["trust_failure_mode"],
+                "differentiating_axis": differentiating_axis,
+                "merge_rationale": merge_rationale,
+                "new_persona_name": profile["parent_persona_name"],
+                "new_persona_naming_rationale": profile["naming_rationale"],
+            }
+        )
+
+    summary_df = pd.DataFrame(
+        [
+            {"metric": "before_persona_count", "value": before_count},
+            {"metric": "after_persona_count", "value": after_count},
+            {"metric": "merged_persona_count", "value": max(before_count - after_count, 0)},
+            {"metric": "affected_persona_ids", "value": " | ".join(sorted({str(row['persona_id']) for row in audit_rows if str(row.get('merge_action', '')).startswith('merged_')}))},
+        ]
+    )
+    audit_df = pd.DataFrame(audit_rows).sort_values(["merge_action", "persona_id"]).reset_index(drop=True) if audit_rows else pd.DataFrame()
+    return {"assignments_df": updated, "audit_df": audit_df, "summary_df": summary_df}
+
+
+def _persona_overlap_profiles(merged_df: pd.DataFrame, feature_lookup: pd.DataFrame) -> dict[str, dict[str, Any]]:
+    """Build merge-oriented persona profiles from the current assignments."""
+    profiles: dict[str, dict[str, Any]] = {}
+    feature_columns = [column for column in feature_lookup.columns.tolist()] if not feature_lookup.empty else []
+    for persona_id, group in merged_df.groupby("persona_id", dropna=False):
+        persona_key = str(persona_id)
+        dominant_role = _distribution(group.get("user_role", pd.Series(dtype=str)))
+        dominant_role_label = dominant_role[0]["label"] if dominant_role else "workflow_operator"
+        role_context = _overlap_role_family(dominant_role_label)
+        workflow = _dominant_value(group, "workflow_stage")
+        goal = _dominant_value(group, "analysis_goal")
+        output = _dominant_value(group, "output_expectation")
+        tool_mode = _dominant_value(group, "tool_dependency_mode")
+        bottleneck = _dominant_value(group, "bottleneck_type")
+        recurring_job = _overlap_recurring_job_family(workflow, goal, output)
+        expected_output = _overlap_expected_output_family(output)
+        workaround_pattern = _overlap_workaround_family(output, tool_mode, bottleneck, group)
+        trust_failure_mode = _overlap_trust_family(workflow, goal, output, bottleneck, group)
+        centroid = _group_vector_mean(group["episode_id"].astype(str).tolist(), feature_lookup, feature_columns) if feature_columns else {}
+        parent_persona_name = _overlap_parent_persona_name(role_context, recurring_job, expected_output)
+        profiles[persona_key] = {
+            "persona_id": persona_key,
+            "cluster_size": int(group["episode_id"].nunique()) if "episode_id" in group.columns else int(len(group)),
+            "role_context": role_context,
+            "role_share": float(dominant_role[0]["share"]) if dominant_role else 0.0,
+            "recurring_job": recurring_job,
+            "expected_output": expected_output,
+            "workaround_pattern": workaround_pattern,
+            "trust_failure_mode": trust_failure_mode,
+            "tool_mode": tool_mode,
+            "workflow": workflow,
+            "analysis_goal": goal,
+            "bottleneck": bottleneck,
+            "centroid": centroid,
+            "parent_persona_name": parent_persona_name,
+            "naming_rationale": _overlap_naming_rationale(role_context, recurring_job, expected_output),
+        }
+    return profiles
+
+
+def _overlap_merge_comparison(profile: dict[str, Any], candidate: dict[str, Any], merge_cfg: dict[str, Any]) -> dict[str, Any]:
+    """Compare two persona profiles and decide whether they should merge."""
+    similarity = _cosine_similarity(dict(profile.get("centroid", {}) or {}), dict(candidate.get("centroid", {}) or {}))
+    compatible_trust = {str(value) for value in list(merge_cfg.get("compatible_trust_families", []) or [])}
+    compatible_workarounds = {str(value) for value in list(merge_cfg.get("compatible_workaround_families", []) or [])}
+    same_role = str(profile.get("role_context", "")) == str(candidate.get("role_context", ""))
+    same_job = str(profile.get("recurring_job", "")) == str(candidate.get("recurring_job", ""))
+    same_output = str(profile.get("expected_output", "")) == str(candidate.get("expected_output", ""))
+    same_workaround = str(profile.get("workaround_pattern", "")) == str(candidate.get("workaround_pattern", ""))
+    same_trust = str(profile.get("trust_failure_mode", "")) == str(candidate.get("trust_failure_mode", ""))
+    compatible_workaround = str(profile.get("workaround_pattern", "")) in compatible_workarounds and str(candidate.get("workaround_pattern", "")) in compatible_workarounds
+    compatible_trust_mode = str(profile.get("trust_failure_mode", "")) in compatible_trust and str(candidate.get("trust_failure_mode", "")) in compatible_trust
+    role_gap_ok = abs(float(profile.get("role_share", 0.0) or 0.0) - float(candidate.get("role_share", 0.0) or 0.0)) <= float(merge_cfg.get("max_role_share_gap", 0.35))
+    profile_match_score = sum([
+        1 if same_role else 0,
+        1 if same_job else 0,
+        1 if same_output else 0,
+        1 if (same_workaround or compatible_workaround) else 0,
+        1 if (same_trust or compatible_trust_mode) else 0,
+    ])
+    should_merge = (
+        same_role
+        and same_job
+        and same_output
+        and role_gap_ok
+        and profile_match_score >= int(merge_cfg.get("compatible_profile_score_floor", 4))
+        and similarity >= float(merge_cfg.get("similarity_floor", 0.55))
+    )
+    merge_rationale = (
+        f"merged because role context={profile.get('role_context', '')}, recurring job={profile.get('recurring_job', '')}, "
+        f"expected output={profile.get('expected_output', '')}, workaround pattern={profile.get('workaround_pattern', '')}, "
+        f"and trust failure mode={profile.get('trust_failure_mode', '')} do not materially change product implication"
+    )
+    return {
+        "should_merge": should_merge,
+        "similarity": round(float(similarity), 4),
+        "profile_match_score": profile_match_score,
+        "merge_rationale": merge_rationale,
+    }
+
+
+def _best_distinct_candidate(profile: dict[str, Any], profiles: dict[str, dict[str, Any]], merge_cfg: dict[str, Any]) -> dict[str, Any] | None:
+    """Return the closest larger persona and the explicit differentiating axis, when distinct."""
+    best: dict[str, Any] | None = None
+    for candidate_id, candidate in profiles.items():
+        if candidate_id == str(profile.get("persona_id", "")):
+            continue
+        if int(candidate.get("cluster_size", 0) or 0) < int(profile.get("cluster_size", 0) or 0):
+            continue
+        similarity = _cosine_similarity(dict(profile.get("centroid", {}) or {}), dict(candidate.get("centroid", {}) or {}))
+        differentiating_axis = _differentiating_axis(profile, candidate)
+        if best is None or similarity > float(best.get("similarity", -1.0)):
+            best = {
+                "candidate_id": candidate_id,
+                "similarity": similarity,
+                "differentiating_axis": differentiating_axis,
+                "distinct_rationale": f"kept distinct because {differentiating_axis} changes the product implication relative to {candidate_id}" if differentiating_axis else "kept distinct because no explicit differentiating axis could be collapsed safely",
+            }
+    return best
+
+
+def _differentiating_axis(profile: dict[str, Any], candidate: dict[str, Any]) -> str:
+    """Return the first material axis that differentiates two candidate personas."""
+    for axis in ["role_context", "recurring_job", "expected_output", "workaround_pattern", "trust_failure_mode"]:
+        if str(profile.get(axis, "")) != str(candidate.get(axis, "")):
+            return axis
+    return ""
+
+
+def _dominant_value(group: pd.DataFrame, column: str) -> str:
+    """Return the dominant non-unknown value for one column."""
+    if column not in group.columns:
+        return "unassigned"
+    values = group[column].astype(str).str.strip()
+    values = values[~values.map(is_unknown_like)]
+    if values.empty:
+        return "unassigned"
+    return str(values.value_counts().idxmax())
+
+
+def _overlap_role_family(role_value: str) -> str:
+    """Map raw dominant role values to stable merge families."""
+    mapping = {
+        "analyst": "analyst_operator",
+        "manager": "manager_operator",
+        "marketer": "marketing_operator",
+        "business_user": "business_operator",
+    }
+    return mapping.get(str(role_value).strip().lower(), "workflow_operator")
+
+
+def _overlap_recurring_job_family(workflow: str, goal: str, output: str) -> str:
+    """Collapse workflow stages into broader recurring jobs when product implication is shared."""
+    workflow_key = str(workflow).strip().lower()
+    goal_key = str(goal).strip().lower()
+    output_key = str(output).strip().lower()
+    if output_key == "dashboard_update" and goal_key in {"diagnose_change", "automate_workflow"}:
+        return "maintain_and_explain_dashboard_outputs"
+    if output_key == "dashboard_update" and workflow_key in {"triage", "automation"}:
+        return "maintain_and_explain_dashboard_outputs"
+    if goal_key == "report_speed" or workflow_key == "reporting":
+        return "deliver_recurring_reporting_outputs"
+    if goal_key == "validate_numbers" or workflow_key == "validation":
+        return "validate_metrics_before_distribution"
+    return f"{workflow_key or 'workflow'}::{goal_key or 'analysis'}"
+
+
+def _overlap_expected_output_family(output: str) -> str:
+    """Normalize expected output artifact families."""
+    mapping = {
+        "dashboard_update": "dashboard_update",
+        "excel_ready_output": "stakeholder_ready_report",
+        "automation_output": "repeatable_workflow_output",
+    }
+    return mapping.get(str(output).strip().lower(), str(output).strip().lower() or "shareable_output")
+
+
+def _overlap_workaround_family(output: str, tool_mode: str, bottleneck: str, group: pd.DataFrame) -> str:
+    """Collapse surface bottleneck wording into broader workaround families."""
+    output_key = str(output).strip().lower()
+    tool_key = str(tool_mode).strip().lower()
+    bottleneck_key = str(bottleneck).strip().lower()
+    manual_signals = set(_top_feature_labels(group, ["manual_reporting", "spreadsheet_rework", "recurring_export_work", "tool_limitation_workaround"], limit=3))
+    if output_key == "dashboard_update" and (tool_key == "bi_dashboard_heavy" or bottleneck_key in {"tool_limitation", "manual_reporting", "general_friction"}):
+        return "dashboard_workaround_patch"
+    if tool_key == "spreadsheet_heavy" or bottleneck_key == "manual_reporting" or {"manual_reporting", "spreadsheet_rework"} & manual_signals:
+        return "manual_patch_and_rebuild"
+    if bottleneck_key in {"tool_limitation", "general_friction"} or "tool_limitation_workaround" in manual_signals:
+        return "out_of_tool_workaround"
+    return "workflow_patchwork"
+
+
+def _overlap_trust_family(workflow: str, goal: str, output: str, bottleneck: str, group: pd.DataFrame) -> str:
+    """Map trust/output failure into broad product-implication families."""
+    workflow_key = str(workflow).strip().lower()
+    goal_key = str(goal).strip().lower()
+    output_key = str(output).strip().lower()
+    bottleneck_key = str(bottleneck).strip().lower()
+    top_features = set(_top_feature_labels(group, ["root_cause_analysis_difficulty", "numbers_visible_but_not_explainable", "dashboard_mistrust", "metric_reconciliation", "repeated_validation_before_sending"], limit=3))
+    if goal_key == "validate_numbers" or workflow_key == "validation" or bottleneck_key == "data_quality" or {"metric_reconciliation", "dashboard_mistrust", "repeated_validation_before_sending"} & top_features:
+        return "numbers_not_safe_to_share"
+    if output_key == "dashboard_update" and (goal_key in {"diagnose_change", "automate_workflow"} or workflow_key in {"triage", "automation"}):
+        return "visible_but_not_explainable"
+    if bottleneck_key in {"manual_reporting", "tool_limitation", "general_friction"}:
+        return "delivery_or_explanation_breakdown"
+    return "workflow_confidence_gap"
+
+
+def _top_feature_labels(group: pd.DataFrame, columns: list[str], limit: int) -> list[str]:
+    """Return the highest-average feature labels from a grouped frame."""
+    rows: list[tuple[str, float]] = []
+    for column in columns:
+        if column not in group.columns:
+            continue
+        score = float(pd.to_numeric(group[column], errors="coerce").fillna(0.0).mean())
+        if score > 0.0:
+            rows.append((column, score))
+    rows.sort(key=lambda item: (-item[1], item[0]))
+    return [label for label, _ in rows[:limit]]
+
+
+def _overlap_parent_persona_name(role_context: str, recurring_job: str, expected_output: str) -> str:
+    """Build a broader parent persona name for merged overlapping personas."""
+    role_label = {
+        "analyst_operator": "Analyst",
+        "manager_operator": "Manager",
+        "marketing_operator": "Marketing Operator",
+        "business_operator": "Business Operator",
+        "workflow_operator": "Workflow Operator",
+    }.get(str(role_context), "Workflow Operator")
+    job_label = {
+        "maintain_and_explain_dashboard_outputs": "Dashboard Resolution Operator",
+        "deliver_recurring_reporting_outputs": "Reporting Delivery Operator",
+        "validate_metrics_before_distribution": "Metric Assurance Operator",
+    }.get(str(recurring_job), _humanize_merge_token(recurring_job))
+    return f"{role_label} {job_label}".strip()
+
+
+def _overlap_naming_rationale(role_context: str, recurring_job: str, expected_output: str) -> str:
+    """Explain the broader parent naming choice."""
+    return (
+        f"Named from stable user type and recurring job, not surface bottleneck wording: "
+        f"role={role_context}, recurring_job={recurring_job}, expected_output={expected_output}"
+    )
+
+
+def _humanize_merge_token(value: str) -> str:
+    """Humanize merge-profile tokens for audit-friendly naming."""
+    return str(value or "workflow operator").replace("::", " ").replace("_", " ").title()
 
 
 def build_bottleneck_feature_table(
