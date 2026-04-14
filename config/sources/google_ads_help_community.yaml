@@ -3,7 +3,7 @@ source_name: Google Ads Help Community
 source_group: business_communities
 collector_kind: google_ads_help_community
 normalizer_kind: business_communities
-enabled: false
+enabled: true
 platform: google_support
 product_or_tool: Google Ads
 check_robots: true
@@ -14,7 +14,7 @@ seed_query_style: support_community
 max_threads_per_run: 1200
 max_discovered_threads_per_url: 120
 max_fetch_workers: 4
-min_raw_records_warn: 1000
+min_raw_records_warn: 100
 sleep_seconds: 0.0
 timeout_seconds: 20
 filter_discovery_by_seed: true

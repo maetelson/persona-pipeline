@@ -1,33 +1,33 @@
 source_id: reddit
 source_group: existing_forums
 max_query_count: 8
-source_notes: "Aggregate Reddit now uses a curated, problem-oriented seed bank plus collector-side subreddit and low-intent filtering to avoid broad low-yield retrieval."
+source_notes: "Aggregate Reddit uses a narrow, problem-oriented seed bank focused on dashboard mismatch, spreadsheet fallback, metric trust, and explanation burden."
 active_core_seeds:
-  - seed: excel after dashboard
-    reason: Best observed kept-row retention in the aggregate Reddit audit.
+  - seed: export to excel
+    reason: Broad but still high-intent signal for spreadsheet fallback after dashboards.
   - seed: dashboard numbers don't match
-    reason: High-intent trust and reconciliation phrase tied to operator pain.
-  - seed: reconcile dashboard numbers
-    reason: Narrows toward validation workflows instead of generic discussion.
-  - seed: metric definition mismatch
-    reason: Strong downstream retention in BI and analytics communities.
-  - seed: manual reporting after dashboard
-    reason: Pulls spreadsheet fallback and recurring reporting burden.
-  - seed: stakeholder asks why numbers changed
-    reason: Captures operator explanation burden and follow-up pressure.
-  - seed: attribution numbers don't match
-    reason: Preserves marketing analytics mismatch coverage with narrower intent.
-  - seed: why did conversion drop by segment
-    reason: Keeps root-cause analysis coverage without relying on overly broad head terms.
+    reason: Strong reconciliation and trust phrase tied to operator pain.
+  - seed: numbers don't match
+    reason: Higher-recall mismatch phrase that can still work with subreddit filtering.
+  - seed: metric mismatch
+    reason: Shorter and more Reddit-friendly than taxonomy-heavy phrasing.
+  - seed: manual reporting
+    reason: Captures recurring report assembly burden in a natural short form.
+  - seed: weekly report
+    reason: Pulls recurring reporting workflows without over-specifying the situation.
+  - seed: why numbers changed
+    reason: Captures explanation burden in more natural user phrasing.
+  - seed: conversion drop
+    reason: Keeps root-cause analysis coverage with shorter search wording.
 optional_templates:
-  - template: still export excel after dashboard
-    reason: Extra spreadsheet fallback phrasing for BI communities.
-  - template: can't explain KPI change
-    reason: Extra operator-pain wording for analytics and BI threads.
-  - template: weekly report manual cleanup
-    reason: Extra recurring reporting burden phrase for spreadsheet-heavy workflows.
-  - template: dashboard trust issue
-    reason: Extra trust-focused phrasing when retained communities stay on-topic.
+  - template: still export to excel
+    reason: Extra spreadsheet fallback phrasing.
+  - template: can't explain KPI drop
+    reason: Extra explanation-burden wording.
+  - template: dashboard not trusted
+    reason: More natural trust-friction phrasing than taxonomy language.
+  - template: attribution numbers wrong
+    reason: Preserves marketing mismatch coverage.
 negative_terms:
   - job
   - hiring

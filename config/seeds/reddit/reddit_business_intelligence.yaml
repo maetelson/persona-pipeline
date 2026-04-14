@@ -1,31 +1,39 @@
 source_id: reddit_business_intelligence
 source_group: reddit
-max_query_count: 8
-source_notes: "r/BusinessIntelligence seeds focus on dashboard trust, source-of-truth friction, and stakeholder reporting."
+max_query_count: 10
+source_notes: "r/BusinessIntelligence seeds focus on dashboard trust, drill-down limits, BI tool friction, and recurring stakeholder reporting work."
 core_seeds:
   - seed: don't trust dashboard
     reason: Targets direct dashboard credibility complaints.
-  - seed: source of truth
-    reason: Finds ownership and reconciliation friction.
-  - seed: numbers don't match
-    reason: Pulls metric mismatch complaints.
-  - seed: reconcile dashboard numbers
-    reason: Captures validation before sharing.
-  - seed: still export excel
-    reason: Finds spreadsheet fallback in BI workflows.
-  - seed: every week report
-    reason: Targets recurring reporting burden.
-  - seed: stakeholders keep asking
+  - seed: wrong dashboard numbers
+    reason: Pulls blunt number-trust phrasing.
+  - seed: Power BI export
+    reason: Captures spreadsheet fallback from BI tools.
+  - seed: Tableau export
+    reason: Adds BI-tool-specific export frustration.
+  - seed: Excel after dashboard
+    reason: Finds fallback behavior after BI use.
+  - seed: drill down issue
+    reason: Captures dashboard limitation and breakdown pain.
+  - seed: metric definition
+    reason: Pulls KPI semantics and validation friction.
+  - seed: source data mismatch
+    reason: Captures dashboard-versus-source validation work.
+  - seed: weekly report
+    reason: Targets recurring stakeholder reporting burden.
+  - seed: stakeholder asks
     reason: Captures follow-up pressure from business teams.
-  - seed: drill down breakdown
-    reason: Pulls segmentation and drill-down pain.
 optional_templates:
-  - template: dashboard trust issue
-    reason: Extra BI trust phrasing.
-  - template: metric definition conflict
-    reason: Extra KPI semantics phrasing.
-  - template: scheduled report workaround
-    reason: Extra recurring delivery phrasing.
-  - template: stakeholder reporting burden
-    reason: Extra delivery-pressure phrasing.
-negative_terms: []
+  - template: power bi to excel
+    reason: Natural fallback phrasing for BI workflows.
+  - template: tableau numbers don't match
+    reason: More concrete dashboard-trust phrase.
+  - template: dashboard vs source data
+    reason: Pulls validation and reconciliation threads.
+  - template: looker drill down issue
+    reason: Adds tool-specific breakdown friction.
+negative_terms:
+  - homework
+  - assignment
+  - hiring
+  - resume

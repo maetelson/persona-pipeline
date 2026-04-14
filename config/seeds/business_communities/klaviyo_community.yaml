@@ -1,31 +1,48 @@
 source_id: klaviyo_community
 source_group: business_communities
-max_query_count: 8
-source_notes: "Klaviyo-only campaign, flow, segment, and reporting trust seeds."
+max_query_count: 10
+source_notes: "Klaviyo-focused operator language around attributed revenue mismatch, segment freshness, campaign/flow performance explanation, and manual reporting pain."
 candidate_seed_pool: []
 active_core_seeds:
-  - seed: klaviyo flow revenue
-    reason: Finds flow revenue mismatch discussions.
-  - seed: klaviyo campaign mismatch
-    reason: Captures campaign data mismatch pain.
-  - seed: klaviyo reporting issue
-    reason: Broad reporting workflow blocker seed.
-  - seed: klaviyo segment updating
-    reason: Targets segment freshness and update failures.
-  - seed: klaviyo conversion tracking
-    reason: Captures measurement setup and trust issues.
-  - seed: klaviyo attribution problem
-    reason: Finds attribution confusion in source language.
   - seed: klaviyo revenue mismatch
-    reason: Targets revenue reconciliation issues.
-  - seed: klaviyo analytics dashboard
-    reason: Captures dashboard trust and explanation burden.
-optional_templates: []
+    reason: Targets attributed revenue / report mismatch complaints.
+  - seed: attributed revenue wrong
+    reason: Matches direct trust-friction wording around revenue reporting.
+  - seed: segment not updating
+    reason: Captures segment freshness and stale audience complaints.
+  - seed: campaign performance drop
+    reason: Finds explanation-seeking threads after campaign declines.
+  - seed: flow performance drop
+    reason: Captures recurring flow-result decline and root-cause questions.
+  - seed: klaviyo report wrong
+    reason: Pulls short report-not-matching phrasing.
+  - seed: campaign results missing
+    reason: Matches help-style missing-results complaints.
+  - seed: export to csv
+    reason: Captures spreadsheet/report fallback behavior.
+  - seed: list growth dropped
+    reason: Pulls metric-change explanation threads.
+  - seed: attribution not matching
+    reason: Covers attribution trust and number mismatch complaints.
+optional_templates:
+  - template: klaviyo numbers don't match
+    reason: Natural mismatch phrasing for reporting trust complaints.
+  - template: segment update delay
+    reason: More specific freshness-delay phrasing.
+  - template: campaign revenue lower
+    reason: Extra campaign reporting drop phrasing.
+  - template: flow revenue dropped
+    reason: Extra flow-performance explanation phrasing.
+  - template: manual campaign report
+    reason: Captures recurring reporting burden.
+  - template: revenue not showing
+    reason: Matches short help-style missing-report wording.
 negative_terms:
   - api
-  - webhook
-  - custom code
+  - script
   - developer
+  - certification
   - job
   - career
-  - resume
+  - agency hiring
+  - phone support

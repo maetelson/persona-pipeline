@@ -1,26 +1,42 @@
 source_id: google_ads_help_community
 source_group: business_communities
-max_query_count: 8
-source_notes: "Google Ads Help Community seeds tuned to short help-style conversion, reporting, and performance discrepancy complaints."
+max_query_count: 10
+source_notes: "Google Ads Help Community seeds rewritten to match short help-style phrasing around missing conversions, report mismatches, attribution, and sudden performance drops."
 candidate_seed_pool: []
 active_core_seeds:
-  - seed: google ads conversion not showing
-    reason: Captures threads where conversions are missing from reports or UI.
+  - seed: google ads conversions missing
+    reason: Captures missing-conversion threads with explicit product context.
+  - seed: conversions not showing
+    reason: Matches common help-style phrasing for missing reported conversions.
   - seed: google ads conversion delay
-    reason: Targets delayed conversion credit and reporting lag complaints.
-  - seed: google ads click conversion mismatch
-    reason: Finds click versus conversion discrepancy discussions.
-  - seed: google ads reporting wrong
-    reason: Captures wrong reporting and report-not-matching phrasing.
-  - seed: google ads metrics discrepancy
-    reason: Targets metrics discrepancy and data mismatch language.
+    reason: Targets delayed conversion reporting complaints.
+  - seed: clicks no conversions
+    reason: Captures common click-versus-conversion frustration phrasing.
+  - seed: google ads report mismatch
+    reason: Finds reporting mismatch complaints in short help phrasing.
+  - seed: google ads stats wrong
+    reason: Pulls direct reporting-wrong / numbers-wrong complaints.
   - seed: google ads performance drop
-    reason: Finds campaign performance drop and impressions-not-showing threads.
-  - seed: google ads attribution issue
-    reason: Captures attribution and conversion-action problem wording.
-  - seed: google ads merchant center mismatch
-    reason: Covers Merchant Center mismatch and shopping-reporting complaints.
-optional_templates: []
+    reason: Captures sudden performance decline questions.
+  - seed: drop in impressions
+    reason: Matches common volume-drop complaint wording.
+  - seed: google ads attribution problem
+    reason: Targets attribution and conversion-credit issues in more natural phrasing.
+  - seed: merchant center mismatch
+    reason: Covers shopping and Merchant Center mismatch complaints.
+optional_templates:
+  - template: conversions not showing in reports
+    reason: More specific missing-report phrasing.
+  - template: clicks but no conversions
+    reason: Natural help-style discrepancy phrasing.
+  - template: google ads numbers don't match
+    reason: Direct trust and mismatch complaint wording.
+  - template: conversion tracking not working
+    reason: Captures tracking/setup-related reporting complaints.
+  - template: performance dropped suddenly
+    reason: Matches abrupt drop complaint titles.
+  - template: merchant center data mismatch
+    reason: Extra shopping-report mismatch phrasing.
 negative_terms:
   - api
   - script

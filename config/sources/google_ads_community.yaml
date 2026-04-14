@@ -14,8 +14,8 @@ seed_source_token: google ads
 seed_query_style: support_community
 max_query_count: 15
 max_threads_per_run: 800
-max_discovered_threads_per_url: 100
-discovery_page_count: 1
+max_discovered_threads_per_url: 150
+discovery_page_count: 4
 sleep_seconds: 0.15
 timeout_seconds: 4
 filter_discovery_by_seed: true

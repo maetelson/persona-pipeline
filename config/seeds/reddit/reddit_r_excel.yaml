@@ -1,31 +1,39 @@
 source_id: reddit_r_excel
 source_group: reddit
-max_query_count: 8
-source_notes: "r/excel seeds use spreadsheet-heavy complaint phrasing around cleanup, copy-paste, and report fallback."
+max_query_count: 10
+source_notes: "r/excel seeds use spreadsheet-heavy complaint phrasing around workbook cleanup, copy-paste reporting, export cleanup, and number validation." 
 core_seeds:
-  - seed: every week cleanup
-    reason: Targets repeated spreadsheet cleanup complaints.
-  - seed: copy paste reporting
+  - seed: copy paste report
     reason: Finds manual report assembly pain.
-  - seed: exported report cleanup
+  - seed: export cleanup
     reason: Pulls Excel cleanup after BI exports.
-  - seed: still using excel
-    reason: Captures spreadsheet fallback behavior.
-  - seed: numbers don't match
-    reason: Targets reconciliation and trust issues.
-  - seed: reconcile with excel
+  - seed: workbook doesn't match
+    reason: Targets workbook-level reconciliation pain.
+  - seed: reconcile in Excel
     reason: Finds validation against spreadsheet workbooks.
-  - seed: report takes too long
-    reason: Pulls direct reporting-effort complaints.
-  - seed: follow up breakdown
-    reason: Captures stakeholder breakdown requests.
+  - seed: weekly report workbook
+    reason: Captures recurring workbook-heavy reporting.
+  - seed: manual report
+    reason: Pulls direct spreadsheet workflow pain.
+  - seed: dashboard export
+    reason: Finds export-first fallback behavior.
+  - seed: Power BI to Excel
+    reason: Captures tool-specific export cleanup flow.
+  - seed: report tab cleanup
+    reason: Pulls workbook cleanup and formatting pain.
+  - seed: numbers don't match
+    reason: Targets trust and reconciliation issues.
 optional_templates:
-  - template: manual spreadsheet reporting
-    reason: Extra phrase for spreadsheet-centered reporting pain.
-  - template: excel report cleanup
-    reason: Extra cleanup phrasing for exported reports.
-  - template: workbook numbers mismatch
-    reason: Extra trust and reconciliation phrasing.
-  - template: weekly report workbook
-    reason: Extra recurring workbook phrasing.
-negative_terms: []
+  - template: weekly report in excel
+    reason: Natural recurring-report phrasing for the subreddit.
+  - template: power bi export mess
+    reason: Captures export cleanup frustration after BI use.
+  - template: workbook numbers off
+    reason: Pulls blunt reconciliation complaints.
+  - template: cleaned up the export
+    reason: Captures after-export cleanup language.
+negative_terms:
+  - homework
+  - assignment
+  - hiring
+  - resume

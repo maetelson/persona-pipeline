@@ -1,39 +1,42 @@
 source_id: github_discussions
 source_group: existing_forums
-max_query_count: 12
-source_notes: "GitHub discussions/issues are high-noise for this project, so only compact BI workflow complaint seeds are active."
-core_seeds:
-  - seed: "dashboard numbers don't match source data"
-    reason: Targets trust and reconciliation complaints rather than maintainer bug chatter.
-  - seed: export to excel for further analysis
-    reason: Pulls spreadsheet fallback workflows that still happen after dashboard use.
-  - seed: manual reporting after dashboard
-    reason: Captures repeated report prep pain that is useful for persona mining.
-  - seed: cannot explain why KPI changed
-    reason: Targets root-cause explanation burden instead of generic feature requests.
-  - seed: metric definition confusion across teams
-    reason: Pulls source-of-truth and KPI semantics pain with business context.
-  - seed: stakeholders ask why numbers changed
-    reason: Captures follow-up burden and business-facing explanation pressure.
-  - seed: need better drill down by segment
-    reason: Targets breakdown limits that block diagnosis and reporting.
-  - seed: dashboard is not enough for reporting
-    reason: Pulls tool-limitation complaints tied to actual reporting work.
-  - seed: export all results to excel not just row limit
-    reason: Pulls spreadsheet fallback and export-completeness complaints from real table workflows.
-  - seed: pivot table support for raw sql query results
-    reason: Targets pre-grouped and workaround-heavy reporting threads that expose dashboard limits.
-  - seed: source of truth metric formulas hard to review
-    reason: Pulls KPI governance and metric-definition pain without broadening into generic maintainer chatter.
+max_query_count: 8
+source_notes: "GitHub Discussions seeds narrowed toward reporting workflows, dashboard trust, metric mismatch, and spreadsheet fallback to reduce platform noise."
+candidate_seed_pool: []
+active_core_seeds:
+  - seed: dashboard numbers wrong
+    reason: Strong dashboard trust phrasing with less generic platform noise.
+  - seed: numbers don't match
+    reason: Keeps reconciliation coverage but still works with repo/community filtering.
+  - seed: metric mismatch
+    reason: Shorter and more search-friendly than taxonomy-heavy phrasing.
+  - seed: manual reporting
+    reason: Captures recurring reporting workflow pain.
+  - seed: weekly report
+    reason: Pulls scheduled reporting burden without broadening too much.
+  - seed: export to excel
+    reason: Captures spreadsheet fallback after dashboard/report usage.
+  - seed: source of truth
+    reason: Finds governance and reconciliation friction.
+  - seed: report cleanup
+    reason: Pulls post-export cleanup pain in a shorter form.
+optional_templates:
+  - template: dashboard numbers don't match
+    reason: More natural trust-friction phrasing.
+  - template: still export to excel
+    reason: Extra spreadsheet fallback phrasing.
+  - template: manual weekly report
+    reason: Extra recurring reporting-burden phrase.
+  - template: metric definition conflict
+    reason: Keeps KPI-semantics coverage in a more targeted template slot.
 negative_terms:
-  - installation
-  - deployment
-  - kubernetes
-  - stack trace
-  - api
-  - auth
-  - sdk
-  - plugin
-  - feature request
-  - enhancement
-  - regression
+  - job
+  - hiring
+  - internship
+  - resume
+  - homework
+  - assignment
+  - portfolio
+  - showcase
+  - fanfic
+  - fiction

@@ -1,31 +1,39 @@
 source_id: reddit_marketing_analytics
 source_group: reddit
-max_query_count: 8
-source_notes: "r/MarketingAnalytics seeds center campaign reporting, conversion-drop follow-ups, and channel/device breakdowns."
+max_query_count: 10
+source_notes: "r/MarketingAnalytics seeds center campaign reporting, GA4 and ads mismatch pain, attribution confusion, and channel or device follow-up cuts."
 core_seeds:
-  - seed: why did conversion drop
+  - seed: conversion drop
     reason: Targets campaign root-cause questions.
+  - seed: GA4 numbers off
+    reason: Pulls direct GA4 trust and validation pain.
+  - seed: attribution mismatch
+    reason: Captures attribution confusion in marketer language.
   - seed: channel breakdown
-    reason: Finds stakeholder segmentation asks.
+    reason: Finds common segmentation follow-ups.
   - seed: device breakdown
-    reason: Captures common marketing follow-up cuts.
-  - seed: campaign report manual
+    reason: Captures the usual second-cut request.
+  - seed: weekly report
     reason: Pulls recurring campaign reporting burden.
-  - seed: attribution numbers don't match
-    reason: Targets metric trust issues.
-  - seed: still exporting excel
-    reason: Captures spreadsheet fallback for campaign reports.
-  - seed: follow up analysis
-    reason: Finds repeated post-report investigation.
+  - seed: campaign numbers off
+    reason: Targets reporting trust issues without internal wording.
   - seed: dashboard not enough
-    reason: Pulls monitoring-vs-reporting frustration.
+    reason: Finds monitoring-versus-explanation frustration.
+  - seed: export to excel
+    reason: Captures spreadsheet fallback in marketing reporting.
+  - seed: Ads mismatch
+    reason: Pulls paid-media validation pain across tools.
 optional_templates:
+  - template: ga4 vs ads numbers
+    reason: Captures cross-tool mismatch checks.
+  - template: why did ROAS drop
+    reason: Pulls marketing-specific KPI interpretation pain.
   - template: weekly campaign report
-    reason: Extra recurring campaign reporting phrase.
-  - template: conversion drop breakdown
-    reason: Extra root-cause phrasing.
-  - template: campaign numbers mismatch
-    reason: Extra trust and attribution phrase.
-  - template: stakeholder marketing report
-    reason: Extra delivery-pressure phrase.
-negative_terms: []
+    reason: Adds recurring reporting language with better recall.
+  - template: channel breakdown followup
+    reason: Captures the next question after topline reporting.
+negative_terms:
+  - homework
+  - assignment
+  - hiring
+  - resume

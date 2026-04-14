@@ -84,6 +84,7 @@ pain_signal_keywords:
   - copy paste
   - duplicate work
   - missing
+  - discrepancy
   - wrong
   - drop
   - delayed
@@ -91,6 +92,7 @@ pain_signal_keywords:
   - not synching
   - not updating
   - not working
+  - not showing
   - not receiving
   - mismatch
   - issue

@@ -1,67 +1,48 @@
 source_id: shopify_community
 source_group: business_communities
-max_query_count: 20
-source_notes: "Shopify discovery should prioritize analytics, reporting, export, discrepancy, and performance-tracking pain in merchant language."
+max_query_count: 10
+source_notes: "Shopify operator language focused on sales/report mismatches, export fallback, channel performance drops, and recurring reporting friction."
 active_core_seeds:
-  - seed: shopify report mismatch
-    reason: Direct Shopify reporting discrepancy language.
-  - seed: shopify analytics issue
-    reason: Core Shopify-native analytics pain phrase.
-  - seed: shopify export csv
-    reason: Captures export and reporting workflow friction.
-  - seed: shopify dashboard wrong
-    reason: Short dashboard-trust complaint phrasing.
-  - seed: sales data mismatch
-    reason: Merchant mismatch language around sales numbers.
-  - seed: conversion drop shopify
-    reason: Shopify conversion decline phrasing.
-  - seed: checkout drop analysis
-    reason: Checkout funnel diagnosis phrasing.
-  - seed: revenue not matching
-    reason: Explicit reporting discrepancy language.
-  - seed: report export excel
-    reason: Spreadsheet-export workflow pain.
-  - seed: product performance report
-    reason: Product-level analytics/reporting pain.
-  - seed: channel performance issue
-    reason: Channel reporting issue phrasing.
-  - seed: customer segment report
-    reason: Segmentation/reporting workflow phrase.
-  - seed: sales discrepancy
-    reason: Short discrepancy term seen in merchant posts.
-  - seed: analytics dashboard issue
-    reason: Dashboard reliability phrasing.
+  - seed: shopify sales mismatch
+    reason: Targets sales/report number discrepancy complaints.
+  - seed: report numbers wrong
+    reason: Pulls short reporting-trust phrasing.
+  - seed: export to excel
+    reason: Captures spreadsheet fallback after Shopify reporting.
+  - seed: weekly sales report
+    reason: Finds recurring reporting workflows.
+  - seed: channel performance drop
+    reason: Captures explanation-seeking around channel declines.
+  - seed: conversion rate drop
+    reason: Keeps root-cause analysis coverage.
   - seed: orders not matching
-    reason: Order-total mismatch phrase.
-  - seed: sessions vs orders
-    reason: Funnel mismatch phrase.
-  - seed: weekly sales comparison
-    reason: Period comparison/reporting pain.
-  - seed: monthly report issue
-    reason: Recurring reporting workflow phrase.
-  - seed: attribution issue shopify
-    reason: Shopify attribution complaint phrase.
-  - seed: pixel tracking issue
-    reason: Tracking failure language tied to analytics pain.
+    reason: Matches order/report discrepancy pain.
+  - seed: dashboard not enough
+    reason: Pulls monitoring-vs-delivery frustration.
+  - seed: manual reporting
+    reason: Captures recurring manual report assembly burden.
+  - seed: traffic not matching
+    reason: Covers traffic / session trust-friction complaints.
 candidate_seed_pool: []
 optional_templates:
-  - template: wrong shopify report mismatch
-    reason: Support-community prefix expansion for report discrepancy.
-  - template: mismatch shopify analytics issue
-    reason: Support-community prefix expansion for analytics reliability.
-  - template: discrepancy sales data mismatch
-    reason: Support-community prefix expansion for number disagreement.
-  - template: export report export excel
-    reason: Support-community prefix expansion for export workflow pain.
+  - template: shopify numbers don't match
+    reason: Product-specific mismatch phrasing.
+  - template: sales report wrong
+    reason: Natural reporting-trust complaint.
+  - template: export report to excel
+    reason: More specific spreadsheet fallback wording.
+  - template: channel sales dropped
+    reason: Extra performance-explanation phrasing.
+  - template: manual weekly report
+    reason: Captures recurring reporting burden.
+  - template: orders and sales mismatch
+    reason: Extra operator reconciliation wording.
 negative_terms:
-  - theme code
-  - custom css
-  - liquid
+  - api
+  - script
   - app development
+  - developer
   - pricing
   - partner program
   - certification
-  - job
-  - career
-  - product announcement
-  - dropshipping suppliers
+  - phone support

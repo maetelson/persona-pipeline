@@ -1,33 +1,44 @@
 source_id: hubspot_community
 source_group: business_communities
-max_query_count: 8
-source_notes: "HubSpot-only reporting and lifecycle troubleshooting seeds for community discovery."
+max_query_count: 9
+source_notes: "HubSpot operator language centered on reporting mismatch, attribution trust, dashboard/export fallback, and recurring stakeholder reporting."
 candidate_seed_pool: []
 active_core_seeds:
-  - seed: hubspot report mismatch
-    reason: Finds report trust breakdowns with direct mismatch language.
-  - seed: hubspot wrong numbers
-    reason: Captures dashboard and report number disputes.
-  - seed: hubspot attribution issue
-    reason: Targets attribution-reporting confusion.
-  - seed: hubspot lifecycle stage
-    reason: Finds lifecycle-stage reporting mismatches.
-  - seed: hubspot report filter
-    reason: Captures filter logic and report slice failures.
-  - seed: hubspot property mismatch
-    reason: Targets contact and deal property reconciliation pain.
-  - seed: hubspot revenue report
-    reason: Finds revenue-report trust failures.
-  - seed: hubspot export excel
-    reason: Captures spreadsheet export workaround language.
-optional_templates: []
+  - seed: hubspot report wrong
+    reason: Short, natural report mismatch phrasing.
+  - seed: numbers don't match
+    reason: Captures reconciliation pain in reporting workflows.
+  - seed: attribution report wrong
+    reason: Targets attribution-trust complaints.
+  - seed: dashboard not enough
+    reason: Pulls monitoring-vs-delivery frustration.
+  - seed: export to excel
+    reason: Captures spreadsheet fallback after dashboard/report use.
+  - seed: weekly report
+    reason: Finds recurring reporting burden.
+  - seed: source of truth
+    reason: Captures ownership and reconciliation friction.
+  - seed: report takes too long
+    reason: Pulls direct workflow-friction language.
+  - seed: list not updating
+    reason: Adds operational freshness pain without going too broad.
+optional_templates:
+  - template: hubspot numbers don't match
+    reason: Product-specific mismatch wording.
+  - template: manual report cleanup
+    reason: Extra recurring reporting-burden phrasing.
+  - template: export report to excel
+    reason: More specific spreadsheet fallback wording.
+  - template: attribution numbers wrong
+    reason: Natural trust-friction phrasing.
+  - template: dashboard export workaround
+    reason: Captures workaround behavior after dashboard use.
 negative_terms:
   - api
-  - sdk
-  - oauth
-  - webhook
+  - script
+  - developer
   - certification
-  - academy
   - job
   - career
-  - resume
+  - interview
+  - phone support

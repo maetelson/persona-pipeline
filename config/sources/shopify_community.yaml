@@ -10,8 +10,8 @@ check_robots: false
 query_mode: source_config
 seed_bank_path: config/seeds/business_communities/shopify_community.yaml
 max_query_count: 20
-max_threads_per_run: 800
-max_discovered_threads_per_url: 100
+max_threads_per_run: 1400
+max_discovered_threads_per_url: 150
 discovery_page_count: 25
 sleep_seconds: 0.15
 filter_discovery_by_seed: false
