@@ -356,19 +356,27 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
             1 for term in github_cfg.get("maintainer_noise_patterns", []) or [] if str(term).lower() in text
         )
         if workflow_term_hits:
-            bonus = float(github_cfg.get("workflow_context_bonus", 0.6))
+            base_bonus = float(github_cfg.get("workflow_context_bonus", 0.6))
+            per_hit_bonus = float(github_cfg.get("workflow_context_hit_bonus", 0.0))
+            bonus = base_bonus + max(workflow_term_hits - 1, 0) * per_hit_bonus
             scores["biz_workflow_score"] += bonus
-            positive_hits.append(("github_workflow_context", bonus))
+            positive_hits.append(("github_workflow_context", round(bonus, 2)))
             source_reasons.append("github_discussions_workflow_context")
+        if strong_workflow_hits:
+            strong_bonus = strong_workflow_hits * float(github_cfg.get("strong_workflow_context_bonus", 0.0))
+            if strong_bonus:
+                scores["reporting_pain_score"] += strong_bonus
+                positive_hits.append(("github_strong_workflow_context", round(strong_bonus, 2)))
+                source_reasons.append("github_discussions_strong_workflow_context")
         penalty_multiplier = 1.0
         if workflow_term_hits and strong_workflow_hits:
             penalty_multiplier = float(github_cfg.get("workflow_penalty_relief_multiplier", 0.35))
-        if technical_issue_hits and workflow_term_hits < 2:
+        if technical_issue_hits and workflow_term_hits < 2 and strong_workflow_hits == 0:
             penalty = technical_issue_hits * float(github_cfg.get("issue_template_penalty", 1.6)) * penalty_multiplier
             scores["implementation_only_score"] += penalty
             negative_hits.append(("github_issue_template_noise", round(penalty, 2)))
             source_reasons.append("github_discussions_issue_template_downweight")
-        if maintainer_noise_hits and workflow_term_hits < 2:
+        if maintainer_noise_hits and workflow_term_hits < 2 and strong_workflow_hits == 0:
             penalty = maintainer_noise_hits * float(github_cfg.get("maintainer_noise_penalty", 1.2)) * penalty_multiplier
             scores["generic_programming_score"] += penalty
             negative_hits.append(("github_maintainer_noise", round(penalty, 2)))

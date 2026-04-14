@@ -118,7 +118,7 @@ class SourceStageProfilerReportTest(unittest.TestCase):
         self.assertIn("Reddit hotspot: collect", report)
         self.assertIn("avg_items_per_page", report)
         self.assertIn("Reddit pagination controls", report)
-        self.assertIn("python run/17_profile_sources.py --sources reddit stackoverflow github_discussions", report)
+        self.assertIn("python run/diagnostics/17_profile_sources.py --sources reddit stackoverflow github_discussions", report)
 
 
 if __name__ == "__main__":

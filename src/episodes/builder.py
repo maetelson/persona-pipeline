@@ -562,6 +562,112 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             "disappeared",
             "missing",
         ]
+    if source == "merchant_center_community":
+        # Merchant Center threads often describe policy/review or listing visibility failures
+        # without using the generic reporting-mismatch phrasing from other business sources.
+        workflow_terms = [
+            *workflow_terms,
+            "suspended",
+            "suspension",
+            "manual review",
+            "review opportunity",
+            "appeal",
+            "escalate",
+            "escalation",
+            "not serving",
+            "not syncing",
+            "issue",
+            "problem",
+        ]
+        metric_terms = [
+            *metric_terms,
+            "merchant center",
+            "google merchant center",
+            "shopping ads",
+            "shopping campaign",
+            "free listings",
+            "product count",
+            "products",
+            "feed",
+            "impressions",
+            "disapproved",
+            "approved",
+        ]
+        required_terms = [
+            *required_terms,
+            "misrepresentation",
+            "suspended",
+            "suspension",
+            "manual review",
+            "disapproved",
+            "not approved",
+            "limited",
+            "not syncing",
+            "not serving",
+            "zero product count",
+            "page unavailable",
+        ]
+    if source == "klaviyo_community":
+        # Klaviyo posts often describe CRM/email workflow failures in operational language
+        # like lists, flows, templates, integrations, or rate drops rather than BI-style
+        # reporting mismatch phrasing.
+        workflow_terms = [
+            *workflow_terms,
+            "flow",
+            "flows",
+            "campaign",
+            "campaigns",
+            "segment",
+            "segments",
+            "popup",
+            "pop-up",
+            "signup form",
+            "integration",
+            "deliverability",
+            "template",
+            "templates",
+            "tracking",
+            "discount code",
+            "coupon",
+        ]
+        metric_terms = [
+            *metric_terms,
+            "email",
+            "emails",
+            "open rate",
+            "click rate",
+            "revenue",
+            "deliverability",
+            "list",
+            "lists",
+            "subscriber",
+            "subscribers",
+            "profile",
+            "tracking",
+            "page view",
+            "browse abandonment",
+            "welcome flow",
+            "post-purchase flow",
+        ]
+        required_terms = [
+            *required_terms,
+            "not added",
+            "not being added",
+            "decrease",
+            "dropped",
+            "not working",
+            "not available",
+            "error occurred",
+            "try again later",
+            "challenge",
+            "cumbersome",
+            "manual process",
+            "unclear",
+            "disrupted",
+            "how can i",
+            "best way",
+            "please help",
+        ]
     usage_patterns = [str(term).lower() for term in quality_cfg.get("usage_only_patterns", [])]
     has_workflow_pain = any(term in lowered for term in workflow_terms)
     has_metric_problem = any(term in lowered for term in metric_terms)
@@ -572,7 +678,7 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
     if not has_required_problem and structural_pain:
         has_required_problem = True
     usage_only = any(lowered.startswith(pattern) for pattern in usage_patterns) and not has_required_problem
-    if source not in {"shopify_community", "google_ads_help_community"}:
+    if source not in {"shopify_community", "google_ads_help_community", "merchant_center_community", "klaviyo_community"}:
         passed = has_workflow_pain and has_metric_problem and has_required_problem and not usage_only
         return QualityAssessment(
             score=1.0 if passed else 0.0,
@@ -742,6 +848,275 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             score=round(score, 3),
             bucket="fail",
             fail_reason="impression_problem_without_reporting_context" if metric_presence else "complaint_without_operational_context",
+            rescue_reason="",
+            passes=False,
+        )
+
+    if source == "merchant_center_community":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "merchant center",
+                "google merchant center",
+                "shopping ads",
+                "shopping campaign",
+                "free listings",
+                "product count",
+                "products",
+                "feed",
+                "impressions",
+            ]
+        )
+        discrepancy_presence = any(
+            term in lowered
+            for term in [
+                "misrepresentation",
+                "suspended",
+                "suspension",
+                "disapproved",
+                "not approved",
+                "limited",
+                "page unavailable",
+                "not serving",
+                "not syncing",
+                "zero product count",
+            ]
+        )
+        analysis_context = any(
+            term in lowered
+            for term in [
+                "manual review",
+                "review opportunity",
+                "appeal",
+                "support",
+                "audit",
+                "feed label",
+                "free listings",
+                "product feed",
+                "policy",
+            ]
+        )
+        explanation_burden = any(
+            term in lowered
+            for term in [
+                "root cause",
+                "what is triggering",
+                "what could be the issue",
+                "help identify",
+                "why",
+                "diagnose",
+                "resolve",
+            ]
+        )
+        discussion_style = any(
+            term in lowered
+            for term in [
+                "hi everyone",
+                "hoping",
+                "please review",
+                "can anyone help",
+                "what should i do",
+            ]
+        )
+        low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
+
+        score = 0.0
+        score += 1.2 if metric_presence else 0.0
+        score += 1.2 if discrepancy_presence or has_required_problem else 0.0
+        score += 0.9 if analysis_context else 0.0
+        score += 0.8 if explanation_burden else 0.0
+        score += 0.7 if has_workflow_pain else 0.0
+        score += 0.5 if discussion_style and (metric_presence or discrepancy_presence or analysis_context) else 0.0
+        score -= 1.0 if usage_only else 0.0
+
+        signal_count = sum(
+            int(flag)
+            for flag in [
+                metric_presence,
+                discrepancy_presence or has_required_problem,
+                analysis_context,
+                explanation_burden,
+                discussion_style and (metric_presence or discrepancy_presence or analysis_context),
+            ]
+        )
+        if low_signal:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="merchant_center_low_signal",
+                rescue_reason="",
+                passes=False,
+            )
+        if signal_count >= 3 and (discrepancy_presence or has_required_problem or explanation_burden):
+            return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
+        if signal_count >= 2:
+            rescue_reason = "merchant_center_policy_visibility_rescue"
+            fail_reason = "weak_problem_phrasing"
+            if metric_presence and not (discrepancy_presence or has_required_problem):
+                fail_reason = "metric_present_but_no_explicit_blocker"
+                rescue_reason = "merchant_center_metric_context_rescue"
+            elif not has_workflow_pain and (metric_presence or analysis_context):
+                fail_reason = "weak_workflow_signal"
+                rescue_reason = "merchant_center_workflow_weak_rescue"
+            elif discussion_style and (metric_presence or discrepancy_presence or analysis_context):
+                fail_reason = "discussion_style_but_relevant"
+                rescue_reason = "merchant_center_discussion_style_rescue"
+            return QualityAssessment(score=round(score, 3), bucket="borderline", fail_reason=fail_reason, rescue_reason=rescue_reason, passes=True)
+        return QualityAssessment(
+            score=round(score, 3),
+            bucket="fail",
+            fail_reason="merchant_center_problem_without_operational_context",
+            rescue_reason="",
+            passes=False,
+        )
+
+    if source == "klaviyo_community":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "klaviyo",
+                "email",
+                "emails",
+                "campaign",
+                "campaigns",
+                "flow",
+                "flows",
+                "segment",
+                "segments",
+                "open rate",
+                "click rate",
+                "deliverability",
+                "popup",
+                "pop-up",
+                "list",
+                "subscriber",
+                "tracking",
+                "discount code",
+                "coupon",
+            ]
+        )
+        discrepancy_presence = any(
+            term in lowered
+            for term in [
+                "decrease",
+                "dropped",
+                "not added",
+                "not being added",
+                "not working",
+                "error occurred",
+                "try again later",
+                "disrupted",
+                "not available",
+                "challenge",
+                "cumbersome",
+                "manual process",
+                "unclear",
+                "bug",
+                "issue",
+            ]
+        )
+        analysis_context = any(
+            term in lowered
+            for term in [
+                "shopify",
+                "integration",
+                "signup form",
+                "welcome flow",
+                "post-purchase flow",
+                "browse abandonment",
+                "template",
+                "templates",
+                "profile",
+                "page view",
+                "tracking",
+                "discount code",
+                "coupon",
+            ]
+        )
+        explanation_burden = any(
+            term in lowered
+            for term in [
+                "how can i",
+                "what is the best way",
+                "what should i do",
+                "trying to",
+                "don't know how",
+                "dont know how",
+                "unclear",
+                "please help",
+                "appreciate your guidance",
+                "point me in the right direction",
+                "is this possible",
+            ]
+        )
+        discussion_style = any(
+            term in lowered
+            for term in [
+                "hi there",
+                "hi everyone",
+                "dear klaviyo support team",
+                "can someone help",
+                "thoughts on",
+            ]
+        )
+        generic_tips = any(
+            term in lowered
+            for term in [
+                "best practices",
+                "join the community today",
+                "product feedback",
+                "thoughts on",
+            ]
+        ) and not discrepancy_presence and not explanation_burden
+        low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
+
+        score = 0.0
+        score += 1.2 if metric_presence else 0.0
+        score += 1.2 if discrepancy_presence or has_required_problem else 0.0
+        score += 0.9 if analysis_context else 0.0
+        score += 0.8 if explanation_burden else 0.0
+        score += 0.7 if has_workflow_pain else 0.0
+        score += 0.5 if discussion_style and (metric_presence or discrepancy_presence or analysis_context) else 0.0
+        score -= 1.0 if generic_tips else 0.0
+        score -= 0.8 if usage_only else 0.0
+
+        signal_count = sum(
+            int(flag)
+            for flag in [
+                metric_presence,
+                discrepancy_presence or has_required_problem,
+                analysis_context,
+                explanation_burden,
+                has_workflow_pain,
+            ]
+        )
+        if low_signal:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="klaviyo_low_signal",
+                rescue_reason="",
+                passes=False,
+            )
+        if signal_count >= 3 and (discrepancy_presence or has_required_problem or explanation_burden):
+            return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
+        if signal_count >= 2:
+            rescue_reason = "klaviyo_operational_workflow_rescue"
+            fail_reason = "weak_problem_phrasing"
+            if metric_presence and not (discrepancy_presence or has_required_problem):
+                fail_reason = "metric_present_but_no_explicit_blocker"
+                rescue_reason = "klaviyo_metric_context_rescue"
+            elif not has_workflow_pain and (metric_presence or analysis_context):
+                fail_reason = "weak_workflow_signal"
+                rescue_reason = "klaviyo_workflow_weak_rescue"
+            elif discussion_style and (metric_presence or discrepancy_presence or analysis_context):
+                fail_reason = "discussion_style_but_relevant"
+                rescue_reason = "klaviyo_discussion_style_rescue"
+            return QualityAssessment(score=round(score, 3), bucket="borderline", fail_reason=fail_reason, rescue_reason=rescue_reason, passes=True)
+        return QualityAssessment(
+            score=round(score, 3),
+            bucket="fail",
+            fail_reason="klaviyo_problem_without_operational_context",
             rescue_reason="",
             passes=False,
         )

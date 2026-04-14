@@ -1,33 +1,42 @@
 source_id: reddit
 source_group: existing_forums
 max_query_count: 8
-source_notes: "Aggregate Reddit uses a narrow, problem-oriented seed bank focused on dashboard mismatch, spreadsheet fallback, metric trust, and explanation burden."
+source_notes: "Aggregate Reddit seeds use first-person, confused, practical operator language for broad quantitative interpretation pain. Conversion remains one branch, not the center."
 active_core_seeds:
-  - seed: export to excel
-    reason: Broad but still high-intent signal for spreadsheet fallback after dashboards.
-  - seed: dashboard numbers don't match
-    reason: Strong reconciliation and trust phrase tied to operator pain.
-  - seed: numbers don't match
-    reason: Higher-recall mismatch phrase that can still work with subreddit filtering.
-  - seed: metric mismatch
-    reason: Shorter and more Reddit-friendly than taxonomy-heavy phrasing.
-  - seed: manual reporting
-    reason: Captures recurring report assembly burden in a natural short form.
-  - seed: weekly report
-    reason: Pulls recurring reporting workflows without over-specifying the situation.
-  - seed: why numbers changed
-    reason: Captures explanation burden in more natural user phrasing.
-  - seed: conversion drop
-    reason: Keeps root-cause analysis coverage with shorter search wording.
+  # Canonical axes: numbers_mismatch, trend_interpretation_confusion,
+  # stakeholder_explanation_pressure, source_of_truth_conflict,
+  # business_question_translation_failure, insight_to_action_failure.
+  - seed: dashboard says one thing export says another
+    reason: Narrows mismatch pain to a concrete report-vs-export conflict in native Reddit wording.
+  - seed: anyone else seeing different numbers
+    reason: Preserves peer-validation language while avoiding overly broad generic report phrasing.
+  - seed: CRM says one thing dashboard says another
+    reason: Strong source-of-truth conflict phrasing with clear operator context.
+  - seed: finance numbers different from analytics
+    reason: Anchors trust conflict in a concrete cross-team reporting disagreement.
+  - seed: why are week over week numbers weird
+    reason: More native trend-confusion phrasing than generic spike language.
+  - seed: my boss asked why the numbers changed
+    reason: Keeps stakeholder pressure in first-person language with clearer operator pain.
+  - seed: not sure which number to trust
+    reason: More natural Reddit uncertainty phrasing than formal trust wording.
+  - seed: not sure what to do with this report
+    reason: Preserves actionability pain but avoids generic decision-advice spam.
+candidate_seed_pool:
+  - dashboard says one thing export says another
+  - anyone else seeing different numbers
+  - CRM says one thing dashboard says another
+  - finance numbers different from analytics
+  - why are week over week numbers weird
 optional_templates:
-  - template: still export to excel
-    reason: Extra spreadsheet fallback phrasing.
-  - template: can't explain KPI drop
-    reason: Extra explanation-burden wording.
-  - template: dashboard not trusted
-    reason: More natural trust-friction phrasing than taxonomy language.
-  - template: attribution numbers wrong
-    reason: Preserves marketing mismatch coverage.
+  - template: dashboard numbers don't match
+    reason: Preserved from the older seed set, but downgraded because the broader mismatch phrasing already covers it and this wording over-indexes dashboard-specific threads.
+  - template: manual reporting
+    reason: Preserved as a secondary workflow signal rather than a core seed because it is useful but narrower than general interpretation pain.
+  - template: weekly report
+    reason: Preserved as recurring reporting pressure, but downgraded because it can pull routine reporting chatter without confusion or trust pain.
+  - template: conversion drop
+    reason: Preserved deliberately as one subset branch under quantitative pain, not the primary Reddit framing.
 negative_terms:
   - job
   - hiring
@@ -38,3 +47,24 @@ negative_terms:
   - roleplay
   - fanfic
   - fiction
+legacy_seed_notes:
+  - seed: export to excel
+    action: downgraded
+    why: duplicate coverage
+    note: Useful workflow signal, but too narrow to remain a core aggregate Reddit seed.
+  - seed: metric mismatch
+    action: downgraded
+    why: community-language mismatch
+    note: More formal than the first-person, confused Reddit phrasing we want to prioritize.
+  - seed: this report makes no sense
+    action: removed_from_core
+    why: too broad
+    note: Matched a large amount of unrelated promotional and newsletter content in aggregate Reddit.
+  - seed: what should I do based on these numbers
+    action: removed_from_core
+    why: tutorial/setup noise
+    note: Pulled generic advice and growth-content threads more often than operator interpretation pain.
+  - seed: which breakdown should I look at
+    action: removed_from_core
+    why: community-language mismatch
+    note: Sounded more like analyst jargon than native Reddit operator phrasing.

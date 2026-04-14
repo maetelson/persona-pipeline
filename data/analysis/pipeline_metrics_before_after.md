@@ -3,7 +3,7 @@
 - Baseline snapshot: 2026-04-14T01:37:46.131203+00:00
 - Current snapshot: 2026-04-14T01:37:46.131203+00:00
 - Scope: raw, valid, prefiltered valid, episodes, labeled, persona-core, and source-balance risk indicators.
-- Current snapshot still equals the baseline. Rerun collection and downstream stages, then rerun `python run/20_capture_scale_metrics.py` to populate the after delta.
+- Current snapshot still equals the baseline. Rerun collection and downstream stages, then rerun `python run/diagnostics/20_capture_scale_metrics.py` to populate the after delta.
 
 ## Overall Funnel
 

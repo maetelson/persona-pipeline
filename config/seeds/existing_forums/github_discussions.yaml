@@ -1,34 +1,42 @@
 source_id: github_discussions
 source_group: existing_forums
 max_query_count: 8
-source_notes: "GitHub Discussions seeds narrowed toward reporting workflows, dashboard trust, metric mismatch, and spreadsheet fallback to reduce platform noise."
-candidate_seed_pool: []
+source_notes: "GitHub Discussions seeds focus on product and analytics workflow complaints about mismatched numbers, unclear metric logic, inadequate drill-down, and stakeholder explanation pressure."
+candidate_seed_pool:
+  - dashboard says one thing export says another
+  - which metric should I trust
+  - report makes no sense
+  - what caused this spike
+  - what should I do based on these numbers
 active_core_seeds:
+  # Canonical axes: numbers_mismatch, metric_definition_confusion,
+  # trend_interpretation_confusion, segmentation_breakdown_confusion,
+  # dashboard_confusion, source_of_truth_conflict.
   - seed: dashboard numbers wrong
-    reason: Strong dashboard trust phrasing with less generic platform noise.
-  - seed: numbers don't match
-    reason: Keeps reconciliation coverage but still works with repo/community filtering.
-  - seed: metric mismatch
-    reason: Shorter and more search-friendly than taxonomy-heavy phrasing.
-  - seed: manual reporting
-    reason: Captures recurring reporting workflow pain.
-  - seed: weekly report
-    reason: Pulls scheduled reporting burden without broadening too much.
-  - seed: export to excel
-    reason: Captures spreadsheet fallback after dashboard/report usage.
+    reason: Still one of the strongest product-discussion phrasings for trust and mismatch.
+  - seed: wrong totals
+    reason: Pulls aggregation and visual-total complaints in more product-native language.
+  - seed: metric definition confusion
+    reason: Expands beyond raw mismatch into semantics and calculation logic.
   - seed: source of truth
-    reason: Finds governance and reconciliation friction.
-  - seed: report cleanup
-    reason: Pulls post-export cleanup pain in a shorter form.
+    reason: Keeps cross-system trust conflict explicit.
+  - seed: why did this change
+    reason: Captures variance diagnosis and trend interpretation.
+  - seed: need better drill down by segment
+    reason: More native product-feedback phrasing for missing diagnostic cuts and breakdowns.
+  - seed: dashboard not enough
+    reason: Captures summary-vs-follow-up frustration in product feedback language.
+  - seed: explain numbers to stakeholders
+    reason: Adds high-value explanation burden that was previously underrepresented.
 optional_templates:
-  - template: dashboard numbers don't match
-    reason: More natural trust-friction phrasing.
-  - template: still export to excel
-    reason: Extra spreadsheet fallback phrasing.
-  - template: manual weekly report
-    reason: Extra recurring reporting-burden phrase.
-  - template: metric definition conflict
-    reason: Keeps KPI-semantics coverage in a more targeted template slot.
+  - template: export to excel
+    reason: Preserved from the older seed set, but downgraded because spreadsheet fallback is narrower than the broader interpretation framing.
+  - template: manual reporting
+    reason: Preserved as workflow context, but not kept in the core set because it can overpull generic operations pain.
+  - template: weekly report
+    reason: Preserved because it can still surface reporting pressure, but downgraded due to low specificity.
+  - template: report cleanup
+    reason: Preserved as post-export friction wording, but downgraded because it is less directly tied to interpretation than wrong totals or metric logic.
 negative_terms:
   - job
   - hiring
@@ -40,3 +48,16 @@ negative_terms:
   - showcase
   - fanfic
   - fiction
+legacy_seed_notes:
+  - seed: numbers don't match
+    action: downgraded
+    why: duplicate coverage
+    note: Still useful, but `dashboard numbers wrong` and `wrong totals` cover this family with less generic noise on GitHub.
+  - seed: metric mismatch
+    action: downgraded
+    why: community-language mismatch
+    note: The more explicit `metric definition confusion` better matches product-discussion requests about semantics and model logic.
+  - seed: breakdown by segment
+    action: removed_from_core
+    why: duplicate semantic coverage
+    note: Replaced with a more native drill-down request that better matches GitHub product-discussion language.

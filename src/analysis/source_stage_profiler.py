@@ -565,7 +565,7 @@ def render_profile_report(summary_df: pd.DataFrame, stage_df: pd.DataFrame) -> s
             "## Reproducible Command",
             "",
             "```powershell",
-            "python run/17_profile_sources.py --sources reddit stackoverflow github_discussions",
+            "python run/diagnostics/17_profile_sources.py --sources reddit stackoverflow github_discussions",
             "```",
         ]
     )

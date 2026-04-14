@@ -55,11 +55,11 @@ Increase total collection volume toward 30,000 raw rows while preserving downstr
 
 ## Rollout Order
 
-1. Capture baseline metrics with `python run/20_capture_scale_metrics.py --set-baseline`.
+1. Capture baseline metrics with `python run/diagnostics/20_capture_scale_metrics.py --set-baseline`.
 2. Run collection for the changed sources only.
 3. Rerun normalize -> filter -> prefilter -> episodes -> labeling -> analysis.
-4. Re-run `python run/20_capture_scale_metrics.py`.
-5. Compare `pipeline_metrics_before_after.md` and `data/analysis/source_balance_audit.csv` before promoting any medium-risk changes.
+4. Re-run `python run/diagnostics/20_capture_scale_metrics.py`.
+5. Compare `data/analysis/pipeline_metrics_before_after.md` and `data/analysis/source_balance_audit.csv` before promoting any medium-risk changes.
 
 ## Success Gates
 

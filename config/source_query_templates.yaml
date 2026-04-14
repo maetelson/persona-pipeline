@@ -16,6 +16,62 @@ negative_downweight_lexicon:
   - dependency conflict
   - build failure
 query_banks:
+  numbers_mismatch:
+    - numbers do not match
+    - wrong totals
+    - report discrepancy
+    - dashboard says one thing export says another
+    - which number should I trust
+  metric_definition_confusion:
+    - unclear metric definition
+    - what is counted in this metric
+    - KPI definition confusion
+    - formula does not match business logic
+  trend_interpretation_confusion:
+    - why did this change
+    - what caused this spike
+    - what caused this drop
+    - trend makes no sense
+  segmentation_breakdown_confusion:
+    - which breakdown should I look at
+    - breakdown by channel device product
+    - segment comparison does not add up
+    - which segment caused the change
+  dashboard_confusion:
+    - dashboard is confusing
+    - dashboard not enough
+    - report makes no sense
+    - chart says one thing table says another
+  aggregation_filter_issue:
+    - wrong aggregation
+    - wrong date field
+    - double counted
+    - filter changes totals unexpectedly
+  source_of_truth_conflict:
+    - source of truth
+    - crm says one thing analytics says another
+    - backend does not match dashboard
+    - finance does not match report
+  stakeholder_explanation_pressure:
+    - how do I explain this to my boss
+    - leadership asked why the KPI changed
+    - need to explain the numbers
+    - weekly report pressure
+  insight_to_action_failure:
+    - what should I do based on these numbers
+    - which metric matters
+    - what action should I take
+    - not sure what to optimize
+  attribution_tracking_issue:
+    - attribution mismatch
+    - tracking issue
+    - platform says one thing analytics says another
+    - conversion path unclear
+  funnel_conversion_drop:
+    - conversion drop
+    - revenue down
+    - checkout drop
+    - funnel drop off
   reporting_pain:
     - dashboard numbers wrong
     - monthly reporting takes too long
@@ -53,7 +109,73 @@ query_banks:
 source_templates:
   reddit:
     preferred_banks:
+      - numbers_mismatch
+      - trend_interpretation_confusion
+      - stakeholder_explanation_pressure
+      - insight_to_action_failure
       - reporting_pain
       - ad_hoc_analysis
       - dashboard_trust
       - segmentation_confusion
+  stackoverflow:
+    preferred_banks:
+      - numbers_mismatch
+      - metric_definition_confusion
+      - aggregation_filter_issue
+      - segmentation_breakdown_confusion
+      - attribution_tracking_issue
+  shopify_community:
+    preferred_banks:
+      - numbers_mismatch
+      - trend_interpretation_confusion
+      - segmentation_breakdown_confusion
+      - dashboard_confusion
+      - source_of_truth_conflict
+      - funnel_conversion_drop
+  hubspot_community:
+    preferred_banks:
+      - numbers_mismatch
+      - metric_definition_confusion
+      - source_of_truth_conflict
+      - stakeholder_explanation_pressure
+      - attribution_tracking_issue
+  google_ads_help_community:
+    preferred_banks:
+      - numbers_mismatch
+      - trend_interpretation_confusion
+      - segmentation_breakdown_confusion
+      - attribution_tracking_issue
+      - funnel_conversion_drop
+  merchant_center_help_community:
+    preferred_banks:
+      - trend_interpretation_confusion
+      - segmentation_breakdown_confusion
+      - numbers_mismatch
+      - dashboard_confusion
+  klaviyo_community:
+    preferred_banks:
+      - numbers_mismatch
+      - trend_interpretation_confusion
+      - segmentation_breakdown_confusion
+      - insight_to_action_failure
+      - attribution_tracking_issue
+  power_bi_community:
+    preferred_banks:
+      - numbers_mismatch
+      - metric_definition_confusion
+      - aggregation_filter_issue
+      - dashboard_confusion
+      - source_of_truth_conflict
+  ga4_help_community:
+    preferred_banks:
+      - source_of_truth_conflict
+      - attribution_tracking_issue
+      - numbers_mismatch
+      - trend_interpretation_confusion
+      - funnel_conversion_drop
+  looker_studio_forum:
+    preferred_banks:
+      - dashboard_confusion
+      - numbers_mismatch
+      - aggregation_filter_issue
+      - metric_definition_confusion

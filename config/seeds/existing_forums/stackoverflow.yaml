@@ -1,0 +1,63 @@
+source_id: stackoverflow
+source_group: existing_forums
+max_query_count: 10
+source_notes: "Stack Overflow seeds target quantitative interpretation failures expressed through SQL, aggregation, filters, joins, date logic, and reconciliation language rather than general programming help."
+candidate_seed_pool:
+  - why are summary and detail totals different
+  - report total differs from table rows
+  - dashboard total not matching sql
+  - export to csv not matching chart
+  - attribution query not matching platform
+active_core_seeds:
+  # Canonical axes: aggregation_filter_issue, numbers_mismatch,
+  # metric_definition_confusion, segmentation_breakdown_confusion,
+  # dashboard_confusion, attribution_tracking_issue.
+  - seed: sql total higher after group by
+    reason: Adds SQL context so aggregation-pain phrasing stays tied to analytic interpretation questions.
+  - seed: count distinct returns wrong total
+    reason: Narrows the seed toward reconciliation questions with explicit total disagreement.
+  - seed: left join duplicates rows in report
+    reason: Keeps duplicate-count pain but anchors it to report interpretation rather than generic query tuning.
+  - seed: event_date and created_at counts differ
+    reason: More natural date-basis conflict phrasing than generic reporting wording.
+  - seed: calculated field total does not match rows
+    reason: Captures visual/detail mismatch with explicit row-total reconciliation language.
+  - seed: date filter changes totals unexpectedly
+    reason: Adds aggregation/filter pain with a clearer analytics outcome.
+  - seed: sql result does not match dashboard total
+    reason: Preserves source-of-truth conflict while staying grounded in BI validation language.
+  - seed: channel totals do not add up in report
+    reason: Keeps breakdown confusion but removes looser wording that matched non-analytic threads.
+  - seed: report total does not match table rows
+    reason: Better matches BI/SQL troubleshooting posts about summary-vs-detail disagreement.
+  - seed: metric logic does not match business definition
+    reason: Preserves definition confusion in wording closer to actual reporting questions.
+optional_templates: []
+negative_terms:
+  - api
+  - oauth
+  - sdk
+  - docker
+  - kubernetes
+  - npm
+  - css
+  - html
+  - react
+  - homework
+legacy_seed_notes:
+  - seed: how to analyze conversion drop
+    action: downgraded
+    why: conversion-centric bias
+    note: Useful as a subset, but no longer representative of the overall Stack Overflow seed frame.
+  - seed: using excel after power bi
+    action: downgraded
+    why: duplicate coverage
+    note: Related workflow pain is still covered through reconciliation and export-mismatch families.
+  - seed: dashboard total not matching sql
+    action: removed_from_core
+    why: tutorial/setup noise
+    note: Validation samples overmatched generic dashboard implementation and export workflows.
+  - seed: join causing duplicate counts
+    action: removed_from_core
+    why: too technical and detached from target persona
+    note: The phrasing often surfaced generic database-performance questions rather than reporting pain.

@@ -7,7 +7,8 @@ normalizer_kind: existing_forums
 enabled: true
 use_stub: false
 source_type: qa
-query_mode: expanded_map
+query_mode: source_config
+seed_bank_path: config/seeds/existing_forums/stackoverflow.yaml
 allowed_query_priorities:
   - high
   - medium

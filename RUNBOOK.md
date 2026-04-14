@@ -69,7 +69,7 @@ python run/07_export_xlsx.py
 Reddit collection policy diagnostics:
 
 ```bash
-python run/19_analyze_reddit_retention.py
+python run/diagnostics/19_analyze_reddit_retention.py
 ```
 
 - Aggregate `reddit` uses curated source-config seeds, subreddit targeting, and collector-side low-intent skips.

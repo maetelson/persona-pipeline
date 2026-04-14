@@ -1,38 +1,46 @@
 source_id: hubspot_community
 source_group: business_communities
-max_query_count: 9
-source_notes: "HubSpot operator language centered on reporting mismatch, attribution trust, dashboard/export fallback, and recurring stakeholder reporting."
-candidate_seed_pool: []
+max_query_count: 10
+source_notes: "HubSpot seeds emphasize CRM reporting trust, lifecycle and pipeline interpretation, executive-reporting pressure, and source-of-truth conflict."
+candidate_seed_pool:
+  - why did this pipeline number change
+  - dashboard is confusing for exec reporting
+  - what changed in lead volume
+  - which metric matters for this funnel
+  - why are these CRM numbers different
 active_core_seeds:
-  - seed: hubspot report wrong
-    reason: Short, natural report mismatch phrasing.
-  - seed: numbers don't match
-    reason: Captures reconciliation pain in reporting workflows.
-  - seed: attribution report wrong
-    reason: Targets attribution-trust complaints.
-  - seed: dashboard not enough
-    reason: Pulls monitoring-vs-delivery frustration.
-  - seed: export to excel
-    reason: Captures spreadsheet fallback after dashboard/report use.
-  - seed: weekly report
-    reason: Finds recurring reporting burden.
-  - seed: source of truth
-    reason: Captures ownership and reconciliation friction.
-  - seed: report takes too long
-    reason: Pulls direct workflow-friction language.
-  - seed: list not updating
-    reason: Adds operational freshness pain without going too broad.
+  # Canonical axes: numbers_mismatch, metric_definition_confusion,
+  # source_of_truth_conflict, stakeholder_explanation_pressure,
+  # dashboard_confusion, attribution_tracking_issue.
+  - seed: hubspot report numbers wrong
+    reason: Direct product-specific mismatch phrasing.
+  - seed: lifecycle stage report doesn't match
+    reason: High-intent lifecycle and funnel-stage reconciliation pain.
+  - seed: attribution report looks wrong
+    reason: Keeps attribution as one branch with strong HubSpot-native phrasing.
+  - seed: pipeline report makes no sense
+    reason: Natural operator language for interpretation failure.
+  - seed: which hubspot report should I trust
+    reason: Explicit source-of-truth wording.
+  - seed: dashboard not matching export
+    reason: Captures dashboard-vs-export discrepancy.
+  - seed: MQL and SQL numbers are different
+    reason: Strong metric/funnel-definition conflict in revops language.
+  - seed: source report not matching CRM totals
+    reason: Cross-system trust conflict phrasing.
+  - seed: how do I explain this report to leadership
+    reason: Adds executive-reporting pressure directly.
+  - seed: why did this pipeline number change
+    reason: More native HubSpot operator language for trend interpretation and executive follow-up.
 optional_templates:
-  - template: hubspot numbers don't match
-    reason: Product-specific mismatch wording.
-  - template: manual report cleanup
-    reason: Extra recurring reporting-burden phrasing.
-  - template: export report to excel
-    reason: More specific spreadsheet fallback wording.
-  - template: attribution numbers wrong
-    reason: Natural trust-friction phrasing.
-  - template: dashboard export workaround
-    reason: Captures workaround behavior after dashboard use.
+  - template: weekly report
+    reason: Preserved as stakeholder-pressure context, but downgraded because it is less precise than explanation-focused phrasing.
+  - template: source of truth
+    reason: Preserved because it remains useful, but downgraded to avoid over-indexing on governance vocabulary alone.
+  - template: dashboard not enough
+    reason: Preserved as workflow pain, but downgraded because it is broader than direct report-trust confusion.
+  - template: list not updating
+    reason: Preserved as operational freshness pain, but downgraded because it can drift toward setup or workflow support.
 negative_terms:
   - api
   - script
@@ -42,3 +50,16 @@ negative_terms:
   - career
   - interview
   - phone support
+legacy_seed_notes:
+  - seed: numbers don't match
+    action: downgraded
+    why: duplicate coverage
+    note: Replaced in the core set by more HubSpot-native phrases like lifecycle and pipeline reporting mismatch.
+  - seed: report takes too long
+    action: downgraded
+    why: high unknown-ratio risk
+    note: Useful as workflow burden, but weaker for broad quantitative interpretation than trust or explanation pain.
+  - seed: which metric matters for this funnel
+    action: removed_from_core
+    why: vague topic word
+    note: Too abstract compared with more concrete lifecycle, pipeline, and report-trust phrasing.

@@ -265,8 +265,13 @@ def build_source_stage_counts(
     )
     rows: list[dict[str, Any]] = []
     for source in sources:
-        raw_count = _source_count(raw_counts_df, source, "raw_count")
         normalized_count = source_row_count(normalized_df, source)
+        raw_count = _source_count(raw_counts_df, source, "raw_count")
+        # Partial reruns can leave raw_audit/jsonl coverage stale for a subset of
+        # sources while normalized downstream artifacts still exist. Use the
+        # observed normalized floor so source diagnostics stay internally
+        # consistent instead of aborting analysis on a reporting-only mismatch.
+        raw_count = max(raw_count, normalized_count)
         valid_count = source_row_count(valid_df, source)
         prefiltered_count = source_row_count(prefiltered_df, source)
         episode_count = source_row_count(episodes_df, source)

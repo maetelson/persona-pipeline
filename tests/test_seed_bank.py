@@ -18,8 +18,8 @@ class SeedBankTests(unittest.TestCase):
         seed_bank = load_seed_bank(ROOT, "reddit", "reddit_r_excel")
         self.assertIsNotNone(seed_bank)
         assert seed_bank is not None
-        self.assertEqual(len(seed_bank.core_seeds), 8)
-        self.assertEqual(seed_bank.max_query_count, 8)
+        self.assertEqual(len(seed_bank.core_seeds), 10)
+        self.assertEqual(seed_bank.max_query_count, 10)
         self.assertIn("salary", seed_bank.all_negative_terms)
 
     def test_seed_banks_validate_without_errors(self) -> None:
@@ -46,9 +46,9 @@ class SeedBankTests(unittest.TestCase):
         seed_bank = load_seed_bank(ROOT, "business_communities", "hubspot_community")
         self.assertIsNotNone(seed_bank)
         assert seed_bank is not None
-        self.assertEqual(len(seed_bank.candidate_seed_pool), 0)
-        self.assertEqual(len(seed_bank.core_seeds), 8)
-        self.assertEqual(len(seed_bank.active_queries), 8)
+        self.assertEqual(len(seed_bank.candidate_seed_pool), 5)
+        self.assertEqual(len(seed_bank.core_seeds), 10)
+        self.assertEqual(len(seed_bank.active_queries), 10)
 
     def test_build_discovery_queries_uses_source_specific_seed_bank(self) -> None:
         config = load_yaml(ROOT / "config" / "sources" / "metabase_discussions.yaml")
@@ -72,8 +72,9 @@ class SeedBankTests(unittest.TestCase):
             source_group="business_communities",
         )
         expanded = [query.expanded_query for query in queries]
-        self.assertIn("google ads reporting wrong", expanded)
-        self.assertIn("google ads metrics discrepancy", expanded)
+        self.assertIn("google ads report mismatch", expanded)
+        self.assertIn("google ads numbers don't match", expanded)
+        self.assertIn("google ads campaign results wrong", expanded)
         self.assertTrue(all(query.count("google ads") == 1 for query in expanded))
 
     def test_shopify_queries_use_shopify_specific_seed_bank_only(self) -> None:
@@ -85,9 +86,9 @@ class SeedBankTests(unittest.TestCase):
             source_group="business_communities",
         )
         expanded = [query.expanded_query for query in queries]
-        self.assertIn("shopify report mismatch", expanded)
-        self.assertIn("shopify analytics issue", expanded)
-        self.assertIn("shopify export csv", expanded)
+        self.assertIn("shopify reports not matching", expanded)
+        self.assertIn("finance numbers different from shopify", expanded)
+        self.assertIn("shopify what changed in store performance", expanded)
         self.assertNotIn("analytics not working", expanded)
         self.assertNotIn("wrong analytics data", expanded)
         self.assertTrue(all("shopify" in query for query in expanded))
@@ -101,9 +102,9 @@ class SeedBankTests(unittest.TestCase):
             source_group="business_communities",
         )
         expanded = [query.expanded_query for query in queries]
-        self.assertIn("google ads conversion not showing", expanded)
-        self.assertIn("google ads reporting wrong", expanded)
-        self.assertIn("google ads metrics discrepancy", expanded)
+        self.assertIn("google ads numbers don't match", expanded)
+        self.assertIn("google ads report discrepancy", expanded)
+        self.assertIn("google ads roas dropped but traffic looks normal", expanded)
         self.assertTrue(all(query.count("google ads") == 1 for query in expanded))
 
 

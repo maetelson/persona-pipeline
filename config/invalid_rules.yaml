@@ -153,6 +153,88 @@ career_advice_keywords:
   - applying to jobs
   - blunt critiques
 source_signal_overrides:
+  klaviyo_community:
+    business_signal_keywords:
+      - klaviyo
+      - email
+      - emails
+      - inbox
+      - subject line
+      - popup
+      - pop-up
+      - signup form
+      - sign up form
+      - list
+      - lists
+      - subscriber
+      - subscribers
+      - subscribe
+      - integration
+      - shopify integration
+      - open rate
+      - click rate
+      - deliverability
+      - template
+      - templates
+      - coupon
+      - discount code
+      - profile
+      - profile page
+      - tracking
+      - page view
+      - landing page
+      - clickable pdf
+      - crm
+      - telephony
+      - figma
+      - canva
+      - shipstation
+      - browse abandonment
+      - welcome flow
+      - post-purchase flow
+    pain_signal_keywords:
+      - can't
+      - cant
+      - cannot
+      - unclear
+      - confusing
+      - decrease
+      - dropped
+      - not added
+      - not being added
+      - not seeing
+      - disrupted
+      - not available
+      - try again later
+      - doesn't work
+      - doesnt work
+      - challenge
+      - cumbersome
+      - manual process
+      - how can i
+      - best way
+      - what should i do
+      - point me in the right direction
+      - appreciate your guidance
+      - please help
+      - dont know how
+      - trying to
+      - i'm trying
+      - i am trying
+      - trying to figure out
+      - should i
+      - do you recommend
+      - thoughts on
+      - yay or nay
+      - has anyone
+      - looking to
+      - would like to
+      - is this possible
+      - can i
+      - how to add
+      - how do i
+      - clean up our lists
+      - obtain
   google_ads_community:
     business_signal_keywords:
       - ads
@@ -165,3 +247,28 @@ source_signal_overrides:
       - dosn't record
       - not record
       - not recording
+source_invalid_reason_exemptions:
+  klaviyo_community:
+    promotional_content:
+      when_any_terms:
+        - klaviyo
+        - flow
+        - campaign
+        - email subscribe link
+        - welcome flow
+        - post-purchase flow
+        - template
+        - integration
+        - tracking
+        - discount code
+        - coupon
+    spam_keyword:
+      when_any_terms:
+        - klaviyo
+        - flow
+        - campaign
+        - template
+        - integration
+        - tracking
+        - discount code
+        - coupon

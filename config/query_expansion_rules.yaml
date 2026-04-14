@@ -5,8 +5,11 @@ query_expansion_rules:
     rule_of_thumb:
     - Stack Overflow prefers how-to, why, compare, validate, using, and workflow phrasing.
     - GitHub prefers need, missing, support, limitation, cannot, confusing, and inconsistent phrasing.
-    - Prioritize dashboard-after-export, metric confusion, date basis mismatch, segment breakdown, and
-      explanation requests.
+    - Prioritize mismatch, trust, interpretation, breakdown, explanation, and actionability before
+      conversion-specific language.
+    conversion_policy:
+    - Keep conversion and attribution as one branch of quantitative pain.
+    - Do not let conversion-only phrasing dominate source expansion rules.
   priority_combinations:
   - - tool_terms
     - problem_terms

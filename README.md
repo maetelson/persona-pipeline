@@ -104,12 +104,17 @@ python run/10_source_cli.py qa-relevance --source stackoverflow --limit 200
 
 | Script | Purpose |
 |---|---|
-| `run/17_profile_sources.py` | Source-stage timing from collection through labelability |
-| `run/18_analyze_reddit_yield.py` | Reddit yield-failure analysis and diagnostic artifacts |
-| `run/19_analyze_reddit_retention.py` | Seed and subreddit retention diagnostics for tuning |
+| `run/diagnostics/17_profile_sources.py` | Source-stage timing from collection through labelability |
+| `run/diagnostics/18_analyze_reddit_yield.py` | Reddit yield-failure analysis and diagnostic artifacts |
+| `run/diagnostics/19_analyze_reddit_retention.py` | Seed and subreddit retention diagnostics for tuning |
 | `run/05_5_compare_labeling_coverage.py` | Compare labeling coverage across rule vs LLM paths |
-| `run/17_debug_openai_labeler_call.py` | Run one minimal live OpenAI call through the labeler |
-| `run/18_prove_cache_vs_live_calls.py` | Controlled experiment: cache vs live OpenAI call behavior |
+| `run/diagnostics/20_capture_scale_metrics.py` | Before/after funnel and balance metrics snapshot |
+| `run/diagnostics/20_rebalance_personas.py` | Persona rebalancing experiment runner |
+| `run/diagnostics/21_diagnose_source_funnels.py` | Source-specific stage funnel diagnosis |
+| `run/diagnostics/22_diagnose_source_collapse.py` | Reusable source-collapse diagnosis utility |
+| `run/diagnostics/23_validate_seed_system.py` | Offline seed-system validation against current artifacts |
+| `run/experiments/17_debug_openai_labeler_call.py` | Run one minimal live OpenAI call through the labeler |
+| `run/experiments/18_prove_cache_vs_live_calls.py` | Controlled experiment: cache vs live OpenAI call behavior |
 
 ## Current source status
 
@@ -169,8 +174,10 @@ Governance policies and workbook audit specs live in `docs/`:
 
 ```text
 config/      Pipeline configuration, source settings, and scoring rules
-docs/        Policy documents and workbook audit specs
+docs/        Policy documents, strategy notes, and archived scratch docs
 run/         Runnable stage scripts and CLI tools
+run/diagnostics/  Optional diagnostics and tuning helpers
+run/experiments/  One-off debug / experiment runners
 src/         Pipeline implementation modules
 tests/       Tests
 data/        Local runtime artifacts and final workbook output

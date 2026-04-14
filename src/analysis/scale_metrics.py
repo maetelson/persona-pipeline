@@ -19,7 +19,7 @@ BASELINE_PATHNAME = "pipeline_scale_metrics_baseline.json"
 CURRENT_PATHNAME = "pipeline_scale_metrics_current.json"
 OVERALL_CSV_PATHNAME = "pipeline_scale_metrics_overall.csv"
 SOURCE_CSV_PATHNAME = "pipeline_scale_metrics_by_source.csv"
-MARKDOWN_PATHNAME = "pipeline_metrics_before_after.md"
+MARKDOWN_PATHNAME = "data/analysis/pipeline_metrics_before_after.md"
 
 
 @dataclass(slots=True)
@@ -245,7 +245,7 @@ def _render_markdown(current: ScaleMetricsSnapshot, baseline: ScaleMetricsSnapsh
         "- Scope: raw, valid, prefiltered valid, episodes, labeled, persona-core, and source-balance risk indicators.",
     ]
     if is_same_snapshot:
-        lines.append("- Current snapshot still equals the baseline. Rerun collection and downstream stages, then rerun `python run/20_capture_scale_metrics.py` to populate the after delta.")
+        lines.append("- Current snapshot still equals the baseline. Rerun collection and downstream stages, then rerun `python run/diagnostics/20_capture_scale_metrics.py` to populate the after delta.")
     lines.extend(
         [
             "",

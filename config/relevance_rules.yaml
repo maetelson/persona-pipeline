@@ -59,6 +59,18 @@ source_whitelist_terms:
       terms: [revenue, attribution, reporting, analytics]
     - label: klaviyo_conversion
       terms: [conversion, metric mismatch]
+    - label: klaviyo_list_sync
+      terms: [list, subscribers, subscriber, sync, synced, not being added, never subscribed, double opt-in, single opt-in]
+    - label: klaviyo_email_delivery
+      terms: [open rate, click rate, deliverability, sending domain, branded domain, warm up, warmup, inbox]
+    - label: klaviyo_export_reviews
+      terms: [export, csv file, download link, reviews, customer reviews, empty file]
+    - label: klaviyo_form_template
+      terms: [popup, pop-up, embedded form, sign-up form, template missing, notification template, form not showing]
+    - label: klaviyo_integration_tracking
+      terms: [shopify integration, magento, linktree, tracking snippet, page view tracking, add to cart missing, product images missing]
+    - label: klaviyo_coupon_automation
+      terms: [coupon, discount code, automate, automation, manual process, personalization]
   metabase_discussions:
     - label: metabase_dashboard_filter
       terms: [dashboard, filter, drill down]
@@ -97,6 +109,12 @@ source_whitelist_terms:
       terms: [feed sync, products not syncing, local feed, 0 products, product feed not updating]
     - label: merchant_center_price
       terms: [price mismatch]
+    - label: merchant_center_policy_review
+      terms: [misrepresentation suspension, misrepresentation issue, account suspended, suspended account, manual review, disapproved, store not approved]
+    - label: merchant_center_listing_visibility
+      terms: [free listings, products not showing, limited in free listings, product not approved, remove countries]
+    - label: merchant_center_reviews
+      terms: [product reviews, review feed]
   shopify_community:
     - label: shopify_reporting_analytics
       terms: [report, reporting, analytics, dashboard, export, csv]
@@ -119,6 +137,12 @@ source_whitelist_terms:
       terms: [report mismatch, dashboard mismatch, cannot explain numbers]
     - label: github_drill_metric
       terms: [drill down, metric definition]
+    - label: github_table_pivot_workflow
+      terms: [pivot transformation, pivot table, table chart, improved tables, row totals, row limit, linked filters]
+    - label: github_question_model_workflow
+      terms: [questions/model, generated from questions, embedded dashboard, csv export, export all results, filter]
+    - label: github_metric_semantics
+      terms: [metric formulas, formula, semi-additive metrics, source of truth, numbers don't match]
 reddit:
   relevant_subreddits:
     r/analytics: 2.2
@@ -183,7 +207,9 @@ github_discussions:
     - superset
     - redash
     - cube
-  workflow_context_bonus: 0.6
+  workflow_context_bonus: 1.15
+  workflow_context_hit_bonus: 0.45
+  strong_workflow_context_bonus: 0.9
   workflow_context_terms:
     - dashboard
     - reporting
@@ -232,8 +258,10 @@ github_discussions:
     - sdk
     - build
     - deploy
-  issue_template_penalty: 1.6
-  workflow_penalty_relief_multiplier: 0.35
+  issue_template_penalty: 0.9
+  workflow_penalty_relief_multiplier: 0.15
+  borderline_floor_with_workflow_context: 1.2
+  borderline_floor_with_strong_workflow_context: 0.6
   maintainer_noise_patterns:
     - feature request
     - bug report

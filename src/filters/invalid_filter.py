@@ -35,6 +35,36 @@ def _keywords_for_row(rules: dict[str, Any], row: pd.Series, key: str) -> list[s
     return list(dict.fromkeys([*keywords, *extra_keywords]))
 
 
+def _apply_source_reason_exemptions(
+    reasons: list[str],
+    rules: dict[str, Any],
+    row: pd.Series,
+    combined_text: str,
+    business_hits: list[str],
+    pain_hits: list[str],
+) -> list[str]:
+    """Remove source-specific false-positive invalid reasons when operational context exists."""
+    source_id = str(row.get("source", "") or "")
+    overrides = rules.get("source_invalid_reason_exemptions", {}) or {}
+    source_overrides = overrides.get(source_id, {}) if isinstance(overrides, dict) else {}
+    if not isinstance(source_overrides, dict) or not source_overrides:
+        return reasons
+
+    updated = list(reasons)
+    for reason in list(updated):
+        rule_row = source_overrides.get(reason, {})
+        if not isinstance(rule_row, dict):
+            continue
+        when_any_terms = [str(term).lower() for term in rule_row.get("when_any_terms", []) or [] if str(term).strip()]
+        require_signal_match = bool(rule_row.get("require_signal_match", True))
+        if when_any_terms and not any(term in combined_text for term in when_any_terms):
+            continue
+        if require_signal_match and not (business_hits or pain_hits):
+            continue
+        updated.remove(reason)
+    return updated
+
+
 def _evaluate_row(row: pd.Series, rules: dict[str, Any]) -> FilterEvaluation:
     """Evaluate one normalized row against invalid and signal rules."""
     reasons: list[str] = []
@@ -85,6 +115,14 @@ def _evaluate_row(row: pd.Series, rules: dict[str, Any]) -> FilterEvaluation:
         reasons.append("missing_pain_signal")
     if require_any_signal and not business_hits and not pain_hits:
         reasons.append("missing_any_signal")
+    reasons = _apply_source_reason_exemptions(
+        reasons=reasons,
+        rules=rules,
+        row=row,
+        combined_text=combined_text,
+        business_hits=business_hits,
+        pain_hits=pain_hits,
+    )
 
     return FilterEvaluation(
         invalid_reason="|".join(dict.fromkeys(reasons)),

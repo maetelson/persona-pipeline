@@ -1,42 +1,46 @@
 source_id: shopify_community
 source_group: business_communities
 max_query_count: 10
-source_notes: "Shopify operator language focused on sales/report mismatches, export fallback, channel performance drops, and recurring reporting friction."
+source_notes: "Shopify seeds now emphasize merchant-side quantitative interpretation pain across sales, orders, products, channels, and store performance. Conversion remains one branch, not the center."
 active_core_seeds:
-  - seed: shopify sales mismatch
-    reason: Targets sales/report number discrepancy complaints.
-  - seed: report numbers wrong
-    reason: Pulls short reporting-trust phrasing.
-  - seed: export to excel
-    reason: Captures spreadsheet fallback after Shopify reporting.
-  - seed: weekly sales report
-    reason: Finds recurring reporting workflows.
-  - seed: channel performance drop
-    reason: Captures explanation-seeking around channel declines.
-  - seed: conversion rate drop
-    reason: Keeps root-cause analysis coverage.
-  - seed: orders not matching
-    reason: Matches order/report discrepancy pain.
-  - seed: dashboard not enough
-    reason: Pulls monitoring-vs-delivery frustration.
-  - seed: manual reporting
-    reason: Captures recurring manual report assembly burden.
-  - seed: traffic not matching
-    reason: Covers traffic / session trust-friction complaints.
-candidate_seed_pool: []
+  # Canonical axes: numbers_mismatch, trend_interpretation_confusion,
+  # segmentation_breakdown_confusion, dashboard_confusion,
+  # source_of_truth_conflict, funnel_conversion_drop.
+  - seed: traffic up but sales down
+    reason: Native merchant phrasing for trend interpretation and action uncertainty.
+  - seed: shopify reports not matching
+    reason: Product-specific mismatch phrasing with strong operator intent.
+  - seed: orders not matching sales
+    reason: Captures wrong totals and trust issues in merchant language.
+  - seed: why did sales suddenly drop
+    reason: Strong explanatory phrasing for variance diagnosis.
+  - seed: which products are causing the drop
+    reason: More concrete product-level diagnosis phrasing than generic report-confusion wording.
+  - seed: channel report numbers don't match
+    reason: Adds breakdown confusion by acquisition channel.
+  - seed: finance numbers different from Shopify
+    reason: Strong source-of-truth conflict phrasing in merchant language.
+  - seed: which sales number is correct
+    reason: Strong source-of-truth phrasing for merchants.
+  - seed: what changed in store performance
+    reason: Broad but still high-intent variance-diagnosis language.
+  - seed: why are sessions and orders not lining up
+    reason: Narrows actionability and diagnosis pain to a concrete merchant reconciliation problem.
+candidate_seed_pool:
+  - AOV looks wrong
+  - why are sessions and orders not lining up
+  - category breakdown not adding up
+  - which products are causing the drop
+  - finance numbers different from Shopify
 optional_templates:
-  - template: shopify numbers don't match
-    reason: Product-specific mismatch phrasing.
-  - template: sales report wrong
-    reason: Natural reporting-trust complaint.
-  - template: export report to excel
-    reason: More specific spreadsheet fallback wording.
-  - template: channel sales dropped
-    reason: Extra performance-explanation phrasing.
-  - template: manual weekly report
-    reason: Captures recurring reporting burden.
-  - template: orders and sales mismatch
-    reason: Extra operator reconciliation wording.
+  - template: conversion rate drop
+    reason: Preserved as a subset branch under quantitative pain, but downgraded because it over-centers conversion.
+  - template: export to excel
+    reason: Preserved as workflow fallback language, but downgraded because it is narrower than direct interpretation pain.
+  - template: weekly sales report
+    reason: Preserved as recurring pressure context, but downgraded due to lower specificity.
+  - template: manual reporting
+    reason: Preserved because it still signals burden, but downgraded to avoid overpulling generic ops threads.
 negative_terms:
   - api
   - script
@@ -46,3 +50,20 @@ negative_terms:
   - partner program
   - certification
   - phone support
+legacy_seed_notes:
+  - seed: shopify sales mismatch
+    action: merged
+    why: duplicate coverage
+    note: Folded into `shopify reports not matching` and `orders not matching sales`.
+  - seed: traffic not matching
+    action: downgraded
+    why: too broad
+    note: Kept out of the core set because it often lacks clear quantitative interpretation context by itself.
+  - seed: dashboard not matching export
+    action: removed_from_core
+    why: duplicate semantic coverage
+    note: Replaced by a more native source-of-truth conflict between Shopify and finance numbers.
+  - seed: product performance report confusing
+    action: removed_from_core
+    why: vague topic word
+    note: Too generic compared with directly asking which products are driving a drop.

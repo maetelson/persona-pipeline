@@ -1,10 +1,132 @@
 query_seed_taxonomy:
   design_notes:
-    purpose: Keep a reviewable keyword bank for persona-heavy BI complaint and workaround collection.
+    purpose: Keep a reviewable keyword bank for broad quantitative interpretation pain across operator communities.
     rule_of_thumb:
     - Broad BI terms alone are too noisy for first-pass collection.
-    - Prefer dashboard re-validation, explanation, breakdown, metric confusion, and export-to-excel language.
+    - Prefer mismatch, trust, interpretation, breakdown, explanation, and actionability language over generic BI nouns.
     - Use community-style wording over research-language abstractions.
+  canonical_problem_axes:
+    - numbers_mismatch
+    - metric_definition_confusion
+    - trend_interpretation_confusion
+    - segmentation_breakdown_confusion
+    - dashboard_confusion
+    - aggregation_filter_issue
+    - source_of_truth_conflict
+    - business_question_translation_failure
+    - stakeholder_explanation_pressure
+    - insight_to_action_failure
+    - attribution_tracking_issue
+    - funnel_conversion_drop
+  conversion_policy:
+    principle: Conversion pain is one branch under broad quantitative pain, not the primary framing for the whole seed system.
+    guidance:
+      - Keep conversion and attribution seeds where they are community-native.
+      - Do not use conversion-only wording as the style anchor for every source.
+  community_profiles:
+    reddit:
+      language_style:
+        - first person
+        - confused
+        - practical frustration
+        - peer validation
+      prioritize_axes:
+        - numbers_mismatch
+        - trend_interpretation_confusion
+        - stakeholder_explanation_pressure
+        - source_of_truth_conflict
+        - business_question_translation_failure
+    stackoverflow:
+      language_style:
+        - sql and aggregation logic
+        - filters and date ranges
+        - reconciliation
+      prioritize_axes:
+        - aggregation_filter_issue
+        - numbers_mismatch
+        - metric_definition_confusion
+        - segmentation_breakdown_confusion
+    shopify_community:
+      language_style:
+        - merchant and operator language
+        - traffic sales orders aov
+        - product and channel performance
+      prioritize_axes:
+        - numbers_mismatch
+        - trend_interpretation_confusion
+        - segmentation_breakdown_confusion
+        - dashboard_confusion
+        - source_of_truth_conflict
+    hubspot_community:
+      language_style:
+        - crm reporting
+        - lifecycle and leads
+        - exec reporting pressure
+      prioritize_axes:
+        - numbers_mismatch
+        - metric_definition_confusion
+        - source_of_truth_conflict
+        - stakeholder_explanation_pressure
+    google_ads_help_community:
+      language_style:
+        - help-style diagnosis
+        - campaign metrics
+        - compare and trust the reported number
+      prioritize_axes:
+        - attribution_tracking_issue
+        - numbers_mismatch
+        - trend_interpretation_confusion
+        - segmentation_breakdown_confusion
+    merchant_center_help_community:
+      language_style:
+        - product visibility
+        - affected products and groups
+        - shopping performance interpretation
+      prioritize_axes:
+        - trend_interpretation_confusion
+        - segmentation_breakdown_confusion
+        - numbers_mismatch
+        - source_of_truth_conflict
+    klaviyo_community:
+      language_style:
+        - email and flow performance
+        - segment logic
+        - what should i optimize
+      prioritize_axes:
+        - numbers_mismatch
+        - trend_interpretation_confusion
+        - segmentation_breakdown_confusion
+        - insight_to_action_failure
+    power_bi_community:
+      language_style:
+        - wrong totals
+        - desktop vs service mismatch
+        - measure and filter context
+      prioritize_axes:
+        - numbers_mismatch
+        - metric_definition_confusion
+        - aggregation_filter_issue
+        - dashboard_confusion
+    ga4_help_community:
+      language_style:
+        - ga4 vs ads vs backend mismatch
+        - event and revenue trust
+        - is this real or tracking
+      prioritize_axes:
+        - source_of_truth_conflict
+        - attribution_tracking_issue
+        - numbers_mismatch
+        - trend_interpretation_confusion
+    looker_studio_forum:
+      language_style:
+        - scorecard vs table mismatch
+        - blended data confusion
+        - chart value trust
+      prioritize_axes:
+        - dashboard_confusion
+        - numbers_mismatch
+        - aggregation_filter_issue
+        - metric_definition_confusion
   broad_head_terms:
   - dashboard
   - reporting

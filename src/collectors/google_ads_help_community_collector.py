@@ -334,12 +334,31 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
         discovered_count = len(discovered)
         if discovered_count > threshold:
             return
+        if self._discovery_rate_limited():
+            self._record_collection_summary(0)
+            LOGGER.warning(
+                "%s listing discovery was rate limited by Google Help Community (HTTP 429 on all listing fetches); "
+                "continuing with 0 raw rows for this source.",
+                self.source_name,
+            )
+            return
         self._record_collection_summary(0)
         raise RuntimeError(
             f"{self.source_name} discovered only {discovered_count} unique public Help Community thread URLs; "
             f"required>{threshold}. Public category/listing HTML did not expose the claimed 1000+ rows. "
             "Use an allowed bulk export/API or add more public listing surfaces before continuing."
         )
+
+    def _discovery_rate_limited(self) -> bool:
+        """Return whether every listing fetch failed with HTTP 429."""
+        discovery_errors = [
+            row
+            for row in self.error_stats
+            if str(row.get("error_stage", "")) in {"home_fetch", "discovery_fetch"}
+        ]
+        if not discovery_errors:
+            return False
+        return all(str(row.get("error_code", "")).strip() == "429" for row in discovery_errors)
 
     def _record_error(self, url: str, stage: str, code: str, message: str) -> None:
         """Record collection errors in the shared raw error audit format."""

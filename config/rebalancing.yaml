@@ -1,0 +1,22 @@
+rebalancing:
+  random_seed: 42
+  target_top_source_share: 0.30
+  weak_source_share_floor: 0.04
+  min_original_count_for_uplift: 5
+  weighting_effective_total_multiplier: 1.0
+  weak_source_visibility_threshold: 0.05
+  weak_source_persona_presence_threshold: 0.10
+  stability:
+    max_persona_count_growth_ratio: 1.6
+    min_median_persona_size_ratio: 0.55
+    min_top_need_overlap_ratio: 0.50
+  modes:
+    downsample:
+      enabled: true
+      description: Cap oversized sources with diverse within-source sampling and no duplication.
+    weighting:
+      enabled: true
+      description: Rebalance to a fixed effective corpus using weighted resampling with explicit replica rows.
+    hybrid:
+      enabled: true
+      description: Downsample oversized sources first, then uplift weak sources to a minimum floor with explicit replica rows.

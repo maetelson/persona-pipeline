@@ -1,42 +1,46 @@
 source_id: klaviyo_community
 source_group: business_communities
 max_query_count: 10
-source_notes: "Klaviyo-focused operator language around attributed revenue mismatch, segment freshness, campaign/flow performance explanation, and manual reporting pain."
-candidate_seed_pool: []
+source_notes: "Klaviyo seeds capture confusion about revenue interpretation, segment/report mismatch, trend reading, attribution trust, and what to optimize next."
+candidate_seed_pool:
+  - campaign and flow numbers tell different stories
+  - attributed revenue vs Shopify revenue mismatch
+  - hard to explain results to leadership
+  - what changed after list growth slowed
+  - hard to know what action to take next
 active_core_seeds:
-  - seed: klaviyo revenue mismatch
-    reason: Targets attributed revenue / report mismatch complaints.
-  - seed: attributed revenue wrong
-    reason: Matches direct trust-friction wording around revenue reporting.
-  - seed: segment not updating
-    reason: Captures segment freshness and stale audience complaints.
-  - seed: campaign performance drop
-    reason: Finds explanation-seeking threads after campaign declines.
-  - seed: flow performance drop
-    reason: Captures recurring flow-result decline and root-cause questions.
-  - seed: klaviyo report wrong
-    reason: Pulls short report-not-matching phrasing.
-  - seed: campaign results missing
-    reason: Matches help-style missing-results complaints.
-  - seed: export to csv
-    reason: Captures spreadsheet/report fallback behavior.
-  - seed: list growth dropped
-    reason: Pulls metric-change explanation threads.
-  - seed: attribution not matching
-    reason: Covers attribution trust and number mismatch complaints.
+  # Canonical axes: numbers_mismatch, trend_interpretation_confusion,
+  # segmentation_breakdown_confusion, metric_definition_confusion,
+  # insight_to_action_failure, attribution_tracking_issue.
+  - seed: klaviyo revenue doesn't match
+    reason: Strong product-specific mismatch phrasing.
+  - seed: attributed revenue vs Shopify revenue mismatch
+    reason: Narrows attribution trust pain to a concrete cross-system conflict operators actually report.
+  - seed: campaign results don't match report
+    reason: Better grounds report-confusion language in Klaviyo-native campaign reporting.
+  - seed: flow revenue dropped but opens are stable
+    reason: Captures trend diagnosis with two competing metrics instead of generic change wording.
+  - seed: segment numbers don't match
+    reason: Captures segmentation and audience-definition confusion.
+  - seed: which revenue metric should I trust
+    reason: Strong metric-trust and source-of-truth signal.
+  - seed: what changed in campaign performance
+    reason: Broad but high-intent explanatory phrasing.
+  - seed: dashboard not matching export
+    reason: Explicit report-vs-export discrepancy.
+  - seed: which segment should I look at
+    reason: Adds breakdown-choice confusion.
+  - seed: what should I optimize based on these numbers
+    reason: Adds actionability pain beyond report trust.
 optional_templates:
-  - template: klaviyo numbers don't match
-    reason: Natural mismatch phrasing for reporting trust complaints.
-  - template: segment update delay
-    reason: More specific freshness-delay phrasing.
-  - template: campaign revenue lower
-    reason: Extra campaign reporting drop phrasing.
-  - template: flow revenue dropped
-    reason: Extra flow-performance explanation phrasing.
-  - template: manual campaign report
-    reason: Captures recurring reporting burden.
-  - template: revenue not showing
-    reason: Matches short help-style missing-report wording.
+  - template: open rate drop
+    reason: Preserved from the older logic, but downgraded because it is one narrow trend family rather than the center.
+  - template: click rate changed
+    reason: Preserved as a metric branch, but downgraded for the same reason.
+  - template: klaviyo report wrong
+    reason: Preserved because it still surfaces report trust pain, but downgraded due to overlap with stronger active seeds.
+  - template: attribution not matching
+    reason: Preserved to keep attribution coverage without over-centering it.
 negative_terms:
   - api
   - script
@@ -46,3 +50,20 @@ negative_terms:
   - career
   - agency hiring
   - phone support
+legacy_seed_notes:
+  - seed: campaign performance drop
+    action: merged
+    why: duplicate coverage
+    note: Folded into `what changed in campaign performance` and `flow performance changed suddenly`.
+  - seed: list growth dropped
+    action: downgraded
+    why: high unknown-ratio risk
+    note: Useful in some cases, but too narrow and often ambiguous without stronger interpretation context.
+  - seed: attributed revenue looks wrong
+    action: removed_from_core
+    why: vague topic word
+    note: Too broad on its own and weaker than explicit cross-system mismatch language.
+  - seed: campaign report makes no sense
+    action: removed_from_core
+    why: duplicate semantic coverage
+    note: Replaced with a narrower report-vs-result mismatch phrasing that stays more operator-native.
