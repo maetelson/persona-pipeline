@@ -26,7 +26,7 @@ api_discovery:
   where_clause: AND depth=0
   top_level_only: true
   page_size: 100
-max_items_per_board: 2000
+  max_items_per_board: 2000
   board_ids:
     - new-to-qlik-sense
     - qlik-sense-app-development

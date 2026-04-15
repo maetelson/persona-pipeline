@@ -24,7 +24,7 @@ api_discovery:
   kind: khoros_search
   base_url: https://community.fabric.microsoft.com
   page_size: 100
-max_items_per_board: 2000
+  max_items_per_board: 2000
   board_ids:
     - power-bi-designer
     - power-bi-web-app
