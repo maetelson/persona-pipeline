@@ -1,0 +1,46 @@
+source_id: qlik_community
+source_name: Qlik Community
+source_group: business_communities
+collector_kind: business_communities
+normalizer_kind: business_communities
+enabled: true
+min_raw_records_warn: 0
+platform: qlik
+product_or_tool: Qlik
+check_robots: true
+query_mode: source_config
+seed_bank_path: config/seeds/business_communities/qlik_community.yaml
+seed_source_token: qlik
+seed_query_style: support_community
+max_query_count: 100
+max_threads_per_run: 10000
+max_discovered_threads_per_url: 1000
+discovery_page_count: 100
+sleep_seconds: 0.15
+filter_discovery_by_seed: false
+include_candidate_seed_pool_for_discovery: false
+api_discovery:
+  enabled: true
+  kind: khoros_search
+  base_url: https://community.qlik.com
+  where_clause: AND depth=0
+  top_level_only: true
+  page_size: 100
+max_items_per_board: 2000
+  board_ids:
+    - new-to-qlik-sense
+    - qlik-sense-app-development
+    - qlikview-app-development
+    - reporting-service
+aliases:
+  - qlik
+  - qlik community
+discovery_urls:
+  - url: https://community.qlik.com/t5/Visualization-and-Usability/bd-p/new-to-qlik-sense
+    board: Visualization and Usability
+  - url: https://community.qlik.com/t5/App-Development/bd-p/qlik-sense-app-development
+    board: App Development
+  - url: https://community.qlik.com/t5/QlikView-App-Dev/bd-p/qlikview-app-development
+    board: QlikView App Dev
+  - url: https://community.qlik.com/t5/Reporting-Service-Alerting/bd-p/reporting-service
+    board: Reporting Service and Alerting

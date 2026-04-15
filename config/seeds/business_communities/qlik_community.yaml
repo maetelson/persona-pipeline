@@ -1,0 +1,57 @@
+source_id: qlik_community
+source_group: business_communities
+max_query_count: 10
+source_notes: "Qlik Community seeds emphasize wrong totals, set-analysis confusion, filter and date logic, summary-vs-detail mismatch, and dashboard trust."
+candidate_seed_pool:
+  - qlik chart values look wrong
+  - why did this KPI change in qlik
+  - which dimension caused the change
+  - export doesn't match chart
+  - users don't trust the dashboard
+active_core_seeds:
+  # Canonical axes: numbers_mismatch, metric_definition_confusion,
+  # aggregation_filter_issue, dashboard_confusion,
+  # segmentation_breakdown_confusion, source_of_truth_conflict.
+  - seed: wrong totals in qlik chart
+    reason: Direct Qlik-native complaint phrasing for incorrect summary values.
+  - seed: set analysis result doesn't match total
+    reason: Strong measure-logic and metric-definition phrasing.
+  - seed: straight table total is wrong
+    reason: Common Qlik visual and total-trust complaint.
+  - seed: filter pane changes numbers unexpectedly
+    reason: Captures aggregation and filter-context confusion in native UI language.
+  - seed: dashboard and export don't match
+    reason: Keeps dashboard-versus-export discrepancy explicit.
+  - seed: summary and detail values are different
+    reason: Strong reconciliation language for operator pain.
+  - seed: breakdown by dimension does not add up
+    reason: Captures segmentation and slice-level confusion.
+  - seed: date logic in qlik report is wrong
+    reason: Native aggregation/date-basis complaint phrasing.
+  - seed: which qlik number should I trust
+    reason: Explicit source-of-truth conflict in community language.
+  - seed: what caused this KPI change in qlik
+    reason: Adds trend interpretation and explanation burden without centering conversion.
+optional_templates:
+  - template: count distinct doesn't match qlik total
+    reason: Preserved as a useful metric branch, but downgraded due to overlap with stronger total-mismatch phrasing.
+  - template: qlik pivot table totals wrong
+    reason: Preserved because pivot tables are common, but optional to avoid concentrating on one visual family.
+  - template: qlik set analysis makes no sense
+    reason: Preserved as a broad operator phrase, but optional because set-analysis mismatch is already covered in core seeds.
+negative_terms:
+  - api
+  - extension api
+  - mashup
+  - javascript
+  - embed
+  - course
+  - certification
+  - career
+  - installation
+  - server setup
+legacy_seed_notes:
+  - seed: looker studio scorecard doesn't match table
+    action: removed
+    why: duplicate coverage
+    note: Replaced by Qlik-native chart, straight-table, and set-analysis mismatch phrasing.

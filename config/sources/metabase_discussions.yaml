@@ -9,9 +9,9 @@ source_type: forum
 base_url: https://discourse.metabase.com
 forum_name: Metabase Discussion
 product_or_tool: Metabase
-max_latest_pages: 25
-max_search_pages: 2
-max_topics_per_run: 800
+max_latest_pages: 100
+max_search_pages: 20
+max_topics_per_run: 10000
 max_fetch_workers: 2
 allow_listing_fallback: true
 min_raw_records_warn: 600

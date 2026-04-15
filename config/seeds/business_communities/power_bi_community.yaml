@@ -1,0 +1,54 @@
+source_id: power_bi_community
+source_group: business_communities
+max_query_count: 10
+source_notes: "Power BI Community seeds focus on wrong totals, measure trust, filter-context confusion, export-vs-visual mismatch, and summary-vs-detail reconciliation."
+candidate_seed_pool:
+  - power bi totals don't match source data
+  - drillthrough doesn't explain the total
+  - slicer changes the totals unexpectedly
+  - report makes no sense to stakeholders
+  - which visual should I trust
+active_core_seeds:
+  # Canonical axes: numbers_mismatch, metric_definition_confusion,
+  # aggregation_filter_issue, dashboard_confusion,
+  # source_of_truth_conflict, segmentation_breakdown_confusion.
+  - seed: power bi wrong totals
+    reason: Native community phrasing for mismatched totals and summary trust problems.
+  - seed: desktop and service show different numbers
+    reason: Strong source-of-truth conflict specific to Power BI workflows.
+  - seed: export data doesn't match visual
+    reason: High-intent visual-vs-export discrepancy phrasing.
+  - seed: total does not match row values
+    reason: Common summary-vs-detail reconciliation pain.
+  - seed: filter context makes no sense
+    reason: Strong Power BI-native aggregation and measure interpretation wording.
+  - seed: dax measure not matching expected total
+    reason: Explicit measure-logic trust phrasing.
+  - seed: matrix total is wrong
+    reason: Strong visual-total complaint phrasing.
+  - seed: source of truth problem in power bi
+    reason: Keeps cross-system trust conflict explicit.
+  - seed: why is this summary different from detail
+    reason: Broad but high-intent reconciliation wording.
+  - seed: what breakdown should I use to diagnose this
+    reason: Adds breakdown-choice confusion without centering conversion pain.
+optional_templates:
+  - template: count distinct wrong in power bi
+    reason: Preserved as a strong metric branch, but downgraded to avoid overconcentrating on one calculation family.
+  - template: calculated measure logic unclear
+    reason: Preserved because it still captures definition confusion, but downgraded due to overlap with stronger core phrases.
+  - template: dashboard numbers don't match source
+    reason: Preserved as a trust phrase, but downgraded because export/visual mismatch is more concrete.
+negative_terms:
+  - api
+  - embed
+  - licensing
+  - certification
+  - course
+  - job
+  - resume
+legacy_seed_notes:
+  - seed: power bi dashboard
+    action: excluded
+    why: too broad
+    note: Tool-only phrasing pulls generic dashboard design and beginner threads.

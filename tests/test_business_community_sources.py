@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import unittest
 
 from src.collectors.business_community_parser import (
     ThreadLink,
     canonicalize_business_url,
+    discover_rss_thread_links,
+    discover_sitemap_thread_links,
     discover_thread_links,
     parse_thread_page,
 )
 from src.normalizers.business_community_normalizer import BusinessCommunityNormalizer
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class BusinessCommunitySourceTests(unittest.TestCase):
@@ -96,6 +101,96 @@ class BusinessCommunitySourceTests(unittest.TestCase):
         self.assertEqual(links[0].url, "https://support.google.com/google-ads/thread/423847133/ads-not-run-issue")
         self.assertEqual(links[0].title, "Ads not run issue")
 
+    def test_mixpanel_rss_discovery_supports_question_paths(self) -> None:
+        xml = """
+        <rss version="2.0"><channel>
+        <item>
+            <title><![CDATA[Why are funnel numbers different?]]></title>
+            <link>https://community.mixpanel.com/x/questions/abcd1234/funnel-numbers-different</link>
+            <description><![CDATA[The dashboard says one thing and the export says another.]]></description>
+        </item>
+        </channel></rss>
+        """
+        links = discover_rss_thread_links(xml, "https://community.mixpanel.com/x/questions/rss.xml", "mixpanel", "Questions")
+        self.assertEqual(len(links), 1)
+        self.assertEqual(links[0].url, "https://community.mixpanel.com/x/questions/abcd1234/funnel-numbers-different")
+
+    def test_mixpanel_sitemap_discovery_supports_question_paths(self) -> None:
+        xml = """
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+          <url>
+            <loc>https://community.mixpanel.com/x/questions/abcd1234/funnel-numbers-different</loc>
+            <lastmod>2026-04-13T17:00:50.385Z</lastmod>
+          </url>
+          <url>
+            <loc>https://community.mixpanel.com/x/ask-ai/abcd1234/funnel-numbers-different</loc>
+          </url>
+        </urlset>
+        """
+        links = discover_sitemap_thread_links(xml, "https://community.mixpanel.com/sitemap-posts/0.xml", "mixpanel", "Questions")
+        self.assertEqual(len(links), 1)
+        self.assertEqual(links[0].url, "https://community.mixpanel.com/x/questions/abcd1234/funnel-numbers-different")
+
+    def test_qlik_thread_discovery_supports_td_p_urls(self) -> None:
+        html = """
+        <a href="/t5/Visualization-and-Usability/Wrong-total-in-chart/td-p/2546782">Wrong total in chart</a>
+        <a href="/t5/user/viewprofilepage/user-id/340707">Profile</a>
+        """
+        links = discover_thread_links(html, "https://community.qlik.com/t5/Visualization-and-Usability/bd-p/new-to-qlik-sense", "qlik")
+        self.assertEqual(len(links), 1)
+        self.assertEqual(links[0].url, "https://community.qlik.com/t5/Visualization-and-Usability/Wrong-total-in-chart/td-p/2546782")
+
+    def test_amplitude_thread_discovery_supports_discussion_urls(self) -> None:
+        html = """
+        <a href="/discussion/1234/chart-does-not-match-expected-user-count">Chart does not match expected user count</a>
+        <a href="/events/some-event">Event</a>
+        """
+        links = discover_thread_links(html, "https://community.amplitude.com/discussions", "amplitude")
+        self.assertEqual(len(links), 1)
+        self.assertEqual(links[0].url, "https://community.amplitude.com/discussion/1234/chart-does-not-match-expected-user-count")
+
+    def test_sisense_thread_discovery_supports_m_p_urls(self) -> None:
+        html = """
+        <a href="/t5/Help-and-How-To/widget-value-does-not-match-table/m-p/26688">widget value does not match table</a>
+        <a href="/t5/s/profile">profile</a>
+        """
+        links = discover_thread_links(html, "https://community.sisense.com/", "sisense")
+        self.assertEqual(len(links), 1)
+        self.assertEqual(links[0].url, "https://community.sisense.com/t5/Help-and-How-To/widget-value-does-not-match-table/m-p/26688")
+
+    def test_sisense_thread_discovery_supports_next_data_listing_payload(self) -> None:
+        html = """
+        <script id="__NEXT_DATA__" type="application/json">
+        {
+          "props": {
+            "pageProps": {
+              "apolloState": {
+                "Forum:board:help_and_how_to": {
+                  "__typename": "Forum",
+                  "title": "Help and How-To"
+                },
+                "ForumTopicMessage:message:29039": {
+                  "__typename": "ForumTopicMessage",
+                  "uid": 29039,
+                  "subject": "Dashboard script: automatically reset filters to default when a dashboard is opened",
+                  "board": {"__ref": "Forum:board:help_and_how_to"},
+                  "repliesCount": 2,
+                  "postTime": "2026-04-14T07:18:13.878-07:00"
+                }
+              }
+            }
+          }
+        }
+        </script>
+        """
+        links = discover_thread_links(html, "https://community.sisense.com/t5/Help-and-How-To/bg-p/help_and_how_to", "sisense")
+        self.assertEqual(len(links), 1)
+        self.assertEqual(
+            links[0].url,
+            "https://community.sisense.com/t5/Help-and-How-To/dashboard-script-automatically-reset-filters-to-default-when-a-dashboard-is-opened/m-p/29039",
+        )
+        self.assertEqual(links[0].reply_count, 2)
+
     def test_google_support_parser_extracts_embedded_thread_body(self) -> None:
         html = r"""
         <html><head><title>Ad Group Disapproved - Google Ads Community</title></head>
@@ -118,7 +213,6 @@ class BusinessCommunitySourceTests(unittest.TestCase):
         )
         self.assertEqual(parsed.parse_status, "ok")
         self.assertIn("ad group got disapproved", parsed.body_text)
-
 
 if __name__ == "__main__":
     unittest.main()

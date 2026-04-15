@@ -1,0 +1,57 @@
+source_id: sisense_community
+source_group: business_communities
+max_query_count: 10
+source_notes: "Sisense Community seeds emphasize dashboard trust, widget/chart mismatches, wrong totals, filter logic confusion, and source-versus-visual reconciliation."
+candidate_seed_pool:
+  - sisense widget looks wrong
+  - why did this dashboard number change
+  - which dashboard value should I trust
+  - export doesn't match widget
+  - users don't trust this dashboard
+active_core_seeds:
+  # Canonical axes: numbers_mismatch, aggregation_filter_issue,
+  # metric_definition_confusion, dashboard_confusion,
+  # source_of_truth_conflict, segmentation_breakdown_confusion.
+  - seed: sisense dashboard numbers don't match
+    reason: Direct source-of-truth complaint in platform-native language.
+  - seed: wrong totals in sisense pivot table
+    reason: High-signal totals complaint tied to a common Sisense visual.
+  - seed: widget value does not match table
+    reason: Strong visual-versus-detail mismatch phrasing.
+  - seed: dashboard filter changes totals unexpectedly
+    reason: Captures filter and aggregation confusion.
+  - seed: source data and sisense report don't match
+    reason: Preserves backend-versus-dashboard reconciliation pain.
+  - seed: breakdown by field does not add up in sisense
+    reason: Segmentation and slice-level confusion in community wording.
+  - seed: chart shows wrong date or wrong value
+    reason: Covers date-basis and display-trust issues.
+  - seed: export doesn't match dashboard widget
+    reason: Explicit export-versus-visual trust conflict.
+  - seed: which sisense number should I trust
+    reason: Strong trust and source-of-truth framing.
+  - seed: this dashboard makes no sense to stakeholders
+    reason: Adds explanation pressure without reducing the source to technical setup.
+optional_templates:
+  - template: sisense widget and csv export are different
+    reason: Preserved as a useful export variant, but optional due to overlap with broader dashboard-export mismatch.
+  - template: pivot table grand total is wrong
+    reason: Preserved because totals are common, but optional to avoid over-concentrating on one visual family.
+  - template: filter pane or dashboard filter is wrong
+    reason: Preserved as another filter-logic variant.
+negative_terms:
+  - api
+  - embedding api
+  - plugin
+  - javascript
+  - css
+  - installation
+  - kubernetes
+  - docker
+  - certification
+  - job
+legacy_seed_notes:
+  - seed: qlik dashboard and export don't match
+    action: removed
+    why: community-language mismatch
+    note: Replaced by Sisense-native dashboard, widget, table, and filter phrasing.

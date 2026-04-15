@@ -153,6 +153,439 @@ career_advice_keywords:
   - applying to jobs
   - blunt critiques
 source_signal_overrides:
+  reddit:
+    business_signal_keywords:
+      - dashboard
+      - dashboards
+      - report
+      - reporting
+      - export
+      - exports
+      - excel
+      - spreadsheet
+      - spreadsheets
+      - power bi
+      - hubspot
+      - crm
+      - attribution
+      - analytics
+      - revenue
+      - payroll
+      - labor cost
+      - overtime
+      - scheduling
+      - pdf
+      - metric
+      - metrics
+      - reconcile
+      - reconciliation
+    pain_signal_keywords:
+      - manual
+      - manually
+      - stale
+      - mismatch
+      - not matching
+      - wrong
+      - weird
+      - double check
+      - reconcile
+      - reconciliation
+      - doesn't add up
+      - doesnt add up
+      - trips people up
+      - breaking silently
+      - save you hours
+      - error
+      - rejected
+      - fail
+      - useless
+      - hours
+  mixpanel_community:
+    business_signal_keywords:
+      - mixpanel
+      - funnel
+      - funnels
+      - insights
+      - retention
+      - event
+      - events
+      - event feed
+      - raw activity feed
+      - user profile
+      - user profiles
+      - profile
+      - profiles
+      - distinct id
+      - identify
+      - property
+      - properties
+      - session duration
+      - conversion time
+      - breakdown
+      - cohort
+      - report
+      - dashboard
+      - export
+      - query
+      - segment
+      - mirror sync
+      - mirror events
+    pain_signal_keywords:
+      - can't
+      - cant
+      - cannot
+      - hidden
+      - unavailable
+      - limitation
+      - limitations
+      - discrepancy
+      - not correctly
+      - not linking
+      - not match
+      - doesn't match
+      - doesnt match
+      - wrong
+      - issue
+      - debug
+      - resolve
+      - missing
+      - dropped
+      - why is
+      - what is the difference
+      - workaround
+      - blocked
+  qlik_community:
+    business_signal_keywords:
+      - qlik
+      - qlik sense
+      - qlikview
+      - nprinting
+      - set analysis
+      - straight table
+      - pivot table
+      - cross tab
+      - combo chart
+      - gauge chart
+      - line chart
+      - chart exploration
+      - filter pane
+      - expression
+      - dimension
+      - dimensions
+      - measure
+      - measures
+      - total
+      - totals
+      - kpi
+      - reporting
+      - report
+      - dashboard
+      - export
+      - print
+      - pixel perfect
+      - aggr
+      - fractile
+      - axis
+      - collapsed
+      - expanded
+      - desired level
+      - qmc
+      - newsstand
+    pain_signal_keywords:
+      - can't
+      - cant
+      - cannot
+      - wrong
+      - not matching
+      - mismatch
+      - issue
+      - error
+      - failed
+      - failing
+      - limitation
+      - unavailable
+      - not exported
+      - not displayed
+      - doesn't add up
+      - doesnt add up
+      - different totals
+      - not aggregating
+      - collapsed or expanded
+      - incorrect
+      - aggregating
+      - filtering
+      - desired level
+      - not correct
+      - strange
+      - weird
+      - how to
+      - stuck
+      - trying to
+      - need to
+      - goal is
+      - would like to know
+      - why does
+      - why is
+  sisense_community:
+    business_signal_keywords:
+      - sisense
+      - dashboard
+      - dashboards
+      - widget
+      - widgets
+      - pivot table
+      - pivot
+      - column chart
+      - bar chart
+      - filter
+      - filters
+      - break by
+      - data model
+      - drill dashboard
+      - jump to dashboard
+      - scientific units
+      - javascript
+      - table
+      - chart
+      - column width
+      - multiple columns
+      - list selection
+      - resolution deadline
+      - export
+      - exports
+      - xlsx
+      - csv
+      - pdf
+      - report
+      - reporting
+      - ssrs
+      - elasticube
+      - build
+      - builds
+      - cube
+      - cubes
+      - schedule
+      - schedules
+      - api
+      - endpoint
+    pain_signal_keywords:
+      - reset
+      - limits
+      - limited
+      - dynamically change
+      - hide
+      - empty
+      - same month or not
+      - column width
+      - calculate
+      - break by
+      - multiple columns
+      - left-click
+      - left click
+      - filter limits
+      - background filter
+      - using javascript
+      - better way
+      - how to
+      - how do i
+      - is it possible
+      - can i
+      - trying to
+      - need to
+      - want to
+      - unable
+      - not possible
+      - bulk
+      - manually
+      - manual
+      - error details
+      - replacing
+      - through the ui
+      - currently
+      - best practice
+      - schedule all
+      - show dashboard title
+      - show filters
+  hubspot_community:
+    business_signal_keywords:
+      - hubspot
+      - crm
+      - report
+      - reporting
+      - dashboard
+      - attribution
+      - campaign
+      - campaigns
+      - utm
+      - utms
+      - lifecycle stage
+      - lifecycle stages
+      - revenue
+      - deal
+      - deals
+      - contact
+      - contacts
+      - segment
+      - segments
+      - email performance
+      - marketing email
+      - custom report
+      - filter
+      - filters
+      - analytics
+      - data studio
+    pain_signal_keywords:
+      - can't
+      - cant
+      - cannot
+      - confused
+      - confusion
+      - missing data
+      - not applying
+      - not applied
+      - stops applying
+      - every single
+      - not showing
+      - doesn't show
+      - doesnt show
+      - unable
+      - trying to build
+      - trying to create
+      - best way
+      - is there a way
+      - segregate
+      - changed
+      - issue
+      - issues
+  shopify_community:
+    business_signal_keywords:
+      - shopify
+      - analytics
+      - report
+      - reporting
+      - dashboard
+      - export
+      - exports
+      - spreadsheet
+      - spreadsheets
+      - tax
+      - bank account
+      - inventory
+      - stock on hand
+      - units sold
+      - sales history
+      - total sales
+      - transaction
+      - conversion
+      - conversions
+      - aov
+      - revenue per session
+      - google ads
+      - gmc
+      - merchant center
+      - product feed
+      - campaigns
+      - recommendations
+      - labor hours
+      - fulfillment accuracy
+      - on-time shipping
+      - returns rate
+      - cycle time
+    pain_signal_keywords:
+      - stopped syncing
+      - stopped
+      - 0 metrics
+      - zero metrics
+      - endless and confusing
+      - confusing choice
+      - match against
+      - won't show
+      - wont show
+      - basic report
+      - merge them together
+      - merge them
+      - manual
+      - manually
+      - crazy
+      - overwhelmed
+      - mixed
+      - little/no lift
+      - little no lift
+      - not sure
+      - racking my brain
+      - looking for
+      - has anyone found
+      - found any solutions
+      - what works
+  power_bi_community:
+    business_signal_keywords:
+      - power bi
+      - dax
+      - measure
+      - measures
+      - matrix
+      - slicer
+      - visual
+      - visuals
+      - card visual
+      - scorecard
+      - relationship
+      - relationships
+      - filter context
+      - row context
+      - desktop
+      - service
+      - refresh
+      - gateway
+      - dataflow
+      - semantic model
+      - report builder
+      - power query
+      - directquery
+      - pbix
+      - workspace
+      - lakehouse
+      - analysis services
+      - drill through
+      - distinct count
+      - model view
+      - report page
+    pain_signal_keywords:
+      - can't
+      - cant
+      - cannot
+      - not working
+      - not syncing
+      - not refresh
+      - not refreshing
+      - gone missing
+      - missing
+      - incorrect
+      - wrong
+      - issue
+      - error
+      - failed
+      - failing
+      - broken
+      - all zeros
+      - losing
+      - strange
+      - weird
+      - skewed
+      - not detecting
+      - not showing
+      - timeout
+      - time out
+      - behind
+      - inconsistent
+      - not matching
+      - mismatch
+      - does not work
+      - doesnt work
+      - how can i
+      - how do i
+      - why does
+      - why is
   klaviyo_community:
     business_signal_keywords:
       - klaviyo
@@ -248,6 +681,239 @@ source_signal_overrides:
       - not record
       - not recording
 source_invalid_reason_exemptions:
+  reddit:
+    missing_business_signal:
+      when_any_terms:
+        - dashboard
+        - report
+        - reporting
+        - export
+        - excel
+        - spreadsheet
+        - attribution
+        - power bi
+        - hubspot
+        - crm
+        - revenue
+        - payroll
+        - scheduling
+        - labor cost
+      require_signal_match: false
+    missing_pain_signal:
+      when_any_terms:
+        - manual
+        - manually
+        - stale
+        - mismatch
+        - weird
+        - wrong
+        - reconcile
+        - reconciliation
+        - double check
+        - doesn't add up
+        - doesnt add up
+        - trips people up
+        - breaking silently
+        - save you hours
+        - rejected
+        - error
+      require_signal_match: false
+  mixpanel_community:
+    missing_business_signal:
+      when_any_terms:
+        - mixpanel
+        - funnel
+        - insights
+        - event
+        - profile
+        - distinct id
+        - breakdown
+      require_signal_match: false
+    missing_pain_signal:
+      when_any_terms:
+        - limitation
+        - issue
+        - discrepancy
+        - hidden
+        - unavailable
+        - debug
+        - resolve
+        - not linking
+        - wrong
+      require_signal_match: false
+  qlik_community:
+    missing_business_signal:
+      when_any_terms:
+        - qlik
+        - set analysis
+        - straight table
+        - chart
+        - pivot table
+        - filter pane
+        - expression
+        - total
+        - kpi
+        - nprinting
+        - pixel perfect
+      require_signal_match: false
+    missing_pain_signal:
+      when_any_terms:
+        - wrong
+        - not matching
+        - mismatch
+        - limitation
+        - unavailable
+        - failed
+        - not correct
+        - desired level
+        - doesn't add up
+        - doesnt add up
+        - different totals
+        - not aggregating
+        - collapsed or expanded
+        - stuck
+        - trying to
+        - need to
+        - goal is
+        - would like to know
+        - how to
+      require_signal_match: false
+  sisense_community:
+    missing_business_signal:
+      when_any_terms:
+        - sisense
+        - dashboard
+        - widget
+        - pivot table
+        - column chart
+        - filter
+        - break by
+        - data model
+        - jump to dashboard
+        - scientific units
+        - export
+        - xlsx
+        - csv
+        - pdf
+        - reporting
+        - report
+        - ssrs
+        - build
+        - builds
+        - schedule
+        - cube
+        - cubes
+      require_signal_match: false
+    missing_pain_signal:
+      when_any_terms:
+        - reset
+        - limits
+        - dynamically change
+        - hide
+        - empty
+        - calculate
+        - multiple columns
+        - background filter
+        - better way
+        - how to
+        - is it possible
+        - manually
+        - manual
+        - bulk
+        - replacing
+        - best practice
+        - currently
+        - error details
+        - show dashboard title
+        - show filters
+        - schedule all
+      require_signal_match: false
+  hubspot_community:
+    missing_business_signal:
+      when_any_terms:
+        - hubspot
+        - report
+        - reporting
+        - dashboard
+        - attribution
+        - utm
+        - lifecycle stage
+        - campaign
+        - segment
+        - marketing email
+        - email performance
+        - custom report
+        - data studio
+        - revenue
+        - deal
+      require_signal_match: false
+    missing_pain_signal:
+      when_any_terms:
+        - confused
+        - missing data
+        - not applying
+        - stops applying
+        - every single
+        - trying to build
+        - trying to create
+        - best way
+        - is there a way
+        - segregate
+        - changed
+        - not showing
+        - doesn't show
+        - doesnt show
+        - issue
+      require_signal_match: false
+  shopify_community:
+    missing_business_signal:
+      when_any_terms:
+        - analytics
+        - report
+        - reporting
+        - dashboard
+        - export
+        - spreadsheet
+        - inventory
+        - stock on hand
+        - units sold
+        - sales history
+        - total sales
+        - transaction
+        - tax
+        - bank account
+        - conversion
+        - aov
+        - revenue per session
+        - gmc
+        - merchant center
+        - google ads
+        - product feed
+      require_signal_match: false
+    missing_pain_signal:
+      when_any_terms:
+        - stopped syncing
+        - 0 metrics
+        - endless and confusing
+        - confusing choice
+        - match against
+        - won't show
+        - wont show
+        - basic report
+        - merge them together
+        - manual
+        - manually
+        - crazy
+        - overwhelmed
+        - little/no lift
+        - little no lift
+        - not sure
+        - racking my brain
+        - looking for
+        - has anyone found
+        - found any solutions
+        - what works
+      require_signal_match: false
   klaviyo_community:
     promotional_content:
       when_any_terms:

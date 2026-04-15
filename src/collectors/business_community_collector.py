@@ -16,6 +16,7 @@ from src.collectors.base import BaseCollector, RawRecord
 from src.collectors.business_community_parser import (
     ThreadLink,
     discover_rss_thread_links,
+    discover_sitemap_thread_links,
     discover_thread_links,
     parse_thread_page,
 )
@@ -123,10 +124,12 @@ class BusinessCommunityCollector(BaseCollector):
         """Collect public Khoros message rows through the unauthenticated search API."""
         base_url = str(api_cfg.get("base_url", "")).rstrip("/")
         board_ids = [str(board).strip() for board in api_cfg.get("board_ids", []) if str(board).strip()]
+        where_clause = str(api_cfg.get("where_clause", "") or "").strip()
         if not base_url or not board_ids:
             return []
         max_items = int(api_cfg.get("max_items_per_board", 200))
         page_size = min(max(int(api_cfg.get("page_size", 100)), 1), 100)
+        top_level_only = bool(api_cfg.get("top_level_only", False))
         user_agent = self._user_agent()
         records: list[RawRecord] = []
         seen_ids: set[str] = set()
@@ -134,7 +137,10 @@ class BusinessCommunityCollector(BaseCollector):
             fetched_for_board = 0
             for offset in range(0, max_items, page_size):
                 limit = min(page_size, max_items - offset)
-                query = f"SELECT * FROM messages WHERE board.id='{board_id}' LIMIT {limit} OFFSET {offset}"
+                query = f"SELECT * FROM messages WHERE board.id='{board_id}'"
+                if where_clause:
+                    query = f"{query} {where_clause.strip()}"
+                query = f"{query} LIMIT {limit} OFFSET {offset}"
                 url = f"{base_url}/api/2.0/search?q={quote(query)}"
                 response = fetch_text(url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
                 if not response.ok:
@@ -143,6 +149,8 @@ class BusinessCommunityCollector(BaseCollector):
                 items = _khoros_items(response.body_text)
                 accepted = 0
                 for item in items:
+                    if top_level_only and int(item.get("depth", 0) or 0) > 0:
+                        continue
                     raw_id = str(item.get("id", "") or "").strip()
                     if not raw_id or raw_id in seen_ids:
                         continue
@@ -175,6 +183,9 @@ class BusinessCommunityCollector(BaseCollector):
         """Build a raw record from one public Khoros API message item."""
         fetched_at = utc_now_iso()
         url = str(item.get("view_href", "") or "")
+        conversation = item.get("conversation", {}) if isinstance(item.get("conversation"), dict) else {}
+        if str(conversation.get("view_href", "") or "").strip():
+            url = str(conversation.get("view_href", "") or "").strip()
         title = _clean_khoros_title(str(item.get("subject", "") or ""))
         body_text = _strip_html(str(item.get("body", "") or ""))
         created_at = _safe_iso_datetime(str(item.get("post_time", "") or "")) or fetched_at
@@ -290,6 +301,47 @@ class BusinessCommunityCollector(BaseCollector):
                 {
                     "source": self.source_name,
                     "query_id": "rss_discovery",
+                    "query_text": url,
+                    "seed_used": "",
+                    "expanded_query": "",
+                    "discovered_url_count": accepted,
+                    "window_id": "",
+                    "window_start": "",
+                    "window_end": "",
+                    "page_no": 1,
+                    "page_raw_count": accepted,
+                    "page_raw_count_before_dedupe": len(links),
+                    "duplicate_count": max(0, len(links) - accepted),
+                    "duplicate_ratio": round((max(0, len(links) - accepted) / max(len(links), 1)), 4),
+                    "stop_reason": "ok" if links else "no_thread_links",
+                }
+            )
+        for row in self.config.get("sitemap_discovery_urls", []) or []:
+            url = str(row.get("url", "") if isinstance(row, dict) else row).strip()
+            board = str(row.get("board", "") if isinstance(row, dict) else "").strip()
+            if not url:
+                continue
+            if not self._robots_allowed(url, user_agent):
+                continue
+            response = fetch_text(url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
+            if not response.ok:
+                self._record_error(url, "sitemap_fetch", str(response.status_code), response.error_message or response.crawl_status)
+                continue
+            links = discover_sitemap_thread_links(response.body_text, base_url=url, platform=platform, board=board)
+            accepted = 0
+            for link in links:
+                if link.url in discovered:
+                    continue
+                if not self._accept_discovered_link(link, discovery_queries):
+                    continue
+                discovered[link.url] = link
+                accepted += 1
+                if accepted >= max_per_url:
+                    break
+            self.collection_stats.append(
+                {
+                    "source": self.source_name,
+                    "query_id": "sitemap_discovery",
                     "query_text": url,
                     "seed_used": "",
                     "expanded_query": "",
@@ -607,6 +659,11 @@ def _paginate_listing_url(url: str, platform: str, page_no: int) -> str:
     if platform == "hubspot":
         path = re.sub(r"/page/\d+$", "", path)
         return urlunparse((parsed.scheme, parsed.netloc, f"{path}/page/{page_no}", "", parsed.query, ""))
+    if platform == "amplitude":
+        if re.search(r"/p\d+$", path):
+            path = re.sub(r"/p\d+$", f"/p{page_no}", path)
+            return urlunparse((parsed.scheme, parsed.netloc, path, "", parsed.query, ""))
+        return urlunparse((parsed.scheme, parsed.netloc, f"{path}/p{page_no}", "", parsed.query, ""))
     query = dict(parse_qsl(parsed.query, keep_blank_values=False))
     query["page"] = str(page_no)
     return urlunparse((parsed.scheme, parsed.netloc, parsed.path, "", urlencode(query), ""))
@@ -620,6 +677,10 @@ def _robots_cache_key(url: str) -> str:
         path = "/google-ads/thread"
     elif "/merchants/thread/" in path:
         path = "/merchants/thread"
+    elif "/analytics/thread/" in path:
+        path = "/analytics/thread"
+    elif "/looker-studio/thread/" in path:
+        path = "/looker-studio/thread"
     elif path.endswith("/threads"):
         path = path.rsplit("/", 1)[0] + "/threads"
     elif path.endswith("/community"):

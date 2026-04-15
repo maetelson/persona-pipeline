@@ -10,6 +10,8 @@ SOURCE_GROUP_HINTS = {
     "shopify_community": "business_communities",
     "hubspot_community": "business_communities",
     "klaviyo_community": "business_communities",
+    "mixpanel_community": "business_communities",
     "google_ads_community": "business_communities",
     "merchant_center_community": "business_communities",
+    "qlik_community": "business_communities",
 }

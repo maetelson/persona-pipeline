@@ -11,10 +11,10 @@ query_mode: source_config
 seed_bank_path: config/seeds/business_communities/hubspot_community.yaml
 seed_source_token: hubspot
 seed_query_style: support_community
-max_query_count: 15
-max_threads_per_run: 1200
-max_discovered_threads_per_url: 150
-discovery_page_count: 12
+max_query_count: 100
+max_threads_per_run: 10000
+max_discovered_threads_per_url: 1000
+discovery_page_count: 100
 sleep_seconds: 0.15
 filter_discovery_by_seed: true
 include_candidate_seed_pool_for_discovery: false
@@ -23,7 +23,7 @@ api_discovery:
   kind: khoros_search
   base_url: https://community.hubspot.com
   page_size: 100
-  max_items_per_board: 350
+max_items_per_board: 2000
   board_ids:
     - marketing_reports
     - marketing_lists

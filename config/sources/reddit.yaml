@@ -7,14 +7,14 @@ normalizer_kind: existing_forums
 enabled: true
 use_stub: false
 source_type: forum
-query_mode: source_config
+query_mode: expanded_map
 seed_bank_path: config/seeds/existing_forums/reddit.yaml
 allowed_query_priorities:
   - high
   - medium
 search_sort: new
-max_posts_per_seed: 10
-max_pages_per_query: 4
+max_posts_per_seed: 100
+max_pages_per_query: 20
 default_per_seed_page_cap: 3
 per_seed_page_caps:
   excel after dashboard: 4
@@ -26,11 +26,11 @@ per_seed_page_caps:
   attribution numbers don't match: 3
   why did conversion drop by segment: 2
 comment_limit_per_post: 10
-comment_expansion_mode: conditional
+comment_expansion_mode: none
 comment_expand_body_char_threshold: 220
-comment_expand_max_posts_per_page: 3
-comment_expand_max_posts_per_query: 8
-sleep_seconds: 1.5
+comment_expand_max_posts_per_page: 20
+comment_expand_max_posts_per_query: 100
+sleep_seconds: 0.2
 max_rate_limit_retries: 3
 rate_limit_wait_seconds: 20
 early_stop_low_yield_pages: 2
@@ -93,45 +93,8 @@ precollector_negative_keywords:
   - stock market news
   - morning update
   - i built a free
-precollector_required_signal_terms:
-  - dashboard
-  - report
-  - reporting
-  - export
-  - excel
-  - spreadsheet
-  - metric
-  - metrics
-  - kpi
-  - attribution
-  - power bi
-  - tableau
-  - analytics
-  - reconcile
-precollector_problem_terms:
-  - mismatch
-  - not match
-  - wrong
-  - trust
-  - reconcile
-  - validation
-  - explain
-  - why did
-  - dropped
-  - broken
-  - manual
-  - stakeholder
-precollector_workflow_terms:
-  - dashboard
-  - report
-  - reporting
-  - export
-  - excel
-  - spreadsheet
-  - metric
-  - kpi
-  - segment
-  - channel
-  - device
+precollector_required_signal_terms: []
+precollector_problem_terms: []
+precollector_workflow_terms: []
 aliases:
   - reddit

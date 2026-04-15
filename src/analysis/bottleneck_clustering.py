@@ -120,52 +120,59 @@ def merge_overlapping_personas(
     merge_map = {str(profile["persona_id"]): str(profile["persona_id"]) for profile in ordered_profiles}
     audit_rows: list[dict[str, Any]] = []
     merge_role_families = {str(value) for value in list(merge_cfg.get("merge_role_families", []) or [])}
+    min_parent_cluster_size = int(merge_cfg.get("min_parent_cluster_size", 24))
     for profile in ordered_profiles:
         persona_id = str(profile["persona_id"])
-        if int(profile["cluster_size"]) >= int(merge_cfg.get("min_parent_cluster_size", 24)):
-            best_target = ""
-            best_comparison: dict[str, Any] | None = None
-            for candidate in ordered_profiles:
-                target_id = str(candidate["persona_id"])
-                if target_id == persona_id:
-                    continue
-                if int(candidate["cluster_size"]) < int(profile["cluster_size"]):
-                    continue
-                if merge_role_families and str(profile["role_context"]) not in merge_role_families and str(candidate["role_context"]) not in merge_role_families:
-                    continue
-                comparison = _overlap_merge_comparison(profile, candidate, merge_cfg)
-                if not comparison["should_merge"]:
-                    continue
-                if best_comparison is None or int(comparison["profile_match_score"]) > int(best_comparison["profile_match_score"]):
-                    best_target = target_id
-                    best_comparison = comparison
-            if best_target and best_target != persona_id and best_comparison is not None:
-                merge_map[persona_id] = best_target
-                parent = profiles[best_target]
-                audit_rows.append(
-                    {
-                        "persona_id": persona_id,
-                        "merge_action": "merged_into_parent_persona",
-                        "merged_into_persona_id": best_target,
-                        "before_persona_count": before_count,
-                        "after_persona_count": 0,
-                        "role_context": profile["role_context"],
-                        "recurring_job": profile["recurring_job"],
-                        "expected_output": profile["expected_output"],
-                        "workaround_pattern": profile["workaround_pattern"],
-                        "trust_failure_mode": profile["trust_failure_mode"],
-                        "differentiating_axis": "",
-                        "merge_rationale": best_comparison["merge_rationale"],
-                        "new_persona_name": parent["parent_persona_name"],
-                        "new_persona_naming_rationale": parent["naming_rationale"],
-                    }
+        best_target = ""
+        best_comparison: dict[str, Any] | None = None
+        for candidate in ordered_profiles:
+            target_id = str(candidate["persona_id"])
+            if target_id == persona_id:
+                continue
+            if int(candidate["cluster_size"]) < max(int(profile["cluster_size"]), min_parent_cluster_size):
+                continue
+            if merge_role_families and str(profile["role_context"]) not in merge_role_families and str(candidate["role_context"]) not in merge_role_families:
+                continue
+            comparison = _overlap_merge_comparison(profile, candidate, merge_cfg)
+            if not comparison["should_merge"]:
+                continue
+            if best_comparison is None or (
+                float(comparison["profile_match_score"]) > float(best_comparison["profile_match_score"])
+                or (
+                    float(comparison["profile_match_score"]) == float(best_comparison["profile_match_score"])
+                    and float(comparison["similarity"]) > float(best_comparison["similarity"])
                 )
+            ):
+                best_target = target_id
+                best_comparison = comparison
+        if best_target and best_target != persona_id and best_comparison is not None:
+            merge_map[persona_id] = best_target
+            parent = profiles[best_target]
+            audit_rows.append(
+                {
+                    "persona_id": persona_id,
+                    "merge_action": "merged_into_parent_persona",
+                    "merged_into_persona_id": best_target,
+                    "before_persona_count": before_count,
+                    "after_persona_count": 0,
+                    "role_context": profile["role_context"],
+                    "recurring_job": profile["recurring_job"],
+                    "expected_output": profile["expected_output"],
+                    "workaround_pattern": profile["workaround_pattern"],
+                    "trust_failure_mode": profile["trust_failure_mode"],
+                    "differentiating_axis": "",
+                    "merge_rationale": best_comparison["merge_rationale"],
+                    "new_persona_name": parent["parent_persona_name"],
+                    "new_persona_naming_rationale": parent["naming_rationale"],
+                }
+            )
 
     updated = assignments_df.copy()
+    resolved_merge_map = {persona_id: _resolve_merge_target(persona_id, merge_map) for persona_id in merge_map}
     updated["pre_overlap_persona_id"] = updated["persona_id"].astype(str)
-    updated["persona_id"] = updated["persona_id"].astype(str).map(lambda value: merge_map.get(str(value), str(value)))
+    updated["persona_id"] = updated["persona_id"].astype(str).map(lambda value: resolved_merge_map.get(str(value), str(value)))
     parent_name_lookup = {persona_id: profile["parent_persona_name"] for persona_id, profile in profiles.items()}
-    for persona_id, target_id in merge_map.items():
+    for persona_id, target_id in resolved_merge_map.items():
         if persona_id == target_id:
             continue
         parent_name_lookup[persona_id] = parent_name_lookup.get(target_id, target_id)
@@ -232,6 +239,16 @@ def merge_overlapping_personas(
     return {"assignments_df": updated, "audit_df": audit_df, "summary_df": summary_df}
 
 
+def _resolve_merge_target(persona_id: str, merge_map: dict[str, str]) -> str:
+    """Resolve chained overlap merges to the final retained parent persona."""
+    current = str(persona_id)
+    visited: set[str] = set()
+    while current in merge_map and str(merge_map[current]) != current and current not in visited:
+        visited.add(current)
+        current = str(merge_map[current])
+    return current
+
+
 def _persona_overlap_profiles(merged_df: pd.DataFrame, feature_lookup: pd.DataFrame) -> dict[str, dict[str, Any]]:
     """Build merge-oriented persona profiles from the current assignments."""
     profiles: dict[str, dict[str, Any]] = {}
@@ -280,25 +297,49 @@ def _overlap_merge_comparison(profile: dict[str, Any], candidate: dict[str, Any]
     same_role = str(profile.get("role_context", "")) == str(candidate.get("role_context", ""))
     same_job = str(profile.get("recurring_job", "")) == str(candidate.get("recurring_job", ""))
     same_output = str(profile.get("expected_output", "")) == str(candidate.get("expected_output", ""))
+    same_parent_name = str(profile.get("parent_persona_name", "")) == str(candidate.get("parent_persona_name", ""))
+    compatible_job = _overlap_job_family_group(str(profile.get("recurring_job", ""))) == _overlap_job_family_group(str(candidate.get("recurring_job", "")))
+    compatible_output = _overlap_output_family_group(str(profile.get("expected_output", ""))) == _overlap_output_family_group(str(candidate.get("expected_output", "")))
     same_workaround = str(profile.get("workaround_pattern", "")) == str(candidate.get("workaround_pattern", ""))
     same_trust = str(profile.get("trust_failure_mode", "")) == str(candidate.get("trust_failure_mode", ""))
     compatible_workaround = str(profile.get("workaround_pattern", "")) in compatible_workarounds and str(candidate.get("workaround_pattern", "")) in compatible_workarounds
     compatible_trust_mode = str(profile.get("trust_failure_mode", "")) in compatible_trust and str(candidate.get("trust_failure_mode", "")) in compatible_trust
     role_gap_ok = abs(float(profile.get("role_share", 0.0) or 0.0) - float(candidate.get("role_share", 0.0) or 0.0)) <= float(merge_cfg.get("max_role_share_gap", 0.35))
+    min_cluster_size = min(int(profile.get("cluster_size", 0) or 0), int(candidate.get("cluster_size", 0) or 0))
+    similarity_floor = float(merge_cfg.get("similarity_floor", 0.55))
+    if min_cluster_size <= int(merge_cfg.get("micro_cluster_size", 8)):
+        similarity_floor -= float(merge_cfg.get("micro_cluster_similarity_relief", 0.12))
+    elif min_cluster_size <= int(merge_cfg.get("small_cluster_size", 24)):
+        similarity_floor -= float(merge_cfg.get("small_cluster_similarity_relief", 0.08))
+    similarity_floor = max(similarity_floor, float(merge_cfg.get("minimum_similarity_floor", 0.35)))
     profile_match_score = sum([
         1 if same_role else 0,
-        1 if same_job else 0,
-        1 if same_output else 0,
+        1 if (same_job or compatible_job) else 0,
+        1 if (same_output or compatible_output) else 0,
         1 if (same_workaround or compatible_workaround) else 0,
         1 if (same_trust or compatible_trust_mode) else 0,
     ])
+    micro_cluster_absorb_ok = (
+        min_cluster_size <= int(merge_cfg.get("micro_cluster_size", 8))
+        and same_role
+        and (
+            (same_job or compatible_job)
+            or same_parent_name
+        )
+        and (
+            (same_output or compatible_output)
+            or same_parent_name
+        )
+        and ((same_workaround or compatible_workaround) or same_parent_name)
+    )
     should_merge = (
         same_role
-        and same_job
-        and same_output
+        and (same_job or compatible_job)
+        and (same_output or compatible_output)
         and role_gap_ok
+        and ((same_trust or compatible_trust_mode) or micro_cluster_absorb_ok)
         and profile_match_score >= int(merge_cfg.get("compatible_profile_score_floor", 4))
-        and similarity >= float(merge_cfg.get("similarity_floor", 0.55))
+        and similarity >= similarity_floor
     )
     merge_rationale = (
         f"merged because role context={profile.get('role_context', '')}, recurring job={profile.get('recurring_job', '')}, "
@@ -308,6 +349,7 @@ def _overlap_merge_comparison(profile: dict[str, Any], candidate: dict[str, Any]
     return {
         "should_merge": should_merge,
         "similarity": round(float(similarity), 4),
+        "similarity_floor": round(float(similarity_floor), 4),
         "profile_match_score": profile_match_score,
         "merge_rationale": merge_rationale,
     }
@@ -336,7 +378,13 @@ def _best_distinct_candidate(profile: dict[str, Any], profiles: dict[str, dict[s
 def _differentiating_axis(profile: dict[str, Any], candidate: dict[str, Any]) -> str:
     """Return the first material axis that differentiates two candidate personas."""
     for axis in ["role_context", "recurring_job", "expected_output", "workaround_pattern", "trust_failure_mode"]:
-        if str(profile.get(axis, "")) != str(candidate.get(axis, "")):
+        profile_value = str(profile.get(axis, ""))
+        candidate_value = str(candidate.get(axis, ""))
+        if axis == "recurring_job" and _overlap_job_family_group(profile_value) == _overlap_job_family_group(candidate_value):
+            continue
+        if axis == "expected_output" and _overlap_output_family_group(profile_value) == _overlap_output_family_group(candidate_value):
+            continue
+        if profile_value != candidate_value:
             return axis
     return ""
 
@@ -387,6 +435,28 @@ def _overlap_expected_output_family(output: str) -> str:
         "automation_output": "repeatable_workflow_output",
     }
     return mapping.get(str(output).strip().lower(), str(output).strip().lower() or "shareable_output")
+
+
+def _overlap_job_family_group(recurring_job: str) -> str:
+    """Collapse recurring job variants into broader merge-safe families."""
+    recurring_key = str(recurring_job).strip().lower()
+    if recurring_key in {"deliver_recurring_reporting_outputs", "automation::automate_workflow"}:
+        return "reporting_delivery_family"
+    if recurring_key in {"maintain_and_explain_dashboard_outputs", "triage::diagnose_change"}:
+        return "investigation_family"
+    if recurring_key in {"validate_metrics_before_distribution", "validation::validate_numbers"}:
+        return "metric_assurance_family"
+    return recurring_key or "workflow_family"
+
+
+def _overlap_output_family_group(expected_output: str) -> str:
+    """Collapse output variants into broader merge-safe families."""
+    output_key = str(expected_output).strip().lower()
+    if output_key in {"stakeholder_ready_report", "repeatable_workflow_output", "shareable_output"}:
+        return "shareable_reporting_output_family"
+    if output_key == "dashboard_update":
+        return "dashboard_output_family"
+    return output_key or "output_family"
 
 
 def _overlap_workaround_family(output: str, tool_mode: str, bottleneck: str, group: pd.DataFrame) -> str:
@@ -752,6 +822,8 @@ def _apply_cluster_robustness_policy(
     same_primary_absorb_similarity = float(robustness_config.get("same_primary_absorb_similarity", 0.8))
     same_base_name_absorb_similarity = float(robustness_config.get("same_base_name_absorb_similarity", 0.72))
     same_name_absorb_similarity = float(robustness_config.get("same_name_absorb_similarity", 0.78))
+    micro_same_base_name_absorb_similarity = float(robustness_config.get("micro_same_base_name_absorb_similarity", same_base_name_absorb_similarity))
+    micro_same_name_absorb_similarity = float(robustness_config.get("micro_same_name_absorb_similarity", same_name_absorb_similarity))
     general_absorb_similarity = float(robustness_config.get("general_absorb_similarity", 0.9))
     low_separation_absorb_similarity = float(robustness_config.get("low_separation_absorb_similarity", 0.955))
     low_separation_ceiling = float(robustness_config.get("low_separation_ceiling", 0.05))
@@ -778,12 +850,16 @@ def _apply_cluster_robustness_policy(
             continue
         merge_target = _choose_cluster_absorption_target(
             signature,
+            cluster_size,
             anchor_sizes,
             anchor_feature_lookup,
             naming_lookup,
+            micro_cluster_size,
             same_primary_absorb_similarity,
             same_base_name_absorb_similarity,
             same_name_absorb_similarity,
+            micro_same_base_name_absorb_similarity,
+            micro_same_name_absorb_similarity,
             general_absorb_similarity,
         )
         if merge_target:
@@ -877,12 +953,16 @@ def _apply_cluster_robustness_policy(
 
 def _choose_cluster_absorption_target(
     signature: str,
+    cluster_size: int,
     anchor_sizes: dict[str, int],
     anchor_feature_lookup: dict[str, dict[str, float]],
     naming_lookup: dict[str, str],
+    micro_cluster_size: int,
     same_primary_absorb_similarity: float,
     same_base_name_absorb_similarity: float,
     same_name_absorb_similarity: float,
+    micro_same_base_name_absorb_similarity: float,
+    micro_same_name_absorb_similarity: float,
     general_absorb_similarity: float,
 ) -> str:
     """Choose the best stable parent for a fragile cluster when similarity is strong enough."""
@@ -898,12 +978,14 @@ def _choose_cluster_absorption_target(
         same_name = naming_lookup.get(signature, "") == naming_lookup.get(candidate, "")
         same_base_name = _base_cluster_name(naming_lookup.get(signature, "")) == _base_cluster_name(naming_lookup.get(candidate, ""))
         shared_secondary = bool(set(mapping.get("secondary", [])) & set(candidate_mapping.get("secondary", [])))
+        base_name_floor = micro_same_base_name_absorb_similarity if cluster_size <= micro_cluster_size else same_base_name_absorb_similarity
+        name_floor = micro_same_name_absorb_similarity if cluster_size <= micro_cluster_size else same_name_absorb_similarity
         can_absorb = False
         if same_primary and similarity >= same_primary_absorb_similarity:
             can_absorb = True
-        elif same_base_name and similarity >= same_base_name_absorb_similarity:
+        elif same_base_name and similarity >= base_name_floor:
             can_absorb = True
-        elif same_name and similarity >= same_name_absorb_similarity:
+        elif same_name and similarity >= name_floor:
             can_absorb = True
         elif shared_secondary and similarity >= general_absorb_similarity:
             can_absorb = True

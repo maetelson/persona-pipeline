@@ -291,6 +291,8 @@ robustness:
   same_primary_absorb_similarity: 0.8
   same_base_name_absorb_similarity: 0.72
   same_name_absorb_similarity: 0.78
+  micro_same_base_name_absorb_similarity: 0.64
+  micro_same_name_absorb_similarity: 0.7
   general_absorb_similarity: 0.9
   low_separation_absorb_similarity: 0.9
   low_separation_ceiling: 0.1
@@ -309,7 +311,12 @@ persona_overlap_merge:
   min_parent_cluster_size: 24
   compatible_profile_score_floor: 4
   similarity_floor: 0.50
+  minimum_similarity_floor: 0.35
   max_role_share_gap: 0.35
+  small_cluster_size: 24
+  small_cluster_similarity_relief: 0.08
+  micro_cluster_size: 8
+  micro_cluster_similarity_relief: 0.12
   merge_role_families:
     - analyst_operator
     - workflow_operator
@@ -325,6 +332,10 @@ promotion_scoring:
   enabled: true
   promote_score_min: 0.72
   candidate_score_min: 0.58
+  near_threshold_size_gap_max: 1
+  near_threshold_promote_score_min: 0.72
+  near_threshold_structural_stability_min: 0.50
+  near_threshold_cross_source_robustness_min: 0.70
   minimum_actionability_score: 0.55
   minimum_distinctiveness_score: 0.18
   minimum_output_consistency_score: 0.55

@@ -26,12 +26,22 @@ def check_robots_allowed(url: str, user_agent: str) -> tuple[bool, str]:
     """Return whether robots.txt allows fetching the URL."""
     parsed = urlparse(url)
     robots_url = urljoin(f"{parsed.scheme}://{parsed.netloc}", "/robots.txt")
-    parser = RobotFileParser()
     try:
-        parser.set_url(robots_url)
-        parser.read()
+        request = Request(robots_url, headers={"User-Agent": user_agent or "*", "Accept": "text/plain,*/*;q=0.1"})
+        with urlopen(request, timeout=20) as response:
+            payload = response.read()
+            encoding = response.headers.get_content_charset() or "utf-8"
+            body_text = payload.decode(encoding, errors="replace")
+    except HTTPError as exc:
+        if int(exc.code) in {401, 403}:
+            return False, f"robots_http_error:{exc.code}"
+        return True, ""
+    except (URLError, TimeoutError):
+        return True, ""
     except Exception as exc:  # noqa: BLE001
         return False, f"robots_check_failed:{type(exc).__name__}"
+    parser = RobotFileParser()
+    parser.parse(body_text.splitlines())
     allowed = parser.can_fetch(user_agent or "*", url)
     return allowed, "" if allowed else "robots_disallow"
 

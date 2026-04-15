@@ -401,6 +401,14 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
         rescue_bonus, _ = _apply_google_ads_help_rescue_signals(text, scores, positive_hits, source_reasons)
         if rescue_bonus:
             scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
+    if source == "reddit":
+        rescue_bonus, _ = _apply_reddit_rescue_signals(text, normalized["subreddit"], scores, positive_hits, source_reasons)
+        if rescue_bonus:
+            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
+    if source == "sisense_community":
+        rescue_bonus, _ = _apply_sisense_rescue_signals(text, scores, positive_hits, source_reasons)
+        if rescue_bonus:
+            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
     if source == "shopify_community":
         rescue_bonus, _ = _apply_shopify_rescue_signals(text, scores, positive_hits, source_reasons)
         if rescue_bonus:
@@ -508,6 +516,12 @@ def _source_whitelist_hits(source: str, text: str, rules: dict[str, Any]) -> lis
     source_terms = (rules.get("source_whitelist_terms", {}) or {}).get(source, []) or []
     hits: list[str] = []
     lowered = str(text or "").lower()
+    if source == "reddit":
+        return _reddit_whitelist_hits(lowered)
+    if source == "stackoverflow":
+        return _stackoverflow_whitelist_hits(lowered)
+    if source == "sisense_community":
+        hits.extend(_sisense_whitelist_hits(lowered))
     if source == "shopify_community":
         return _shopify_whitelist_hits(lowered)
     if source == "google_ads_help_community":
@@ -522,19 +536,177 @@ def _source_whitelist_hits(source: str, text: str, rules: dict[str, Any]) -> lis
     return hits
 
 
+def _stackoverflow_whitelist_hits(lowered: str) -> list[str]:
+    """Return stricter Stack Overflow rescue labels for BI reporting workflow posts."""
+    bi_terms = [
+        "power bi",
+        "dax",
+        "power query",
+        "looker studio",
+        "reporting services",
+        "ssrs",
+        "pivot table",
+        "powerpivot",
+        "analysis services",
+    ]
+    reporting_terms = [
+        "report",
+        "reporting",
+        "dashboard",
+        "visual",
+        "table",
+        "matrix",
+        "pivot",
+        "paginated report",
+        "template",
+        "refresh",
+    ]
+    discrepancy_terms = [
+        "wrong total",
+        "wrong totals",
+        "not matching",
+        "mismatch",
+        "incorrect",
+        "zeros instead",
+        "does not match",
+        "doesn't match",
+        "doesnt match",
+    ]
+    export_terms = ["export", "excel", "spreadsheet", "csv"]
+    workflow_terms = [
+        "every month",
+        "monthly invoice",
+        "weekly",
+        "manual",
+        "refresh it",
+        "data is updated",
+        "export to excel",
+        "keep the visuals",
+        "recreate the report",
+    ]
+    output_shape_terms = [
+        "datatable",
+        "data table",
+        "grid",
+        "table header",
+        "row above table header",
+        "current page",
+        "column names",
+        "white spaces",
+        "blank spaces",
+        "format",
+        "filename",
+        "sheet1",
+        "cell",
+        "cells",
+        "rows",
+        "columns",
+    ]
+
+    bi_hit = any(_text_contains_term(lowered, term) for term in bi_terms)
+    reporting_hit = any(_text_contains_term(lowered, term) for term in reporting_terms)
+    discrepancy_hit = any(_text_contains_term(lowered, term) for term in discrepancy_terms)
+    export_hit = any(_text_contains_term(lowered, term) for term in export_terms)
+    workflow_hit = any(_text_contains_term(lowered, term) for term in workflow_terms)
+    output_shape_hit = any(_text_contains_term(lowered, term) for term in output_shape_terms)
+
+    hits: list[str] = []
+    if bi_hit and reporting_hit:
+        hits.append("stackoverflow_bi_reporting_workflow")
+    if bi_hit and discrepancy_hit:
+        hits.append("stackoverflow_bi_metric_mismatch")
+    if bi_hit and export_hit and workflow_hit:
+        hits.append("stackoverflow_manual_reporting_export")
+    if export_hit and reporting_hit and output_shape_hit:
+        hits.append("stackoverflow_export_output_shape")
+    return hits
+
+
+def _reddit_whitelist_hits(lowered: str) -> list[str]:
+    """Return stricter Reddit rescue labels for operational reporting pain."""
+    reporting_terms = ["report", "reporting", "dashboard", "analytics", "attribution", "power bi", "hubspot", "crm"]
+    export_terms = ["export", "exports", "excel", "spreadsheet", "pdf"]
+    pain_terms = ["manual", "manually", "mismatch", "not matching", "reconcile", "reconciliation", "double check", "stale", "weird", "wrong"]
+
+    reporting_hit = any(_text_contains_term(lowered, term) for term in reporting_terms)
+    export_hit = any(_text_contains_term(lowered, term) for term in export_terms)
+    pain_hit = any(_text_contains_term(lowered, term) for term in pain_terms)
+
+    hits: list[str] = []
+    if reporting_hit and pain_hit:
+        hits.append("reddit_reporting_pain")
+    if export_hit and pain_hit:
+        hits.append("reddit_export_reconciliation")
+    if reporting_hit and export_hit:
+        hits.append("reddit_reporting_export_combo")
+    return hits
+
+
+def _sisense_whitelist_hits(lowered: str) -> list[str]:
+    """Return stricter Sisense rescue labels for reporting/export/build workflows."""
+    reporting_terms = ["dashboard", "report", "reporting", "ssrs", "export", "exports", "xlsx", "csv", "pdf"]
+    build_terms = ["build", "builds", "schedule builds", "builds in bulk", "cube", "cubes", "schedule all"]
+    pain_terms = ["manual", "manually", "bulk", "best practice", "currently", "error details", "show filters", "show dashboard title"]
+
+    reporting_hit = any(_text_contains_term(lowered, term) for term in reporting_terms)
+    build_hit = any(_text_contains_term(lowered, term) for term in build_terms)
+    pain_hit = any(_text_contains_term(lowered, term) for term in pain_terms)
+
+    hits: list[str] = []
+    if reporting_hit and pain_hit:
+        hits.append("sisense_reporting_export_combo")
+    if build_hit and pain_hit:
+        hits.append("sisense_build_workflow_combo")
+    if _text_contains_term(lowered, "replacing ssrs"):
+        hits.append("sisense_replacing_ssrs")
+    return hits
+
+
 def _shopify_whitelist_hits(lowered: str) -> list[str]:
     """Return stricter Shopify rescue labels based on source-specific combos."""
     analytics_terms = ["report", "reporting", "analytics", "dashboard"]
-    export_terms = ["export", "csv"]
-    metric_terms = ["conversion", "checkout", "sessions", "sales", "revenue", "aov", "roas"]
+    export_terms = ["export", "csv", "spreadsheet", "spreadsheets", "bank account", "tax"]
+    metric_terms = [
+        "conversion",
+        "checkout",
+        "sessions",
+        "sales",
+        "revenue",
+        "aov",
+        "roas",
+        "inventory",
+        "stock on hand",
+        "units sold",
+        "sales history",
+        "days on hand",
+        "transaction",
+        "total sales",
+        "gmc",
+        "merchant center",
+        "google ads",
+        "product feed",
+    ]
     mismatch_terms = ["discrepancy", "mismatch", "wrong numbers", "not matching"]
     trend_terms = ["compare periods", "weekly sales", "monthly sales", "trend", "cannot explain drop", "sales drop", "conversion drop"]
+    reconciliation_terms = [
+        "match against",
+        "merge them together",
+        "manual",
+        "manually",
+        "confusing",
+        "basic report",
+        "0 metrics",
+        "stopped syncing",
+        "has anyone found",
+        "found any solutions",
+    ]
 
     analytics_hit = any(_text_contains_term(lowered, term) for term in analytics_terms)
     metric_hit = any(_text_contains_term(lowered, term) for term in metric_terms)
     export_hit = any(_text_contains_term(lowered, term) for term in export_terms)
     mismatch_hit = any(_text_contains_term(lowered, term) for term in mismatch_terms)
     trend_hit = any(_text_contains_term(lowered, term) for term in trend_terms)
+    reconciliation_hit = any(_text_contains_term(lowered, term) for term in reconciliation_terms)
 
     hits: list[str] = []
     if analytics_hit and metric_hit:
@@ -543,9 +715,112 @@ def _shopify_whitelist_hits(lowered: str) -> list[str]:
         hits.append("shopify_discrepancy_terms")
     if export_hit or _text_contains_term(lowered, "report"):
         hits.append("shopify_export_report")
+    if metric_hit and reconciliation_hit:
+        hits.append("shopify_inventory_reconcile_combo")
+    if any(_text_contains_term(lowered, term) for term in ["gmc", "merchant center", "google ads", "product feed"]) and (
+        reconciliation_hit or any(_text_contains_term(lowered, term) for term in ["0 metrics", "stopped syncing", "conversion"])
+    ):
+        hits.append("shopify_feed_metrics_combo")
     if trend_hit or (metric_hit and any(_text_contains_term(lowered, term) for term in ["drop", "down", "decline", "fell"])):
         hits.append("shopify_conversion_sales_trend")
     return hits
+
+
+def _apply_reddit_rescue_signals(
+    text: str,
+    subreddit: str,
+    scores: dict[str, float],
+    positive_hits: list[tuple[str, float]],
+    source_reasons: list[str],
+) -> tuple[float, list[str]]:
+    """Apply Reddit-specific rescue scoring for operator-style reporting pain."""
+    lowered = str(text or "").lower()
+    relevant_subreddit = subreddit in {
+        "r/analytics",
+        "r/businessintelligence",
+        "r/excel",
+        "r/marketinganalytics",
+        "r/powerbi",
+        "r/tableau",
+        "r/hubspot",
+        "r/b2bmarketing",
+    }
+    reporting_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["report", "reporting", "dashboard", "attribution", "analytics", "power bi", "hubspot", "crm"]
+    )
+    export_hit = any(_text_contains_term(lowered, term) for term in ["export", "exports", "excel", "spreadsheet", "pdf"])
+    workflow_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["manual", "manually", "reconcile", "reconciliation", "double check", "weekly", "monthly", "stale"]
+    )
+    trust_hit = any(_text_contains_term(lowered, term) for term in ["mismatch", "not matching", "wrong", "weird", "source of truth"])
+
+    bonus = 0.0
+    labels: list[str] = []
+    if relevant_subreddit and reporting_hit and (workflow_hit or trust_hit):
+        scores["reporting_pain_score"] += 1.4
+        bonus += 1.4
+        labels.append("reddit_reporting_ops_context")
+    if relevant_subreddit and export_hit and (workflow_hit or trust_hit):
+        scores["excel_rework_score"] += 1.2
+        bonus += 1.2
+        labels.append("reddit_export_reconciliation")
+    if relevant_subreddit and trust_hit:
+        scores["dashboard_trust_score"] += 1.0
+        bonus += 1.0
+        labels.append("reddit_trust_pain")
+    if labels:
+        unique_labels = list(dict.fromkeys(labels))
+        positive_hits.append(("reddit_source_whitelist_score", round(bonus, 2)))
+        source_reasons.append(f"reddit_rescue_candidate:{'|'.join(unique_labels)}")
+        return round(bonus, 4), unique_labels
+    return 0.0, []
+
+
+def _apply_sisense_rescue_signals(
+    text: str,
+    scores: dict[str, float],
+    positive_hits: list[tuple[str, float]],
+    source_reasons: list[str],
+) -> tuple[float, list[str]]:
+    """Apply Sisense-specific rescue scoring for reporting/export/build workflows."""
+    lowered = str(text or "").lower()
+    reporting_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["dashboard", "report", "reporting", "ssrs", "export", "exports", "xlsx", "csv", "pdf"]
+    )
+    build_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["build", "builds", "schedule builds", "builds in bulk", "cube", "cubes", "schedule all"]
+    )
+    pain_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["manual", "manually", "bulk", "best practice", "currently", "error details", "show filters", "show dashboard title"]
+    )
+
+    bonus = 0.0
+    labels: list[str] = []
+    if reporting_hit and pain_hit:
+        scores["reporting_pain_score"] += 1.4
+        scores["excel_rework_score"] += 0.9
+        bonus += 2.3
+        labels.append("sisense_reporting_export_combo")
+    if build_hit and pain_hit:
+        scores["biz_workflow_score"] += 1.1
+        scores["root_cause_score"] += 0.9
+        bonus += 2.0
+        labels.append("sisense_build_workflow_combo")
+    if _text_contains_term(lowered, "replacing ssrs"):
+        scores["metric_definition_score"] += 1.2
+        bonus += 1.2
+        labels.append("sisense_replacing_ssrs")
+    if labels:
+        unique_labels = list(dict.fromkeys(labels))
+        positive_hits.append(("sisense_source_whitelist_score", round(bonus, 2)))
+        source_reasons.append(f"sisense_rescue_candidate:{'|'.join(unique_labels)}")
+        return round(bonus, 4), unique_labels
+    return 0.0, []
 
 
 def _google_ads_help_whitelist_hits(lowered: str) -> list[str]:
@@ -741,6 +1016,10 @@ def _derive_dropped_reason(
         return "prefilter_missing_klaviyo_reporting_terms"
     if source == "merchant_center_community":
         return "prefilter_missing_merchant_center_feed_terms"
+    if source == "mixpanel_community":
+        return "prefilter_missing_mixpanel_reporting_terms"
+    if source == "qlik_community":
+        return "prefilter_missing_qlik_reporting_terms"
     if source == "metabase_discussions":
         return "prefilter_missing_metabase_query_dashboard_terms"
     if source == "shopify_community":
@@ -862,7 +1141,30 @@ def _apply_source_specific_floor_override(
                 "wrong values",
             ]
         )
+        has_export_output_shape = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "datatable",
+                "data table",
+                "grid",
+                "table header",
+                "row above table header",
+                "current page",
+                "column names",
+                "white spaces",
+                "blank spaces",
+                "format",
+                "filename",
+                "sheet1",
+                "cell",
+                "cells",
+                "rows",
+                "columns",
+            ]
+        )
         if has_tag_boost and has_persona_pain_language and final_score >= floor:
+            return "borderline"
+        if has_persona_pain_language and has_export_output_shape and final_score >= max(discourse_floor - 0.25, 4.75):
             return "borderline"
         discourse_hits = sum(
             1 for term in source_cfg.get("discourse_rescue_terms", []) or [] if _text_contains_term(lowered, str(term).lower())
@@ -895,6 +1197,68 @@ def _apply_source_specific_floor_override(
             if _text_contains_term(lowered, str(term).lower())
         )
         if has_workflow_context and strong_workflow_hits >= 2 and final_score >= strong_floor:
+            return "borderline"
+    if source == "reddit":
+        floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.6))
+        strong_floor = float(source_cfg.get("borderline_floor_with_operational_reporting_context", 3.0))
+        has_subreddit_context = any("reddit_subreddit_boost:" in reason for reason in source_reasons)
+        has_reporting_combo = any(
+            _text_contains_term(lowered, term)
+            for term in ["report", "reporting", "dashboard", "excel", "spreadsheet", "export", "reconcile", "attribution"]
+        )
+        has_operational_pain = any(
+            _text_contains_term(lowered, term)
+            for term in ["manual", "manually", "stale", "double check", "not matching", "mismatch", "wrong", "weird", "hours"]
+        )
+        if has_subreddit_context and has_reporting_combo and final_score >= floor:
+            return "borderline"
+        if has_subreddit_context and has_reporting_combo and has_operational_pain and final_score >= strong_floor:
+            return "borderline"
+    if source == "shopify_community":
+        floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.8))
+        has_reporting_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "report",
+                "reporting",
+                "analytics",
+                "dashboard",
+                "export",
+                "spreadsheet",
+                "inventory",
+                "stock on hand",
+                "units sold",
+                "sales history",
+                "days on hand",
+                "gmc",
+                "merchant center",
+                "google ads",
+            ]
+        )
+        has_operational_pain = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "manual",
+                "manually",
+                "confusing",
+                "match against",
+                "merge them together",
+                "0 metrics",
+                "stopped syncing",
+                "looking for",
+                "has anyone found",
+                "what works",
+            ]
+        )
+        if has_reporting_context and has_operational_pain and final_score >= floor:
+            return "borderline"
+    if source == "sisense_community":
+        floor = float(source_cfg.get("borderline_floor_with_reporting_context", 3.4))
+        has_reporting_combo = any(
+            _text_contains_term(lowered, term)
+            for term in ["export", "exports", "xlsx", "csv", "pdf", "reporting", "report", "ssrs", "schedule builds", "builds in bulk"]
+        )
+        if has_reporting_combo and final_score >= floor:
             return "borderline"
     return current_decision
 

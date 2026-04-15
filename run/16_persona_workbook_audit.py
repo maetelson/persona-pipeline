@@ -43,6 +43,19 @@ def build_audit_snapshot(root_dir: Path) -> dict[str, Any]:
 
     overview = _metric_lookup(overview_df, "metric", "value")
     quality_checks = _row_lookup(quality_checks_df, "metric")
+    overview_labeled_records = _first_metric_value(
+        overview,
+        ["labeled_episode_rows", "total_labeled_records"],
+        0,
+    )
+    quality_persona_core_row = _first_metric_row(
+        quality_checks,
+        ["persona_core_labeled_rows", "persona_core_labeled_count"],
+    )
+    quality_core_unknown_row = _first_metric_row(
+        quality_checks,
+        ["persona_core_unknown_ratio", "unknown_ratio"],
+    )
     promoted_clusters = cluster_stats_df[cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str).eq("promoted_persona")].copy()
 
     labeled_count = int(len(labeled_df))
@@ -111,12 +124,12 @@ def build_audit_snapshot(root_dir: Path) -> dict[str, Any]:
             },
         },
         "current_metrics": {
-            "overview_total_labeled_records": int(_num(overview.get("total_labeled_records", 0))),
+            "overview_total_labeled_records": int(_num(overview_labeled_records)),
             "overview_quality_flag": str(overview.get("quality_flag", "")),
-            "quality_persona_core_labeled_count": int(_num(quality_checks.get("persona_core_labeled_count", {}).get("value", 0))),
-            "quality_unknown_ratio": _num(quality_checks.get("unknown_ratio", {}).get("value", 0)),
-            "quality_unknown_ratio_denominator_type": str(quality_checks.get("unknown_ratio", {}).get("denominator_type", "")),
-            "quality_unknown_ratio_denominator_value": int(_num(quality_checks.get("unknown_ratio", {}).get("denominator_value", 0))),
+            "quality_persona_core_labeled_count": int(_num(quality_persona_core_row.get("value", 0))),
+            "quality_unknown_ratio": _num(quality_core_unknown_row.get("value", 0)),
+            "quality_unknown_ratio_denominator_type": str(quality_core_unknown_row.get("denominator_type", "")),
+            "quality_unknown_ratio_denominator_value": int(_num(quality_core_unknown_row.get("denominator_value", 0))),
             "quality_overall_unknown_ratio": _num(quality_checks.get("overall_unknown_ratio", {}).get("value", 0)),
             "quality_overall_unknown_ratio_denominator_type": str(quality_checks.get("overall_unknown_ratio", {}).get("denominator_type", "")),
             "quality_overall_unknown_ratio_denominator_value": int(_num(quality_checks.get("overall_unknown_ratio", {}).get("denominator_value", 0))),
@@ -148,6 +161,22 @@ def _row_lookup(df: pd.DataFrame, key_column: str) -> dict[str, dict[str, Any]]:
     for _, row in df.iterrows():
         rows[str(row.get(key_column, ""))] = row.to_dict()
     return rows
+
+
+def _first_metric_value(metrics: dict[str, Any], keys: list[str], default: Any) -> Any:
+    """Return the first available scalar metric value from a list of aliases."""
+    for key in keys:
+        if key in metrics:
+            return metrics[key]
+    return default
+
+
+def _first_metric_row(rows: dict[str, dict[str, Any]], keys: list[str]) -> dict[str, Any]:
+    """Return the first available metric row from a list of aliases."""
+    for key in keys:
+        if key in rows:
+            return rows[key]
+    return {}
 
 
 def _num(value: object) -> float:

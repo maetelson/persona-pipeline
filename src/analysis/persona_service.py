@@ -1474,9 +1474,24 @@ def _cluster_promotion_policy(
             total_labeled_records=total_labeled_records,
             config=config,
         )
-        if int(size) < min_cluster_size:
+        near_threshold_candidate = _eligible_near_threshold_promotion_candidate(
+            size=int(size),
+            min_cluster_size=min_cluster_size,
+            scorecard=scorecard,
+            structurally_supported=structurally_supported,
+            config=config,
+        )
+        if int(size) < min_cluster_size and not near_threshold_candidate:
             status = "exploratory_bucket"
             reason = f"sample size {int(size)} below min_cluster_size {min_cluster_size}"
+        elif int(size) < min_cluster_size and near_threshold_candidate:
+            status = "review_visible_persona"
+            reason = (
+                f"sample size {int(size)} is within near-threshold tolerance of min_cluster_size {min_cluster_size}; "
+                f"kept review-visible because promotion score {float(scorecard.get('pre_grounding_promotion_score', 0.0) or 0.0):.3f}, "
+                f"structural stability {float(scorecard.get('structural_stability_score', 0.0) or 0.0):.3f}, "
+                f"and cross-source robustness {float(scorecard.get('cross_source_robustness_score', 0.0) or 0.0):.3f} all clear the near-threshold gate"
+            )
         elif single_cluster_dominance and persona_key != dominant_persona:
             status = "exploratory_bucket"
             reason = f"residual cluster under single_cluster_dominance; largest cluster share {largest_share}%"
@@ -1559,6 +1574,32 @@ def _cluster_promotion_policy(
         "promoted_count": sum(1 for value in status_by_persona.values() if value["status"] == "promoted_persona"),
         "exploratory_count": sum(1 for value in status_by_persona.values() if value["status"] != "promoted_persona"),
     }
+
+
+def _eligible_near_threshold_promotion_candidate(
+    size: int,
+    min_cluster_size: int,
+    scorecard: dict[str, Any],
+    structurally_supported: bool,
+    config: dict[str, Any],
+) -> bool:
+    """Allow only very strong near-threshold clusters to enter grounding review."""
+    if size >= min_cluster_size:
+        return False
+    gap = max(min_cluster_size - size, 0)
+    if gap > int(config.get("near_threshold_size_gap_max", 0) or 0):
+        return False
+    if not structurally_supported:
+        return False
+    if str(scorecard.get("strategic_redundancy_status", "")) == "strategically_redundant":
+        return False
+    if float(scorecard.get("pre_grounding_promotion_score", 0.0) or 0.0) < float(config.get("near_threshold_promote_score_min", config.get("promote_score_min", 0.72))):
+        return False
+    if float(scorecard.get("structural_stability_score", 0.0) or 0.0) < float(config.get("near_threshold_structural_stability_min", 0.5)):
+        return False
+    if float(scorecard.get("cross_source_robustness_score", 0.0) or 0.0) < float(config.get("near_threshold_cross_source_robustness_min", 0.7)):
+        return False
+    return True
 
 
 def _promotion_profiles(

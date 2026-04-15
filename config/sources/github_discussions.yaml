@@ -11,7 +11,7 @@ query_mode: source_config
 seed_bank_path: config/seeds/existing_forums/github_discussions.yaml
 allowed_query_priorities:
   - high
-enable_discussions: false
+enable_discussions: true
 repositories:
   - apache/superset
   - metabase/metabase
@@ -19,10 +19,13 @@ repositories:
   - grafana/grafana
   - evidence-dev/evidence
   - lightdash/lightdash
-max_queries_per_run: 12
-max_items_per_seed: 100
-max_pages_per_query: 2
-max_discussion_pages_per_query: 3
-max_comments_per_item: 0
-max_replies_per_comment: 5
+  - dbt-labs/dbt-core
+  - dbt-labs/metricflow
+  - plotly/dash
+max_queries_per_run: 100
+max_items_per_seed: 1000
+max_pages_per_query: 20
+max_discussion_pages_per_query: 20
+max_comments_per_item: 50
+max_replies_per_comment: 50
 sleep_seconds: 0.75

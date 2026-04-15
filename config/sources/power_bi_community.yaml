@@ -1,0 +1,39 @@
+source_id: power_bi_community
+source_name: Power BI Community
+source_group: business_communities
+collector_kind: business_communities
+normalizer_kind: business_communities
+enabled: true
+min_raw_records_warn: 0
+platform: microsoft_fabric
+product_or_tool: Power BI
+check_robots: true
+query_mode: source_config
+seed_bank_path: config/seeds/business_communities/power_bi_community.yaml
+seed_source_token: power bi
+seed_query_style: support_community
+max_query_count: 100
+max_threads_per_run: 10000
+max_discovered_threads_per_url: 1000
+discovery_page_count: 100
+sleep_seconds: 0.15
+filter_discovery_by_seed: false
+include_candidate_seed_pool_for_discovery: false
+api_discovery:
+  enabled: true
+  kind: khoros_search
+  base_url: https://community.fabric.microsoft.com
+  page_size: 100
+max_items_per_board: 2000
+  board_ids:
+    - power-bi-designer
+    - power-bi-web-app
+aliases:
+  - power bi
+  - power bi community
+  - powerbi
+discovery_urls:
+  - url: https://community.fabric.microsoft.com/t5/Desktop/bd-p/power-bi-designer
+    board: Desktop
+  - url: https://community.fabric.microsoft.com/t5/Service/bd-p/power-bi-web-app
+    board: Service

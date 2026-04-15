@@ -5,12 +5,12 @@ collector_kind: reddit
 normalizer_kind: reddit
 enabled: true
 subreddit: analytics
-max_posts_per_run: 12
-max_comments_per_thread: 6
+max_posts_per_run: 300
+max_comments_per_thread: 50
 aliases:
   - reddit analytics
 seed_template_group: reddit
 query_mode: source_config
 seed_bank_path: config/seeds/reddit/reddit_analytics.yaml
-max_query_count: 8
-enable_optional_seed_templates: false
+max_query_count: 100
+enable_optional_seed_templates: true

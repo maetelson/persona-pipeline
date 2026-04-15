@@ -224,7 +224,6 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         axis_names=reduced_outputs["reduced_axis_schema"],
         quality_checks=quality_checks,
         stage_counts=stage_counts,
-        persona_core_labeled_rows=int(len(clustering_labeled_df)),
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
     )
     survival_funnel_df = build_survival_funnel_by_source(source_stage_counts_df)
@@ -497,7 +496,6 @@ def _build_final_overview_df(
     axis_names: list[dict[str, Any]],
     quality_checks: dict[str, Any],
     stage_counts: dict[str, int],
-    persona_core_labeled_rows: int,
     cluster_stats_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """Render overview directly from the evaluated quality result and stable report counts."""
@@ -549,7 +547,7 @@ def _build_final_overview_df(
         {"metric": "cluster_separation_status", "value": quality_checks.get("cluster_separation_status", "")},
         {"metric": "grounding_coverage_status", "value": quality_checks.get("grounding_coverage_status", "")},
         *[{"metric": metric, "value": int(stage_counts.get(metric, 0) or 0)} for metric in stage_counts],
-        {"metric": "persona_core_labeled_rows", "value": persona_core_labeled_rows},
+        {"metric": "persona_core_labeled_rows", "value": int(quality_checks.get("persona_core_labeled_rows", 0) or 0)},
         {"metric": "persona_core_coverage_of_all_labeled_pct", "value": quality_checks.get("persona_core_coverage_of_all_labeled_pct", 0.0)},
         {"metric": "persona_core_unknown_ratio", "value": quality_checks.get("persona_core_unknown_ratio", 0.0)},
         {"metric": "overall_unknown_ratio", "value": quality_checks.get("overall_unknown_ratio", 0.0)},

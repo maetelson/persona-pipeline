@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 import pandas as pd
 
 from src.collectors.business_community_collector import BusinessCommunityCollector
+from src.collectors.google_ads_help_community_collector import GoogleAdsHelpCommunityCollector
 from src.collectors.reddit_public_collector import RedditPublicCollector
 from src.filters.relevance import (
     apply_relevance_prefilter,
@@ -316,6 +317,8 @@ def _build_collector(definition: SourceDefinition, config: dict[str, object]):
     data_dir = ROOT / "data"
     if definition.collector_kind == "business_communities":
         return BusinessCommunityCollector(definition.source_id, config=config, data_dir=data_dir)
+    if definition.collector_kind == "google_ads_help_community":
+        return GoogleAdsHelpCommunityCollector(config=config, data_dir=data_dir, source_name=definition.source_id)
     if definition.collector_kind == "reddit":
         return RedditPublicCollector(definition.source_id, config=config, data_dir=data_dir)
     raise ValueError(f"Unsupported collector kind: {definition.collector_kind}")

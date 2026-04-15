@@ -107,26 +107,50 @@ query_seed_taxonomy:
         - metric_definition_confusion
         - aggregation_filter_issue
         - dashboard_confusion
-    ga4_help_community:
+    mixpanel_community:
       language_style:
-        - ga4 vs ads vs backend mismatch
-        - event and revenue trust
-        - is this real or tracking
+        - event and funnel trust
+        - product analytics discrepancy
+        - what changed and what should i do
       prioritize_axes:
-        - source_of_truth_conflict
-        - attribution_tracking_issue
         - numbers_mismatch
+        - metric_definition_confusion
         - trend_interpretation_confusion
-    looker_studio_forum:
+        - source_of_truth_conflict
+        - insight_to_action_failure
+    amplitude_community:
       language_style:
-        - scorecard vs table mismatch
-        - blended data confusion
-        - chart value trust
+        - event and chart trust
+        - retention and funnel interpretation
+        - property breakdown confusion
       prioritize_axes:
-        - dashboard_confusion
+        - numbers_mismatch
+        - metric_definition_confusion
+        - trend_interpretation_confusion
+        - segmentation_breakdown_confusion
+        - source_of_truth_conflict
+    qlik_community:
+      language_style:
+        - wrong totals
+        - set analysis and filter logic
+        - chart and table trust
+      prioritize_axes:
         - numbers_mismatch
         - aggregation_filter_issue
         - metric_definition_confusion
+        - dashboard_confusion
+        - segmentation_breakdown_confusion
+    sisense_community:
+      language_style:
+        - widget and table mismatch
+        - dashboard and export trust
+        - filter and total logic
+      prioritize_axes:
+        - numbers_mismatch
+        - aggregation_filter_issue
+        - dashboard_confusion
+        - source_of_truth_conflict
+        - segmentation_breakdown_confusion
   broad_head_terms:
   - dashboard
   - reporting

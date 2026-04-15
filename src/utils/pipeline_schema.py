@@ -90,6 +90,8 @@ RAW_WITHOUT_LABEL_FAILURE_SOURCES = {
     "hubspot_community",
     "klaviyo_community",
     "merchant_center_community",
+    "mixpanel_community",
+    "qlik_community",
     "shopify_community",
 }
 

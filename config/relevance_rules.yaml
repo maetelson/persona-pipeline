@@ -30,6 +30,18 @@ source_defaults:
   metabase_discussions:
     source_group: discourse
     source_weight: 1.0
+  power_bi_community:
+    source_group: business_communities
+    source_weight: 1.0
+  mixpanel_community:
+    source_group: business_communities
+    source_weight: 1.0
+  qlik_community:
+    source_group: business_communities
+    source_weight: 1.0
+  sisense_community:
+    source_group: business_communities
+    source_weight: 1.0
   google_ads_community:
     source_group: business_communities
     source_weight: 1.0
@@ -43,6 +55,13 @@ source_defaults:
     source_group: business_communities
     source_weight: 1.0
 source_whitelist_terms:
+  reddit:
+    - label: reddit_reporting_ops_combo
+      terms: [monthly marketing reports, weekly report, weekly reports, reporting dashboard, automated reporting dashboards, central dashboard]
+    - label: reddit_export_reconcile_combo
+      terms: [export, exports, excel, spreadsheet, pdf, reconcile, reconciliation, double check]
+    - label: reddit_mismatch_trust_combo
+      terms: [different numbers, not matching, mismatch, don't trust the numbers, source of truth, attribution report]
   hubspot_community:
     - label: hubspot_report
       terms: [report, reporting, report export, report mismatch]
@@ -52,6 +71,23 @@ source_whitelist_terms:
       terms: [attribution, lifecycle stage]
     - label: hubspot_property_deal
       terms: [property, deal, filter]
+    - label: hubspot_utm_revenue_flow
+      terms: [utm, referred by, revenue, campaign, contacts]
+    - label: hubspot_segment_email_report
+      terms: [custom report, email performance, marketing email, segment, stops applying]
+    - label: hubspot_reporting_builder_pain
+      terms: [trying to build, trying to create, missing data, not showing, is there a way]
+  shopify_community:
+    - label: shopify_reporting_reconcile
+      terms: [report, export, tax, spreadsheet, bank account, transaction]
+    - label: shopify_inventory_sales_combo
+      terms: [stock on hand, units sold, inventory, sales history, report]
+    - label: shopify_feed_metrics_combo
+      terms: [google ads, gmc, merchant center, product feed, conversions, 0 metrics]
+    - label: shopify_analytics_merge_pain
+      terms: [analytics, merge them together, manual, basic report, confusing]
+    - label: shopify_recommendation_metrics
+      terms: [recommendations, conversion, aov, revenue per session, what works]
   klaviyo_community:
     - label: klaviyo_flow_campaign
       terms: [flow, campaign, segment]
@@ -80,6 +116,54 @@ source_whitelist_terms:
       terms: [export csv, wrong numbers]
     - label: metabase_export_pivot_integrity
       terms: [pivot, xlsx export, corrupted file, export to excel, wrong values]
+  power_bi_community:
+    - label: power_bi_measure_logic
+      terms: [measure, dax, calculated column, calculated field, matrix total, wrong total]
+    - label: power_bi_filter_context
+      terms: [filter context, row context, slicer, relationship, inactive relationship]
+    - label: power_bi_mismatch
+      terms: [not matching, mismatch, wrong numbers, different numbers, incorrect data, wrong value]
+    - label: power_bi_desktop_service
+      terms: [desktop, service, publish, republish, refresh, cached visual]
+    - label: power_bi_visual_export
+      terms: [visual, export data, table, scorecard, matrix, card visual]
+    - label: power_bi_grain_breakdown
+      terms: [drill through, drill down, distinct count, duplicate count, breakdown, summary different from detail]
+  mixpanel_community:
+    - label: mixpanel_event_identity
+      terms: [event count, raw activity feed, user profile, distinct id, identify, properties, event tagging]
+    - label: mixpanel_funnel_insights
+      terms: [funnel, funnels, insights, retention, conversion time, session duration, trend]
+    - label: mixpanel_reporting_trust
+      terms: [report, dashboard, export, not matching, discrepancy, wrong, trust]
+    - label: mixpanel_breakdown_action
+      terms: [breakdown, segment, property, what changed, what should i do]
+  qlik_community:
+    - label: qlik_total_logic
+      terms: [wrong total, wrong totals, total level, global totals, summary and detail, does not add up]
+    - label: qlik_set_analysis
+      terms: [set analysis, aggr, fractile, expression, measure, dimension]
+    - label: qlik_visual_filter
+      terms: [straight table, pivot table, combo chart, gauge chart, chart exploration, filter pane]
+    - label: qlik_reporting_export
+      terms: [reporting, report, dashboard, export, nprinting, pixel perfect]
+    - label: qlik_mismatch
+      terms: [not matching, mismatch, incorrect data, wrong numbers, unexpected]
+  sisense_community:
+    - label: sisense_dashboard_filter
+      terms: [dashboard filter, background dashboard filter, single filter, list selection, jump to dashboard]
+    - label: sisense_widget_chart
+      terms: [widget, widgets, pivot table, column chart, bar chart, chart, scientific units]
+    - label: sisense_model_breakdown
+      terms: [data model, dynamically change, break by, multiple columns, same month or not]
+    - label: sisense_script_customization
+      terms: [javascript, dashboard script, widget script, left-click, column width]
+    - label: sisense_reporting_trust
+      terms: [dashboard, filter limits, hidden labels, empty legend, better way]
+    - label: sisense_export_reporting
+      terms: [exports, xlsx, csv, pdf, dashboard title, show filters, live detail reporting, replacing ssrs]
+    - label: sisense_build_schedule
+      terms: [schedule builds, schedule all, builds in bulk, build error details, cube names, through the ui]
   google_ads_community:
     - label: google_ads_conversion
       terms: [conversion, conversion action, click]

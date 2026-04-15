@@ -14,9 +14,9 @@ allowed_query_priorities:
   - medium
 site: stackoverflow
 pagesize: 10
-max_pages_per_query: 3
-max_answers_per_question: 5
-max_comments_per_post: 10
+max_pages_per_query: 20
+max_answers_per_question: 20
+max_comments_per_post: 50
 search_sort: relevance
 search_order: desc
 sleep_seconds: 0.75

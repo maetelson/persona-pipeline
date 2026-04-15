@@ -184,6 +184,26 @@ labelability:
     - numbers don't match
     - presentation-ready
   business_community_positive_terms:
+    - power bi
+    - dax
+    - measure
+    - measures
+    - matrix
+    - slicer
+    - visual
+    - visuals
+    - desktop
+    - service
+    - gateway
+    - refresh
+    - filter context
+    - row context
+    - distinct count
+    - wrong total
+    - wrong totals
+    - export mismatch
+    - dashboard mismatch
+    - not matching
     - report not matching
     - performance not matching
     - metrics discrepancy
@@ -275,6 +295,31 @@ labelability:
     - countries of sale
     - manual reviews
     - no specific feedback
+    - qlik
+    - qlik sense
+    - qlikview
+    - nprinting
+    - set analysis
+    - pivot table
+    - straight table
+    - combo chart
+    - pixel perfect
+    - expression
+    - different totals
+    - not aggregating
+    - desired level
+    - mixpanel
+    - funnel
+    - retention
+    - insights
+    - event
+    - events
+    - jql
+    - distinct id
+    - not set
+    - undefined
+    - mirror sync
+    - tracking limitations
   negative_terms:
     - sdk
     - oauth

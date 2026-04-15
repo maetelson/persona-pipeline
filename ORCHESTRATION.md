@@ -21,6 +21,20 @@ Expanded sequence used by `00_run_all.py`:
 11. `run/06_cluster_and_score.py`
 12. `run/07_export_xlsx.py`
 
+## Execution discipline
+
+- Treat stage execution as dependency-sensitive by default.
+- Do not run dependent stages in parallel.
+- If a stage reads artifacts written by an earlier stage, wait for the upstream stage to finish successfully before starting the downstream stage.
+- Safe parallelism is limited to:
+  - read-only inspection
+  - audits that do not rewrite shared stage outputs
+  - source-specific collection tasks that write to disjoint raw directories
+- Do not parallelize sequences such as:
+  - `03_filter_valid.py -> 03_5_prefilter_relevance.py -> 04_build_episodes.py`
+  - `04_build_episodes.py -> 05_label_episodes.py -> 06_cluster_and_score.py -> 07_export_xlsx.py`
+- After changing any stage logic, rerun all downstream stages sequentially so the workbook is rebuilt from one consistent artifact state.
+
 ## Stage boundaries
 
 ### Time slices
@@ -202,3 +216,9 @@ Expanded sequence used by `00_run_all.py`:
 - all stages overwrite their own output files
 - no database migration or server state required
 - safe to rerun from any stage if upstream files are already present
+- practical rule:
+  - after config/code changes in `filters`, rerun `03 -> 03.5 -> 04 -> 05 -> 06.1 -> 06 -> 07`
+  - after changes in `episodes`, rerun `04 -> 05 -> 06.1 -> 06 -> 07`
+  - after changes in `labeling`, rerun `05 -> 06.1 -> 06 -> 07`
+  - after changes in `analysis`, rerun `06.1 -> 06 -> 07`
+  - after changes in `export`, rerun `07`

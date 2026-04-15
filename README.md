@@ -31,9 +31,9 @@ Local-only, file-based persona research pipeline for collecting public web data,
 
 ## Pipeline stages
 
-```
-raw → normalized → time-filtered → valid → relevance-prefiltered
-  → episodes → labeled episodes → analysis → final xlsx
+```text
+raw -> normalized -> time-filtered -> valid -> relevance-prefiltered
+  -> episodes -> labeled episodes -> analysis -> final xlsx
 ```
 
 1. `collectors`
@@ -52,6 +52,12 @@ Main entrypoint (runs all stages in order):
 python run/00_run_all.py
 ```
 
+Dependency-sensitive rerun rule:
+
+- Do not run dependent stage scripts in parallel.
+- Run `filter -> prefilter -> episodes -> labeling -> analysis -> export` strictly in order.
+- After changing an upstream stage, rerun every downstream stage sequentially so the final workbook is regenerated from one consistent artifact state.
+
 Expanded stage-by-stage execution:
 
 ```bash
@@ -69,11 +75,26 @@ python run/06_cluster_and_score.py         # bottleneck clustering and scoring
 python run/07_export_xlsx.py               # export final workbook
 ```
 
+Common sequential rerun path after filter or relevance changes:
+
+```bash
+python run/03_filter_valid.py
+python run/03_5_prefilter_relevance.py
+python run/04_build_episodes.py
+python run/05_label_episodes.py
+python run/06_1_discover_persona_axes.py
+python run/06_cluster_and_score.py
+python run/07_export_xlsx.py
+python run/16_persona_workbook_audit.py
+```
+
 Smoke test (fast end-to-end sanity check):
 
 ```bash
 python run/08_smoke_pipeline.py
 ```
+
+`run/08_smoke_pipeline.py` is only for fast sanity checks. It is not the recommended refresh path after changing filters, episode logic, labeling, analysis, or export.
 
 ## CLI tools
 
@@ -126,17 +147,42 @@ python run/10_source_cli.py qa-relevance --source stackoverflow --limit 200
 | `r/BusinessIntelligence` | Implemented | Source-specific config and outputs |
 | `r/MarketingAnalytics` | Implemented | Source-specific config and outputs |
 | Stack Overflow | Implemented | REST search based |
-| GitHub Issues | Implemented | REST search based |
 | GitHub Discussions | Conditionally implemented | Requires `GITHUB_TOKEN` |
-| Discourse | Stub | Placeholder collector/normalizer |
-| Hacker News | Stub | Placeholder collector/normalizer |
-| YouTube | Stub | Placeholder collector/normalizer |
+| HubSpot Community | Implemented | Public business community collector |
+| Klaviyo Community | Implemented | Public business community collector |
+| Merchant Center Community | Implemented with external rate-limit risk | Collector works, but site-side throttling can suppress yield |
+| Metabase Discussions | Implemented | Discourse-based discussion source |
+| Mixpanel Community | Implemented | Public business community collector |
+| Power BI Community | Implemented | Public Khoros search via Microsoft Fabric Community |
+| Qlik Community | Implemented | Public business community collector |
+| Shopify Community | Implemented | Public business community collector |
+| Sisense Community | Implemented | Public business community collector |
+| Amplitude Community | Config present, currently low/zero yield | Not a stable contributor in the latest local run |
+| Discourse | Stub / scaffolding | Placeholder collector/normalizer |
+| Hacker News | Stub / scaffolding | Placeholder collector/normalizer |
+| YouTube | Stub / scaffolding | Placeholder collector/normalizer |
 
 Active BI-focused `reddit` source group:
 - `r/excel`
 - `r/analytics`
 - `r/BusinessIntelligence`
 - `r/MarketingAnalytics`
+
+Latest stronger downstream contributors in the local workbook build:
+
+- `klaviyo_community`
+- `qlik_community`
+- `metabase_discussions`
+- `reddit`
+- `sisense_community`
+- `power_bi_community`
+- `github_discussions`
+
+Current mid-pipeline tuning targets:
+
+- `hubspot_community`
+- `shopify_community`
+- `merchant_center_community`
 
 ## Reddit collection policy
 
@@ -207,6 +253,12 @@ Typical generated artifacts:
 - Final workbook: `data/output/persona_pipeline_output.xlsx`
 
 Runtime data artifacts are local-only and should not be committed.
+
+## Practical notes
+
+- Final workbook quality is currently exploratory rather than fully production-ready.
+- Source yield can move around because some public communities rate-limit or change behavior.
+- When tuning pipeline quality, the safest workflow is sequential rerun from the earliest changed stage through `run/07_export_xlsx.py`, then `run/16_persona_workbook_audit.py`.
 
 ## Requirements
 

@@ -181,7 +181,9 @@ def discover_thread_links(html: str, base_url: str, platform: str, board: str = 
             continue
         if canonical not in discovered:
             discovered[canonical] = ThreadLink(url=canonical, title=title, board=board)
-    return list(discovered.values())
+    if discovered or platform != "sisense":
+        return list(discovered.values())
+    return _discover_sisense_thread_links_from_next_data(html, base_url=base_url, board=board)
 
 
 def discover_rss_thread_links(xml_text: str, base_url: str, platform: str, board: str = "") -> list[ThreadLink]:
@@ -224,6 +226,33 @@ def discover_rss_thread_links(xml_text: str, base_url: str, platform: str, board
             title=_clean_title(title, platform),
             board=board,
             snippet=snippet,
+            activity_date=activity_date,
+        )
+    return list(discovered.values())
+
+
+def discover_sitemap_thread_links(xml_text: str, base_url: str, platform: str, board: str = "") -> list[ThreadLink]:
+    """Extract thread links from a sitemap XML document."""
+    discovered: dict[str, ThreadLink] = {}
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return []
+    namespaces = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    for element in root.findall(".//sm:url", namespaces):
+        href = clean_text(element.findtext("sm:loc", "", namespaces) or "")
+        activity_date = clean_text(element.findtext("sm:lastmod", "", namespaces) or "")
+        if not href:
+            continue
+        canonical = canonicalize_business_url(href, base_url=base_url, platform=platform)
+        if not _looks_like_thread_url(canonical, platform):
+            continue
+        slug = urlparse(canonical).path.rstrip("/").split("/")[-1]
+        title = _clean_title(slug.replace("-", " "), platform)
+        discovered[canonical] = ThreadLink(
+            url=canonical,
+            title=title,
+            board=board,
             activity_date=activity_date,
         )
     return list(discovered.values())
@@ -330,10 +359,28 @@ def _looks_like_thread_url(url: str, platform: str) -> bool:
             and path.count("/") >= 2
             and re.search(r"/[^/]+-\d+$", path) is not None
         )
+    if platform == "mixpanel":
+        return (
+            parsed.netloc.endswith("community.mixpanel.com")
+            and re.search(r"^/x/questions/[a-z0-9]+(?:/[^/?#]+)?$", path) is not None
+        )
+    if platform == "amplitude":
+        return parsed.netloc.endswith("community.amplitude.com") and (
+            re.search(r"^/discussion/\d+/[^/?#]+$", path) is not None
+            or re.search(r"^/[^/]+/\d+/[^/?#]+-\d+$", path) is not None
+        )
+    if platform == "qlik":
+        return parsed.netloc.endswith("community.qlik.com") and "/td-p/" in path
+    if platform == "sisense":
+        return parsed.netloc.endswith("community.sisense.com") and (
+            "/m-p/" in path
+            or "/td-p/" in path
+            or re.search(r"^/discussions/[^/]+/[^/]+/\d+$", path) is not None
+        )
     if platform == "google_support":
         return (
             parsed.netloc.endswith("support.google.com")
-            and re.search(r"/(?:google-ads|merchants)/thread/\d+/[^/]+$", path) is not None
+            and re.search(r"/(?:google-ads|merchants|analytics|looker-studio)/thread/\d+/[^/]+$", path) is not None
         )
     return False
 
@@ -348,6 +395,17 @@ def _clean_title(value: str, platform: str) -> str:
         " - Klaviyo Community",
         " - Google Ads Community",
         " - Merchant Center Community",
+        " - Google Analytics Community",
+        " - Looker Studio Community",
+        " - Microsoft Fabric Community",
+        " | Mixpanel Community",
+        " - Mixpanel Community",
+        " | Amplitude Community",
+        " - Amplitude Community",
+        " - Qlik Community",
+        " | Qlik Community",
+        " - Sisense Community",
+        " | Sisense Community",
     ]
     for replacement in replacements:
         title = title.replace(replacement, "")
@@ -501,3 +559,72 @@ def _raw_id_from_url(url: str) -> str:
     if match:
         return match.group(1)
     return make_hash_id(url)
+
+
+def _discover_sisense_thread_links_from_next_data(html: str, base_url: str, board: str = "") -> list[ThreadLink]:
+    """Extract Sisense topic links from embedded Next.js page data."""
+    payload = _extract_next_data_payload(html)
+    if not payload:
+        return []
+    page_props = payload.get("props", {}).get("pageProps", {})
+    apollo_state = page_props.get("apolloState", {})
+    if not isinstance(apollo_state, dict):
+        return []
+    discovered: dict[str, ThreadLink] = {}
+    for value in apollo_state.values():
+        if not isinstance(value, dict):
+            continue
+        if value.get("__typename") != "ForumTopicMessage":
+            continue
+        uid = str(value.get("uid", "") or "").strip()
+        subject = _clean_title(str(value.get("subject", "") or ""), "sisense")
+        if not uid or len(subject.split()) < 2:
+            continue
+        board_ref = value.get("board", {})
+        board_title = board
+        if isinstance(board_ref, dict):
+            ref_key = board_ref.get("__ref", "")
+            board_value = apollo_state.get(ref_key, {}) if ref_key else {}
+            if isinstance(board_value, dict):
+                board_title = str(board_value.get("title", "") or board_title)
+        canonical = canonicalize_business_url(
+            _build_sisense_thread_path(board_title=board_title or board, subject=subject, uid=uid),
+            base_url=base_url,
+            platform="sisense",
+        )
+        discovered[canonical] = ThreadLink(
+            url=canonical,
+            title=subject,
+            board=board_title or board,
+            reply_count=_first_int(value.get("repliesCount")),
+            activity_date=clean_text(str(value.get("postTime", "") or "")),
+        )
+    return list(discovered.values())
+
+
+def _extract_next_data_payload(html: str) -> dict[str, Any] | None:
+    """Return the parsed Next.js JSON payload when present."""
+    match = re.search(r'__NEXT_DATA__" type="application/json"[^>]*>(.*?)</script>', html, flags=re.DOTALL)
+    if not match:
+        return None
+    try:
+        payload = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _build_sisense_thread_path(board_title: str, subject: str, uid: str) -> str:
+    """Build a stable Sisense thread path from board title and topic subject."""
+    board_slug = _slugify_sisense_segment(board_title or "Help and How-To", lowercase=False)
+    subject_slug = _slugify_sisense_segment(subject, lowercase=True)
+    return f"/t5/{board_slug}/{subject_slug}/m-p/{uid}"
+
+
+def _slugify_sisense_segment(value: str, lowercase: bool) -> str:
+    """Convert Sisense board titles and subjects into URL-safe path segments."""
+    text = clean_text(unescape(str(value or "")))
+    if lowercase:
+        text = text.lower()
+    text = re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-")
+    return text or "thread"

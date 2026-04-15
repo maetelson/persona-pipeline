@@ -1,0 +1,39 @@
+source_id: mixpanel_community
+source_name: Mixpanel Community
+source_group: business_communities
+collector_kind: business_communities
+normalizer_kind: business_communities
+enabled: true
+min_raw_records_warn: 0
+platform: mixpanel
+product_or_tool: Mixpanel
+check_robots: true
+query_mode: source_config
+seed_bank_path: config/seeds/business_communities/mixpanel_community.yaml
+seed_source_token: mixpanel
+seed_query_style: support_community
+max_query_count: 100
+max_threads_per_run: 10000
+max_discovered_threads_per_url: 1000
+discovery_page_count: 20
+sleep_seconds: 0.15
+filter_discovery_by_seed: true
+include_candidate_seed_pool_for_discovery: false
+min_seed_term_matches: 1
+aliases:
+  - mixpanel
+  - mixpanel community
+discovery_urls:
+  - url: https://community.mixpanel.com/x/questions
+    board: Community Questions
+rss_discovery_urls:
+  - url: https://community.mixpanel.com/x/questions/rss.xml
+    board: Community Questions
+sitemap_discovery_urls:
+  - url: https://community.mixpanel.com/sitemap-posts/0.xml
+    board: Community Questions
+discovery_exclude_url_patterns:
+  - /x/ask-ai
+  - /x/announcements
+  - /x/learning-resources
+  - /x/product-ideas

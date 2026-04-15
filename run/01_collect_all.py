@@ -36,7 +36,12 @@ from src.utils.run_helpers import load_dotenv, parse_csv_env_set
 from src.utils.source_registry import load_source_definitions
 
 LOGGER = get_logger("run.collect_all")
-MIN_RAW_EXEMPT_SOURCES = {"google_ads_community", "google_ads_help_community", "reddit", "stackoverflow"}
+MIN_RAW_EXEMPT_SOURCES = {
+    "google_ads_community",
+    "google_ads_help_community",
+    "reddit",
+    "stackoverflow",
+}
 
 
 class LowRawVolumeError(RuntimeError):
@@ -73,7 +78,7 @@ def _extend_registry_with_source_groups() -> dict[str, tuple[Path, object]]:
                     source_name=source_id,
                 )
                 if kind == "discourse"
-                else cls(config=config, data_dir=ROOT / "data"),
+                else cls(config=config, data_dir=ROOT / "data", source_name=source_id),
             )
             continue
         registry[definition.source_id] = (

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import os
 import re
 import time
@@ -16,6 +17,7 @@ from src.collectors.base import BaseCollector, RawRecord
 from src.collectors.business_community_parser import ThreadLink, discover_thread_links, parse_thread_page
 from src.utils.dates import utc_now_iso
 from src.utils.http_fetch import check_robots_allowed, fetch_text
+from src.utils.io import ensure_dir
 from src.utils.logging import get_logger
 from src.utils.seed_bank import DiscoveryQuery, build_discovery_queries
 from src.utils.text import make_hash_id
@@ -29,8 +31,11 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
     source_name = "google_ads_help_community"
     source_type = "help_community"
 
-    def __init__(self, config: dict[str, Any], data_dir: Path) -> None:
+    def __init__(self, config: dict[str, Any], data_dir: Path, source_name: str | None = None) -> None:
         super().__init__(config=config, data_dir=data_dir)
+        self.source_name = str(source_name or config.get("source_id") or self.source_name)
+        self.display_name = str(config.get("source_name", self.source_name))
+        self.data_dir = ensure_dir(data_dir / "raw" / self.source_name)
         self.business_health: dict[str, int | str] = {
             "source_id": self.source_name,
             "discovered_listing_count": 0,
@@ -41,14 +46,35 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
             "discovery_mode": "public_help_community_html",
         }
         self._robots_cache: dict[str, bool] = {}
+        self._rate_limit_sleep_seconds = 0.0
 
     def collect(self) -> list[RawRecord]:
         """Discover public Help Community threads, fetch pages, and preserve raw rows."""
         user_agent = self._user_agent()
         listing_rows = self._discover_listing_rows(user_agent)
         discovered = self._discover_threads(listing_rows, user_agent)
+        if not discovered and self._discovery_rate_limited():
+            manual_records = self._collect_manual_snapshots()
+            if manual_records:
+                self._record_collection_summary(len(manual_records))
+                LOGGER.info(
+                    "Collected %s manual snapshot rows for %s after Google Help rate limiting.",
+                    len(manual_records),
+                    self.source_name,
+                )
+                return manual_records
         self._fail_fast_on_low_discovery(discovered)
         records = self._fetch_thread_records(discovered, user_agent)
+        if not records and self._discovery_rate_limited():
+            manual_records = self._collect_manual_snapshots()
+            if manual_records:
+                self._record_collection_summary(len(manual_records))
+                LOGGER.info(
+                    "Collected %s manual snapshot rows for %s after empty live fetch.",
+                    len(manual_records),
+                    self.source_name,
+                )
+                return manual_records
         self._record_collection_summary(len(records))
         LOGGER.info("Collected %s Google Ads Help Community rows", len(records))
         return records
@@ -65,9 +91,8 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
             board = str(row.get("board", "") if isinstance(row, dict) else "").strip()
             if not url or not self._robots_allowed(url, user_agent):
                 continue
-            response = fetch_text(url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
+            response = self._fetch_with_retries(url, user_agent=user_agent, stage="home_fetch")
             if not response.ok:
-                self._record_error(url, "home_fetch", str(response.status_code), response.error_message or response.crawl_status)
                 continue
             self._add_listing_row(rows, {"url": url, "board": board or "Google Ads Help Community"})
             for listing_url, listing_board in self._extract_category_listing_rows(response.body_text, base_url=url).items():
@@ -77,7 +102,7 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
             self._add_listing_row(
                 rows,
                 {
-                    "url": f"https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:{category})",
+                    "url": f"{self._threads_base_url()}?hl=en&thread_filter=(category:{category})",
                     "board": str(board),
                 },
             )
@@ -96,9 +121,8 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
             board = str(row.get("board", "")).strip()
             if not url or not self._robots_allowed(url, user_agent):
                 continue
-            response = fetch_text(url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
+            response = self._fetch_with_retries(url, user_agent=user_agent, stage="discovery_fetch")
             if not response.ok:
-                self._record_error(url, "discovery_fetch", str(response.status_code), response.error_message or response.crawl_status)
                 continue
             links = discover_thread_links(response.body_text, base_url=url, platform=platform, board=board)
             accepted = 0
@@ -165,9 +189,8 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
         sleep_seconds = float(self.config.get("sleep_seconds", 0.1))
         if not self._robots_allowed(link.url, user_agent):
             return None
-        response = fetch_text(link.url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
+        response = self._fetch_with_retries(link.url, user_agent=user_agent, stage="thread_fetch")
         if not response.ok:
-            self._record_error(link.url, "thread_fetch", str(response.status_code), response.error_message or response.crawl_status)
             return None
         self.business_health["fetched_thread_count"] = int(self.business_health["fetched_thread_count"]) + 1
         try:
@@ -190,6 +213,42 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
         if sleep_seconds > 0:
             time.sleep(sleep_seconds)
         return self._build_record(parsed, link)
+
+    def _fetch_with_retries(self, url: str, user_agent: str, stage: str) -> Any:
+        """Fetch one Google Help page with bounded retries for transient failures."""
+        timeout_seconds = int(self.config.get("timeout_seconds", 20))
+        max_attempts = int(self.config.get("fetch_retry_attempts", 4) or 4)
+        retryable_statuses = {429, 500, 502, 503, 504}
+        for attempt in range(1, max_attempts + 1):
+            response = fetch_text(url, user_agent=user_agent, timeout_seconds=timeout_seconds)
+            if response.ok:
+                return response
+            if response.status_code not in retryable_statuses or attempt >= max_attempts:
+                self._record_error(url, stage, str(response.status_code), response.error_message or response.crawl_status)
+                return response
+            wait_seconds = self._retry_sleep_seconds(attempt, response.status_code)
+            LOGGER.warning(
+                "%s received HTTP %s for %s (attempt %s/%s); sleeping %.1fs before retry.",
+                self.source_name,
+                response.status_code,
+                url,
+                attempt,
+                max_attempts,
+                wait_seconds,
+            )
+            time.sleep(wait_seconds)
+            self._rate_limit_sleep_seconds += wait_seconds
+        return response
+
+    def _retry_sleep_seconds(self, attempt: int, status_code: int) -> float:
+        """Return bounded backoff seconds for Google Help retries."""
+        if status_code == 429:
+            base_seconds = float(self.config.get("rate_limit_retry_base_seconds", 20.0) or 20.0)
+            max_seconds = float(self.config.get("rate_limit_retry_max_seconds", 120.0) or 120.0)
+        else:
+            base_seconds = float(self.config.get("fetch_retry_base_seconds", 5.0) or 5.0)
+            max_seconds = float(self.config.get("fetch_retry_max_seconds", 30.0) or 30.0)
+        return min(base_seconds * attempt, max_seconds)
 
     def _build_record(self, parsed, link: ThreadLink) -> RawRecord:
         """Build one raw record using the shared business-community schema."""
@@ -244,11 +303,11 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
         listing_rows: dict[str, str] = {}
         for category in categories:
             board = category_boards.get(category, category.replace("_", " ").title())
-            listing_rows[f"https://support.google.com/google-ads/threads?hl=en&thread_filter=(category:{category})"] = board
+            listing_rows[f"{self._threads_base_url()}?hl=en&thread_filter=(category:{category})"] = board
 
         for href in re.findall(r"href=[\"']([^\"']*thread_filter=[^\"']+)[\"']", html):
             url = urljoin(base_url, unescape(href).replace("&amp;", "&"))
-            if "/google-ads/threads" not in url:
+            if not self._is_threads_listing_url(url):
                 continue
             board = self._board_from_url(url, category_boards)
             listing_rows[url] = board
@@ -258,14 +317,14 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
             if not value:
                 continue
             filter_value = value if value.startswith("(") else f"({value})"
-            listing_rows[f"https://support.google.com/google-ads/threads?hl=en&thread_filter={filter_value}"] = filter_value
+            listing_rows[f"{self._threads_base_url()}?hl=en&thread_filter={filter_value}"] = filter_value
         return listing_rows
 
     def _board_from_url(self, url: str, category_boards: dict[str, str]) -> str:
         """Return a readable board label for a Help Community listing URL."""
         match = re.search(r"category:([a-z0-9_]+)", url)
         if not match:
-            return "Google Ads Help Community"
+            return self.display_name
         category = match.group(1)
         return category_boards.get(category, category.replace("_", " ").title())
 
@@ -275,7 +334,7 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
         board = str(row.get("board", "") if isinstance(row, dict) else "").strip()
         if not url:
             return
-        rows.setdefault(url, {"url": url, "board": board or "Google Ads Help Community"})
+        rows.setdefault(url, {"url": url, "board": board or self.display_name})
 
     def _record_page_stat(self, query_id: str, query_text: str, raw_count: int, before_dedupe: int, stop_reason: str) -> None:
         """Record one listing discovery audit row."""
@@ -451,6 +510,135 @@ class GoogleAdsHelpCommunityCollector(BaseCollector):
             "PUBLIC_WEB_USER_AGENT",
             "Mozilla/5.0 (compatible; persona-pipeline/0.1; public research)",
         )
+
+    def _collect_manual_snapshots(self) -> list[RawRecord]:
+        """Parse locally saved Help Community HTML snapshots when live fetch is blocked."""
+        snapshot_dir_value = str(self.config.get("manual_snapshot_dir", "") or "").strip()
+        if not snapshot_dir_value:
+            return []
+        snapshot_dir = self.root_dir / snapshot_dir_value
+        if not snapshot_dir.exists():
+            LOGGER.warning("%s manual snapshot dir not found: %s", self.source_name, snapshot_dir)
+            return []
+
+        manifest_rows = self._load_manual_snapshot_manifest(snapshot_dir)
+        if not manifest_rows:
+            LOGGER.warning(
+                "%s manual snapshot fallback enabled but no manifest rows were found in %s",
+                self.source_name,
+                snapshot_dir,
+            )
+            return []
+
+        records: list[RawRecord] = []
+        for row in manifest_rows:
+            file_name = str(row.get("filename", "") or "").strip()
+            if not file_name:
+                continue
+            html_path = snapshot_dir / file_name
+            if not html_path.exists():
+                self._record_error(str(html_path), "manual_snapshot", "missing_file", "manual snapshot file was not found")
+                continue
+            try:
+                html = html_path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                html = html_path.read_text(encoding="utf-8", errors="replace")
+
+            url = self._manual_snapshot_url(html=html, manifest_row=row)
+            board = str(row.get("board", "") or self.display_name).strip()
+            title = str(row.get("title", "") or html_path.stem).strip()
+            fallback = ThreadLink(url=url, title=title, board=board)
+            try:
+                parsed = parse_thread_page(
+                    html,
+                    url=url,
+                    platform=str(self.config.get("platform", "google_support")),
+                    fallback=fallback,
+                    product_or_tool=str(self.config.get("product_or_tool", self.display_name)),
+                )
+            except Exception as exc:  # noqa: BLE001
+                self._record_error(url, "manual_snapshot_parse", "", str(exc))
+                continue
+            if parsed.parse_status == "parse_empty":
+                self._record_error(url, "manual_snapshot_parse", "", "parsed thread status was parse_empty")
+                continue
+            source_meta = dict(parsed.source_meta)
+            source_meta.update(
+                {
+                    "collector": "google_ads_help_community_manual_snapshot",
+                    "manual_snapshot_path": str(html_path),
+                    "manual_snapshot_file": file_name,
+                }
+            )
+            fetched_at = utc_now_iso()
+            created_at = _safe_iso_datetime(parsed.published_at) or fetched_at
+            records.append(
+                RawRecord(
+                    source=self.source_name,
+                    source_group=str(self.config.get("source_group", "business_communities")),
+                    source_name=str(self.config.get("source_name", self.display_name)),
+                    source_type="thread",
+                    raw_id=parsed.raw_id,
+                    raw_source_id=parsed.raw_id,
+                    url=parsed.canonical_url or url,
+                    canonical_url=parsed.canonical_url or url,
+                    title=parsed.title or title,
+                    body=parsed.body_text,
+                    body_text=parsed.body_text,
+                    comments_text="",
+                    created_at=created_at,
+                    fetched_at=fetched_at,
+                    retrieved_at=fetched_at,
+                    query_seed=title,
+                    query_id="manual_snapshot_import",
+                    query_text=title,
+                    author_hint=parsed.author_name,
+                    author_name=parsed.author_name,
+                    product_or_tool=str(self.config.get("product_or_tool", self.display_name)),
+                    subreddit_or_forum=parsed.board or board,
+                    thread_title=parsed.title or title,
+                    crawl_method="manual_help_community_html",
+                    crawl_status=parsed.parse_status,
+                    manual_import_flag=True,
+                    raw_file_path=str(html_path),
+                    parse_version="google_ads_help_community_v1",
+                    hash_id=make_hash_id(self.source_name, parsed.raw_id, parsed.canonical_url or url),
+                    source_meta=source_meta,
+                )
+            )
+        return records
+
+    def _load_manual_snapshot_manifest(self, snapshot_dir: Path) -> list[dict[str, str]]:
+        """Load a simple CSV manifest that maps snapshot files to original thread metadata."""
+        manifest_value = str(self.config.get("manual_snapshot_manifest", "") or "").strip()
+        manifest_path = snapshot_dir / "manifest.csv" if not manifest_value else self.root_dir / manifest_value
+        if not manifest_path.exists():
+            return []
+        with manifest_path.open("r", encoding="utf-8-sig", newline="") as handle:
+            return [{str(key): str(value) for key, value in row.items()} for row in csv.DictReader(handle)]
+
+    def _manual_snapshot_url(self, html: str, manifest_row: dict[str, str]) -> str:
+        """Resolve the original support.google thread URL for one saved snapshot."""
+        manifest_url = str(manifest_row.get("url", "") or "").strip()
+        if manifest_url:
+            return manifest_url
+        match = re.search(r"https://support\.google\.com/[a-z0-9\-]+/thread/\d+[^\s\"'<>]*", html, flags=re.IGNORECASE)
+        if match:
+            return match.group(0)
+        thread_base = self._threads_base_url().replace("/threads", "/thread")
+        file_name = str(manifest_row.get("filename", "") or "").strip()
+        digits = re.search(r"(\d{6,})", file_name)
+        if digits:
+            return f"{thread_base}/{digits.group(1)}?hl=en"
+        return f"{thread_base}/manual-snapshot?hl=en"
+
+    def _threads_base_url(self) -> str:
+        """Return the source-specific Google Support listing base URL."""
+        return str(self.config.get("threads_base_url", "https://support.google.com/google-ads/threads")).rstrip("/")
+
+    def _is_threads_listing_url(self, url: str) -> bool:
+        """Return whether a URL belongs to the configured Help Community listing surface."""
+        return url.startswith(self._threads_base_url())
 
 
 def _safe_iso_datetime(value: str) -> str:

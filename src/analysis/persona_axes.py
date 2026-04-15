@@ -544,6 +544,13 @@ def build_persona_core_flags(
     if labeled_df.empty:
         return labeled_df.copy(), pd.DataFrame()
 
+    if "persona_core_eligible" in labeled_df.columns:
+        return _preserve_existing_persona_core_flags(
+            labeled_df=labeled_df,
+            axis_wide_df=axis_wide_df,
+            final_axis_schema=final_axis_schema,
+        )
+
     core_axes = [
         str(row.get("axis_name", "")).strip()
         for row in final_axis_schema
@@ -635,6 +642,60 @@ def build_persona_core_flags(
     for axis in core_axes:
         audit_df[axis] = audit[axis]
     return result, audit_df
+
+
+def _preserve_existing_persona_core_flags(
+    labeled_df: pd.DataFrame,
+    axis_wide_df: pd.DataFrame,
+    final_axis_schema: list[dict[str, Any]],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Reuse persisted persona-core flags when upstream labeling already stamped them."""
+    result = labeled_df.copy()
+    result["persona_core_eligible"] = result["persona_core_eligible"].fillna(True).astype(bool)
+    if "persona_core_reason" not in result.columns:
+        result["persona_core_reason"] = result["persona_core_eligible"].map(
+            lambda value: "preserved_existing_persona_core_flag" if value else "preserved_existing_persona_core_exclusion"
+        )
+    if "persona_core_primary_axis_complete" not in result.columns:
+        result["persona_core_primary_axis_complete"] = result["persona_core_eligible"]
+    if "persona_core_missing_axes" not in result.columns:
+        result["persona_core_missing_axes"] = ""
+
+    core_axes = [
+        str(row.get("axis_name", "")).strip()
+        for row in final_axis_schema
+        if str(row.get("axis_name", "")).strip() and str(row.get("axis_role", "core")).strip() == "core"
+    ]
+    if not core_axes:
+        core_axes = list(PRIMARY_PERSONA_CORE_AXES)
+    axis_columns = [axis for axis in core_axes if axis in axis_wide_df.columns]
+    axis_subset = (
+        axis_wide_df[["episode_id", *axis_columns]].drop_duplicates(subset=["episode_id"])
+        if not axis_wide_df.empty
+        else pd.DataFrame(columns=["episode_id", *axis_columns])
+    )
+
+    audit_df = result.merge(axis_subset, on="episode_id", how="left")
+    labelability_status = audit_df.get("labelability_status", pd.Series("", index=audit_df.index)).fillna("").astype(str)
+    audit_frame = pd.DataFrame(
+        {
+            "episode_id": audit_df["episode_id"],
+            "labelability_status": labelability_status,
+            "unknown_reason": audit_df.get("unknown_reason", pd.Series("", index=audit_df.index)).fillna("").astype(str),
+            "root_cause_category": audit_df.get("root_cause_category", pd.Series("", index=audit_df.index)).fillna("").astype(str),
+            "persona_core_policy": audit_df.get("persona_core_policy", pd.Series("", index=audit_df.index)).fillna("").astype(str),
+            "persona_core_eligible": result["persona_core_eligible"],
+            "persona_core_reason": result["persona_core_reason"].fillna("").astype(str),
+            "persona_core_primary_axis_complete": result["persona_core_primary_axis_complete"].fillna(False).astype(bool),
+            "persona_core_missing_axes": result["persona_core_missing_axes"].fillna("").astype(str),
+        }
+    )
+    for axis in core_axes:
+        if axis in audit_df.columns:
+            audit_frame[axis] = audit_df[axis]
+        else:
+            audit_frame[axis] = "unassigned"
+    return result, audit_frame
 
 
 def _axis_value_is_unassigned(value: Any) -> bool:

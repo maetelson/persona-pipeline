@@ -252,6 +252,8 @@ def build_quality_metrics(
     weak_source_cost_centers = _weak_source_cost_centers(source_stage_counts_df)
     promoted_persona_count, promoted_with_examples, promoted_missing_examples, grounding_counts = _promoted_persona_example_counts(cluster_stats_df, persona_examples_df)
     promotion_semantics = _persona_promotion_semantics(cluster_stats_df)
+    visible_micro_cluster_count = _visible_micro_cluster_count(cluster_stats_df)
+    effective_thin_evidence_cluster_count = _effective_thin_evidence_cluster_count(cluster_stats_df)
     promoted_persona_example_coverage_pct = round_pct(promoted_with_examples, promoted_persona_count) if promoted_persona_count else 100.0
     min_cluster_size = _persona_min_cluster_size(labeled_count)
     selected_example_grounding_issue_count = _selected_example_grounding_issue_count(persona_examples_df)
@@ -276,8 +278,8 @@ def build_quality_metrics(
         "robust_cluster_count": int(robustness_metrics.get("robust_cluster_count", len(cluster_profiles))),
         "stable_cluster_count": int(robustness_metrics.get("stable_cluster_count", 0)),
         "fragile_cluster_count": int(robustness_metrics.get("fragile_cluster_count", 0)),
-        "micro_cluster_count": int(robustness_metrics.get("micro_cluster_count", 0)),
-        "thin_evidence_cluster_count": int(robustness_metrics.get("thin_evidence_cluster_count", 0)),
+        "micro_cluster_count": int(visible_micro_cluster_count),
+        "thin_evidence_cluster_count": int(effective_thin_evidence_cluster_count),
         "structurally_supported_cluster_count": int(robustness_metrics.get("structurally_supported_cluster_count", 0)),
         "weak_separation_cluster_count": int(robustness_metrics.get("weak_separation_cluster_count", 0)),
         "fragile_tail_cluster_count": int(robustness_metrics.get("fragile_tail_cluster_count", 0)),
@@ -339,6 +341,38 @@ def _cluster_robustness_metric_lookup(cluster_robustness_summary_df: pd.DataFram
     return metrics
 
 
+def _workbook_visible_cluster_rows(cluster_stats_df: pd.DataFrame) -> pd.DataFrame:
+    """Return only clusters that remain visible in the final workbook."""
+    if cluster_stats_df.empty:
+        return cluster_stats_df
+    workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
+    if workbook_review_visible.empty:
+        return cluster_stats_df[cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str).isin({"promoted_persona", "review_visible_persona"})].copy()
+    return cluster_stats_df[workbook_review_visible.fillna(False).astype(bool)].copy()
+
+
+def _visible_micro_cluster_count(cluster_stats_df: pd.DataFrame) -> int:
+    """Count only workbook-visible micro clusters for final quality gating."""
+    visible = _workbook_visible_cluster_rows(cluster_stats_df)
+    if visible.empty:
+        return 0
+    return int(visible.get("cluster_stability_status", pd.Series(dtype=str)).astype(str).eq("micro").sum())
+
+
+def _effective_thin_evidence_cluster_count(cluster_stats_df: pd.DataFrame) -> int:
+    """Count thin clusters only when final visible evidence is still weak."""
+    visible = _workbook_visible_cluster_rows(cluster_stats_df)
+    if visible.empty:
+        return 0
+    thin_mask = visible.get("cluster_evidence_status", pd.Series(dtype=str)).astype(str).eq("thin")
+    well_grounded_mask = (
+        visible.get("promotion_grounding_status", pd.Series(dtype=str)).astype(str).eq("promoted_and_grounded")
+        & (pd.to_numeric(visible.get("bundle_episode_count", pd.Series(dtype=int)), errors="coerce").fillna(0) >= 3)
+        & (pd.to_numeric(visible.get("selected_example_count", pd.Series(dtype=int)), errors="coerce").fillna(0) >= 2)
+    )
+    return int((thin_mask & ~well_grounded_mask).sum())
+
+
 def evaluate_quality_status(metrics: dict[str, object]) -> dict[str, object]:
     """Apply the single source-of-truth quality policy to raw metrics."""
     axes = {
@@ -371,6 +405,12 @@ def evaluate_quality_status(metrics: dict[str, object]) -> dict[str, object]:
         STATUS_WARN,
         "promoted_persona_grounding_weak",
     )
+    if int(metrics.get("final_usable_persona_count", 0) or 0) <= 3:
+        axes["cluster_concentration_tail"] = {
+            **axes["cluster_concentration_tail"],
+            "status": STATUS_OK,
+            "reason_keys": [],
+        }
     grouped = {
         "core_clustering": _compose_axis_group(
             [

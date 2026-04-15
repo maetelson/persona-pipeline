@@ -27,6 +27,17 @@ class SourceCliSmokeTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertTrue((ROOT / "data" / "analysis" / "source_cli_dry_run.csv").exists())
 
+    def test_dry_run_cli_supports_new_business_community_sources(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "run/10_source_cli.py", "dry-run", "--source", "mixpanel_community"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn("mixpanel_community", result.stdout + result.stderr)
+
     def test_show_and_validate_seed_cli_completes(self) -> None:
         show = subprocess.run(
             [sys.executable, "run/10_source_cli.py", "show-seeds", "--source", "r/excel"],

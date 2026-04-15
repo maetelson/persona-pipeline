@@ -607,6 +607,79 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             "zero product count",
             "page unavailable",
         ]
+    if source == "hubspot_community":
+        # HubSpot threads often describe report-builder, attribution, lifecycle, and CRM
+        # workflow limitations without using explicit mismatch wording.
+        workflow_terms = [
+            *workflow_terms,
+            "hubspot",
+            "crm",
+            "report",
+            "reporting",
+            "dashboard",
+            "custom report",
+            "journey report",
+            "attribution",
+            "utm",
+            "campaign",
+            "campaigns",
+            "lifecycle stage",
+            "deal",
+            "deals",
+            "contact",
+            "contacts",
+            "segment",
+            "segments",
+            "marketing email",
+            "filter",
+            "filters",
+            "data studio",
+        ]
+        metric_terms = [
+            *metric_terms,
+            "hubspot",
+            "report",
+            "reporting",
+            "dashboard",
+            "conversion rate",
+            "attribution",
+            "utm",
+            "revenue",
+            "campaign",
+            "campaigns",
+            "marketing influences",
+            "health score",
+            "page views",
+            "contacts",
+            "custom property",
+            "segment",
+            "email performance",
+            "open",
+            "click",
+            "click-through",
+        ]
+        required_terms = [
+            *required_terms,
+            "can't use",
+            "cannot use",
+            "can't see",
+            "cannot see",
+            "at a loss",
+            "struggling",
+            "unreliable",
+            "doesn't show",
+            "doesnt show",
+            "stops applying",
+            "prevents",
+            "replicate",
+            "is there a way",
+            "best way",
+            "walk me through",
+            "trying to build",
+            "trying to create",
+            "missing data",
+            "not available",
+        ]
     if source == "klaviyo_community":
         # Klaviyo posts often describe CRM/email workflow failures in operational language
         # like lists, flows, templates, integrations, or rate drops rather than BI-style
@@ -668,6 +741,322 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             "best way",
             "please help",
         ]
+    if source == "power_bi_community":
+        # Power BI threads often describe interpretation and diagnosis pain with BI-native
+        # language like measures, visuals, refresh, service/desktop differences, and filter
+        # context rather than generic business reporting mismatch phrasing.
+        workflow_terms = [
+            *workflow_terms,
+            "power bi",
+            "dax",
+            "measure",
+            "measures",
+            "matrix",
+            "slicer",
+            "visual",
+            "visuals",
+            "line chart",
+            "legend",
+            "filter context",
+            "row context",
+            "gateway",
+            "refresh",
+            "desktop",
+            "service",
+            "drill through",
+            "relationship",
+            "relationships",
+            "rankx",
+        ]
+        metric_terms = [
+            *metric_terms,
+            "power bi",
+            "report",
+            "reports",
+            "reporting",
+            "dashboard",
+            "visual",
+            "visuals",
+            "matrix",
+            "table",
+            "export",
+            "csv",
+            "measure",
+            "measures",
+            "dax",
+            "count",
+            "distinct count",
+            "total",
+            "totals",
+            "forecast",
+            "actual",
+            "refresh",
+            "gateway",
+        ]
+        required_terms = [
+            *required_terms,
+            "why does",
+            "why is",
+            "not in power bi service",
+            "gone missing",
+            "failed refresh",
+            "timed out",
+            "wrong total",
+            "wrong totals",
+            "not matching",
+            "different numbers",
+            "incorrect data",
+            "doesn't match",
+            "doesnt match",
+            "doesn't work",
+            "doesnt work",
+            "limitation",
+            "workaround",
+            "issue",
+            "problem",
+        ]
+    if source == "qlik_community":
+        # Qlik threads often describe reporting pain with Qlik-native chart, totals,
+        # expression, and export language rather than generic dashboard mismatch terms.
+        workflow_terms = [
+            *workflow_terms,
+            "qlik",
+            "qlik sense",
+            "qlikview",
+            "nprinting",
+            "set analysis",
+            "pivot table",
+            "straight table",
+            "combo chart",
+            "cross tab",
+            "gauge chart",
+            "filter pane",
+            "dimension",
+            "measure",
+            "expression",
+            "totals",
+            "pixel perfect",
+            "aggr",
+            "fractile",
+        ]
+        metric_terms = [
+            *metric_terms,
+            "qlik",
+            "report",
+            "reports",
+            "reporting",
+            "dashboard",
+            "chart",
+            "table",
+            "excel",
+            "export",
+            "measure",
+            "expression",
+            "count",
+            "total",
+            "totals",
+            "kpi",
+            "nprinting",
+        ]
+        required_terms = [
+            *required_terms,
+            "wrong total",
+            "wrong totals",
+            "different totals",
+            "not aggregating",
+            "not matching",
+            "mismatch",
+            "issue",
+            "problem",
+            "error",
+            "limitation",
+            "workaround",
+            "stuck",
+            "desired level",
+            "collapsed or expanded",
+            "not available",
+        ]
+    if source == "sisense_community":
+        # Sisense threads often describe dashboard interpretation and filter behavior
+        # through widget, break-by, and scripting language rather than generic mismatch terms.
+        workflow_terms = [
+            *workflow_terms,
+            "sisense",
+            "dashboard",
+            "dashboards",
+            "widget",
+            "widgets",
+            "pivot table",
+            "column chart",
+            "bar chart",
+            "filter",
+            "filters",
+            "break by",
+            "data model",
+            "drill dashboard",
+            "jump to dashboard",
+            "scientific units",
+            "javascript",
+        ]
+        metric_terms = [
+            *metric_terms,
+            "sisense",
+            "dashboard",
+            "widget",
+            "pivot table",
+            "table",
+            "chart",
+            "column chart",
+            "bar chart",
+            "filter",
+            "break by",
+            "data model",
+            "scientific units",
+            "column width",
+            "list selection",
+        ]
+        required_terms = [
+            *required_terms,
+            "reset",
+            "limits",
+            "dynamically change",
+            "hide",
+            "empty legend",
+            "same month or not",
+            "column width",
+            "calculate",
+            "multiple columns",
+            "left-click",
+            "background filter",
+            "better way",
+            "is it possible",
+        ]
+    if source == "mixpanel_community":
+        # Mixpanel threads often describe event identity, funnel, and reporting trust
+        # pain in product-analytics language rather than generic BI/reporting phrasing.
+        workflow_terms = [
+            *workflow_terms,
+            "mixpanel",
+            "funnel",
+            "funnels",
+            "retention",
+            "insights",
+            "event",
+            "events",
+            "distinct id",
+            "identify",
+            "mirror",
+            "project",
+            "cohort",
+            "breakdown",
+            "session duration",
+            "query",
+        ]
+        metric_terms = [
+            *metric_terms,
+            "mixpanel",
+            "report",
+            "reports",
+            "dashboard",
+            "funnel",
+            "retention",
+            "event",
+            "events",
+            "count",
+            "conversion time",
+            "country",
+            "city",
+            "breakdown",
+            "query",
+        ]
+        required_terms = [
+            *required_terms,
+            "wrong",
+            "missing",
+            "not linking",
+            "not showing",
+            "discrepancy",
+            "limitation",
+            "hurdle",
+            "issue",
+            "problem",
+            "why does",
+            "why is",
+            "missing mirror sync",
+        ]
+    if source == "metabase_discussions":
+        # Metabase threads often phrase dashboard and query pain as operational forum
+        # questions about filters, models, sync, and exports rather than generic mismatch wording.
+        workflow_terms = [
+            *workflow_terms,
+            "metabase",
+            "dashboard",
+            "dashboards",
+            "question",
+            "questions",
+            "model",
+            "models",
+            "query",
+            "queries",
+            "native query",
+            "native sql",
+            "sql editor",
+            "filter",
+            "filters",
+            "dropdown",
+            "sync",
+            "metadata",
+            "migration",
+            "connection",
+            "schema changes",
+            "drill through",
+            "legend",
+            "export",
+        ]
+        metric_terms = [
+            *metric_terms,
+            "metabase",
+            "dashboard",
+            "report",
+            "reporting",
+            "chart",
+            "charts",
+            "table",
+            "pivot",
+            "pivot table",
+            "filter",
+            "dropdown",
+            "model",
+            "question",
+            "query",
+            "database",
+            "views",
+            "metadata sync",
+            "csv",
+            "xlsx",
+            "export",
+        ]
+        required_terms = [
+            *required_terms,
+            "failed",
+            "fails",
+            "failing",
+            "can't",
+            "cannot",
+            "unable",
+            "not syncing",
+            "not showing",
+            "breaking dashboards",
+            "wrong options",
+            "incorrect",
+            "issue",
+            "problem",
+            "workaround",
+            "is there a way",
+            "trying to",
+            "how do you handle",
+            "harder to read",
+        ]
     usage_patterns = [str(term).lower() for term in quality_cfg.get("usage_only_patterns", [])]
     has_workflow_pain = any(term in lowered for term in workflow_terms)
     has_metric_problem = any(term in lowered for term in metric_terms)
@@ -678,7 +1067,18 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
     if not has_required_problem and structural_pain:
         has_required_problem = True
     usage_only = any(lowered.startswith(pattern) for pattern in usage_patterns) and not has_required_problem
-    if source not in {"shopify_community", "google_ads_help_community", "merchant_center_community", "klaviyo_community"}:
+    if source not in {
+        "shopify_community",
+        "google_ads_help_community",
+        "merchant_center_community",
+        "hubspot_community",
+        "klaviyo_community",
+        "power_bi_community",
+        "qlik_community",
+        "sisense_community",
+        "mixpanel_community",
+        "metabase_discussions",
+    }:
         passed = has_workflow_pain and has_metric_problem and has_required_problem and not usage_only
         return QualityAssessment(
             score=1.0 if passed else 0.0,
@@ -852,6 +1252,85 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             passes=False,
         )
 
+    if source == "metabase_discussions":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "dashboard",
+                "dashboards",
+                "question",
+                "questions",
+                "query",
+                "queries",
+                "model",
+                "models",
+                "chart",
+                "table",
+                "filter",
+                "dropdown",
+                "metadata",
+                "sync",
+                "export",
+                "xlsx",
+                "csv",
+                "metabase",
+            ]
+        )
+        problem_presence = any(
+            term in lowered
+            for term in [
+                "issue",
+                "problem",
+                "failed",
+                "fails",
+                "failing",
+                "can't",
+                "cannot",
+                "unable",
+                "wrong",
+                "incorrect",
+                "not working",
+                "not showing",
+                "not syncing",
+                "breaking",
+                "workaround",
+                "how do you handle",
+                "is there a way",
+                "trying to",
+            ]
+        )
+        explanation_presence = any(
+            term in lowered
+            for term in [
+                "for my work",
+                "our team",
+                "customer",
+                "we have",
+                "i have",
+                "i am using",
+                "i'm using",
+                "trying to",
+                "need to",
+                "want to",
+            ]
+        )
+        if has_workflow_pain and metric_presence and (has_required_problem or problem_presence):
+            score = 4.0 if explanation_presence else 3.0
+            return QualityAssessment(
+                score=score,
+                bucket="hard_pass" if explanation_presence else "borderline",
+                fail_reason="",
+                rescue_reason="metabase_reporting_problem_rescue",
+                passes=True,
+            )
+        return QualityAssessment(
+            score=0.0,
+            bucket="fail",
+            fail_reason="quality_filter_failed",
+            rescue_reason="",
+            passes=False,
+        )
+
     if source == "merchant_center_community":
         metric_presence = any(
             term in lowered
@@ -966,6 +1445,162 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             score=round(score, 3),
             bucket="fail",
             fail_reason="merchant_center_problem_without_operational_context",
+            rescue_reason="",
+            passes=False,
+        )
+
+    if source == "hubspot_community":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "hubspot",
+                "report",
+                "reporting",
+                "dashboard",
+                "conversion rate",
+                "attribution",
+                "utm",
+                "revenue",
+                "campaign",
+                "campaigns",
+                "marketing influences",
+                "health score",
+                "page views",
+                "contacts",
+                "segment",
+                "email performance",
+                "custom report",
+                "journey report",
+            ]
+        )
+        discrepancy_presence = any(
+            term in lowered
+            for term in [
+                "can't use",
+                "cannot use",
+                "can't see",
+                "cannot see",
+                "unreliable",
+                "missing data",
+                "doesn't show",
+                "doesnt show",
+                "not showing",
+                "stops applying",
+                "prevents",
+                "at a loss",
+                "struggling",
+                "not available",
+            ]
+        )
+        analysis_context = any(
+            term in lowered
+            for term in [
+                "custom report",
+                "journey report",
+                "attribution",
+                "utm",
+                "lifecycle stage",
+                "campaign",
+                "segment",
+                "marketing email",
+                "health score",
+                "dashboard",
+                "custom property",
+                "page views",
+            ]
+        )
+        explanation_burden = any(
+            term in lowered
+            for term in [
+                "trying to build",
+                "trying to create",
+                "walk me through",
+                "best way",
+                "is there a way",
+                "where i'm stuck",
+                "where im stuck",
+                "i don't get it",
+                "i dont get it",
+                "could someone",
+            ]
+        )
+        discussion_style = any(
+            term in lowered
+            for term in [
+                "hi all",
+                "thanks for your help in advance",
+                "could someone walk me through",
+                "any advice",
+                "best way to understand",
+            ]
+        )
+        support_boilerplate = any(
+            term in lowered
+            for term in [
+                "senior community moderator",
+                "thanks for bringing this to the community",
+                "i'd like to tag",
+                "top contributors",
+                "thanks so much for coming back",
+            ]
+        ) and not discrepancy_presence
+        low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
+
+        score = 0.0
+        score += 1.2 if metric_presence else 0.0
+        score += 1.1 if discrepancy_presence or has_required_problem else 0.0
+        score += 0.9 if analysis_context else 0.0
+        score += 0.8 if explanation_burden else 0.0
+        score += 0.7 if has_workflow_pain else 0.0
+        score += 0.4 if discussion_style and (metric_presence or analysis_context) else 0.0
+        score -= 1.2 if support_boilerplate else 0.0
+        score -= 0.8 if usage_only and not analysis_context else 0.0
+
+        signal_count = sum(
+            int(flag)
+            for flag in [
+                metric_presence,
+                discrepancy_presence or has_required_problem,
+                analysis_context,
+                explanation_burden,
+                has_workflow_pain,
+            ]
+        )
+        if support_boilerplate:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="support_reply_without_analysis_context",
+                rescue_reason="",
+                passes=False,
+            )
+        if low_signal:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="hubspot_low_signal",
+                rescue_reason="",
+                passes=False,
+            )
+        if signal_count >= 3 and (discrepancy_presence or has_required_problem or explanation_burden or analysis_context):
+            return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
+        if signal_count >= 2:
+            rescue_reason = "hubspot_reporting_builder_rescue"
+            fail_reason = "weak_problem_phrasing"
+            if metric_presence and not (discrepancy_presence or has_required_problem):
+                fail_reason = "metric_present_but_no_explicit_blocker"
+                rescue_reason = "hubspot_metric_context_rescue"
+            elif not has_workflow_pain and (metric_presence or analysis_context):
+                fail_reason = "weak_workflow_signal"
+                rescue_reason = "hubspot_workflow_weak_rescue"
+            elif discussion_style and (metric_presence or discrepancy_presence or analysis_context):
+                fail_reason = "discussion_style_but_relevant"
+                rescue_reason = "hubspot_discussion_style_rescue"
+            return QualityAssessment(score=round(score, 3), bucket="borderline", fail_reason=fail_reason, rescue_reason=rescue_reason, passes=True)
+        return QualityAssessment(
+            score=round(score, 3),
+            bucket="fail",
+            fail_reason="hubspot_problem_without_reporting_context",
             rescue_reason="",
             passes=False,
         )
@@ -1117,6 +1752,627 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             score=round(score, 3),
             bucket="fail",
             fail_reason="klaviyo_problem_without_operational_context",
+            rescue_reason="",
+            passes=False,
+        )
+
+    if source == "power_bi_community":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "power bi",
+                "dax",
+                "measure",
+                "measures",
+                "matrix",
+                "slicer",
+                "visual",
+                "visuals",
+                "dashboard",
+                "report",
+                "reports",
+                "table",
+                "line chart",
+                "legend",
+                "count",
+                "distinct count",
+                "total",
+                "totals",
+                "forecast",
+                "actual",
+                "gateway",
+                "refresh",
+                "desktop",
+                "service",
+            ]
+        )
+        discrepancy_presence = any(
+            term in lowered
+            for term in [
+                "wrong",
+                "incorrect",
+                "not matching",
+                "mismatch",
+                "different",
+                "gone missing",
+                "missing",
+                "failed",
+                "timed out",
+                "doesn't work",
+                "doesnt work",
+                "disabled",
+                "cannot",
+                "can't",
+                "cant",
+                "limitation",
+                "workaround",
+                "not visible",
+                "not showing",
+            ]
+        )
+        analysis_context = any(
+            term in lowered
+            for term in [
+                "desktop",
+                "service",
+                "gateway",
+                "refresh",
+                "filter context",
+                "row context",
+                "drill through",
+                "relationship",
+                "relationships",
+                "rankx",
+                "top n",
+                "forecast version",
+                "export",
+                "power query",
+            ]
+        )
+        explanation_burden = any(
+            term in lowered
+            for term in [
+                "why",
+                "how can i",
+                "how do i",
+                "is there any way",
+                "is there an option",
+                "trying to",
+                "need to",
+                "requirement",
+                "workaround",
+                "client wants",
+                "expected outcome",
+            ]
+        )
+        discussion_style = any(
+            term in lowered
+            for term in [
+                "hi all",
+                "hi everyone",
+                "looking for guidance",
+                "can someone help",
+                "has anyone seen",
+                "any suggestion",
+            ]
+        )
+        support_boilerplate = any(
+            term in lowered
+            for term in [
+                "accepted solution",
+                "has your issue been resolved",
+                "thank you for the response provided",
+                "please feel free to contact us",
+                "mark this as the accepted solution",
+                "community member addressed your query",
+            ]
+        ) and not discrepancy_presence
+        low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
+
+        score = 0.0
+        score += 1.2 if metric_presence else 0.0
+        score += 1.2 if discrepancy_presence or has_required_problem else 0.0
+        score += 0.9 if analysis_context else 0.0
+        score += 0.8 if explanation_burden else 0.0
+        score += 0.7 if has_workflow_pain else 0.0
+        score += 0.5 if discussion_style and (metric_presence or discrepancy_presence or analysis_context) else 0.0
+        score -= 1.2 if support_boilerplate else 0.0
+        score -= 0.8 if usage_only else 0.0
+
+        signal_count = sum(
+            int(flag)
+            for flag in [
+                metric_presence,
+                discrepancy_presence or has_required_problem,
+                analysis_context,
+                explanation_burden,
+                has_workflow_pain,
+            ]
+        )
+        if support_boilerplate:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="support_reply_without_operator_context",
+                rescue_reason="",
+                passes=False,
+            )
+        if low_signal:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="power_bi_low_signal",
+                rescue_reason="",
+                passes=False,
+            )
+        if signal_count >= 3 and (discrepancy_presence or has_required_problem or explanation_burden):
+            return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
+        if signal_count >= 2:
+            rescue_reason = "power_bi_measure_reporting_rescue"
+            fail_reason = "weak_problem_phrasing"
+            if metric_presence and not (discrepancy_presence or has_required_problem):
+                fail_reason = "metric_present_but_no_explicit_blocker"
+                rescue_reason = "power_bi_metric_context_rescue"
+            elif not has_workflow_pain and (metric_presence or analysis_context):
+                fail_reason = "weak_workflow_signal"
+                rescue_reason = "power_bi_workflow_weak_rescue"
+            elif discussion_style and (metric_presence or discrepancy_presence or analysis_context):
+                fail_reason = "discussion_style_but_relevant"
+                rescue_reason = "power_bi_discussion_style_rescue"
+            return QualityAssessment(score=round(score, 3), bucket="borderline", fail_reason=fail_reason, rescue_reason=rescue_reason, passes=True)
+        return QualityAssessment(
+            score=round(score, 3),
+            bucket="fail",
+            fail_reason="power_bi_problem_without_reporting_context",
+            rescue_reason="",
+            passes=False,
+        )
+
+    if source == "qlik_community":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "qlik",
+                "qlik sense",
+                "qlikview",
+                "nprinting",
+                "set analysis",
+                "pivot table",
+                "straight table",
+                "combo chart",
+                "cross tab",
+                "gauge chart",
+                "filter pane",
+                "expression",
+                "dimension",
+                "measure",
+                "total",
+                "totals",
+                "kpi",
+                "report",
+                "dashboard",
+                "excel",
+            ]
+        )
+        discrepancy_presence = any(
+            term in lowered
+            for term in [
+                "wrong",
+                "incorrect",
+                "not aggregating",
+                "not matching",
+                "mismatch",
+                "different totals",
+                "collapsed or expanded",
+                "desired level",
+                "error",
+                "issue",
+                "problem",
+                "limitation",
+                "unavailable",
+            ]
+        )
+        analysis_context = any(
+            term in lowered
+            for term in [
+                "aggr",
+                "fractile",
+                "total inside",
+                "pixel perfect",
+                "reporting service",
+                "visualization",
+                "usability",
+                "filter",
+                "expression",
+                "axis",
+                "chart",
+                "table",
+                "export",
+                "email",
+            ]
+        )
+        explanation_burden = any(
+            term in lowered
+            for term in [
+                "how to",
+                "trying to",
+                "need to",
+                "stuck",
+                "is there a feature",
+                "would like to know",
+                "the goal is",
+                "i'm stuck",
+                "can someone help",
+            ]
+        )
+        discussion_style = any(
+            term in lowered
+            for term in [
+                "hi all",
+                "hi everyone",
+                "thanks for your reply",
+                "hello everyone",
+                "any suggestion",
+                "can someone help",
+            ]
+        )
+        support_boilerplate = any(
+            term in lowered
+            for term in [
+                "accepted solution",
+                "mark as accepted solution",
+                "please close the case",
+                "community manager",
+            ]
+        ) and not discrepancy_presence
+        low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
+
+        score = 0.0
+        score += 1.2 if metric_presence else 0.0
+        score += 1.2 if discrepancy_presence or has_required_problem else 0.0
+        score += 0.9 if analysis_context else 0.0
+        score += 0.8 if explanation_burden else 0.0
+        score += 0.7 if has_workflow_pain else 0.0
+        score += 0.5 if discussion_style and (metric_presence or discrepancy_presence or analysis_context) else 0.0
+        score -= 1.2 if support_boilerplate else 0.0
+        score -= 0.8 if usage_only else 0.0
+
+        signal_count = sum(
+            int(flag)
+            for flag in [
+                metric_presence,
+                discrepancy_presence or has_required_problem,
+                analysis_context,
+                explanation_burden,
+                has_workflow_pain,
+            ]
+        )
+        if support_boilerplate:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="support_reply_without_analysis_context",
+                rescue_reason="",
+                passes=False,
+            )
+        if low_signal:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="qlik_low_signal",
+                rescue_reason="",
+                passes=False,
+            )
+        if signal_count >= 3 and (discrepancy_presence or has_required_problem or explanation_burden):
+            return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
+        if signal_count >= 2:
+            rescue_reason = "qlik_reporting_expression_rescue"
+            fail_reason = "weak_problem_phrasing"
+            if metric_presence and not (discrepancy_presence or has_required_problem):
+                fail_reason = "metric_present_but_no_explicit_blocker"
+                rescue_reason = "qlik_metric_context_rescue"
+            elif not has_workflow_pain and (metric_presence or analysis_context):
+                fail_reason = "weak_workflow_signal"
+                rescue_reason = "qlik_workflow_weak_rescue"
+            elif discussion_style and (metric_presence or discrepancy_presence or analysis_context):
+                fail_reason = "discussion_style_but_relevant"
+                rescue_reason = "qlik_discussion_style_rescue"
+            return QualityAssessment(score=round(score, 3), bucket="borderline", fail_reason=fail_reason, rescue_reason=rescue_reason, passes=True)
+        return QualityAssessment(
+            score=round(score, 3),
+            bucket="fail",
+            fail_reason="qlik_problem_without_reporting_context",
+            rescue_reason="",
+            passes=False,
+        )
+
+    if source == "sisense_community":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "sisense",
+                "dashboard",
+                "dashboards",
+                "widget",
+                "widgets",
+                "pivot table",
+                "table",
+                "chart",
+                "column chart",
+                "bar chart",
+                "filter",
+                "filters",
+                "break by",
+                "data model",
+                "drill dashboard",
+                "jump to dashboard",
+                "scientific units",
+                "javascript",
+                "export",
+                "exports",
+                "xlsx",
+                "csv",
+                "pdf",
+                "report",
+                "reporting",
+                "api",
+                "build",
+                "builds",
+                "cube",
+                "cubes",
+            ]
+        )
+        discrepancy_presence = any(
+            term in lowered
+            for term in [
+                "reset",
+                "limits",
+                "limited",
+                "dynamically change",
+                "hide",
+                "empty legend",
+                "same month or not",
+                "column width",
+                "calculate",
+                "multiple columns",
+                "not",
+                "issue",
+                "problem",
+                "manual",
+                "manually",
+                "currently",
+                "bulk",
+                "best practice",
+                "error details",
+                "show",
+            ]
+        )
+        analysis_context = any(
+            term in lowered
+            for term in [
+                "dashboard script",
+                "widget script",
+                "background dashboard filter",
+                "single filter",
+                "left-click",
+                "resolution deadline",
+                "invoice data",
+                "column width",
+                "list selection",
+                "dashboard api",
+                "python dataframe",
+                "schedule builds",
+                "schedule all",
+                "build at",
+                "cube names",
+                "exports like xlsx",
+                "filters of the dashboard",
+                "replacing ssrs",
+                "live detail reporting",
+            ]
+        )
+        explanation_burden = any(
+            term in lowered
+            for term in [
+                "how to",
+                "trying to",
+                "is it possible",
+                "can i",
+                "i wonder if",
+                "better way",
+                "need to",
+                "want to",
+                "currently",
+                "best practice",
+                "provide a list",
+                "is there a way",
+            ]
+        )
+        discussion_style = any(
+            term in lowered
+            for term in [
+                "hey everyone",
+                "hello experts",
+                "hi!",
+                "i wonder if",
+                "can someone help",
+            ]
+        )
+        support_boilerplate = any(
+            term in lowered
+            for term in [
+                "accepted solution",
+                "mark as accepted solution",
+                "community manager",
+            ]
+        ) and not discrepancy_presence
+        low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
+
+        score = 0.0
+        score += 1.2 if metric_presence else 0.0
+        score += 1.0 if discrepancy_presence or has_required_problem else 0.0
+        score += 0.9 if analysis_context else 0.0
+        score += 0.8 if explanation_burden else 0.0
+        score += 0.7 if has_workflow_pain else 0.0
+        score += 0.5 if discussion_style and (metric_presence or discrepancy_presence or analysis_context) else 0.0
+        score -= 1.2 if support_boilerplate else 0.0
+        score -= 0.8 if usage_only else 0.0
+
+        signal_count = sum(
+            int(flag)
+            for flag in [
+                metric_presence,
+                discrepancy_presence or has_required_problem,
+                analysis_context,
+                explanation_burden,
+                has_workflow_pain,
+            ]
+        )
+        if support_boilerplate:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="support_reply_without_analysis_context",
+                rescue_reason="",
+                passes=False,
+            )
+        if low_signal:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="sisense_low_signal",
+                rescue_reason="",
+                passes=False,
+            )
+        if signal_count >= 3 and (discrepancy_presence or has_required_problem or explanation_burden or analysis_context):
+            return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
+        if signal_count >= 2:
+            rescue_reason = "sisense_dashboard_filter_rescue"
+            fail_reason = "weak_problem_phrasing"
+            if metric_presence and not (discrepancy_presence or has_required_problem):
+                fail_reason = "metric_present_but_no_explicit_blocker"
+                rescue_reason = "sisense_metric_context_rescue"
+            elif not has_workflow_pain and (metric_presence or analysis_context):
+                fail_reason = "weak_workflow_signal"
+                rescue_reason = "sisense_workflow_weak_rescue"
+            elif discussion_style and (metric_presence or discrepancy_presence or analysis_context):
+                fail_reason = "discussion_style_but_relevant"
+                rescue_reason = "sisense_discussion_style_rescue"
+            return QualityAssessment(score=round(score, 3), bucket="borderline", fail_reason=fail_reason, rescue_reason=rescue_reason, passes=True)
+        return QualityAssessment(
+            score=round(score, 3),
+            bucket="fail",
+            fail_reason="sisense_problem_without_reporting_context",
+            rescue_reason="",
+            passes=False,
+        )
+
+    if source == "mixpanel_community":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "mixpanel",
+                "event",
+                "events",
+                "funnel",
+                "funnels",
+                "retention",
+                "insights",
+                "breakdown",
+                "distinct id",
+                "identify",
+                "mirror",
+                "country",
+                "city",
+                "session duration",
+                "conversion time",
+            ]
+        )
+        discrepancy_presence = any(
+            term in lowered
+            for term in [
+                "wrong",
+                "incorrect",
+                "missing",
+                "not linking",
+                "not showing",
+                "discrepancy",
+                "limitation",
+                "hurdle",
+                "issue",
+                "problem",
+            ]
+        )
+        analysis_context = any(
+            term in lowered
+            for term in [
+                "new project",
+                "mirror sync",
+                "sdk",
+                "segment",
+                "customer web app",
+                "marketing website",
+                "tracking",
+                "query",
+                "ui",
+                "screen",
+            ]
+        )
+        explanation_burden = any(
+            term in lowered
+            for term in [
+                "trying to",
+                "facing",
+                "why does",
+                "why is",
+                "can someone help",
+                "how can i",
+            ]
+        )
+        low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
+
+        score = 0.0
+        score += 1.2 if metric_presence else 0.0
+        score += 1.2 if discrepancy_presence or has_required_problem else 0.0
+        score += 0.9 if analysis_context else 0.0
+        score += 0.8 if explanation_burden else 0.0
+        score += 0.7 if has_workflow_pain else 0.0
+        score -= 0.8 if usage_only else 0.0
+
+        signal_count = sum(
+            int(flag)
+            for flag in [
+                metric_presence,
+                discrepancy_presence or has_required_problem,
+                analysis_context,
+                explanation_burden,
+                has_workflow_pain,
+            ]
+        )
+        if low_signal:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="mixpanel_low_signal",
+                rescue_reason="",
+                passes=False,
+            )
+        if signal_count >= 3 and (discrepancy_presence or has_required_problem or explanation_burden):
+            return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
+        if signal_count >= 2:
+            rescue_reason = "mixpanel_event_reporting_rescue"
+            fail_reason = "weak_problem_phrasing"
+            if metric_presence and not (discrepancy_presence or has_required_problem):
+                fail_reason = "metric_present_but_no_explicit_blocker"
+                rescue_reason = "mixpanel_metric_context_rescue"
+            elif not has_workflow_pain and (metric_presence or analysis_context):
+                fail_reason = "weak_workflow_signal"
+                rescue_reason = "mixpanel_workflow_weak_rescue"
+            return QualityAssessment(score=round(score, 3), bucket="borderline", fail_reason=fail_reason, rescue_reason=rescue_reason, passes=True)
+        return QualityAssessment(
+            score=round(score, 3),
+            bucket="fail",
+            fail_reason="mixpanel_problem_without_reporting_context",
             rescue_reason="",
             passes=False,
         )

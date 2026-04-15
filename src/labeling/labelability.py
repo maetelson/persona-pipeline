@@ -22,9 +22,13 @@ BUSINESS_COMMUNITY_SOURCES = {
     "shopify_community",
     "hubspot_community",
     "klaviyo_community",
+    "mixpanel_community",
     "google_ads_community",
     "google_ads_help_community",
     "merchant_center_community",
+    "power_bi_community",
+    "qlik_community",
+    "sisense_community",
 }
 
 
@@ -128,6 +132,390 @@ def _apply_source_labelability_adjustments(
 ) -> tuple[int, list[str]]:
     """Apply source-specific labelability calibration while keeping the gate deterministic."""
     reason_parts: list[str] = []
+    if source == "power_bi_community":
+        quality_bucket = str(row.get("quality_bucket", "") or "")
+        quality_score = float(row.get("quality_score", 0.0) or 0.0)
+
+        if quality_bucket == "hard_pass":
+            score += 2
+            reason_parts.append("power_bi_quality_hard_pass")
+        elif quality_bucket == "borderline":
+            score += 1
+            reason_parts.append("power_bi_quality_borderline")
+
+        if contains_any_term(
+            lowered,
+            [
+                "power bi",
+                "dax",
+                "measure",
+                "measures",
+                "matrix",
+                "slicer",
+                "visual",
+                "desktop",
+                "service",
+                "gateway",
+                "refresh",
+                "filter context",
+                "row context",
+                "distinct count",
+                "wrong total",
+                "wrong totals",
+                "not matching",
+                "mismatch",
+                "export",
+                "csv",
+            ],
+        ):
+            score += 1
+            reason_parts.append("power_bi_metric_reporting_context")
+
+        if contains_any_term(
+            lowered,
+            [
+                "why",
+                "workaround",
+                "limitation",
+                "client wants",
+                "expected outcome",
+                "trying to",
+                "need to",
+                "is there any way",
+                "is there an option",
+            ],
+        ):
+            score += 1
+            reason_parts.append("power_bi_explanation_burden")
+
+        if quality_score >= 4.0 and len(lowered.strip()) >= min_text_length:
+            score += 1
+            reason_parts.append("power_bi_quality_score_bonus")
+
+        if contains_any_term(
+            lowered,
+            [
+                "accepted solution",
+                "has your issue been resolved",
+                "please feel free to contact us",
+                "community member addressed your query",
+            ],
+        ):
+            score -= 2
+            reason_parts.append("power_bi_support_boilerplate_penalty")
+
+        return score, reason_parts
+
+    if source == "qlik_community":
+        quality_bucket = str(row.get("quality_bucket", "") or "")
+        quality_score = float(row.get("quality_score", 0.0) or 0.0)
+
+        if quality_bucket == "hard_pass":
+            score += 2
+            reason_parts.append("qlik_quality_hard_pass")
+        elif quality_bucket == "borderline":
+            score += 1
+            reason_parts.append("qlik_quality_borderline")
+
+        if contains_any_term(
+            lowered,
+            [
+                "qlik",
+                "qlik sense",
+                "qlikview",
+                "nprinting",
+                "set analysis",
+                "pivot table",
+                "straight table",
+                "combo chart",
+                "cross tab",
+                "pixel perfect",
+                "expression",
+                "measure",
+                "dimension",
+                "total",
+                "totals",
+                "kpi",
+                "dashboard",
+                "report",
+                "excel",
+                "newsstand",
+            ],
+        ):
+            score += 1
+            reason_parts.append("qlik_metric_reporting_context")
+
+        if contains_any_term(
+            lowered,
+            [
+                "not aggregating",
+                "different totals",
+                "collapsed or expanded",
+                "desired level",
+                "stuck",
+                "trying to",
+                "need to",
+                "goal is",
+                "would like to know",
+                "how to",
+                "issue",
+                "problem",
+                "not updating",
+                "greyed out",
+            ],
+        ):
+            score += 1
+            reason_parts.append("qlik_problem_framing_bonus")
+
+        if quality_score >= 4.0 and len(lowered.strip()) >= min_text_length:
+            score += 1
+            reason_parts.append("qlik_quality_score_bonus")
+
+        return score, reason_parts
+
+    if source == "mixpanel_community":
+        quality_bucket = str(row.get("quality_bucket", "") or "")
+        quality_score = float(row.get("quality_score", 0.0) or 0.0)
+
+        if quality_bucket == "hard_pass":
+            score += 2
+            reason_parts.append("mixpanel_quality_hard_pass")
+        elif quality_bucket == "borderline":
+            score += 1
+            reason_parts.append("mixpanel_quality_borderline")
+
+        if contains_any_term(
+            lowered,
+            [
+                "mixpanel",
+                "event",
+                "events",
+                "funnel",
+                "funnels",
+                "retention",
+                "insights",
+                "query",
+                "jql",
+                "distinct users",
+                "distinct id",
+                "identify",
+                "browser",
+                "country",
+                "city",
+                "dashboard",
+                "tracking",
+                "mirror sync",
+            ],
+        ):
+            score += 1
+            reason_parts.append("mixpanel_metric_reporting_context")
+
+        if contains_any_term(
+            lowered,
+            [
+                "undefined",
+                "not set",
+                "missing",
+                "not seeing events",
+                "not receiving any events",
+                "issue",
+                "troubleshooting",
+                "trying to",
+                "can't figure out",
+                "cannot figure out",
+                "what is this error",
+                "difference",
+            ],
+        ):
+            score += 1
+            reason_parts.append("mixpanel_problem_framing_bonus")
+
+        if quality_score >= 4.0 and len(lowered.strip()) >= min_text_length:
+            score += 1
+            reason_parts.append("mixpanel_quality_score_bonus")
+
+        return score, reason_parts
+
+    if source == "sisense_community":
+        quality_bucket = str(row.get("quality_bucket", "") or "")
+        quality_score = float(row.get("quality_score", 0.0) or 0.0)
+
+        if quality_bucket == "hard_pass":
+            score += 2
+            reason_parts.append("sisense_quality_hard_pass")
+        elif quality_bucket == "borderline":
+            score += 1
+            reason_parts.append("sisense_quality_borderline")
+
+        if contains_any_term(
+            lowered,
+            [
+                "sisense",
+                "dashboard",
+                "widget",
+                "pivot table",
+                "chart",
+                "filter",
+                "break by",
+                "data model",
+                "jump to dashboard",
+                "scientific units",
+                "javascript",
+                "column width",
+            ],
+        ):
+            score += 1
+            reason_parts.append("sisense_metric_reporting_context")
+
+        if contains_any_term(
+            lowered,
+            [
+                "reset",
+                "limits",
+                "dynamically change",
+                "multiple columns",
+                "same month or not",
+                "better way",
+                "how to",
+                "is it possible",
+                "trying to",
+                "need to",
+            ],
+        ):
+            score += 1
+            reason_parts.append("sisense_problem_framing_bonus")
+
+        if quality_score >= 4.0 and len(lowered.strip()) >= min_text_length:
+            score += 1
+            reason_parts.append("sisense_quality_score_bonus")
+
+        return score, reason_parts
+
+    if source == "github_discussions":
+        if contains_any_term(
+            lowered,
+            [
+                "dashboard",
+                "report",
+                "reporting",
+                "metric",
+                "metrics",
+                "pivot table",
+                "table panel",
+                "matrix",
+                "filter",
+                "filters",
+                "drill down",
+                "drill-through",
+                "xlsx",
+                "csv",
+                "question",
+                "model",
+                "semantic layer",
+            ],
+        ):
+            score += 1
+            reason_parts.append("github_discussions_reporting_context")
+
+        if contains_any_term(
+            lowered,
+            [
+                "bug description",
+                "what problem does this solve",
+                "incorrect",
+                "wrong",
+                "fails",
+                "failed",
+                "not working",
+                "not showing",
+                "unable",
+                "can't",
+                "cannot",
+                "workaround",
+                "trying to",
+                "need to",
+                "should",
+            ],
+        ):
+            score += 1
+            reason_parts.append("github_discussions_problem_frame")
+
+        return score, reason_parts
+
+    if source == "metabase_discussions":
+        quality_bucket = str(row.get("quality_bucket", "") or "")
+        quality_score = float(row.get("quality_score", 0.0) or 0.0)
+
+        if quality_bucket == "hard_pass":
+            score += 2
+            reason_parts.append("metabase_quality_hard_pass")
+        elif quality_bucket == "borderline":
+            score += 1
+            reason_parts.append("metabase_quality_borderline")
+
+        if contains_any_term(
+            lowered,
+            [
+                "metabase",
+                "dashboard",
+                "dashboards",
+                "question",
+                "questions",
+                "model",
+                "models",
+                "query",
+                "queries",
+                "native sql",
+                "filter",
+                "filters",
+                "dropdown",
+                "chart",
+                "charts",
+                "table",
+                "pivot",
+                "pivot table",
+                "metadata sync",
+                "csv",
+                "xlsx",
+                "export",
+            ],
+        ):
+            score += 1
+            reason_parts.append("metabase_reporting_context")
+
+        if contains_any_term(
+            lowered,
+            [
+                "issue",
+                "problem",
+                "failed",
+                "fails",
+                "failing",
+                "can't",
+                "cannot",
+                "unable",
+                "wrong",
+                "incorrect",
+                "not working",
+                "not showing",
+                "not syncing",
+                "breaking dashboards",
+                "workaround",
+                "trying to",
+                "need to",
+                "how do you handle",
+                "is there a way",
+            ],
+        ):
+            score += 1
+            reason_parts.append("metabase_problem_frame")
+
+        if quality_score >= 3.0:
+            score += 1
+            reason_parts.append("metabase_quality_score_bonus")
+
+        return score, reason_parts
+
     if source != "google_ads_help_community":
         return score, reason_parts
 

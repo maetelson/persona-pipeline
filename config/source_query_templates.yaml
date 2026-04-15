@@ -166,16 +166,32 @@ source_templates:
       - aggregation_filter_issue
       - dashboard_confusion
       - source_of_truth_conflict
-  ga4_help_community:
+  mixpanel_community:
     preferred_banks:
-      - source_of_truth_conflict
-      - attribution_tracking_issue
       - numbers_mismatch
+      - metric_definition_confusion
       - trend_interpretation_confusion
-      - funnel_conversion_drop
-  looker_studio_forum:
+      - source_of_truth_conflict
+      - insight_to_action_failure
+  amplitude_community:
     preferred_banks:
-      - dashboard_confusion
+      - numbers_mismatch
+      - metric_definition_confusion
+      - trend_interpretation_confusion
+      - segmentation_breakdown_confusion
+      - source_of_truth_conflict
+      - insight_to_action_failure
+  qlik_community:
+    preferred_banks:
       - numbers_mismatch
       - aggregation_filter_issue
       - metric_definition_confusion
+      - dashboard_confusion
+      - segmentation_breakdown_confusion
+  sisense_community:
+    preferred_banks:
+      - numbers_mismatch
+      - aggregation_filter_issue
+      - dashboard_confusion
+      - source_of_truth_conflict
+      - segmentation_breakdown_confusion

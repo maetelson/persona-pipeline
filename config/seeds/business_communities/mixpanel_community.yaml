@@ -1,0 +1,57 @@
+source_id: mixpanel_community
+source_group: business_communities
+max_query_count: 10
+source_notes: "Mixpanel Community seeds focus on metric trust, funnel and event discrepancies, breakdown confusion, trend interpretation, and turning product analytics numbers into action."
+candidate_seed_pool:
+  - why does this report look wrong
+  - this funnel makes no sense
+  - what changed in this trend
+  - how do I explain this drop
+  - which report should I use
+active_core_seeds:
+  # Canonical axes: numbers_mismatch, metric_definition_confusion,
+  # trend_interpretation_confusion, segmentation_breakdown_confusion,
+  # source_of_truth_conflict, insight_to_action_failure.
+  - seed: event count doesn't match report
+    reason: Native product-analytics mismatch phrasing tied to trust in reported numbers.
+  - seed: funnel numbers don't match insights
+    reason: Strong Mixpanel-specific discrepancy framing around funnel interpretation.
+  - seed: which mixpanel metric should I trust
+    reason: Explicit source-of-truth wording in a community-native voice.
+  - seed: what changed in this trend
+    reason: Captures trend interpretation pain without centering conversion only.
+  - seed: breakdown by property does not add up
+    reason: Mixpanel users often frame confusion through event properties and breakdowns.
+  - seed: dashboard says one thing export says another
+    reason: Preserves dashboard-versus-export trust conflict.
+  - seed: source of truth conflict in mixpanel
+    reason: Keeps broader quantitative trust pain explicit.
+  - seed: report makes no sense to stakeholders
+    reason: Adds explanation pressure and interpretation failure.
+  - seed: retention or funnel trend changed suddenly
+    reason: Keeps trend-diagnosis language broad across key Mixpanel analyses.
+  - seed: what should I do based on this report
+    reason: Adds insight-to-action failure in operator language.
+optional_templates:
+  - template: distinct id mismatch in mixpanel
+    reason: Preserved as a narrower identity-resolution branch, but downgraded to avoid over-indexing on one implementation detail.
+  - template: attribution in mixpanel looks wrong
+    reason: Preserved because attribution matters, but kept optional so it does not dominate the whole source.
+  - template: dashboard and raw event feed are different
+    reason: Preserved as a strong trust phrase, but optional because export/report mismatch already covers similar ground.
+negative_terms:
+  - api
+  - sdk install
+  - instrumentation setup
+  - javascript
+  - react native
+  - swift
+  - android sdk
+  - ios sdk
+  - webhook
+  - job
+legacy_seed_notes:
+  - seed: ga4 revenue doesn't match shopify
+    action: removed
+    why: community-language mismatch
+    note: Replaced by Mixpanel-native event, funnel, and property breakdown trust phrases.

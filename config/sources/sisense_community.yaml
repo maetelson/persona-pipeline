@@ -1,0 +1,40 @@
+source_id: sisense_community
+source_name: Sisense Community
+source_group: business_communities
+collector_kind: business_communities
+normalizer_kind: business_communities
+enabled: true
+min_raw_records_warn: 0
+platform: sisense
+product_or_tool: Sisense
+check_robots: true
+query_mode: source_config
+seed_bank_path: config/seeds/business_communities/sisense_community.yaml
+seed_source_token: sisense
+seed_query_style: support_community
+max_query_count: 100
+max_threads_per_run: 10000
+max_discovered_threads_per_url: 2000
+discovery_page_count: 20
+sleep_seconds: 0.05
+filter_discovery_by_seed: false
+include_candidate_seed_pool_for_discovery: false
+min_seed_term_matches: 1
+aliases:
+  - sisense
+  - sisense community
+discovery_urls:
+  - url: https://community.sisense.com/
+    board: Sisense Community
+  - url: https://community.sisense.com/t5/Help-and-How-To/bg-p/help_and_how_to
+    board: Help and How-To
+  - url: https://community.sisense.com/t5/Troubleshooting/bg-p/troubleshooting
+    board: Troubleshooting
+discovery_exclude_url_patterns:
+  - /events
+  - /blogs
+  - /kb
+  - /groups
+sitemap_discovery_urls:
+  - url: https://community.sisense.com/sitemap_help_and_how_to.xml.gz
+    board: Help and How-To

@@ -30,6 +30,11 @@ class SeedBankTests(unittest.TestCase):
             ("business_communities", "google_ads_community"),
             ("business_communities", "google_ads_help_community"),
             ("business_communities", "merchant_center_community"),
+            ("business_communities", "mixpanel_community"),
+            ("business_communities", "amplitude_community"),
+            ("business_communities", "power_bi_community"),
+            ("business_communities", "qlik_community"),
+            ("business_communities", "sisense_community"),
             ("discourse", "metabase_discussions"),
             ("reddit", "reddit_r_excel"),
             ("reddit", "reddit_analytics"),
@@ -106,6 +111,72 @@ class SeedBankTests(unittest.TestCase):
         self.assertIn("google ads report discrepancy", expanded)
         self.assertIn("google ads roas dropped but traffic looks normal", expanded)
         self.assertTrue(all(query.count("google ads") == 1 for query in expanded))
+
+    def test_power_bi_queries_use_power_bi_specific_seed_bank(self) -> None:
+        config = load_yaml(ROOT / "config" / "sources" / "power_bi_community.yaml")
+        queries = build_discovery_queries(
+            ROOT,
+            config=config,
+            source_id="power_bi_community",
+            source_group="business_communities",
+        )
+        expanded = [query.expanded_query for query in queries]
+        self.assertIn("power bi wrong totals", expanded)
+        self.assertIn("power bi desktop and service show different numbers", expanded)
+        self.assertIn("power bi export data doesn't match visual", expanded)
+        self.assertTrue(all("power bi" in query for query in expanded))
+
+    def test_mixpanel_queries_use_mixpanel_specific_seed_bank(self) -> None:
+        config = load_yaml(ROOT / "config" / "sources" / "mixpanel_community.yaml")
+        queries = build_discovery_queries(
+            ROOT,
+            config=config,
+            source_id="mixpanel_community",
+            source_group="business_communities",
+        )
+        expanded = [query.expanded_query for query in queries]
+        self.assertIn("mixpanel event count doesn't match report", expanded)
+        self.assertIn("mixpanel funnel numbers don't match insights", expanded)
+        self.assertIn("mixpanel what should i do based on this report", expanded)
+
+    def test_qlik_queries_use_qlik_specific_seed_bank(self) -> None:
+        config = load_yaml(ROOT / "config" / "sources" / "qlik_community.yaml")
+        queries = build_discovery_queries(
+            ROOT,
+            config=config,
+            source_id="qlik_community",
+            source_group="business_communities",
+        )
+        expanded = [query.expanded_query for query in queries]
+        self.assertIn("wrong totals in qlik chart", expanded)
+        self.assertIn("qlik set analysis result doesn't match total", expanded)
+        self.assertIn("qlik dashboard and export don't match", expanded)
+
+    def test_amplitude_queries_use_amplitude_specific_seed_bank(self) -> None:
+        config = load_yaml(ROOT / "config" / "sources" / "amplitude_community.yaml")
+        queries = build_discovery_queries(
+            ROOT,
+            config=config,
+            source_id="amplitude_community",
+            source_group="business_communities",
+        )
+        expanded = [query.expanded_query for query in queries]
+        self.assertIn("amplitude event count doesn't match chart", expanded)
+        self.assertIn("amplitude retention analysis numbers don't make sense", expanded)
+        self.assertIn("amplitude what should i do based on this analysis", expanded)
+
+    def test_sisense_queries_use_sisense_specific_seed_bank(self) -> None:
+        config = load_yaml(ROOT / "config" / "sources" / "sisense_community.yaml")
+        queries = build_discovery_queries(
+            ROOT,
+            config=config,
+            source_id="sisense_community",
+            source_group="business_communities",
+        )
+        expanded = [query.expanded_query for query in queries]
+        self.assertIn("sisense dashboard numbers don't match", expanded)
+        self.assertIn("wrong totals in sisense pivot table", expanded)
+        self.assertIn("which sisense number should i trust", expanded)
 
 
 if __name__ == "__main__":
