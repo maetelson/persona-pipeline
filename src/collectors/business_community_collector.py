@@ -16,6 +16,7 @@ from src.collectors.base import BaseCollector, RawRecord
 from src.collectors.business_community_parser import (
     ThreadLink,
     discover_rss_thread_links,
+    discover_sitemap_index_urls,
     discover_sitemap_thread_links,
     discover_thread_links,
     parse_thread_page,
@@ -38,6 +39,7 @@ class BusinessCommunityCollector(BaseCollector):
         self.source_name = source_name
         super().__init__(config=config, data_dir=data_dir)
         self._robots_cache: dict[str, bool] = {}
+        self._network_retry_sleep_seconds = 0.0
         self.business_health: dict[str, int | str] = {
             "source_id": self.source_name,
             "discovered_thread_count": 0,
@@ -56,10 +58,18 @@ class BusinessCommunityCollector(BaseCollector):
                 return records
 
         discovered = self._discover_threads()
-        self._fail_fast_on_low_discovery(discovered)
+        if not discovered and self._discovery_network_failed():
+            raise RuntimeError(
+                f"{self.source_name} discovery failed because remote community fetches hit a network/DNS outage. "
+                "This is not a trustworthy zero-yield result; retry collection after connectivity recovers."
+            )
+        self._warn_on_low_discovery(discovered)
         records: list[RawRecord] = []
         seen_urls: set[str] = set()
-        max_threads = int(os.getenv("BUSINESS_COMMUNITY_MAX_THREADS", self.config.get("max_threads_per_run", 20)))
+        max_threads = _optional_positive_int(
+            os.getenv("BUSINESS_COMMUNITY_MAX_THREADS"),
+            self.config.get("max_threads_per_run"),
+        )
         sleep_seconds = float(self.config.get("sleep_seconds", 0.5))
         user_agent = self._user_agent()
 
@@ -67,13 +77,12 @@ class BusinessCommunityCollector(BaseCollector):
             if link.url in seen_urls:
                 continue
             seen_urls.add(link.url)
-            if len(seen_urls) > max_threads:
+            if max_threads is not None and len(seen_urls) > max_threads:
                 break
             if not self._robots_allowed(link.url, user_agent):
                 continue
-            response = fetch_text(link.url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
+            response = self._fetch_with_retries(link.url, user_agent=user_agent, stage="fetch")
             if not response.ok:
-                self._record_error(link.url, "fetch", str(response.status_code), response.error_message or response.crawl_status)
                 continue
             self.business_health["fetched_thread_count"] = int(self.business_health["fetched_thread_count"]) + 1
             try:
@@ -127,7 +136,7 @@ class BusinessCommunityCollector(BaseCollector):
         where_clause = str(api_cfg.get("where_clause", "") or "").strip()
         if not base_url or not board_ids:
             return []
-        max_items = int(api_cfg.get("max_items_per_board", 200))
+        max_items = _optional_positive_int(api_cfg.get("max_items_per_board"))
         page_size = min(max(int(api_cfg.get("page_size", 100)), 1), 100)
         top_level_only = bool(api_cfg.get("top_level_only", False))
         user_agent = self._user_agent()
@@ -135,16 +144,22 @@ class BusinessCommunityCollector(BaseCollector):
         seen_ids: set[str] = set()
         for board_id in board_ids:
             fetched_for_board = 0
-            for offset in range(0, max_items, page_size):
-                limit = min(page_size, max_items - offset)
+            offset = 0
+            while True:
+                if max_items is None:
+                    limit = page_size
+                else:
+                    remaining = max_items - offset
+                    if remaining <= 0:
+                        break
+                    limit = min(page_size, remaining)
                 query = f"SELECT * FROM messages WHERE board.id='{board_id}'"
                 if where_clause:
                     query = f"{query} {where_clause.strip()}"
                 query = f"{query} LIMIT {limit} OFFSET {offset}"
                 url = f"{base_url}/api/2.0/search?q={quote(query)}"
-                response = fetch_text(url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
+                response = self._fetch_with_retries(url, user_agent=user_agent, stage="api_fetch")
                 if not response.ok:
-                    self._record_error(url, "api_fetch", str(response.status_code), response.error_message or response.crawl_status)
                     break
                 items = _khoros_items(response.body_text)
                 accepted = 0
@@ -176,8 +191,23 @@ class BusinessCommunityCollector(BaseCollector):
                 )
                 if len(items) < limit:
                     break
-            LOGGER.info("Khoros API discovery for %s board=%s accepted=%s", self.source_name, board_id, fetched_for_board)
-        return records[: int(self.config.get("max_threads_per_run", len(records)))]
+                offset += limit
+            board_status = "ok" if fetched_for_board else "empty_results"
+            log = LOGGER.info if fetched_for_board else LOGGER.warning
+            log(
+                "Khoros API discovery for %s board=%s accepted=%s status=%s",
+                self.source_name,
+                board_id,
+                fetched_for_board,
+                board_status,
+            )
+        max_threads = _optional_positive_int(
+            os.getenv("BUSINESS_COMMUNITY_MAX_THREADS"),
+            self.config.get("max_threads_per_run"),
+        )
+        if max_threads is None:
+            return records
+        return records[:max_threads]
 
     def _build_khoros_record(self, item: dict[str, Any], board_id: str) -> RawRecord:
         """Build a raw record from one public Khoros API message item."""
@@ -231,7 +261,10 @@ class BusinessCommunityCollector(BaseCollector):
         """Discover candidate thread URLs from configured public listing pages."""
         platform = str(self.config.get("platform", ""))
         user_agent = self._user_agent()
-        max_per_url = int(os.getenv("BUSINESS_COMMUNITY_MAX_DISCOVERY_PER_URL", self.config.get("max_discovered_threads_per_url", 20)))
+        max_per_url = _optional_positive_int(
+            os.getenv("BUSINESS_COMMUNITY_MAX_DISCOVERY_PER_URL"),
+            self.config.get("max_discovered_threads_per_url"),
+        )
         discovery_queries = self._discovery_queries()
         discovered: dict[str, ThreadLink] = {}
         for row in self._expanded_discovery_url_rows():
@@ -241,9 +274,8 @@ class BusinessCommunityCollector(BaseCollector):
                 continue
             if not self._robots_allowed(url, user_agent):
                 continue
-            response = fetch_text(url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
+            response = self._fetch_with_retries(url, user_agent=user_agent, stage="discovery_fetch")
             if not response.ok:
-                self._record_error(url, "discovery_fetch", str(response.status_code), response.error_message or response.crawl_status)
                 continue
             links = discover_thread_links(response.body_text, base_url=url, platform=platform, board=board)
             accepted = 0
@@ -254,7 +286,7 @@ class BusinessCommunityCollector(BaseCollector):
                     continue
                 discovered[link.url] = link
                 accepted += 1
-                if accepted >= max_per_url:
+                if max_per_url is not None and accepted >= max_per_url:
                     break
             self.collection_stats.append(
                 {
@@ -282,9 +314,8 @@ class BusinessCommunityCollector(BaseCollector):
                 continue
             if not self._robots_allowed(url, user_agent):
                 continue
-            response = fetch_text(url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
+            response = self._fetch_with_retries(url, user_agent=user_agent, stage="rss_fetch")
             if not response.ok:
-                self._record_error(url, "rss_fetch", str(response.status_code), response.error_message or response.crawl_status)
                 continue
             links = discover_rss_thread_links(response.body_text, base_url=url, platform=platform, board=board)
             accepted = 0
@@ -295,7 +326,7 @@ class BusinessCommunityCollector(BaseCollector):
                     continue
                 discovered[link.url] = link
                 accepted += 1
-                if accepted >= max_per_url:
+                if max_per_url is not None and accepted >= max_per_url:
                     break
             self.collection_stats.append(
                 {
@@ -323,9 +354,8 @@ class BusinessCommunityCollector(BaseCollector):
                 continue
             if not self._robots_allowed(url, user_agent):
                 continue
-            response = fetch_text(url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
+            response = self._fetch_with_retries(url, user_agent=user_agent, stage="sitemap_fetch")
             if not response.ok:
-                self._record_error(url, "sitemap_fetch", str(response.status_code), response.error_message or response.crawl_status)
                 continue
             links = discover_sitemap_thread_links(response.body_text, base_url=url, platform=platform, board=board)
             accepted = 0
@@ -336,7 +366,7 @@ class BusinessCommunityCollector(BaseCollector):
                     continue
                 discovered[link.url] = link
                 accepted += 1
-                if accepted >= max_per_url:
+                if max_per_url is not None and accepted >= max_per_url:
                     break
             self.collection_stats.append(
                 {
@@ -357,10 +387,80 @@ class BusinessCommunityCollector(BaseCollector):
                     "stop_reason": "ok" if links else "no_thread_links",
                 }
             )
+        sitemap_rows = self._expand_sitemap_index_rows(user_agent)
+        for row in sitemap_rows:
+            url = str(row.get("url", "")).strip()
+            board = str(row.get("board", "")).strip()
+            if not url or not self._robots_allowed(url, user_agent):
+                continue
+            response = fetch_text(url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
+            if not response.ok:
+                self._record_error(url, "sitemap_fetch", str(response.status_code), response.error_message or response.crawl_status)
+                continue
+            links = discover_sitemap_thread_links(response.body_text, base_url=url, platform=platform, board=board)
+            accepted = 0
+            for link in links:
+                if link.url in discovered:
+                    continue
+                if not self._accept_discovered_link(link, discovery_queries):
+                    continue
+                discovered[link.url] = link
+                accepted += 1
+                if max_per_url is not None and accepted >= max_per_url:
+                    break
+            self.collection_stats.append(
+                {
+                    "source": self.source_name,
+                    "query_id": "sitemap_index_discovery",
+                    "query_text": url,
+                    "seed_used": "",
+                    "expanded_query": "",
+                    "discovered_url_count": accepted,
+                    "window_id": "",
+                    "window_start": "",
+                    "window_end": "",
+                    "page_no": 1,
+                    "page_raw_count": accepted,
+                    "page_raw_count_before_dedupe": len(links),
+                    "duplicate_count": max(0, len(links) - accepted),
+                    "duplicate_ratio": round((max(0, len(links) - accepted) / max(len(links), 1)), 4),
+                    "stop_reason": "ok" if links else "no_thread_links",
+                }
+            )
         self.business_health["discovered_thread_count"] = len(discovered)
         discovered_links = list(discovered.values())
         self._record_seed_discovery_audit(discovery_queries=discovery_queries, links=discovered_links)
         return discovered_links
+
+    def _expand_sitemap_index_rows(self, user_agent: str) -> list[dict[str, str]]:
+        """Return child sitemap rows discovered from configured sitemap index pages."""
+        rows: list[dict[str, str]] = []
+        include_patterns = [str(pattern) for pattern in (self.config.get("sitemap_index_include_patterns", []) or []) if str(pattern).strip()]
+        exclude_patterns = [str(pattern) for pattern in (self.config.get("sitemap_index_exclude_patterns", []) or []) if str(pattern).strip()]
+        for row in self.config.get("sitemap_index_urls", []) or []:
+            url = str(row.get("url", "") if isinstance(row, dict) else row).strip()
+            board = str(row.get("board", "") if isinstance(row, dict) else "").strip()
+            if not url or not self._robots_allowed(url, user_agent):
+                continue
+            response = self._fetch_with_retries(url, user_agent=user_agent, stage="sitemap_index_fetch")
+            if not response.ok:
+                continue
+            for child_url in discover_sitemap_index_urls(response.body_text):
+                lowered = child_url.lower()
+                if include_patterns and not any(re.search(pattern, lowered, flags=re.IGNORECASE) for pattern in include_patterns):
+                    continue
+                if exclude_patterns and any(re.search(pattern, lowered, flags=re.IGNORECASE) for pattern in exclude_patterns):
+                    continue
+                rows.append({"url": child_url, "board": board})
+        deduped: list[dict[str, str]] = []
+        seen: set[str] = set()
+        for row in rows:
+            url = str(row.get("url", "")).strip()
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            deduped.append({"url": url, "board": str(row.get("board", "")).strip()})
+        return deduped
 
     def _expanded_discovery_url_rows(self) -> list[dict[str, str]]:
         """Expand listing URLs across simple public pagination patterns."""
@@ -595,23 +695,96 @@ class BusinessCommunityCollector(BaseCollector):
             "Mozilla/5.0 (compatible; persona-pipeline/0.1; public research)",
         )
 
-    def _fail_fast_on_low_discovery(self, discovered: list[ThreadLink]) -> None:
-        """Abort before thread fetch when listing discovery cannot satisfy the raw-volume gate."""
+    def _warn_on_low_discovery(self, discovered: list[ThreadLink]) -> None:
+        """Warn when discovery volume is low, but keep collecting what is publicly available."""
         fail_fast = os.getenv("COLLECT_FAIL_FAST_ON_LOW_RAW", "true").strip().lower() in {"1", "true", "yes", "y", "on"}
-        if not fail_fast:
-            return
         threshold = int(self.config.get("min_raw_records_warn", os.getenv("COLLECT_MIN_RAW_RECORDS_WARN", "600")))
         if threshold <= 0:
             return
         discovered_count = len(discovered)
         if discovered_count > threshold:
             return
-        self._record_collection_summary(0)
-        raise RuntimeError(
-            f"{self.source_name} discovered only {discovered_count} unique public thread URLs; "
-            f"minimum raw volume requires more than {threshold}. "
-            "The configured public listing/category pages do not expose enough unique threads."
+        LOGGER.warning(
+            "%s discovered only %s unique public thread URLs against threshold>%s; continuing with available public threads%s.",
+            self.source_name,
+            discovered_count,
+            threshold,
+            " (fail-fast disabled for low-discovery business community sources)" if fail_fast else "",
         )
+
+    def _fetch_with_retries(self, url: str, user_agent: str, stage: str):
+        """Fetch one public community URL with retries for transient network failures."""
+        timeout_seconds = int(self.config.get("timeout_seconds", 20))
+        max_attempts = int(self.config.get("fetch_retry_attempts", 4) or 4)
+        retryable_statuses = {0, 429, 500, 502, 503, 504}
+        last_response = None
+        for attempt in range(1, max_attempts + 1):
+            response = fetch_text(url, user_agent=user_agent, timeout_seconds=timeout_seconds)
+            last_response = response
+            if response.ok:
+                return response
+            retryable = response.status_code in retryable_statuses or response.crawl_status in {"network_error", "network_timeout"}
+            if not retryable or attempt >= max_attempts:
+                self._record_error(url, stage, str(response.status_code), response.error_message or response.crawl_status)
+                return response
+            wait_seconds = self._retry_sleep_seconds(attempt, response.status_code, response.crawl_status)
+            LOGGER.warning(
+                "%s received %s for %s (attempt %s/%s); sleeping %.1fs before retry.",
+                self.source_name,
+                response.error_message or response.crawl_status or str(response.status_code),
+                url,
+                attempt,
+                max_attempts,
+                wait_seconds,
+            )
+            time.sleep(wait_seconds)
+            self._network_retry_sleep_seconds += wait_seconds
+        return last_response
+
+    def _retry_sleep_seconds(self, attempt: int, status_code: int, crawl_status: str) -> float:
+        """Return bounded backoff seconds for transient public fetch failures."""
+        if status_code == 429:
+            base_seconds = float(self.config.get("rate_limit_retry_base_seconds", 15.0) or 15.0)
+            max_seconds = float(self.config.get("rate_limit_retry_max_seconds", 90.0) or 90.0)
+        elif crawl_status in {"network_error", "network_timeout"} or status_code == 0:
+            base_seconds = float(self.config.get("network_retry_base_seconds", 5.0) or 5.0)
+            max_seconds = float(self.config.get("network_retry_max_seconds", 30.0) or 30.0)
+        else:
+            base_seconds = float(self.config.get("fetch_retry_base_seconds", 3.0) or 3.0)
+            max_seconds = float(self.config.get("fetch_retry_max_seconds", 20.0) or 20.0)
+        return min(base_seconds * attempt, max_seconds)
+
+    def _discovery_network_failed(self) -> bool:
+        """Return whether discovery failed because all remote fetches hit network/DNS errors."""
+        discovery_errors = [
+            row
+            for row in self.error_stats
+            if str(row.get("error_stage", "")) in {"api_fetch", "discovery_fetch", "rss_fetch", "sitemap_fetch", "sitemap_index_fetch"}
+        ]
+        if not discovery_errors:
+            return False
+        return all(str(row.get("error_code", "")).strip() in {"0", ""} for row in discovery_errors)
+
+
+def _optional_positive_int(*values: Any) -> int | None:
+    """Return the first positive integer from the provided values, else None for no cap."""
+    for value in values:
+        if value is None:
+            continue
+        text = str(value).strip()
+        if not text:
+            continue
+        lowered = text.lower()
+        if lowered in {"none", "null", "unlimited", "inf", "infinite"}:
+            return None
+        try:
+            parsed = int(text)
+        except (TypeError, ValueError):
+            continue
+        if parsed <= 0:
+            return None
+        return parsed
+    return None
 
 
 def _safe_iso_datetime(value: str) -> str:

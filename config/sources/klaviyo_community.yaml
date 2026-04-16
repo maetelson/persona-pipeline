@@ -4,6 +4,7 @@ source_group: business_communities
 collector_kind: business_communities
 normalizer_kind: business_communities
 enabled: true
+min_raw_records_warn: 0
 platform: klaviyo
 product_or_tool: Klaviyo
 check_robots: true
@@ -11,11 +12,8 @@ query_mode: source_config
 seed_bank_path: config/seeds/business_communities/klaviyo_community.yaml
 seed_source_token: klaviyo
 seed_query_style: support_community
-max_query_count: 100
-max_threads_per_run: 10000
-max_discovered_threads_per_url: 1000
-discovery_page_count: 100
-sleep_seconds: 0.15
+discovery_page_count: 30
+sleep_seconds: 0.02
 filter_discovery_by_seed: false
 include_candidate_seed_pool_for_discovery: false
 aliases:
@@ -26,7 +24,7 @@ discovery_urls:
     board: Marketing
   - url: https://community.klaviyo.com/analytics-72
     board: Analytics
-  - url: https://community.klaviyo.com/campaigns-77
-    board: Campaigns
-  - url: https://community.klaviyo.com/flows-31
-    board: Flows
+  - url: https://community.klaviyo.com/service-35
+    board: Service
+  - url: https://community.klaviyo.com/strategic-advice-27
+    board: Strategic Advice

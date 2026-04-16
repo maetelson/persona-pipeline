@@ -11,9 +11,6 @@ query_mode: source_config
 seed_bank_path: config/seeds/business_communities/hubspot_community.yaml
 seed_source_token: hubspot
 seed_query_style: support_community
-max_query_count: 100
-max_threads_per_run: 10000
-max_discovered_threads_per_url: 1000
 discovery_page_count: 100
 sleep_seconds: 0.15
 filter_discovery_by_seed: true
@@ -23,10 +20,9 @@ api_discovery:
   kind: khoros_search
   base_url: https://community.hubspot.com
   page_size: 100
-  max_items_per_board: 2000
   board_ids:
     - marketing_reports
-    - marketing_lists
+    - marketing_contacts
     - marketing_conversion
     - sales_CRM
 aliases:
@@ -35,7 +31,7 @@ aliases:
 discovery_urls:
   - url: https://community.hubspot.com/t5/Reporting-Dashboards/bd-p/marketing_reports
     board: Reporting & Analytics
-  - url: https://community.hubspot.com/t5/Lists-Lead-Scoring-Workflows/bd-p/marketing_lists
+  - url: https://community.hubspot.com/t5/Lists-Lead-Scoring-Workflows/bd-p/marketing_contacts
     board: Lists, Lead Scoring & Workflows
   - url: https://community.hubspot.com/t5/Lead-Capture-Tools/bd-p/marketing_conversion
     board: Lead Capture Tools

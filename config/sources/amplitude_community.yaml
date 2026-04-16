@@ -12,9 +12,6 @@ query_mode: source_config
 seed_bank_path: config/seeds/business_communities/amplitude_community.yaml
 seed_source_token: amplitude
 seed_query_style: support_community
-max_query_count: 100
-max_threads_per_run: 10000
-max_discovered_threads_per_url: 1000
 discovery_page_count: 100
 sleep_seconds: 0.15
 filter_discovery_by_seed: true

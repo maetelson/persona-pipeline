@@ -9,11 +9,8 @@ product_or_tool: Shopify
 check_robots: false
 query_mode: source_config
 seed_bank_path: config/seeds/business_communities/shopify_community.yaml
-max_query_count: 100
-max_threads_per_run: 10000
-max_discovered_threads_per_url: 1000
-discovery_page_count: 100
-sleep_seconds: 0.15
+discovery_page_count: 300
+sleep_seconds: 0.05
 filter_discovery_by_seed: false
 include_candidate_seed_pool_for_discovery: false
 seed_source_token: shopify
@@ -39,8 +36,18 @@ discovery_urls:
     board: Email Marketing
   - url: https://community.shopify.com/c/store-feedback/125
     board: Store Feedback
+  - url: https://community.shopify.com/c/payments-shipping-and-fulfillment/223
+    board: Payments Shipping and Fulfillment
+  - url: https://community.shopify.com/c/technical-q-a/6
+    board: Technical Q and A
+  - url: https://community.shopify.com/c/retail-and-point-of-sale/14
+    board: Retail and Point of Sale
 rss_discovery_urls:
   - url: https://community.shopify.com/c/data-analytics/293.rss
     board: Data and Analytics
   - url: https://community.shopify.com/posts.rss
     board: Recent Posts
+  - url: https://community.shopify.com/c/shopify-discussion/95.rss
+    board: Shopify Discussion
+  - url: https://community.shopify.com/c/email-marketing/292.rss
+    board: Email Marketing

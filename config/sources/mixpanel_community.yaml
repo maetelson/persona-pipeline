@@ -12,12 +12,9 @@ query_mode: source_config
 seed_bank_path: config/seeds/business_communities/mixpanel_community.yaml
 seed_source_token: mixpanel
 seed_query_style: support_community
-max_query_count: 100
-max_threads_per_run: 10000
-max_discovered_threads_per_url: 1000
 discovery_page_count: 20
 sleep_seconds: 0.15
-filter_discovery_by_seed: true
+filter_discovery_by_seed: false
 include_candidate_seed_pool_for_discovery: false
 min_seed_term_matches: 1
 aliases:
@@ -31,6 +28,10 @@ rss_discovery_urls:
     board: Community Questions
 sitemap_discovery_urls:
   - url: https://community.mixpanel.com/sitemap-posts/0.xml
+    board: Community Questions
+  - url: https://community.mixpanel.com/sitemap-posts/1.xml
+    board: Community Questions
+  - url: https://community.mixpanel.com/sitemap-posts/2.xml
     board: Community Questions
 discovery_exclude_url_patterns:
   - /x/ask-ai

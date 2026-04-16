@@ -34,7 +34,10 @@ class DiscourseCollector(BaseCollector):
         if bool(self.config.get("use_stub", False)):
             return [self.build_stub_record()]
 
-        max_topics = int(os.getenv("DISCOURSE_MAX_TOPICS", self.config.get("max_topics_per_run", 600)))
+        max_topics = _optional_positive_int(
+            os.getenv("DISCOURSE_MAX_TOPICS"),
+            self.config.get("max_topics_per_run"),
+        )
         topic_refs = self._discover_topic_refs(max_topics=max_topics)
         seen_ids: set[int] = set()
         selected_refs: list[dict[str, Any]] = []
@@ -43,7 +46,7 @@ class DiscourseCollector(BaseCollector):
             if not topic_id or topic_id in seen_ids:
                 continue
             seen_ids.add(topic_id)
-            if len(selected_refs) >= max_topics:
+            if max_topics is not None and len(selected_refs) >= max_topics:
                 break
             selected_refs.append(ref)
 
@@ -107,28 +110,32 @@ class DiscourseCollector(BaseCollector):
             return None
         return self._build_record(topic=topic, discovery_ref=ref)
 
-    def _discover_topic_refs(self, max_topics: int) -> list[dict[str, Any]]:
+    def _discover_topic_refs(self, max_topics: int | None) -> list[dict[str, Any]]:
         """Discover topic references from latest pages and source query seeds."""
         discovered: dict[int, dict[str, Any]] = {}
         for ref in self._latest_topic_refs():
             topic_id = int(ref.get("id", 0) or 0)
             if topic_id:
                 discovered.setdefault(topic_id, ref)
-            if len(discovered) >= max_topics:
+            if max_topics is not None and len(discovered) >= max_topics:
                 return list(discovered.values())
         for ref in self._search_topic_refs():
             topic_id = int(ref.get("id", 0) or 0)
             if topic_id:
                 discovered.setdefault(topic_id, ref)
-            if len(discovered) >= max_topics:
+            if max_topics is not None and len(discovered) >= max_topics:
                 break
         return list(discovered.values())
 
     def _latest_topic_refs(self) -> list[dict[str, Any]]:
         """Fetch topic references from `/latest.json` pages."""
         refs: list[dict[str, Any]] = []
-        max_pages = int(os.getenv("DISCOURSE_LATEST_PAGES", self.config.get("max_latest_pages", 20)))
-        for page_no in range(max_pages):
+        max_pages = _optional_positive_int(
+            os.getenv("DISCOURSE_LATEST_PAGES"),
+            self.config.get("max_latest_pages"),
+        )
+        page_limit = max_pages if max_pages is not None else 1000000
+        for page_no in range(page_limit):
             url = self._api_url(f"/latest.json?page={page_no}")
             payload = self._fetch_json(url, query_id="latest", query_text="latest", page_no=page_no + 1)
             topics = payload.get("topic_list", {}).get("topics", []) if payload else []
@@ -145,10 +152,14 @@ class DiscourseCollector(BaseCollector):
     def _search_topic_refs(self) -> list[dict[str, Any]]:
         """Fetch topic references from `/search.json` for configured seeds."""
         refs: list[dict[str, Any]] = []
-        max_pages = int(os.getenv("DISCOURSE_SEARCH_PAGES", self.config.get("max_search_pages", 1)))
+        max_pages = _optional_positive_int(
+            os.getenv("DISCOURSE_SEARCH_PAGES"),
+            self.config.get("max_search_pages"),
+        )
+        page_limit = max_pages if max_pages is not None else 1000000
         for query_index, query in enumerate(self._discovery_queries(), start=1):
             query_id = f"discourse_search_{query_index:03d}"
-            for page_no in range(max_pages):
+            for page_no in range(page_limit):
                 url = self._api_url(f"/search.json?q={quote_plus(query.expanded_query)}&page={page_no}")
                 payload = self._fetch_json(url, query_id=query_id, query_text=query.expanded_query, page_no=page_no + 1)
                 topics = payload.get("topics", []) if payload else []
@@ -443,3 +454,24 @@ def _safe_iso_datetime(value: str) -> str:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=UTC)
     return parsed.astimezone(UTC).replace(microsecond=0).isoformat()
+
+
+def _optional_positive_int(*values: object) -> int | None:
+    """Return the first positive integer from provided values, else None for no cap."""
+    for value in values:
+        if value is None:
+            continue
+        text = str(value).strip()
+        if not text:
+            continue
+        lowered = text.lower()
+        if lowered in {"none", "null", "unlimited", "inf", "infinite"}:
+            return None
+        try:
+            parsed = int(text)
+        except (TypeError, ValueError):
+            continue
+        if parsed <= 0:
+            return None
+        return parsed
+    return None

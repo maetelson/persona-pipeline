@@ -258,6 +258,27 @@ def discover_sitemap_thread_links(xml_text: str, base_url: str, platform: str, b
     return list(discovered.values())
 
 
+def discover_sitemap_index_urls(xml_text: str) -> list[str]:
+    """Extract child sitemap URLs from a sitemap index XML document."""
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return []
+    namespaces = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    urls: list[str] = []
+    for element in root.findall(".//sm:sitemap", namespaces):
+        href = clean_text(element.findtext("sm:loc", "", namespaces) or "")
+        if href and href not in urls:
+            urls.append(href)
+    if urls:
+        return urls
+    for href in re.findall(r"<loc>(.*?)</loc>", xml_text, flags=re.IGNORECASE | re.DOTALL):
+        value = clean_text(unescape(href))
+        if value and value not in urls:
+            urls.append(value)
+    return urls
+
+
 def parse_thread_page(
     html: str,
     url: str,
@@ -356,8 +377,7 @@ def _looks_like_thread_url(url: str, platform: str) -> bool:
     if platform == "klaviyo":
         return (
             parsed.netloc.endswith("community.klaviyo.com")
-            and path.count("/") >= 2
-            and re.search(r"/[^/]+-\d+$", path) is not None
+            and re.search(r"^/[^/]+-\d+/[^/]+-\d+$", path) is not None
         )
     if platform == "mixpanel":
         return (
