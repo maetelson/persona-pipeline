@@ -350,7 +350,7 @@ def _query_style(config: dict[str, Any], source_group: str) -> str:
     if explicit:
         return explicit
     collector_kind = str(config.get("collector_kind", "") or "").strip().lower()
-    if collector_kind in {"business_communities", "google_ads_help_community"}:
+    if collector_kind == "business_communities":
         return "support_community"
     if source_group in {"discourse", "existing_forums"}:
         return "discussion_forum"

@@ -161,47 +161,6 @@ class RelevancePrefilterTests(unittest.TestCase):
         self.assertIn("metabase_dashboard_filter", borderline_df.iloc[0]["whitelist_hits"])
         self.assertIn("rescued_by_source_whitelist", borderline_df.iloc[0]["rescue_reason"])
 
-    def test_source_whitelist_rescues_google_ads_reporting_row(self) -> None:
-        frame = pd.DataFrame(
-            [
-                {
-                    "source": "google_ads_community",
-                    "raw_id": "ga-whitelist",
-                    "title": "Conversion tracking issue",
-                    "body": "Campaign performance reporting is wrong and conversions are not showing in the account.",
-                    "comments_text": "",
-                    "raw_text": "",
-                    "source_meta": {"json": "{}"},
-                }
-            ]
-        )
-        _, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
-        self.assertEqual(len(drop_df), 0)
-        self.assertEqual(len(borderline_df), 1)
-        self.assertIn("google_ads_conversion", borderline_df.iloc[0]["whitelist_hits"])
-        self.assertEqual(borderline_df.iloc[0]["dropped_reason"], "")
-
-    def test_google_ads_help_whitelist_rescues_impression_reporting_row(self) -> None:
-        frame = pd.DataFrame(
-            [
-                {
-                    "source": "google_ads_help_community",
-                    "raw_id": "gah-whitelist",
-                    "title": "Campaign not generating impressions despite full setup",
-                    "body": "Google Ads reporting looks wrong because conversions are not showing and performance is not matching clicks.",
-                    "comments_text": "",
-                    "raw_text": "",
-                    "source_meta": {"json": "{}"},
-                }
-            ]
-        )
-        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
-        self.assertEqual(len(drop_df), 0)
-        self.assertEqual(len(keep_df) + len(borderline_df), 1)
-        scored = keep_df if not keep_df.empty else borderline_df
-        self.assertIn("google_ads_help", str(scored.iloc[0]["whitelist_hits"]))
-        self.assertIn("rescued_by_source_whitelist", str(scored.iloc[0]["rescue_reason"]))
-
     def test_shopify_source_whitelist_rescues_reporting_conversion_row(self) -> None:
         frame = pd.DataFrame(
             [

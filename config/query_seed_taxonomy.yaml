@@ -67,26 +67,6 @@ query_seed_taxonomy:
         - metric_definition_confusion
         - source_of_truth_conflict
         - stakeholder_explanation_pressure
-    google_ads_help_community:
-      language_style:
-        - help-style diagnosis
-        - campaign metrics
-        - compare and trust the reported number
-      prioritize_axes:
-        - attribution_tracking_issue
-        - numbers_mismatch
-        - trend_interpretation_confusion
-        - segmentation_breakdown_confusion
-    merchant_center_help_community:
-      language_style:
-        - product visibility
-        - affected products and groups
-        - shopping performance interpretation
-      prioritize_axes:
-        - trend_interpretation_confusion
-        - segmentation_breakdown_confusion
-        - numbers_mismatch
-        - source_of_truth_conflict
     klaviyo_community:
       language_style:
         - email and flow performance

@@ -668,18 +668,6 @@ source_signal_overrides:
       - how do i
       - clean up our lists
       - obtain
-  google_ads_community:
-    business_signal_keywords:
-      - ads
-      - ad group
-      - tagging
-      - conversion tracking
-    pain_signal_keywords:
-      - doesn't record
-      - doesnt record
-      - dosn't record
-      - not record
-      - not recording
 source_invalid_reason_exemptions:
   reddit:
     missing_business_signal:

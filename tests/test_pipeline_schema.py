@@ -61,7 +61,7 @@ class PipelineSchemaTests(unittest.TestCase):
             "largest_labeled_source_share_pct": 33.3,
             "largest_source_influence_share_pct": 40.1,
             "weak_source_cost_center_count": 4,
-            "weak_source_cost_centers": "reddit | stackoverflow | github_discussions | merchant_center_community",
+            "weak_source_cost_centers": "reddit | stackoverflow | github_discussions | hubspot_community",
             "largest_cluster_share_of_core_labeled": 50.0,
             "promoted_persona_example_coverage_pct": 100.0,
             "selected_example_grounding_issue_count": 0,

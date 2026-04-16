@@ -23,8 +23,7 @@ from src.utils.source_registry import load_source_definitions
 DEFAULT_SOURCE_FILTER = (
     "reddit,stackoverflow,github_discussions,"
     "reddit_r_excel,reddit_analytics,reddit_business_intelligence,reddit_marketing_analytics,"
-    "shopify_community,hubspot_community,klaviyo_community,"
-    "google_ads_community,merchant_center_community"
+    "shopify_community,hubspot_community,klaviyo_community"
 )
 
 DEFAULT_LIMIT_ENV = {

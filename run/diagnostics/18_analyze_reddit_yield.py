@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--comparison-source",
         default="metabase_discussions",
-        choices=["metabase_discussions", "hubspot_community", "google_ads_help_community"],
+        choices=["metabase_discussions", "hubspot_community"],
         help="A better-performing source used for contrast.",
     )
     return parser

@@ -86,10 +86,8 @@ MIN_CLUSTER_SIZE_RATIO = 0.05
 LABELABLE_STATUSES = {"labelable", "borderline"}
 RAW_WITHOUT_LABEL_FAILURE_SOURCES = {
     "github_discussions",
-    "google_ads_community",
     "hubspot_community",
     "klaviyo_community",
-    "merchant_center_community",
     "mixpanel_community",
     "qlik_community",
     "shopify_community",

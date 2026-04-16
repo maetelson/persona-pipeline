@@ -27,9 +27,6 @@ class SeedBankTests(unittest.TestCase):
             ("business_communities", "shopify_community"),
             ("business_communities", "hubspot_community"),
             ("business_communities", "klaviyo_community"),
-            ("business_communities", "google_ads_community"),
-            ("business_communities", "google_ads_help_community"),
-            ("business_communities", "merchant_center_community"),
             ("business_communities", "mixpanel_community"),
             ("business_communities", "amplitude_community"),
             ("business_communities", "power_bi_community"),
@@ -68,20 +65,6 @@ class SeedBankTests(unittest.TestCase):
         self.assertIn("cannot metabase dashboard filter", expanded)
         self.assertTrue(all("metabase" in query for query in expanded))
 
-    def test_support_community_queries_keep_short_source_language(self) -> None:
-        config = load_yaml(ROOT / "config" / "sources" / "google_ads_community.yaml")
-        queries = build_discovery_queries(
-            ROOT,
-            config=config,
-            source_id="google_ads_community",
-            source_group="business_communities",
-        )
-        expanded = [query.expanded_query for query in queries]
-        self.assertIn("google ads report mismatch", expanded)
-        self.assertIn("google ads numbers don't match", expanded)
-        self.assertIn("google ads campaign results wrong", expanded)
-        self.assertTrue(all(query.count("google ads") == 1 for query in expanded))
-
     def test_shopify_queries_use_shopify_specific_seed_bank_only(self) -> None:
         config = load_yaml(ROOT / "config" / "sources" / "shopify_community.yaml")
         queries = build_discovery_queries(
@@ -97,20 +80,6 @@ class SeedBankTests(unittest.TestCase):
         self.assertNotIn("analytics not working", expanded)
         self.assertNotIn("wrong analytics data", expanded)
         self.assertTrue(all("shopify" in query for query in expanded))
-
-    def test_google_ads_help_queries_use_help_specific_seed_bank(self) -> None:
-        config = load_yaml(ROOT / "config" / "sources" / "google_ads_help_community.yaml")
-        queries = build_discovery_queries(
-            ROOT,
-            config=config,
-            source_id="google_ads_help_community",
-            source_group="business_communities",
-        )
-        expanded = [query.expanded_query for query in queries]
-        self.assertIn("google ads numbers don't match", expanded)
-        self.assertIn("google ads report discrepancy", expanded)
-        self.assertIn("google ads roas dropped but traffic looks normal", expanded)
-        self.assertTrue(all(query.count("google ads") == 1 for query in expanded))
 
     def test_power_bi_queries_use_power_bi_specific_seed_bank(self) -> None:
         config = load_yaml(ROOT / "config" / "sources" / "power_bi_community.yaml")

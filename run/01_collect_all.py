@@ -26,7 +26,6 @@ from src.analysis.raw_audit import (
 from src.collectors.discourse_collector import DiscourseCollector
 from src.collectors.business_community_collector import BusinessCommunityCollector
 from src.collectors.github_discussions_collector import GitHubDiscussionsCollector
-from src.collectors.google_ads_help_community_collector import GoogleAdsHelpCommunityCollector
 from src.collectors.reddit_collector import RedditCollector
 from src.collectors.reddit_public_collector import RedditPublicCollector
 from src.collectors.stackoverflow_collector import StackOverflowCollector
@@ -37,8 +36,6 @@ from src.utils.source_registry import load_source_definitions
 
 LOGGER = get_logger("run.collect_all")
 MIN_RAW_EXEMPT_SOURCES = {
-    "google_ads_community",
-    "google_ads_help_community",
     "reddit",
     "stackoverflow",
 }
@@ -51,7 +48,6 @@ COLLECTOR_REGISTRY: dict[str, tuple[Path, object]] = {
     "reddit": (ROOT / "config" / "sources" / "reddit.yaml", RedditCollector),
     "stackoverflow": (ROOT / "config" / "sources" / "stackoverflow.yaml", StackOverflowCollector),
     "github_discussions": (ROOT / "config" / "sources" / "github_discussions.yaml", GitHubDiscussionsCollector),
-    "discourse": (ROOT / "config" / "sources" / "discourse.yaml", DiscourseCollector),
 }
 
 
@@ -62,14 +58,13 @@ def _extend_registry_with_source_groups() -> dict[str, tuple[Path, object]]:
     collector_map = {
         "business_communities": BusinessCommunityCollector,
         "discourse": DiscourseCollector,
-        "google_ads_help_community": GoogleAdsHelpCommunityCollector,
         "reddit": RedditPublicCollector,
     }
     for definition in definitions:
         collector_cls = collector_map.get(definition.collector_kind)
         if collector_cls is None:
             continue
-        if definition.collector_kind in {"discourse", "google_ads_help_community"}:
+        if definition.collector_kind == "discourse":
             registry[definition.source_id] = (
                 definition.config_path,
                 lambda config, source_id=definition.source_id, cls=collector_cls, kind=definition.collector_kind: cls(
@@ -131,7 +126,7 @@ def main() -> None:
             business_health = getattr(collector, "business_health", None)
             if business_health:
                 _write_business_collection_health([business_health])
-            if _should_fail_low_raw(source_name, volume_status, fail_fast_on_low_raw):
+            if _should_fail_low_raw(source_name, config, volume_status, fail_fast_on_low_raw):
                 _write_collection_audits(source_rows, page_rows, error_rows)
                 _raise_low_raw(source_name, len(records), source_raw_threshold)
         except LowRawVolumeError:
@@ -215,9 +210,14 @@ def _volume_status(raw_count: int, collection_status: str, low_raw_warn_threshol
     return "ok"
 
 
-def _should_fail_low_raw(source_name: str, volume_status: str, fail_fast_on_low_raw: bool) -> bool:
+def _should_fail_low_raw(
+    source_name: str,
+    config: dict[str, object],
+    volume_status: str,
+    fail_fast_on_low_raw: bool,
+) -> bool:
     """Return whether a source should fail the collection run for low raw volume."""
-    return fail_fast_on_low_raw and volume_status != "ok" and not _is_min_raw_exempt(source_name)
+    return fail_fast_on_low_raw and volume_status != "ok" and not _is_min_raw_exempt(source_name, config)
 
 
 def _raise_low_raw(
@@ -263,9 +263,14 @@ def _bool_env(name: str, default: bool) -> bool:
     return raw_value in {"1", "true", "yes", "y", "on"}
 
 
-def _is_min_raw_exempt(source_name: str) -> bool:
+def _is_min_raw_exempt(source_name: str, config: dict[str, object]) -> bool:
     """Return whether a source is exempt from the non-core raw-volume gate."""
-    return source_name in MIN_RAW_EXEMPT_SOURCES or source_name.startswith("reddit_")
+    collector_kind = str(config.get("collector_kind", "") or "").strip().lower()
+    return (
+        source_name in MIN_RAW_EXEMPT_SOURCES
+        or source_name.startswith("reddit_")
+        or collector_kind == "business_communities"
+    )
 
 
 def _write_collection_audits(

@@ -42,15 +42,6 @@ source_defaults:
   sisense_community:
     source_group: business_communities
     source_weight: 1.0
-  google_ads_community:
-    source_group: business_communities
-    source_weight: 1.0
-  google_ads_help_community:
-    source_group: google_ads_help_community
-    source_weight: 1.0
-  merchant_center_community:
-    source_group: business_communities
-    source_weight: 1.0
   shopify_community:
     source_group: business_communities
     source_weight: 1.0
@@ -164,41 +155,6 @@ source_whitelist_terms:
       terms: [exports, xlsx, csv, pdf, dashboard title, show filters, live detail reporting, replacing ssrs]
     - label: sisense_build_schedule
       terms: [schedule builds, schedule all, builds in bulk, build error details, cube names, through the ui]
-  google_ads_community:
-    - label: google_ads_conversion
-      terms: [conversion, conversion action, click]
-    - label: google_ads_reporting
-      terms: [attribution, campaign performance, reporting, not spending budget, no traffic, no impressions, not delivering impressions]
-    - label: google_ads_merchant_center
-      terms: [merchant center, metrics discrepancy]
-    - label: google_ads_delivery_failure
-      terms: [ads not running, campaign is not delivering, zero impressions, no impressions]
-  google_ads_help_community:
-    - label: google_ads_help_conversion
-      terms: [conversion, conversion action, conversion not showing, cannot see conversions, conversion delay, triggering properly, non-key events]
-    - label: google_ads_help_reporting
-      terms: [google ads reporting wrong, report not matching, performance not matching, data discrepancy ads, not spending budget, no traffic]
-    - label: google_ads_help_performance
-      terms: [campaign performance drop, no impressions, zero impressions, not generating impressions, campaign not delivering]
-    - label: google_ads_help_click_mismatch
-      terms: [click vs conversion mismatch, metrics discrepancy]
-    - label: google_ads_help_attribution
-      terms: [attribution issue, conversion action problem]
-    - label: google_ads_help_merchant_center
-      terms: [merchant center mismatch, merchant center, shopping reporting]
-  merchant_center_community:
-    - label: merchant_center_diagnostics_mismatch
-      terms: [diagnostics mismatch, product data mismatch, availability mismatch, invalid value]
-    - label: merchant_center_feed_sync
-      terms: [feed sync, products not syncing, local feed, 0 products, product feed not updating]
-    - label: merchant_center_price
-      terms: [price mismatch]
-    - label: merchant_center_policy_review
-      terms: [misrepresentation suspension, misrepresentation issue, account suspended, suspended account, manual review, disapproved, store not approved]
-    - label: merchant_center_listing_visibility
-      terms: [free listings, products not showing, limited in free listings, product not approved, remove countries]
-    - label: merchant_center_reviews
-      terms: [product reviews, review feed]
   shopify_community:
     - label: shopify_reporting_analytics
       terms: [report, reporting, analytics, dashboard, export, csv]

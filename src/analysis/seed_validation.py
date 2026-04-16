@@ -163,8 +163,6 @@ def _load_seed_versions(root_dir: Path, sources: list[str]) -> list[SeedVersion]
         "stackoverflow": "existing_forums",
         "shopify_community": "business_communities",
         "hubspot_community": "business_communities",
-        "google_ads_help_community": "business_communities",
-        "merchant_center_community": "business_communities",
         "klaviyo_community": "business_communities",
     }
     for source in sources:

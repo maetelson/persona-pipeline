@@ -359,6 +359,5 @@ source별 finer slicing 지원:
 
 ## 6. 현재 미완료 범위
 
-- `discourse`, `hackernews`, `youtube` live collector 미구현
 - LLM labeling 기본 비활성화
 - analysis는 exploratory only

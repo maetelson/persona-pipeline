@@ -397,10 +397,6 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
     weighted_positive = sum(scores[column] * float(score_weights.get(column, 1.0)) for column in POSITIVE_SCORE_COLUMNS)
     weighted_negative = sum(abs(scores[column]) * abs(float(score_weights.get(column, -1.0))) for column in NEGATIVE_SCORE_COLUMNS)
     scores["final_relevance_score"] = round(weighted_positive - weighted_negative, 4)
-    if source == "google_ads_help_community":
-        rescue_bonus, _ = _apply_google_ads_help_rescue_signals(text, scores, positive_hits, source_reasons)
-        if rescue_bonus:
-            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
     if source == "reddit":
         rescue_bonus, _ = _apply_reddit_rescue_signals(text, normalized["subreddit"], scores, positive_hits, source_reasons)
         if rescue_bonus:
@@ -524,8 +520,6 @@ def _source_whitelist_hits(source: str, text: str, rules: dict[str, Any]) -> lis
         hits.extend(_sisense_whitelist_hits(lowered))
     if source == "shopify_community":
         return _shopify_whitelist_hits(lowered)
-    if source == "google_ads_help_community":
-        return _google_ads_help_whitelist_hits(lowered)
     for row in source_terms:
         label = str(row.get("label", "") or "").strip()
         terms = [str(term).lower().strip() for term in row.get("terms", []) or [] if str(term).strip()]
@@ -823,36 +817,6 @@ def _apply_sisense_rescue_signals(
     return 0.0, []
 
 
-def _google_ads_help_whitelist_hits(lowered: str) -> list[str]:
-    """Return Google Ads Help-specific whitelist hits using short support-language phrases."""
-    hits: list[str] = []
-    if any(
-        _text_contains_term(lowered, term)
-        for term in ["conversion not showing", "cannot see conversions", "conversion delay", "conversion action problem", "conversion action"]
-    ):
-        hits.append("google_ads_help_conversion")
-    if any(
-        _text_contains_term(lowered, term)
-        for term in ["google ads reporting wrong", "report not matching", "performance not matching", "metrics discrepancy", "data discrepancy ads"]
-    ):
-        hits.append("google_ads_help_reporting")
-    if any(
-        _text_contains_term(lowered, term)
-        for term in ["campaign performance drop", "no impressions", "zero impressions", "not generating impressions", "ads not showing"]
-    ):
-        hits.append("google_ads_help_performance")
-    if any(
-        _text_contains_term(lowered, term)
-        for term in ["click vs conversion mismatch", "mismatch", "not matching", "discrepancy"]
-    ):
-        hits.append("google_ads_help_click_mismatch")
-    if any(_text_contains_term(lowered, term) for term in ["attribution issue", "attribution"]):
-        hits.append("google_ads_help_attribution")
-    if any(_text_contains_term(lowered, term) for term in ["merchant center mismatch", "merchant center"]):
-        hits.append("google_ads_help_merchant_center")
-    return hits
-
-
 def _apply_shopify_rescue_signals(
     text: str,
     scores: dict[str, float],
@@ -911,66 +875,6 @@ def _apply_shopify_rescue_signals(
     return 0.0, []
 
 
-def _apply_google_ads_help_rescue_signals(
-    text: str,
-    scores: dict[str, float],
-    positive_hits: list[tuple[str, float]],
-    source_reasons: list[str],
-) -> tuple[float, list[str]]:
-    """Apply Google Ads Help-specific rescue scoring for reporting and performance complaints."""
-    lowered = str(text or "").lower()
-    conversion_hit = any(
-        _text_contains_term(lowered, term)
-        for term in ["conversion", "conversion action", "conversion delay", "cannot see conversions"]
-    )
-    reporting_hit = any(
-        _text_contains_term(lowered, term)
-        for term in ["report", "reporting", "metrics", "performance not matching", "report not matching"]
-    )
-    discrepancy_hit = any(
-        _text_contains_term(lowered, term)
-        for term in ["mismatch", "discrepancy", "wrong", "not matching", "not showing"]
-    )
-    performance_hit = any(
-        _text_contains_term(lowered, term)
-        for term in ["impressions", "clicks", "campaign", "performance drop", "zero impressions", "not generating impressions"]
-    )
-    attribution_hit = any(_text_contains_term(lowered, term) for term in ["attribution", "merchant center", "shopping"])
-    explanation_hit = any(
-        _text_contains_term(lowered, term)
-        for term in ["what could be the issue", "preventing", "help identify", "why", "cannot see", "not showing"]
-    )
-
-    bonus = 0.0
-    labels: list[str] = []
-    if conversion_hit and (reporting_hit or discrepancy_hit or performance_hit):
-        scores["reporting_pain_score"] += 1.1
-        bonus += 1.1
-        labels.append("google_ads_help_conversion_reporting_combo")
-    if performance_hit:
-        scores["root_cause_score"] += 1.0
-        bonus += 1.0
-        labels.append("google_ads_help_impression_performance")
-    if reporting_hit or discrepancy_hit:
-        scores["dashboard_trust_score"] += 1.0
-        bonus += 1.0
-        labels.append("google_ads_help_reporting_discrepancy")
-    if attribution_hit:
-        scores["metric_definition_score"] += 0.8
-        bonus += 0.8
-        labels.append("google_ads_help_attribution_context")
-    if explanation_hit:
-        scores["biz_workflow_score"] += 0.7
-        bonus += 0.7
-        labels.append("google_ads_help_explanation_burden")
-    if labels:
-        unique_labels = list(dict.fromkeys(labels))
-        positive_hits.append(("google_ads_help_source_whitelist_score", round(bonus, 2)))
-        source_reasons.append(f"google_ads_help_rescue_candidate:{'|'.join(unique_labels)}")
-        return round(bonus, 4), unique_labels
-    return 0.0, []
-
-
 def _text_contains_term(text: str, term: str) -> bool:
     """Match a single word or phrase using token-aware boundaries."""
     normalized_term = str(term or "").strip().lower()
@@ -993,29 +897,10 @@ def _derive_dropped_reason(
     positive_total = sum(scores[column] for column in POSITIVE_SCORE_COLUMNS)
     negative_total = sum(scores[column] for column in NEGATIVE_SCORE_COLUMNS)
     lowered = str(text or "").lower()
-    if source.startswith("google_ads"):
-        if source == "google_ads_help_community":
-            if any(
-                _text_contains_term(lowered, term)
-                for term in ["identity verification", "payment verification", "billing", "under-review", "suspended account", "wrong google account"]
-            ):
-                return "too_generic_account_support_case"
-            if any(_text_contains_term(lowered, term) for term in ["impressions", "clicks", "campaign", "performance"]) and not any(
-                _text_contains_term(lowered, term) for term in ["report", "reporting", "conversion", "metrics", "discrepancy", "mismatch"]
-            ):
-                return "prefilter_missing_reporting_terms"
-            if any(_text_contains_term(lowered, term) for term in ["conversion", "conversion action", "attribution", "merchant center"]) and not any(
-                _text_contains_term(lowered, term) for term in ["mismatch", "not showing", "not matching", "delay", "wrong", "discrepancy"]
-            ):
-                return "prefilter_missing_discrepancy_language"
-            return "prefilter_missing_google_ads_help_language"
-        return "prefilter_missing_ads_reporting_terms"
     if source == "hubspot_community":
         return "prefilter_missing_hubspot_reporting_terms"
     if source == "klaviyo_community":
         return "prefilter_missing_klaviyo_reporting_terms"
-    if source == "merchant_center_community":
-        return "prefilter_missing_merchant_center_feed_terms"
     if source == "mixpanel_community":
         return "prefilter_missing_mixpanel_reporting_terms"
     if source == "qlik_community":

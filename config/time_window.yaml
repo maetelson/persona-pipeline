@@ -26,12 +26,6 @@ source_overrides:
     strategy: explicit
   github_discussions:
     strategy: explicit
-  discourse:
-    strategy: quarterly
-  hackernews:
-    strategy: quarterly
-  youtube:
-    strategy: monthly
 
 exclude_missing_created_at: true
 missing_created_at_reason: missing_created_at

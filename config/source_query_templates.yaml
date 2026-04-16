@@ -139,19 +139,6 @@ source_templates:
       - source_of_truth_conflict
       - stakeholder_explanation_pressure
       - attribution_tracking_issue
-  google_ads_help_community:
-    preferred_banks:
-      - numbers_mismatch
-      - trend_interpretation_confusion
-      - segmentation_breakdown_confusion
-      - attribution_tracking_issue
-      - funnel_conversion_drop
-  merchant_center_help_community:
-    preferred_banks:
-      - trend_interpretation_confusion
-      - segmentation_breakdown_confusion
-      - numbers_mismatch
-      - dashboard_confusion
   klaviyo_community:
     preferred_banks:
       - numbers_mismatch

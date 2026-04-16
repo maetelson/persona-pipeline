@@ -26,8 +26,6 @@
 ## Next priority
 
 1. Implement `discourse` live collector and normalizer
-2. Implement `hackernews` live collector and normalizer
-3. Implement `youtube` live collector and normalizer
 4. Tighten invalid filter to reduce remaining false positives
 5. Improve episode builder boundary quality
 6. Improve codebook coverage and reduce `unknown`
@@ -36,9 +34,6 @@
 
 ## Known placeholders
 
-- discourse collector: stub
-- hackernews collector: stub
-- youtube collector: stub
 - analysis outputs: exploratory only
 - persona candidates: not final personas
 - priority scores: not production ranking

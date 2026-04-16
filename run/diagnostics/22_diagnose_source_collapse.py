@@ -23,7 +23,7 @@ def _parse_args() -> argparse.Namespace:
         "sources",
         nargs="*",
         default=TARGET_SOURCES,
-        help="Source ids to diagnose. Defaults to merchant_center_community and reddit.",
+        help="Source ids to diagnose. Defaults to the configured target sources.",
     )
     parser.add_argument(
         "--output-dir-name",

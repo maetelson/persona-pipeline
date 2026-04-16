@@ -150,7 +150,6 @@ python run/10_source_cli.py qa-relevance --source stackoverflow --limit 200
 | GitHub Discussions | Conditionally implemented | Requires `GITHUB_TOKEN` |
 | HubSpot Community | Implemented | Public business community collector |
 | Klaviyo Community | Implemented | Public business community collector |
-| Merchant Center Community | Implemented with external rate-limit risk | Collector works, but site-side throttling can suppress yield |
 | Metabase Discussions | Implemented | Discourse-based discussion source |
 | Mixpanel Community | Implemented | Public business community collector |
 | Power BI Community | Implemented | Public Khoros search via Microsoft Fabric Community |
@@ -158,9 +157,6 @@ python run/10_source_cli.py qa-relevance --source stackoverflow --limit 200
 | Shopify Community | Implemented | Public business community collector |
 | Sisense Community | Implemented | Public business community collector |
 | Amplitude Community | Config present, currently low/zero yield | Not a stable contributor in the latest local run |
-| Discourse | Stub / scaffolding | Placeholder collector/normalizer |
-| Hacker News | Stub / scaffolding | Placeholder collector/normalizer |
-| YouTube | Stub / scaffolding | Placeholder collector/normalizer |
 
 Active BI-focused `reddit` source group:
 - `r/excel`
@@ -182,7 +178,6 @@ Current mid-pipeline tuning targets:
 
 - `hubspot_community`
 - `shopify_community`
-- `merchant_center_community`
 
 ## Reddit collection policy
 
@@ -369,4 +364,3 @@ python run/97_finalize_task.py "type(scope): short summary"
 - Analysis outputs are exploratory
 - Persona-axis discovery runs before persona generation
 - Query expansion is review-oriented and does not auto-write back into config
-- Some collectors remain stubs by design until explicitly implemented

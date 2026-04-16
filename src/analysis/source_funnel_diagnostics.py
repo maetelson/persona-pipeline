@@ -9,7 +9,7 @@ import pandas as pd
 
 from src.utils.io import ensure_dir, write_parquet
 
-TARGET_SOURCES = ["merchant_center_community", "reddit"]
+TARGET_SOURCES = ["hubspot_community", "reddit"]
 FUNNEL_STAGES = [
     "raw_collected_rows",
     "parsed_rows",
@@ -63,15 +63,6 @@ STAGE_LINKS: dict[str, dict[str, str]] = {
     },
 }
 SOURCE_STAGE_OVERRIDES: dict[str, dict[str, dict[str, str]]] = {
-    "merchant_center_community": {
-        "parsed_rows": {
-            "function": "BusinessCommunityCollector.collect() / parse_thread_page()",
-        },
-        "relevance_prefilter_passed_rows": {
-            "function": "apply_relevance_prefilter() / _derive_dropped_reason()",
-            "config": "config/relevance_rules.yaml (merchant_center_community whitelist terms)",
-        },
-    },
     "reddit": {
         "parsed_rows": {
             "function": "RedditCollector.collect() / collect_with_pagination()",
@@ -178,7 +169,16 @@ def _collect_counts_for_source(source: str, root_dir: Path, artifacts: dict[str,
     counts["raw_collected_rows"] = raw_count
     provenance["raw_collected_rows"] = f"data/raw/{source}/raw.jsonl"
 
-    if source == "merchant_center_community":
+    if source in {
+        "amplitude_community",
+        "hubspot_community",
+        "klaviyo_community",
+        "mixpanel_community",
+        "power_bi_community",
+        "qlik_community",
+        "shopify_community",
+        "sisense_community",
+    }:
         parsed_count = _lookup_business_parse_success(artifacts["business_health"], source)
         if parsed_count <= 0:
             parsed_count = raw_count
@@ -187,7 +187,7 @@ def _collect_counts_for_source(source: str, root_dir: Path, artifacts: dict[str,
             provenance["parsed_rows"] = "data/analysis/business_community_source_health.csv parse_success_count"
     else:
         parsed_count = raw_count
-        provenance["parsed_rows"] = "recovered from current raw jsonl because reddit raw rows are collector-emitted parsed RawRecord rows"
+        provenance["parsed_rows"] = "recovered from current raw jsonl because source raw rows are collector-emitted parsed RawRecord rows"
     counts["parsed_rows"] = parsed_count
 
     normalized_count = _count_source_rows(artifacts["normalized_all"], source)

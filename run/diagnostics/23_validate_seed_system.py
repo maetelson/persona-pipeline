@@ -20,8 +20,6 @@ def main() -> None:
         "stackoverflow",
         "shopify_community",
         "hubspot_community",
-        "google_ads_help_community",
-        "merchant_center_community",
         "klaviyo_community",
     ]
     outputs = validate_seed_system(ROOT, sources=sources)

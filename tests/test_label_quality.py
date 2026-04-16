@@ -74,57 +74,14 @@ class LabelQualityTests(unittest.TestCase):
         result = build_labelability_table(episodes, policy)
         self.assertNotEqual(result.loc[0, "labelability_status"], "low_signal")
 
-    def test_google_ads_help_reporting_issue_is_not_low_signal(self) -> None:
-        policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
-        episodes = pd.DataFrame(
-            [
-                {
-                    "episode_id": "gah-1",
-                    "source": "google_ads_help_community",
-                    "normalized_episode": "Campaign not generating impressions despite full setup. Google Ads reporting is not matching clicks and conversions, and we need help identifying the root cause.",
-                    "evidence_snippet": "",
-                    "business_question": "",
-                    "bottleneck_text": "",
-                    "workaround_text": "",
-                    "desired_output": "",
-                    "quality_bucket": "hard_pass",
-                    "quality_score": 5.2,
-                }
-            ]
-        )
-        result = build_labelability_table(episodes, policy)
-        self.assertNotEqual(result.loc[0, "labelability_status"], "low_signal")
-        self.assertTrue(bool(result.loc[0, "persona_core_eligible"]))
-
-    def test_google_ads_help_announcement_stays_low_signal(self) -> None:
-        policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
-        episodes = pd.DataFrame(
-            [
-                {
-                    "episode_id": "gah-2",
-                    "source": "google_ads_help_community",
-                    "normalized_episode": "Launched: Guided help article for Merchant Center shipping settings with new resources and videos.",
-                    "evidence_snippet": "",
-                    "business_question": "",
-                    "bottleneck_text": "",
-                    "workaround_text": "",
-                    "desired_output": "",
-                    "quality_bucket": "borderline",
-                    "quality_score": 2.7,
-                }
-            ]
-        )
-        result = build_labelability_table(episodes, policy)
-        self.assertEqual(result.loc[0, "labelability_status"], "low_signal")
-
     def test_business_community_terms_map_to_broad_labels(self) -> None:
         codebook = load_yaml(ROOT / "config" / "codebook.yaml")
         episodes = pd.DataFrame(
             [
                 {
                     "episode_id": "biz-2",
-                    "source": "merchant_center_community",
-                    "normalized_episode": "Merchant Center account suspended after misrepresentation suspension and price mismatch in the feed sync.",
+                    "source": "shopify_community",
+                    "normalized_episode": "Shopify account has price mismatch in the feed sync and product data quality issues.",
                     "business_question": "",
                     "bottleneck_text": "",
                     "tool_env": "",
@@ -138,7 +95,7 @@ class LabelQualityTests(unittest.TestCase):
             ]
         )
         labeled = prelabel_episodes(episodes, codebook)
-        self.assertIn("Q_DIAGNOSE_ISSUE", labeled.loc[0, "question_codes"])
+        self.assertIn("Q_VALIDATE_NUMBERS", labeled.loc[0, "question_codes"])
         self.assertIn("P_DATA_QUALITY", labeled.loc[0, "pain_codes"])
 
     def test_business_community_prompt_uses_group_guidance(self) -> None:
@@ -203,7 +160,7 @@ class LabelQualityTests(unittest.TestCase):
             [
                 {
                     "episode_id": "partial-1",
-                    "source": "google_ads_help_community",
+                    "source": "shopify_community",
                     "normalized_episode": "Ads not showing despite no setup issues and product visibility tracking looks wrong in dashboard diagnostics.",
                     "evidence_snippet": "",
                     "business_question": "How can we diagnose and resolve analytics issues faster?",
@@ -255,7 +212,7 @@ class LabelQualityTests(unittest.TestCase):
         )
         labelability = pd.DataFrame(
             [
-                {"episode_id": "partial-1", "source": "google_ads_help_community", "labelability_status": "labelable", "labelability_score": 6, "labelability_reason": "positive", "persona_core_eligible": True},
+                {"episode_id": "partial-1", "source": "shopify_community", "labelability_status": "labelable", "labelability_score": 6, "labelability_reason": "positive", "persona_core_eligible": True},
                 {"episode_id": "partial-2", "source": "metabase_discussions", "labelability_status": "borderline", "labelability_score": 4, "labelability_reason": "positive", "persona_core_eligible": True},
             ]
         )
@@ -270,7 +227,7 @@ class LabelQualityTests(unittest.TestCase):
             [
                 {
                     "episode_id": "ep-question-gap",
-                    "source": "google_ads_help_community",
+                    "source": "shopify_community",
                     "normalized_episode": "Ads not showing despite no issues and campaign is not serving.",
                     "business_question": "Why are my ads not showing?",
                     "evidence_snippet": "ads not showing",
@@ -283,7 +240,7 @@ class LabelQualityTests(unittest.TestCase):
             [
                 {
                     "episode_id": "ep-question-gap",
-                    "source": "google_ads_help_community",
+                    "source": "shopify_community",
                     "role_codes": "R_MARKETER",
                     "question_codes": "unknown",
                     "pain_codes": "P_TOOL_LIMITATION",
@@ -300,7 +257,7 @@ class LabelQualityTests(unittest.TestCase):
             [
                 {
                     "episode_id": "ep-question-gap",
-                    "source": "google_ads_help_community",
+                    "source": "shopify_community",
                     "labelability_status": "labelable",
                     "labelability_score": 6,
                 }
@@ -327,7 +284,7 @@ class LabelQualityTests(unittest.TestCase):
                 },
                 {
                     "episode_id": "u2",
-                    "source": "google_ads_help_community",
+                    "source": "shopify_community",
                     "normalized_episode": "Ads not showing and diagnostics dashboard is the main place we monitor visibility.",
                     "evidence_snippet": "",
                     "business_question": "How can we diagnose and resolve analytics issues faster?",
@@ -405,7 +362,7 @@ class LabelQualityTests(unittest.TestCase):
         labelability = pd.DataFrame(
             [
                 {"episode_id": "u1", "source": "metabase_discussions", "labelability_status": "low_signal", "labelability_score": 1, "labelability_reason": "weak_signal", "persona_core_eligible": False},
-                {"episode_id": "u2", "source": "google_ads_help_community", "labelability_status": "labelable", "labelability_score": 6, "labelability_reason": "positive", "persona_core_eligible": True},
+                {"episode_id": "u2", "source": "shopify_community", "labelability_status": "labelable", "labelability_score": 6, "labelability_reason": "positive", "persona_core_eligible": True},
                 {"episode_id": "u3", "source": "metabase_discussions", "labelability_status": "borderline", "labelability_score": 4, "labelability_reason": "positive", "persona_core_eligible": True},
             ]
         )

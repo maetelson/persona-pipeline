@@ -1,7 +1,0 @@
-source: youtube
-enabled: false
-use_stub: true
-source_type: video
-query_seeds:
-  - analyst routine
-  - reporting tutorial frustration

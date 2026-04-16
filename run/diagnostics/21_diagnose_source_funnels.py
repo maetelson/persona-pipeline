@@ -1,4 +1,4 @@
-"""Write source-specific funnel diagnostics for merchant_center_community and reddit."""
+"""Write source-specific funnel diagnostics for the default diagnostic sources."""
 
 from __future__ import annotations
 

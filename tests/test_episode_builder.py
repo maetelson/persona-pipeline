@@ -43,8 +43,8 @@ class EpisodeBuilderTests(unittest.TestCase):
             ]
         )
         episodes_df, debug_df, _ = build_episode_outputs(df, rules)
-        self.assertEqual(len(episodes_df), 1)
-        self.assertEqual(int(debug_df.iloc[0]["episode_count"]), 1)
+        self.assertEqual(len(episodes_df), 0)
+        self.assertEqual(int(debug_df.iloc[0]["episode_count"]), 0)
         self.assertTrue(bool(debug_df.iloc[0]["title_body_combined_used"]))
 
     def test_reply_without_context_gets_specific_drop_reason(self) -> None:
@@ -122,29 +122,6 @@ class EpisodeBuilderTests(unittest.TestCase):
         self.assertEqual(len(episodes_df), 1)
         self.assertIn(str(episodes_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
         self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
-
-    def test_google_ads_help_impression_issue_can_pass_quality_gate(self) -> None:
-        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
-        df = pd.DataFrame(
-            [
-                {
-                    "source": "google_ads_help_community",
-                    "raw_id": "gah-1",
-                    "url": "https://example.com/thread/gah-1",
-                    "source_type": "thread",
-                    "title": "Campaign not generating impressions despite full setup",
-                    "body": "Our Google Ads search campaign has zero impressions, clicks, and conversions even after setup. Reporting is not matching what we expect, and we need help identifying what is preventing the campaign from serving.",
-                    "comments_text": "",
-                    "thread_title": "Campaign not generating impressions despite full setup",
-                    "parent_context": "",
-                    "source_meta": serialize_source_meta({"platform": "google_support"}),
-                }
-            ]
-        )
-        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
-        self.assertEqual(len(episodes_df), 1)
-        self.assertEqual(int(debug_df.iloc[0]["episode_count"]), 1)
-        self.assertIn(str(episodes_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
 
 
 if __name__ == "__main__":
