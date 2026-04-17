@@ -20,6 +20,7 @@ from src.labeling.prompt_payload import (
     extract_compact_rule_labels,
     truncate_text,
 )
+from src.labeling.repair import REPAIRABLE_LLM_STATUSES, infer_repairable_pain_code
 from src.utils.llm_cache import (
     append_jsonl_cache,
     build_prompt_cache_key,
@@ -32,6 +33,7 @@ from src.utils.pipeline_schema import CORE_LABEL_COLUMNS, is_unknown_like as sch
 
 PROMPT_SYSTEM = "Label evidence. JSON only. Use schema keys exactly. Keep strongest supported codes only."
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
+DEFAULT_MAX_OUTPUT_TOKENS = 80
 LOGGER = get_logger("labeling.llm_labeler")
 
 FAMILY_CODEBOOK_MAP = {
@@ -183,7 +185,12 @@ def enrich_with_llm_labels(
         if not episodes_df.empty
         else pd.DataFrame()
     )
-    targeted_rows = _build_target_rows(result, runtime["threshold"], target_unknown_only=runtime["target_unknown_only"])
+    targeted_rows = _build_target_rows(
+        result,
+        runtime["threshold"],
+        target_unknown_only=runtime["target_unknown_only"],
+        episode_lookup=episode_lookup,
+    )
     cache_store = load_jsonl_cache(runtime["cache_path"]) if runtime["cache_enabled"] else {}
     allow_cache_reuse = bool(runtime["cache_enabled"] and not runtime["force_llm_for_targeted"])
     _log_llm_event(
@@ -219,10 +226,12 @@ def enrich_with_llm_labels(
     audit_rows: list[dict[str, Any]] = []
     response_cache: dict[str, dict[str, Any]] = {}
     for index, row in result.iterrows():
-        should_target, target_reason = should_send_to_llm(row=row, threshold=runtime["threshold"])
-        target_meta = targeted_rows.get(str(row["episode_id"])) if should_target else None
+        episode_id = str(row["episode_id"])
+        episode_row = episode_lookup.loc[episode_id] if not episode_lookup.empty and episode_id in episode_lookup.index else None
+        should_target, target_reason = should_send_to_llm(row=row, threshold=runtime["threshold"], episode_row=episode_row)
+        target_meta = targeted_rows.get(episode_id) if should_target else None
         audit_row = _base_audit_row(
-            episode_id=str(row["episode_id"]),
+            episode_id=episode_id,
             was_rule_labeled=True,
             was_llm_targeted=should_target,
             llm_mode=runtime["mode"],
@@ -232,6 +241,10 @@ def enrich_with_llm_labels(
             unknown_before=_count_unknown_codes(row),
         )
         _attach_runtime_audit_context(audit_row, runtime)
+        audit_row["llm_target_reason_normalized"] = (
+            str(target_meta.get("normalized_reason", "")) if target_meta else _normalize_target_reason(target_reason)
+        )
+        audit_row["repairable_skip"] = str(target_reason).startswith("repairable_core_gap:")
 
         if not target_meta:
             audit_row["llm_status"] = "not_targeted"
@@ -261,7 +274,7 @@ def enrich_with_llm_labels(
             continue
 
         prompt_payload = _build_prompt_payload(
-            episode_row=episode_lookup.loc[str(row["episode_id"])],
+            episode_row=episode_row,
             labeled_row=row,
             codebook=runtime["codebook"],
             target_meta=target_meta,
@@ -488,7 +501,7 @@ def enrich_with_llm_labels(
     return result, audit_df
 
 
-def should_send_to_llm(row: pd.Series, threshold: float) -> tuple[bool, str]:
+def should_send_to_llm(row: pd.Series, threshold: float, episode_row: pd.Series | None = None) -> tuple[bool, str]:
     """Return whether a row should reach the LLM and a readable reason string."""
     labelability_status = str(row.get("labelability_status", "") or "")
     if labelability_status == "low_signal":
@@ -519,6 +532,8 @@ def should_send_to_llm(row: pd.Series, threshold: float) -> tuple[bool, str]:
     if rule_hit_count <= 2 and unknown_family_count >= 3:
         reasons.append("sparse_rule_hits")
 
+    if missing_core == ["pain_codes"] and _is_repairable_pain_gap(row=row, episode_row=episode_row):
+        return False, "repairable_core_gap:pain_codes"
     if reasons:
         return True, ";".join(reasons)
     return False, "rule_label_sufficient"
@@ -536,7 +551,9 @@ def resolve_llm_runtime(config: dict[str, Any] | None = None) -> dict[str, Any]:
     model_escalation = _first_non_empty("LLM_MODEL_ESCALATION", default=str(cfg.get("model_escalation", "gpt-5.4-mini"))).strip()
     escalation_enabled = _first_non_empty("ENABLE_LLM_ESCALATION", default=str(cfg.get("enable_escalation", "false"))).lower() == "true"
     backend = _first_non_empty("LLM_OPENAI_BACKEND", default=str(cfg.get("backend", "http"))).strip().lower() or "http"
-    max_output_tokens = int(_first_non_empty("MAX_LLM_OUTPUT_TOKENS", default=str(cfg.get("max_output_tokens", 120))))
+    max_output_tokens = int(
+        _first_non_empty("MAX_LLM_OUTPUT_TOKENS", default=str(cfg.get("max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS)))
+    )
     timeout_seconds = int(cfg.get("timeout_seconds", 45))
     prompt_cache_key = _first_non_empty("PROMPT_CACHE_KEY", default=str(cfg.get("prompt_cache_key", "persona-label-v1")))
     prompt_cache_retention = _first_non_empty("PROMPT_CACHE_RETENTION", default=str(cfg.get("prompt_cache_retention", "session")))
@@ -610,17 +627,27 @@ def resolve_llm_runtime(config: dict[str, Any] | None = None) -> dict[str, Any]:
     }
 
 
-def _build_target_rows(labeled_df: pd.DataFrame, threshold: float, target_unknown_only: bool) -> dict[str, dict[str, Any]]:
+def _build_target_rows(
+    labeled_df: pd.DataFrame,
+    threshold: float,
+    target_unknown_only: bool,
+    episode_lookup: pd.DataFrame | None = None,
+) -> dict[str, dict[str, Any]]:
     """Build the subset of rows that truly need LLM review."""
     targets: dict[str, dict[str, Any]] = {}
     for _, row in labeled_df.iterrows():
         if target_unknown_only and not _row_has_unresolved_labels(row):
             continue
-        should_target, reason = should_send_to_llm(row=row, threshold=threshold)
+        episode_id = str(row["episode_id"])
+        episode_row = None
+        if episode_lookup is not None and not episode_lookup.empty and episode_id in episode_lookup.index:
+            episode_row = episode_lookup.loc[episode_id]
+        should_target, reason = should_send_to_llm(row=row, threshold=threshold, episode_row=episode_row)
         if not should_target:
             continue
-        targets[str(row["episode_id"])] = {
+        targets[episode_id] = {
             "reason": reason,
+            "normalized_reason": _normalize_target_reason(reason),
             "escalate_candidate": ("missing_core_family" in reason) or (reason.count(",") >= 4),
         }
     return targets
@@ -676,7 +703,8 @@ def _prepare_batch_mode(
     audit_rows: list[dict[str, Any]] = []
     for _, row in result.iterrows():
         episode_id = str(row["episode_id"])
-        should_target, target_reason = should_send_to_llm(row=row, threshold=runtime["threshold"])
+        episode_row = episode_lookup.loc[episode_id] if episode_id in episode_lookup.index else None
+        should_target, target_reason = should_send_to_llm(row=row, threshold=runtime["threshold"], episode_row=episode_row)
         target_meta = targeted_rows.get(episode_id) if should_target else None
         audit_row = _base_audit_row(
             episode_id=episode_id,
@@ -688,6 +716,10 @@ def _prepare_batch_mode(
             confidence_before=float(row.get("label_confidence", 0.0) or 0.0),
             unknown_before=_count_unknown_codes(row),
         )
+        audit_row["llm_target_reason_normalized"] = (
+            str(target_meta.get("normalized_reason", "")) if target_meta else _normalize_target_reason(target_reason)
+        )
+        audit_row["repairable_skip"] = str(target_reason).startswith("repairable_core_gap:")
         if target_meta:
             if episode_id in cached_keys:
                 audit_row["llm_status"] = "cache_hit"
@@ -720,7 +752,7 @@ def _build_prompt_payload(
         episode_row=episode_row,
         labeled_row=labeled_row,
         requested_families=requested_families,
-        target_reason=target_meta["reason"],
+        target_reason=str(target_meta.get("normalized_reason", target_meta["reason"])),
         codebook=codebook,
         policy=policy,
     )
@@ -734,7 +766,7 @@ def _requested_families(labeled_row: pd.Series, target_reason: str) -> list[str]
         value = str(labeled_row.get(family, "unknown") or "unknown")
         if _is_unknown_like(value) or _is_coarse_single_code(family, value):
             families.append(family)
-    if "coarse_rule_match" in target_reason:
+    if "coarse_rule_match" in target_reason or "coarse:" in target_reason:
         families.extend(CORE_LABEL_COLUMNS)
     return list(dict.fromkeys(families)) or CORE_LABEL_COLUMNS
 
@@ -1179,6 +1211,61 @@ def _cache_key_for_prompt(model: str, requested_families: list[str], prompt: str
     )
 
 
+def _normalize_target_reason(reason: str) -> str:
+    """Normalize routing reasons so semantically equivalent prompts share cache keys."""
+    if not reason:
+        return ""
+    if reason in {
+        "rule_label_sufficient",
+        "review_bucket_high_confidence",
+        "low_signal_input",
+        "repairable_core_gap:pain_codes",
+    }:
+        return reason
+
+    flags: list[str] = []
+    unknown_codes: set[str] = set()
+    missing_core: set[str] = set()
+    coarse_codes: set[str] = set()
+    for raw_part in str(reason).split(";"):
+        part = raw_part.strip()
+        if not part:
+            continue
+        if part.startswith("low_confidence:"):
+            flags.append("low_confidence")
+            continue
+        if part.startswith("unknown_codes:"):
+            unknown_codes.update(_split_reason_codes(part.partition(":")[2]))
+            continue
+        if part.startswith("missing_core_family:"):
+            missing_core.update(_split_reason_codes(part.partition(":")[2]))
+            continue
+        if part.startswith("coarse_rule_match:"):
+            coarse_codes.update(_split_reason_codes(part.partition(":")[2]))
+            continue
+        flags.append(part)
+
+    normalized_parts: list[str] = []
+    for flag in ["low_confidence", "sparse_rule_hits"]:
+        if flag in flags:
+            normalized_parts.append(flag)
+    for flag in sorted(flag for flag in flags if flag not in {"low_confidence", "sparse_rule_hits"}):
+        normalized_parts.append(flag)
+    if missing_core:
+        normalized_parts.append(f"missing_core:{','.join(sorted(missing_core))}")
+    remaining_unknown = sorted(unknown_codes - missing_core)
+    if remaining_unknown:
+        normalized_parts.append(f"unknown:{','.join(remaining_unknown)}")
+    if coarse_codes:
+        normalized_parts.append(f"coarse:{','.join(sorted(coarse_codes))}")
+    return "|".join(normalized_parts) if normalized_parts else reason
+
+
+def _split_reason_codes(value: str) -> set[str]:
+    """Split a comma-delimited family list into stable non-empty tokens."""
+    return {token.strip() for token in str(value or "").split(",") if token.strip()}
+
+
 def _compact_hint(hints: list[Any]) -> str:
     """Keep only one short grounding hint per code."""
     for hint in hints:
@@ -1212,6 +1299,20 @@ def _append_reason(existing: str, suffix: str) -> str:
     return f"{existing} | {suffix}"
 
 
+def _is_repairable_pain_gap(row: pd.Series, episode_row: pd.Series | None) -> bool:
+    """Return whether a pain-code core gap can be deterministically repaired without LLM."""
+    if episode_row is None:
+        return False
+    labelability_status = str(row.get("labelability_status", "") or "")
+    if labelability_status not in REPAIRABLE_LLM_STATUSES:
+        return False
+    inferred = infer_repairable_pain_code(
+        episode_row=episode_row,
+        question_codes=str(row.get("question_codes", "unknown") or "unknown"),
+    )
+    return bool(inferred)
+
+
 def _audit_columns() -> list[str]:
     """Return the full row-level audit schema."""
     return [
@@ -1223,9 +1324,11 @@ def _audit_columns() -> list[str]:
         "was_llm_called",
         "llm_mode",
         "llm_target_reason",
+        "llm_target_reason_normalized",
         "llm_reason",
         "llm_status",
         "skip_category",
+        "repairable_skip",
         "model_used",
         "endpoint_used",
         "api_base_url",
@@ -1277,9 +1380,11 @@ def _base_audit_row(
         "was_llm_called": False,
         "llm_mode": llm_mode,
         "llm_target_reason": llm_target_reason,
+        "llm_target_reason_normalized": "",
         "llm_reason": "",
         "llm_status": "",
         "skip_category": "",
+        "repairable_skip": False,
         "model_used": model_used,
         "endpoint_used": "",
         "api_base_url": "",

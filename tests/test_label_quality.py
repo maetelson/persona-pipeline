@@ -12,7 +12,9 @@ import unittest
 import pandas as pd
 
 from src.labeling.labelability import build_labelability_table
+from src.labeling.llm_labeler import _normalize_target_reason, should_send_to_llm
 from src.labeling.prompt_builder import build_label_prompt
+from src.labeling.prompt_payload import build_compact_episode_payload
 from src.labeling.quality import build_label_quality_audit
 from src.labeling.repair import apply_label_repairs, build_axis_label_details
 from src.labeling.rule_labeler import prelabel_episodes
@@ -54,6 +56,44 @@ class LabelQualityTests(unittest.TestCase):
         )
         self.assertIn("reddit", payload["prompt"])
         self.assertIn("few_shot:", payload["prompt"])
+
+    def test_prompt_builder_omits_empty_guidance_and_compacts_small_family_rules(self) -> None:
+        policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
+        payload = build_label_prompt(
+            episode_row=pd.Series({"source": "github_discussions", "normalized_episode": "dashboard filters break analysis"}),
+            labeled_row=pd.Series({"question_codes": "unknown"}),
+            requested_families=["question_codes"],
+            target_reason="missing_core:question_codes",
+            codebook=load_yaml(ROOT / "config" / "codebook.yaml"),
+            policy=policy,
+        )
+        self.assertNotIn("guidance=", payload["prompt"])
+        self.assertNotIn("choose=", payload["prompt"])
+
+    def test_compact_episode_payload_applies_smaller_limits_and_dedupes_evidence(self) -> None:
+        payload = build_compact_episode_payload(
+            pd.Series(
+                {
+                    "normalized_episode": "A" * 500,
+                    "evidence_snippet": "A" * 250,
+                    "business_question": "B" * 140,
+                    "bottleneck_text": "C" * 130,
+                    "workaround_text": "D" * 100,
+                }
+            )
+        )
+        self.assertLessEqual(len(payload["ep"]), 320)
+        self.assertLessEqual(len(payload["bq"]), 90)
+        self.assertLessEqual(len(payload["bt"]), 90)
+        self.assertLessEqual(len(payload["wa"]), 70)
+        self.assertNotIn("ev", payload)
+
+    def test_normalize_target_reason_collapses_confidence_and_duplicate_families(self) -> None:
+        reason = "low_confidence:0.55<0.70;unknown_codes:role_codes,pain_codes;missing_core_family:pain_codes,role_codes;coarse_rule_match:output_codes,question_codes"
+        self.assertEqual(
+            _normalize_target_reason(reason),
+            "low_confidence|missing_core:pain_codes,role_codes|coarse:output_codes,question_codes",
+        )
 
     def test_business_community_operator_pain_is_labelable(self) -> None:
         policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")
@@ -153,6 +193,66 @@ class LabelQualityTests(unittest.TestCase):
         details = build_axis_label_details(episodes, repaired, labelability)
         self.assertIn("confidence_score", details.columns)
         self.assertFalse(repairs.empty)
+
+    def test_repairable_pain_gap_skips_llm_targeting(self) -> None:
+        row = pd.Series(
+            {
+                "episode_id": "skip-1",
+                "role_codes": "R_ANALYST",
+                "question_codes": "Q_VALIDATE_NUMBERS",
+                "pain_codes": "unknown",
+                "output_codes": "O_VALIDATED_DATASET",
+                "moment_codes": "M_VALIDATION",
+                "env_codes": "E_SQL_BI",
+                "workaround_codes": "unknown",
+                "fit_code": "F_REVIEW",
+                "label_confidence": 0.8,
+                "rule_hit_count": 5,
+                "rule_unknown_family_count": 2,
+                "labelability_status": "borderline",
+            }
+        )
+        episode_row = pd.Series(
+            {
+                "normalized_episode": "Dashboard numbers do not match finance and we need to reconcile the source of truth.",
+                "business_question": "How can we validate the numbers before the report?",
+                "bottleneck_text": "general_friction",
+                "desired_output": "validated dataset",
+            }
+        )
+        should_target, reason = should_send_to_llm(row=row, threshold=0.7, episode_row=episode_row)
+        self.assertFalse(should_target)
+        self.assertEqual(reason, "repairable_core_gap:pain_codes")
+
+    def test_non_repairable_core_gap_still_targets_llm(self) -> None:
+        row = pd.Series(
+            {
+                "episode_id": "target-1",
+                "role_codes": "R_ANALYST",
+                "question_codes": "Q_VALIDATE_NUMBERS",
+                "pain_codes": "unknown",
+                "output_codes": "O_VALIDATED_DATASET",
+                "moment_codes": "M_VALIDATION",
+                "env_codes": "E_SQL_BI",
+                "workaround_codes": "unknown",
+                "fit_code": "F_REVIEW",
+                "label_confidence": 0.8,
+                "rule_hit_count": 5,
+                "rule_unknown_family_count": 2,
+                "labelability_status": "borderline",
+            }
+        )
+        episode_row = pd.Series(
+            {
+                "normalized_episode": "The dashboard exists but the issue is vague and the bottleneck category is not directly stated anywhere.",
+                "business_question": "How can we validate the metric before sharing it?",
+                "bottleneck_text": "general_friction",
+                "desired_output": "dashboard update",
+            }
+        )
+        should_target, reason = should_send_to_llm(row=row, threshold=0.7, episode_row=episode_row)
+        self.assertTrue(should_target)
+        self.assertIn("missing_core_family:pain_codes", reason)
 
     def test_contextual_repairs_fill_partial_unknowns(self) -> None:
         policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")

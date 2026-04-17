@@ -19,6 +19,8 @@ AXIS_TEXT_FIELDS = [
     "desired_output",
 ]
 
+REPAIRABLE_LLM_STATUSES = {"labelable", "borderline"}
+
 
 def apply_label_repairs(
     episodes_df: pd.DataFrame,
@@ -198,6 +200,16 @@ def build_axis_label_details(
                 }
             )
     return pd.DataFrame(rows)
+
+
+def infer_repairable_pain_code(episode_row: pd.Series, question_codes: str = "unknown") -> str:
+    """Return a deterministic broad pain code when the text supports repair without LLM help."""
+    combined = get_record_text(episode_row, fields=AXIS_TEXT_FIELDS).lower()
+    bottleneck_text = str(episode_row.get("bottleneck_text", "") or "")
+    direct = _repair_pain(combined)
+    if direct:
+        return direct
+    return _repair_pain_from_context(combined, bottleneck_text=bottleneck_text, question_codes=question_codes)
 
 
 def _repair_role(text: str, repair_cfg: dict[str, list[str]]) -> str:

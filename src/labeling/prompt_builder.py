@@ -31,20 +31,24 @@ def build_label_prompt(
     few_shot_cfg = dict(llm_cfg.get("few_shot_examples", {}) or policy.get("few_shot_examples", {}) or {})
     source_guidance = str((llm_cfg.get("source_guidance", {}) or {}).get(source_key, "") or "")
     unknown_policy = llm_cfg.get("unknown_allowed_only_when", []) or []
+    compact_family_mode = len(requested_families) <= 2
 
     family_lines: list[str] = []
     for family in requested_families:
         cfg = dict(family_cfg.get(family, {}) or {})
         if not cfg:
             continue
-        family_lines.append(
-            f"{family}: {cfg.get('definition','')} choose={cfg.get('choose_when','')} unknown={cfg.get('unknown_when','')}"
-        )
+        if compact_family_mode:
+            for boundary in cfg.get("boundary_rules", [])[:2]:
+                family_lines.append(f"{family}: {boundary}")
+            continue
+        family_lines.append(f"{family}: {cfg.get('definition','')} choose={cfg.get('choose_when','')} unknown={cfg.get('unknown_when','')}")
         for boundary in cfg.get("boundary_rules", [])[:3]:
             family_lines.append(f"- {boundary}")
 
     few_shot_lines: list[str] = []
-    for example in few_shot_cfg.get(source_key, [])[:2]:
+    max_few_shots = 1 if compact_family_mode else 2
+    for example in few_shot_cfg.get(source_key, [])[:max_few_shots]:
         labels = example.get("labels", {}) or {}
         compact_labels = {
             key: [value] if key != "fit_code" else value
@@ -63,12 +67,18 @@ def build_label_prompt(
         PROMPT_SYSTEM,
         f"src={source_key}",
         f"target={target_reason}",
-        f"guidance={source_guidance}",
-        f"unknown_policy={' ; '.join(str(item) for item in unknown_policy[:3])}",
-        f"families={compact_json(requested_families)}",
-        "axis_rules:",
-        *family_lines,
     ]
+    if source_guidance:
+        prompt_lines.append(f"guidance={source_guidance}")
+    if unknown_policy:
+        prompt_lines.append(f"unknown_policy={' ; '.join(str(item) for item in unknown_policy[:2])}")
+    prompt_lines.extend(
+        [
+            f"families={compact_json(requested_families)}",
+            "axis_rules:",
+            *family_lines,
+        ]
+    )
     if few_shot_lines:
         prompt_lines.extend(["few_shot:", *few_shot_lines])
     prompt_lines.extend(

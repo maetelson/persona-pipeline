@@ -53,6 +53,7 @@ def build_label_audit(labeled_df: pd.DataFrame, llm_audit_df: pd.DataFrame | Non
         metrics["served_from_cache_count"] = int(
             (llm_audit_df["llm_status"] == "cache_hit").sum() + (llm_audit_df["llm_status"] == "run_reuse").sum()
         )
+        metrics["repairable_skip_count"] = int(llm_audit_df.get("repairable_skip", pd.Series(dtype=bool)).fillna(False).sum())
         metrics["only_uncached_filtered_count"] = int((llm_audit_df["llm_status"] == "only_uncached_filtered").sum())
         metrics["llm_batch_count"] = int(
             ((llm_audit_df["llm_mode"] == "batch") & llm_audit_df["was_llm_targeted"].fillna(False)).sum()
@@ -71,12 +72,22 @@ def build_label_audit(labeled_df: pd.DataFrame, llm_audit_df: pd.DataFrame | Non
         metrics["usage_output_tokens_total"] = int(llm_audit_df["usage_output_tokens"].fillna(0).sum())
         metrics["usage_total_tokens_total"] = int(llm_audit_df["usage_total_tokens"].fillna(0).sum())
         called_mask = llm_audit_df["was_llm_called"].fillna(False)
+        targeted_mask = llm_audit_df["was_llm_targeted"].fillna(False)
         if int(called_mask.sum()) > 0:
             metrics["avg_input_tokens"] = round(float(llm_audit_df.loc[called_mask, "usage_input_tokens"].fillna(0).mean()), 2)
             metrics["avg_output_tokens"] = round(float(llm_audit_df.loc[called_mask, "usage_output_tokens"].fillna(0).mean()), 2)
         else:
             metrics["avg_input_tokens"] = 0.0
             metrics["avg_output_tokens"] = 0.0
+        if int(targeted_mask.sum()) > 0:
+            targeted_prompt_chars = llm_audit_df.loc[targeted_mask, "prompt_chars"].fillna(0)
+            metrics["cache_hit_rate_among_targeted"] = round(float(metrics["served_from_cache_count"] / int(targeted_mask.sum())), 4)
+            metrics["prompt_chars_p50"] = round(float(targeted_prompt_chars.quantile(0.5)), 2)
+            metrics["prompt_chars_p90"] = round(float(targeted_prompt_chars.quantile(0.9)), 2)
+        else:
+            metrics["cache_hit_rate_among_targeted"] = 0.0
+            metrics["prompt_chars_p50"] = 0.0
+            metrics["prompt_chars_p90"] = 0.0
 
     return pd.DataFrame({"metric": list(metrics.keys()), "value": list(metrics.values())})
 
@@ -92,6 +103,7 @@ def build_labeling_audit(labeled_df: pd.DataFrame, llm_audit_df: pd.DataFrame) -
                 "was_llm_called",
                 "llm_status",
                 "llm_reason",
+                "llm_target_reason_normalized",
                 "usage_input_tokens",
                 "usage_output_tokens",
                 "usage_total_tokens",
@@ -119,6 +131,7 @@ def build_labeling_audit(labeled_df: pd.DataFrame, llm_audit_df: pd.DataFrame) -
         "was_llm_called",
         "llm_mode",
         "llm_target_reason",
+        "llm_target_reason_normalized",
         "llm_status",
         "llm_reason",
         "model_used",
@@ -141,6 +154,7 @@ def build_labeling_audit(labeled_df: pd.DataFrame, llm_audit_df: pd.DataFrame) -
         "cost_estimate_optional",
         "parse_success",
         "fallback_used",
+        "repairable_skip",
         "skip_category",
         "cache_source",
         "cache_key",
@@ -193,6 +207,10 @@ def build_llm_experiment_summary(llm_audit_df: pd.DataFrame, audit_df: pd.DataFr
         "usage_input_tokens_total": int(metric_lookup.get("usage_input_tokens_total", 0)),
         "usage_output_tokens_total": int(metric_lookup.get("usage_output_tokens_total", 0)),
         "usage_total_tokens_total": int(metric_lookup.get("usage_total_tokens_total", 0)),
+        "repairable_skip_count": int(metric_lookup.get("repairable_skip_count", 0)),
+        "cache_hit_rate_among_targeted": float(metric_lookup.get("cache_hit_rate_among_targeted", 0.0)),
+        "prompt_chars_p50": float(metric_lookup.get("prompt_chars_p50", 0.0)),
+        "prompt_chars_p90": float(metric_lookup.get("prompt_chars_p90", 0.0)),
         "request_id_count": int(llm_audit_df.get("request_id", pd.Series(dtype=str)).fillna("").astype(str).ne("").sum()),
         "response_id_count": int(llm_audit_df.get("response_id", pd.Series(dtype=str)).fillna("").astype(str).ne("").sum()),
     }

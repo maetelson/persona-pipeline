@@ -22,7 +22,7 @@ from src.analysis.pipeline_thresholds import (
     upsert_threshold_audit,
 )
 from src.labeling.labelability import build_labelability_table
-from src.labeling.llm_labeler import enrich_with_llm_labels, llm_runtime_snapshot, resolve_llm_runtime
+from src.labeling.llm_labeler import DEFAULT_MAX_OUTPUT_TOKENS, enrich_with_llm_labels, llm_runtime_snapshot, resolve_llm_runtime
 from src.labeling.quality import build_label_quality_audit, write_label_quality_outputs
 from src.labeling.repair import apply_label_repairs, build_axis_label_details
 from src.labeling.rule_labeler import prelabel_episodes
@@ -61,7 +61,7 @@ def main() -> None:
         "min_confidence": float(os.getenv("LLM_LABELER_MIN_CONFIDENCE", "0.72")),
         "model_primary": _first_non_empty_env("LLM_MODEL_PRIMARY", "LLM_MODEL", "OPENAI_MODEL", default="gpt-5.4-mini"),
         "model_escalation": _first_non_empty_env("LLM_MODEL_ESCALATION", default="gpt-5.4-mini"),
-        "max_output_tokens": int(os.getenv("MAX_LLM_OUTPUT_TOKENS", "120")),
+        "max_output_tokens": int(os.getenv("MAX_LLM_OUTPUT_TOKENS", str(DEFAULT_MAX_OUTPUT_TOKENS))),
         "prompt_cache_key": _first_non_empty_env("PROMPT_CACHE_KEY", default="persona-label-v1"),
         "prompt_cache_retention": _first_non_empty_env("PROMPT_CACHE_RETENTION", default="session"),
         "backend": _first_non_empty_env("LLM_OPENAI_BACKEND", default="http"),
@@ -129,6 +129,16 @@ def main() -> None:
         profile,
         stage_status,
     )
+    if not llm_audit_df.empty and "llm_target_reason_normalized" in llm_audit_df.columns:
+        normalized_reason_counts = (
+            llm_audit_df.loc[llm_audit_df["was_llm_targeted"].fillna(False), "llm_target_reason_normalized"]
+            .fillna("")
+            .astype(str)
+            .value_counts()
+            .head(8)
+            .to_dict()
+        )
+        LOGGER.info("Normalized LLM target reasons: %s", json.dumps(normalized_reason_counts, ensure_ascii=False, sort_keys=True))
     if stage_status in {"warn", "fail"}:
         LOGGER.warning("Labeling threshold summary: %s", threshold_summary_message(combined_threshold_df, "labeling"))
     LOGGER.info("exploratory_only thresholding does not block labeling write; gating only applies in strict profile.")

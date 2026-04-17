@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.labeling.llm_labeler import debug_openai_labeler_call
+from src.labeling.llm_labeler import DEFAULT_MAX_OUTPUT_TOKENS, debug_openai_labeler_call
 from src.utils.io import load_yaml
 from src.utils.run_helpers import load_dotenv
 
@@ -46,7 +46,7 @@ def main() -> None:
         "min_confidence": float(os.getenv("LLM_LABELER_MIN_CONFIDENCE", "0.72")),
         "model_primary": _first_non_empty_env("LLM_MODEL_PRIMARY", "LLM_MODEL", "OPENAI_MODEL", default="gpt-5.4-mini"),
         "model_escalation": _first_non_empty_env("LLM_MODEL_ESCALATION", default="gpt-5.4-mini"),
-        "max_output_tokens": int(os.getenv("MAX_LLM_OUTPUT_TOKENS", "120")),
+        "max_output_tokens": int(os.getenv("MAX_LLM_OUTPUT_TOKENS", str(DEFAULT_MAX_OUTPUT_TOKENS))),
         "prompt_cache_key": _first_non_empty_env("PROMPT_CACHE_KEY", default="persona-label-v1"),
         "prompt_cache_retention": _first_non_empty_env("PROMPT_CACHE_RETENTION", default="session"),
         "backend": _first_non_empty_env("LLM_OPENAI_BACKEND", default="http"),

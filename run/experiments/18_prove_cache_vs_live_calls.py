@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
 from src.labeling.audit import build_label_audit, build_labeling_audit, build_llm_experiment_summary
 from src.labeling.labelability import build_labelability_table
 from src.labeling.llm_labeler import (
+    DEFAULT_MAX_OUTPUT_TOKENS,
     _build_prompt_payload,
     _build_target_rows,
     _cache_key_for_prompt,
@@ -187,7 +188,7 @@ def _base_llm_config(codebook: dict[str, object], labeling_policy: dict[str, obj
         "min_confidence": float(os.getenv("LLM_LABELER_MIN_CONFIDENCE", "0.72")),
         "model_primary": _first_non_empty_env("LLM_MODEL_PRIMARY", "LLM_MODEL", "OPENAI_MODEL", default="gpt-5.4-mini"),
         "model_escalation": _first_non_empty_env("LLM_MODEL_ESCALATION", default="gpt-5.4-mini"),
-        "max_output_tokens": int(os.getenv("MAX_LLM_OUTPUT_TOKENS", "120")),
+        "max_output_tokens": int(os.getenv("MAX_LLM_OUTPUT_TOKENS", str(DEFAULT_MAX_OUTPUT_TOKENS))),
         "prompt_cache_key": _first_non_empty_env("PROMPT_CACHE_KEY", default="persona-label-v1"),
         "prompt_cache_retention": _first_non_empty_env("PROMPT_CACHE_RETENTION", default="session"),
         "backend": _first_non_empty_env("LLM_OPENAI_BACKEND", default="http"),
@@ -242,18 +243,28 @@ def _build_routing_preview(
     config = {**base_config, "audit_tag": f"{audit_tag}:preview", "dry_run": False, "disable_cache": False}
     runtime = resolve_llm_runtime(config)
     episode_lookup = episodes_df.drop_duplicates(subset=["episode_id"], keep="first").set_index("episode_id", drop=False)
-    targeted_rows = _build_target_rows(labeled_df, runtime["threshold"], target_unknown_only=runtime["target_unknown_only"])
+    targeted_rows = _build_target_rows(
+        labeled_df,
+        runtime["threshold"],
+        target_unknown_only=runtime["target_unknown_only"],
+        episode_lookup=episode_lookup,
+    )
     cache_store = load_jsonl_cache(runtime["cache_path"]) if runtime["cache_enabled"] else {}
 
     rows: list[dict[str, object]] = []
     for _, row in labeled_df.iterrows():
         episode_id = str(row["episode_id"])
-        should_target, target_reason = should_send_to_llm(row=row, threshold=runtime["threshold"])
+        should_target, target_reason = should_send_to_llm(
+            row=row,
+            threshold=runtime["threshold"],
+            episode_row=episode_lookup.loc[episode_id] if episode_id in episode_lookup.index else None,
+        )
         target_meta = targeted_rows.get(episode_id) if should_target else None
         record: dict[str, object] = {
             "episode_id": episode_id,
             "was_llm_targeted": bool(should_target and target_meta is not None),
             "target_reason": target_reason,
+            "target_reason_normalized": str(target_meta.get("normalized_reason", "")) if target_meta else "",
             "labelability_status": str(row.get("labelability_status", "") or ""),
             "label_confidence": float(row.get("label_confidence", 0.0) or 0.0),
             "cache_key": "",

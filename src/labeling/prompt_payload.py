@@ -9,14 +9,14 @@ import pandas as pd
 from src.utils.pipeline_schema import LABEL_CODE_COLUMNS
 
 FIELD_LIMITS = {
-    "normalized_episode": 560,
-    "evidence_snippet": 180,
+    "normalized_episode": 320,
+    "evidence_snippet": 120,
     "role_clue": 80,
     "work_moment": 80,
-    "business_question": 110,
+    "business_question": 90,
     "tool_env": 80,
-    "bottleneck_text": 120,
-    "workaround_text": 90,
+    "bottleneck_text": 90,
+    "workaround_text": 70,
     "desired_output": 80,
 }
 
@@ -77,6 +77,10 @@ def build_compact_episode_payload(episode_row: pd.Series) -> dict[str, str]:
         value = truncate_text(str(episode_row.get(field, "") or ""), limit)
         if value:
             payload[EPISODE_FIELD_ALIASES.get(field, field)] = value
+    episode_text = payload.get("ep", "")
+    evidence_text = payload.get("ev", "")
+    if episode_text and evidence_text and _is_duplicate_payload_text(episode_text, evidence_text):
+        payload.pop("ev", None)
     return payload
 
 
@@ -118,3 +122,12 @@ def expand_compact_label_suggestion(suggestion: dict[str, Any]) -> dict[str, Any
     for key, value in dict(suggestion or {}).items():
         expanded[LABEL_FAMILY_ALIAS_REVERSE.get(str(key), str(key))] = value
     return expanded
+
+
+def _is_duplicate_payload_text(primary: str, secondary: str) -> bool:
+    """Return whether one compact payload text is effectively contained in the other."""
+    primary_norm = " ".join(str(primary or "").lower().split())
+    secondary_norm = " ".join(str(secondary or "").lower().split())
+    if not primary_norm or not secondary_norm:
+        return False
+    return secondary_norm in primary_norm or primary_norm in secondary_norm

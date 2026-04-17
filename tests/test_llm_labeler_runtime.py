@@ -2,11 +2,24 @@
 
 from __future__ import annotations
 
+import importlib.util
 import os
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from src.labeling.llm_labeler import debug_openai_labeler_call, llm_runtime_snapshot, resolve_llm_runtime
+from src.labeling.llm_labeler import DEFAULT_MAX_OUTPUT_TOKENS, debug_openai_labeler_call, llm_runtime_snapshot, resolve_llm_runtime
+
+ROOT = Path(__file__).resolve().parents[1]
+_EXPERIMENT_SPEC = importlib.util.spec_from_file_location(
+    "run_18_prove_cache_vs_live_calls",
+    ROOT / "run" / "experiments" / "18_prove_cache_vs_live_calls.py",
+)
+if _EXPERIMENT_SPEC is None or _EXPERIMENT_SPEC.loader is None:
+    raise RuntimeError("Unable to load run/experiments/18_prove_cache_vs_live_calls.py for tests.")
+_EXPERIMENT_MODULE = importlib.util.module_from_spec(_EXPERIMENT_SPEC)
+_EXPERIMENT_SPEC.loader.exec_module(_EXPERIMENT_MODULE)
+_base_llm_config = _EXPERIMENT_MODULE._base_llm_config
 
 
 class LlmLabelerRuntimeTests(unittest.TestCase):
@@ -80,6 +93,22 @@ class LlmLabelerRuntimeTests(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertEqual(result["error_class"], "RuntimeConfigurationError")
         self.assertIn("runtime mode dry_run", result["error"])
+
+    def test_default_max_output_tokens_is_consistent(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "ENABLE_LLM_LABELER": "true",
+                "OPENAI_API_KEY": "sk-proj-1234567890abcdefghijklmnop9012",
+            },
+            clear=False,
+        ):
+            runtime = resolve_llm_runtime({"enabled": True, "model_primary": "gpt-5.4-mini", "backend": "http"})
+            base_config = _base_llm_config(codebook={}, labeling_policy={})
+
+        self.assertEqual(DEFAULT_MAX_OUTPUT_TOKENS, 80)
+        self.assertEqual(int(runtime["max_output_tokens"]), DEFAULT_MAX_OUTPUT_TOKENS)
+        self.assertEqual(int(base_config["max_output_tokens"]), DEFAULT_MAX_OUTPUT_TOKENS)
 
 
 if __name__ == "__main__":
