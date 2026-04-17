@@ -12,10 +12,10 @@ query_mode: source_config
 seed_bank_path: config/seeds/business_communities/mixpanel_community.yaml
 seed_source_token: mixpanel
 seed_query_style: support_community
-discovery_page_count: 20
+discovery_page_count: 35
 sleep_seconds: 0.15
 filter_discovery_by_seed: true
-include_candidate_seed_pool_for_discovery: false
+include_candidate_seed_pool_for_discovery: true
 min_seed_term_matches: 1
 aliases:
   - mixpanel

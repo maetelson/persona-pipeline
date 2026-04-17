@@ -9,14 +9,26 @@ product_or_tool: Shopify
 check_robots: false
 query_mode: source_config
 seed_bank_path: config/seeds/business_communities/shopify_community.yaml
-discovery_page_count: 300
+discovery_page_count: 80
+discovery_sleep_seconds: 0.15
 sleep_seconds: 0.05
+fetch_retry_base_seconds: 5
+fetch_retry_max_seconds: 25
+rate_limit_retry_base_seconds: 20
+rate_limit_retry_max_seconds: 90
 filter_discovery_by_seed: true
 include_candidate_seed_pool_for_discovery: true
 min_seed_term_matches: 1
 seed_source_token: shopify
 seed_query_style: support_community
-max_threads_per_run: 2500
+stop_on_http_404_for_discovery: true
+max_consecutive_empty_discovery_pages: 2
+max_consecutive_duplicate_only_pages: 3
+max_consecutive_seed_filtered_only_pages: 3
+stop_on_http_404_for_sitemap_index: true
+max_consecutive_zero_accept_sitemaps: 5
+max_consecutive_duplicate_only_sitemaps: 3
+max_consecutive_seed_filtered_only_sitemaps: 5
 discovery_exclude_title_patterns:
   - "^about the .* category$"
   - "^what to measure in your first"
@@ -32,13 +44,25 @@ aliases:
 discovery_urls:
   - url: https://community.shopify.com/c/data-analytics/293
     board: Data and Analytics
+    page_count: 120
   - url: https://community.shopify.com/c/shopify-discussion/95
     board: Shopify Discussion
+    page_count: 180
+  - url: https://community.shopify.com/c/payments-shipping-fulfilment/217
+    board: Payments + Shipping & Fulfilment
+    page_count: 140
+  - url: https://community.shopify.com/c/accounting-taxes/223
+    board: Accounting & Taxes
+    page_count: 80
 rss_discovery_urls:
   - url: https://community.shopify.com/c/data-analytics/293.rss
     board: Data and Analytics
   - url: https://community.shopify.com/c/shopify-discussion/95.rss
     board: Shopify Discussion
+  - url: https://community.shopify.com/c/payments-shipping-fulfilment/217.rss
+    board: Payments + Shipping & Fulfilment
+  - url: https://community.shopify.com/c/accounting-taxes/223.rss
+    board: Accounting & Taxes
 sitemap_index_urls:
   - url: https://community.shopify.com/sitemap.xml
     board: Shopify Community Sitemap

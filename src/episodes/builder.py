@@ -1278,33 +1278,42 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             term in lowered
             for term in [
                 "klaviyo",
-                "email",
-                "emails",
                 "campaign",
                 "campaigns",
                 "flow",
                 "flows",
                 "segment",
                 "segments",
+                "segment count",
+                "list count",
+                "profile count",
+                "revenue",
+                "attributed revenue",
+                "attribution",
+                "reporting",
+                "analytics",
+                "export",
+                "csv",
+                "benchmark",
+                "benchmark report",
+                "conversion",
                 "open rate",
                 "click rate",
                 "deliverability",
-                "popup",
-                "pop-up",
-                "list",
-                "subscriber",
                 "tracking",
-                "discount code",
-                "coupon",
             ]
         )
         discrepancy_presence = any(
             term in lowered
             for term in [
+                "mismatch",
+                "not matching",
+                "discrepancy",
                 "decrease",
                 "dropped",
                 "not added",
                 "not being added",
+                "not syncing",
                 "not working",
                 "error occurred",
                 "try again later",
@@ -1316,6 +1325,9 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "unclear",
                 "bug",
                 "issue",
+                "reporting lag",
+                "what changed",
+                "wrong revenue",
             ]
         )
         analysis_context = any(
@@ -1323,17 +1335,17 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             for term in [
                 "shopify",
                 "integration",
-                "signup form",
-                "welcome flow",
-                "post-purchase flow",
-                "browse abandonment",
-                "template",
-                "templates",
-                "profile",
+                "revenue report",
+                "campaign report",
+                "flow report",
+                "segment report",
+                "attribution report",
+                "benchmark",
                 "page view",
                 "tracking",
-                "discount code",
-                "coupon",
+                "source of truth",
+                "compare",
+                "comparison",
             ]
         )
         explanation_burden = any(
@@ -1350,6 +1362,7 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "appreciate your guidance",
                 "point me in the right direction",
                 "is this possible",
+                "what changed",
             ]
         )
         discussion_style = any(
@@ -1369,6 +1382,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "join the community today",
                 "product feedback",
                 "thoughts on",
+                "welcome series",
+                "signup form design",
+                "email ideas",
+                "subject line",
             ]
         ) and not discrepancy_presence and not explanation_burden
         low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
@@ -2046,14 +2063,15 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
         )
 
     metric_presence = any(term in lowered for term in ["metric", "metrics", "report", "reporting", "analytics", "dashboard", "export", "csv"])
-    discrepancy_presence = any(term in lowered for term in ["discrepancy", "mismatch", "not matching", "wrong", "confusion", "off by"])
-    business_metric_presence = any(term in lowered for term in ["sales", "revenue", "orders", "sessions", "conversion", "aov", "roas", "checkout"])
-    analysis_context = any(term in lowered for term in ["compare", "comparison", "trend", "weekly", "monthly", "performance"])
-    explanation_burden = any(term in lowered for term in ["figure out", "cannot explain", "explain", "why", "interpret", "understand", "what changed"])
+    discrepancy_presence = any(term in lowered for term in ["discrepancy", "mismatch", "not matching", "wrong", "confusion", "off by", "source of truth", "reconcile", "reconciliation"])
+    business_metric_presence = any(term in lowered for term in ["sales", "revenue", "orders", "sessions", "conversion", "aov", "roas", "checkout", "shipping", "payment", "payout", "fees", "refund", "inventory", "tax"])
+    analysis_context = any(term in lowered for term in ["compare", "comparison", "trend", "weekly", "monthly", "performance", "ga4", "google analytics", "google ads", "meta ads", "facebook ads", "bank deposit", "settlement", "finance", "accounting"])
+    explanation_burden = any(term in lowered for term in ["figure out", "cannot explain", "explain", "why", "interpret", "understand", "what changed", "before sending", "sign off", "validate", "double check"])
     discussion_style = any(term in lowered for term in ["feedback", "curious", "anyone else", "what do you check first", "how do you handle", "looking for advice"])
-    operational_context = any(term in lowered for term in ["store", "campaign", "product", "inventory", "checkout", "report", "dashboard"])
+    operational_context = any(term in lowered for term in ["store", "campaign", "product", "inventory", "checkout", "report", "dashboard", "shipping", "payment", "orders", "refund", "payout", "settlement", "bank"])
     pure_feature_request = any(term in lowered for term in ["feature request", "would be nice", "idea:"]) and not metric_presence and not business_metric_presence
     generic_tips = any(term in lowered for term in ["tips", "best apps", "inspiration", "advice"]) and not metric_presence and not discrepancy_presence
+    reconciliation_presence = any(term in lowered for term in ["reconcile", "reconciliation", "source of truth", "bank deposit", "payout", "settlement", "finance", "accounting", "ga4", "google ads", "meta ads", "facebook ads"])
     low_signal = not any([metric_presence, discrepancy_presence, business_metric_presence, analysis_context, explanation_burden])
 
     score = 0.0
@@ -2065,6 +2083,7 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
     score += 0.7 if has_workflow_pain else 0.0
     score += 0.6 if discussion_style and (metric_presence or business_metric_presence or analysis_context) else 0.0
     score += 0.5 if operational_context else 0.0
+    score += 0.9 if reconciliation_presence else 0.0
     score -= 1.5 if pure_feature_request else 0.0
     score -= 1.2 if generic_tips else 0.0
     score -= 0.8 if usage_only else 0.0
@@ -2077,6 +2096,7 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             business_metric_presence,
             analysis_context,
             explanation_burden,
+            reconciliation_presence,
             discussion_style and (metric_presence or business_metric_presence or analysis_context),
         ]
     )
@@ -2092,6 +2112,9 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
         if discussion_style and (metric_presence or business_metric_presence or analysis_context):
             fail_reason = "discussion_style_but_relevant"
             rescue_reason = "shopify_discussion_style_rescue"
+        elif metric_presence and reconciliation_presence:
+            fail_reason = "metric_present_but_no_explicit_blocker"
+            rescue_reason = "shopify_reconciliation_context_rescue"
         elif metric_presence and not (discrepancy_presence or has_required_problem):
             fail_reason = "metric_present_but_no_explicit_blocker"
             rescue_reason = "shopify_metric_context_rescue"

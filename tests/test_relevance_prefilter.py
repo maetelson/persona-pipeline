@@ -183,6 +183,62 @@ class RelevancePrefilterTests(unittest.TestCase):
         self.assertIn("rescued_by_source_whitelist", scored.iloc[0]["rescue_reason"])
         self.assertGreater(float(scored.iloc[0]["prefilter_score"]), 0.0)
 
+    def test_shopify_reconciliation_rescue_keeps_cross_source_mismatch(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "shopify_community",
+                    "raw_id": "shopify-reconcile",
+                    "title": "GA4 and Shopify payout report are off",
+                    "body": "Before sending finance numbers we double check because Shopify payout settlement is not matching GA4 and Google Ads revenue totals.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertIn("shopify_finance_reconciliation", scored.iloc[0]["whitelist_hits"])
+        self.assertIn("shopify_cross_source_mismatch", scored.iloc[0]["whitelist_hits"])
+
+    def test_klaviyo_setup_only_post_is_dropped(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-noise",
+                    "title": "Best practices for welcome flow subject lines",
+                    "body": "Looking for ideas on popup copy, welcome series setup, and subject line best practices for a new list.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        _, _, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 1)
+
+    def test_klaviyo_reporting_mismatch_survives_prefilter(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-reporting",
+                    "title": "Attributed revenue no longer matches segment report",
+                    "body": "Our benchmark report and CSV export show different attributed revenue totals and we need to reconcile what changed before sending numbers.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
     def test_prefilter_is_idempotent_for_scored_rows(self) -> None:
         frame = pd.DataFrame([_load_fixture("stackoverflow_relevant_reporting_mismatch.json")])
         keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)

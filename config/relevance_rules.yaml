@@ -68,34 +68,6 @@ source_whitelist_terms:
       terms: [custom report, email performance, marketing email, segment, stops applying]
     - label: hubspot_reporting_builder_pain
       terms: [trying to build, trying to create, missing data, not showing, is there a way]
-  shopify_community:
-    - label: shopify_reporting_reconcile
-      terms: [report, export, tax, spreadsheet, bank account, transaction]
-    - label: shopify_inventory_sales_combo
-      terms: [stock on hand, units sold, inventory, sales history, report]
-    - label: shopify_analytics_merge_pain
-      terms: [analytics, merge them together, manual, basic report, confusing]
-    - label: shopify_recommendation_metrics
-      terms: [recommendations, conversion, aov, revenue per session, what works]
-  klaviyo_community:
-    - label: klaviyo_flow_campaign
-      terms: [flow, campaign, segment]
-    - label: klaviyo_reporting
-      terms: [revenue, attribution, reporting, analytics]
-    - label: klaviyo_conversion
-      terms: [conversion, metric mismatch]
-    - label: klaviyo_list_sync
-      terms: [list, subscribers, subscriber, sync, synced, not being added, never subscribed, double opt-in, single opt-in]
-    - label: klaviyo_email_delivery
-      terms: [open rate, click rate, deliverability, sending domain, branded domain, warm up, warmup, inbox]
-    - label: klaviyo_export_reviews
-      terms: [export, csv file, download link, reviews, customer reviews, empty file]
-    - label: klaviyo_form_template
-      terms: [popup, pop-up, embedded form, sign-up form, template missing, notification template, form not showing]
-    - label: klaviyo_integration_tracking
-      terms: [shopify integration, magento, linktree, tracking snippet, page view tracking, add to cart missing, product images missing]
-    - label: klaviyo_coupon_automation
-      terms: [coupon, discount code, automate, automation, manual process, personalization]
   metabase_discussions:
     - label: metabase_dashboard_filter
       terms: [dashboard, filter, drill down]
@@ -168,6 +140,21 @@ source_whitelist_terms:
       terms: [compare periods, weekly sales, monthly sales, trend]
     - label: shopify_drop_explanation
       terms: [cannot explain drop, sales drop, conversion drop]
+    - label: shopify_finance_reconciliation
+      terms: [finance, payout, settlement, bank deposit, fees, taxes, accounting, reconciliation]
+    - label: shopify_cross_source_mismatch
+      terms: [ga4, google analytics, google ads, meta ads, facebook ads, source of truth, off by]
+    - label: shopify_checkout_shipping_inventory
+      terms: [shipping, shipment, fulfilment, refund, payment, payouts, order count, inventory sync]
+  klaviyo_community:
+    - label: klaviyo_revenue_attribution_trust
+      terms: [attributed revenue, revenue mismatch, attribution mismatch, reporting lag, what changed]
+    - label: klaviyo_segment_count_reconcile
+      terms: [segment count, list count, profile count, not matching, reconcile, discrepancy]
+    - label: klaviyo_export_report_trust
+      terms: [report export, csv export, benchmark report, analytics export, empty file]
+    - label: klaviyo_conversion_diagnose
+      terms: [conversion drop, click drop, revenue drop, benchmark, diagnose, why did]
   github_discussions:
     - label: github_export_excel
       terms: [export to excel, manual reporting]

@@ -335,18 +335,41 @@ class BusinessCommunityCollector(BaseCollector):
         )
         discovery_queries = self._discovery_queries()
         discovered: dict[str, ThreadLink] = {}
+        stop_on_http_404 = bool(self.config.get("stop_on_http_404_for_discovery", False))
+        max_consecutive_empty = int(self.config.get("max_consecutive_empty_discovery_pages", 0) or 0)
+        max_consecutive_duplicate_only = int(self.config.get("max_consecutive_duplicate_only_pages", 0) or 0)
+        max_consecutive_seed_filtered_only = int(self.config.get("max_consecutive_seed_filtered_only_pages", 0) or 0)
+        discovery_sleep_seconds = float(self.config.get("discovery_sleep_seconds", 0.0) or 0.0)
+        listing_state: dict[str, dict[str, int | bool | str]] = {}
         for row in self._expanded_discovery_url_rows():
             url = str(row.get("url", "") if isinstance(row, dict) else row).strip()
             board = str(row.get("board", "") if isinstance(row, dict) else "").strip()
+            listing_root = str(row.get("listing_root", "") if isinstance(row, dict) else url).strip() or url
             if not url:
+                continue
+            state = listing_state.setdefault(
+                listing_root,
+                {
+                    "stopped": False,
+                    "consecutive_empty": 0,
+                    "consecutive_duplicate_only": 0,
+                    "consecutive_seed_filtered_only": 0,
+                    "stop_reason": "",
+                },
+            )
+            if bool(state.get("stopped", False)):
                 continue
             if not self._robots_allowed(url, user_agent):
                 continue
             response = self._fetch_with_retries(url, user_agent=user_agent, stage="discovery_fetch")
+            if not response.ok and stop_on_http_404 and int(response.status_code) == 404:
+                state["stopped"] = True
+                state["stop_reason"] = "http_404_stop"
+                continue
             if not response.ok:
                 continue
             links = discover_thread_links(response.body_text, base_url=url, platform=platform, board=board)
-            accepted = self._ingest_discovery_links(
+            audit = self._ingest_discovery_links(
                 discovered=discovered,
                 links=links,
                 discovery_queries=discovery_queries,
@@ -355,6 +378,38 @@ class BusinessCommunityCollector(BaseCollector):
                 board=board,
                 max_per_url=max_per_url,
             )
+            accepted = int(audit["accepted"])
+            if not links:
+                state["consecutive_empty"] = int(state["consecutive_empty"]) + 1
+                state["consecutive_duplicate_only"] = 0
+                state["consecutive_seed_filtered_only"] = 0
+            elif accepted == 0 and int(audit["duplicate_count"]) == len(links):
+                state["consecutive_duplicate_only"] = int(state["consecutive_duplicate_only"]) + 1
+                state["consecutive_empty"] = 0
+                state["consecutive_seed_filtered_only"] = 0
+            elif accepted == 0 and int(audit["seed_filtered_count"]) == len(links):
+                state["consecutive_seed_filtered_only"] = int(state["consecutive_seed_filtered_only"]) + 1
+                state["consecutive_empty"] = 0
+                state["consecutive_duplicate_only"] = 0
+            else:
+                state["consecutive_empty"] = 0
+                state["consecutive_duplicate_only"] = 0
+                state["consecutive_seed_filtered_only"] = 0
+            if max_consecutive_empty > 0 and int(state["consecutive_empty"]) >= max_consecutive_empty:
+                state["stopped"] = True
+                state["stop_reason"] = "consecutive_zero_accept_stop"
+            if (
+                max_consecutive_duplicate_only > 0
+                and int(state["consecutive_duplicate_only"]) >= max_consecutive_duplicate_only
+            ):
+                state["stopped"] = True
+                state["stop_reason"] = "consecutive_duplicate_only_stop"
+            if (
+                max_consecutive_seed_filtered_only > 0
+                and int(state["consecutive_seed_filtered_only"]) >= max_consecutive_seed_filtered_only
+            ):
+                state["stopped"] = True
+                state["stop_reason"] = "seed_exhaustion_stop"
             self.collection_stats.append(
                 {
                     "source": self.source_name,
@@ -371,9 +426,11 @@ class BusinessCommunityCollector(BaseCollector):
                     "page_raw_count_before_dedupe": len(links),
                     "duplicate_count": max(0, len(links) - accepted),
                     "duplicate_ratio": round((max(0, len(links) - accepted) / max(len(links), 1)), 4),
-                    "stop_reason": "ok" if links else "no_thread_links",
+                    "stop_reason": str(state.get("stop_reason", "") or ("ok" if links else "no_thread_links")),
                 }
             )
+            if discovery_sleep_seconds > 0:
+                time.sleep(discovery_sleep_seconds)
         for row in self.config.get("rss_discovery_urls", []) or []:
             url = str(row.get("url", "") if isinstance(row, dict) else row).strip()
             board = str(row.get("board", "") if isinstance(row, dict) else "").strip()
@@ -385,7 +442,7 @@ class BusinessCommunityCollector(BaseCollector):
             if not response.ok:
                 continue
             links = discover_rss_thread_links(response.body_text, base_url=url, platform=platform, board=board)
-            accepted = self._ingest_discovery_links(
+            audit = self._ingest_discovery_links(
                 discovered=discovered,
                 links=links,
                 discovery_queries=discovery_queries,
@@ -394,6 +451,7 @@ class BusinessCommunityCollector(BaseCollector):
                 board=board,
                 max_per_url=max_per_url,
             )
+            accepted = int(audit["accepted"])
             self.collection_stats.append(
                 {
                     "source": self.source_name,
@@ -424,7 +482,7 @@ class BusinessCommunityCollector(BaseCollector):
             if not response.ok:
                 continue
             links = discover_sitemap_thread_links(response.body_text, base_url=url, platform=platform, board=board)
-            accepted = self._ingest_discovery_links(
+            audit = self._ingest_discovery_links(
                 discovered=discovered,
                 links=links,
                 discovery_queries=discovery_queries,
@@ -433,6 +491,7 @@ class BusinessCommunityCollector(BaseCollector):
                 board=board,
                 max_per_url=max_per_url,
             )
+            accepted = int(audit["accepted"])
             self.collection_stats.append(
                 {
                     "source": self.source_name,
@@ -453,17 +512,33 @@ class BusinessCommunityCollector(BaseCollector):
                 }
             )
         sitemap_rows = self._expand_sitemap_index_rows(user_agent)
+        sitemap_stop_on_404 = bool(self.config.get("stop_on_http_404_for_sitemap_index", stop_on_http_404))
+        max_zero_accept_sitemaps = int(self.config.get("max_consecutive_zero_accept_sitemaps", 0) or 0)
+        max_duplicate_only_sitemaps = int(self.config.get("max_consecutive_duplicate_only_sitemaps", 0) or 0)
+        max_seed_filtered_only_sitemaps = int(self.config.get("max_consecutive_seed_filtered_only_sitemaps", 0) or 0)
+        sitemap_state = {
+            "stopped": False,
+            "consecutive_zero_accept": 0,
+            "consecutive_duplicate_only": 0,
+            "consecutive_seed_filtered_only": 0,
+            "stop_reason": "",
+        }
         for row in sitemap_rows:
             url = str(row.get("url", "")).strip()
             board = str(row.get("board", "")).strip()
+            if bool(sitemap_state["stopped"]):
+                continue
             if not url or not self._robots_allowed(url, user_agent):
                 continue
             response = fetch_text(url, user_agent=user_agent, timeout_seconds=int(self.config.get("timeout_seconds", 20)))
             if not response.ok:
                 self._record_error(url, "sitemap_fetch", str(response.status_code), response.error_message or response.crawl_status)
+                if sitemap_stop_on_404 and int(response.status_code) == 404:
+                    sitemap_state["stopped"] = True
+                    sitemap_state["stop_reason"] = "http_404_stop"
                 continue
             links = discover_sitemap_thread_links(response.body_text, base_url=url, platform=platform, board=board)
-            accepted = self._ingest_discovery_links(
+            audit = self._ingest_discovery_links(
                 discovered=discovered,
                 links=links,
                 discovery_queries=discovery_queries,
@@ -472,6 +547,34 @@ class BusinessCommunityCollector(BaseCollector):
                 board=board,
                 max_per_url=max_per_url,
             )
+            accepted = int(audit["accepted"])
+            if not links or accepted == 0:
+                sitemap_state["consecutive_zero_accept"] = int(sitemap_state["consecutive_zero_accept"]) + 1
+            else:
+                sitemap_state["consecutive_zero_accept"] = 0
+            if links and accepted == 0 and int(audit["duplicate_count"]) == len(links):
+                sitemap_state["consecutive_duplicate_only"] = int(sitemap_state["consecutive_duplicate_only"]) + 1
+            else:
+                sitemap_state["consecutive_duplicate_only"] = 0
+            if links and accepted == 0 and int(audit["seed_filtered_count"]) == len(links):
+                sitemap_state["consecutive_seed_filtered_only"] = int(sitemap_state["consecutive_seed_filtered_only"]) + 1
+            else:
+                sitemap_state["consecutive_seed_filtered_only"] = 0
+            if max_zero_accept_sitemaps > 0 and int(sitemap_state["consecutive_zero_accept"]) >= max_zero_accept_sitemaps:
+                sitemap_state["stopped"] = True
+                sitemap_state["stop_reason"] = "consecutive_zero_accept_stop"
+            if (
+                max_duplicate_only_sitemaps > 0
+                and int(sitemap_state["consecutive_duplicate_only"]) >= max_duplicate_only_sitemaps
+            ):
+                sitemap_state["stopped"] = True
+                sitemap_state["stop_reason"] = "consecutive_duplicate_only_stop"
+            if (
+                max_seed_filtered_only_sitemaps > 0
+                and int(sitemap_state["consecutive_seed_filtered_only"]) >= max_seed_filtered_only_sitemaps
+            ):
+                sitemap_state["stopped"] = True
+                sitemap_state["stop_reason"] = "seed_exhaustion_stop"
             self.collection_stats.append(
                 {
                     "source": self.source_name,
@@ -488,7 +591,7 @@ class BusinessCommunityCollector(BaseCollector):
                     "page_raw_count_before_dedupe": len(links),
                     "duplicate_count": max(0, len(links) - accepted),
                     "duplicate_ratio": round((max(0, len(links) - accepted) / max(len(links), 1)), 4),
-                    "stop_reason": "ok" if links else "no_thread_links",
+                    "stop_reason": str(sitemap_state["stop_reason"] or ("ok" if links else "no_thread_links")),
                 }
             )
         self.business_health["discovered_thread_count"] = len(discovered)
@@ -506,7 +609,7 @@ class BusinessCommunityCollector(BaseCollector):
         surface_url: str,
         board: str,
         max_per_url: int | None,
-    ) -> int:
+    ) -> dict[str, int]:
         """Ingest one discovery batch and persist audit-friendly decision counts."""
         accepted = 0
         duplicate_count = 0
@@ -547,7 +650,12 @@ class BusinessCommunityCollector(BaseCollector):
                 "duplicate_count": duplicate_count,
             }
         )
-        return accepted
+        return {
+            "accepted": accepted,
+            "duplicate_count": duplicate_count,
+            "excluded_count": excluded_count,
+            "seed_filtered_count": seed_filtered_count,
+        }
 
     def _expand_sitemap_index_rows(self, user_agent: str) -> list[dict[str, str]]:
         """Return child sitemap rows discovered from configured sitemap index pages."""
@@ -581,16 +689,30 @@ class BusinessCommunityCollector(BaseCollector):
 
     def _expanded_discovery_url_rows(self) -> list[dict[str, str]]:
         """Expand listing URLs across simple public pagination patterns."""
-        page_count = int(os.getenv("BUSINESS_COMMUNITY_DISCOVERY_PAGE_COUNT", self.config.get("discovery_page_count", 1)))
+        source_page_count = int(os.getenv("BUSINESS_COMMUNITY_DISCOVERY_PAGE_COUNT", self.config.get("discovery_page_count", 1)))
         rows: list[dict[str, str]] = []
         for row in self.config.get("discovery_urls", []) or []:
             url = str(row.get("url", "") if isinstance(row, dict) else row).strip()
             board = str(row.get("board", "") if isinstance(row, dict) else "").strip()
             if not url:
                 continue
-            rows.append({"url": url, "board": board})
-            for page_no in range(2, max(page_count, 1) + 1):
-                rows.append({"url": _paginate_listing_url(url, str(self.config.get("platform", "")), page_no), "board": board})
+            row_page_count = source_page_count
+            if isinstance(row, dict) and row.get("page_count") is not None:
+                try:
+                    row_page_count = int(row.get("page_count", source_page_count))
+                except (TypeError, ValueError):
+                    row_page_count = source_page_count
+            row_page_count = max(row_page_count, 1)
+            rows.append({"url": url, "board": board, "page_no": "1", "listing_root": url})
+            for page_no in range(2, row_page_count + 1):
+                rows.append(
+                    {
+                        "url": _paginate_listing_url(url, str(self.config.get("platform", "")), page_no),
+                        "board": board,
+                        "page_no": str(page_no),
+                        "listing_root": url,
+                    }
+                )
         return rows
 
     def _build_record(self, parsed, link: ThreadLink) -> RawRecord:

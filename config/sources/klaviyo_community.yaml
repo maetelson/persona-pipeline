@@ -12,12 +12,20 @@ query_mode: source_config
 seed_bank_path: config/seeds/business_communities/klaviyo_community.yaml
 seed_source_token: klaviyo
 seed_query_style: support_community
-discovery_page_count: 300
+discovery_page_count: 80
+discovery_sleep_seconds: 0.25
 sleep_seconds: 0.02
+fetch_retry_base_seconds: 8
+fetch_retry_max_seconds: 40
+rate_limit_retry_base_seconds: 25
+rate_limit_retry_max_seconds: 120
 filter_discovery_by_seed: true
 include_candidate_seed_pool_for_discovery: true
 min_seed_term_matches: 1
-max_threads_per_run: 1500
+stop_on_http_404_for_discovery: true
+max_consecutive_empty_discovery_pages: 2
+max_consecutive_duplicate_only_pages: 3
+max_consecutive_seed_filtered_only_pages: 3
 allow_listing_fallback_on_fetch_error: true
 listing_fallback_status_codes:
   - 403
@@ -27,9 +35,13 @@ aliases:
 discovery_urls:
   - url: https://community.klaviyo.com/marketing-30
     board: Marketing
+    page_count: 240
   - url: https://community.klaviyo.com/analytics-72
     board: Analytics
+    page_count: 120
   - url: https://community.klaviyo.com/service-35
     board: Service
+    page_count: 40
   - url: https://community.klaviyo.com/strategic-advice-27
     board: Strategic Advice
+    page_count: 60

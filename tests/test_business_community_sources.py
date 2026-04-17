@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 from src.collectors.business_community_collector import BusinessCommunityCollector
 from src.collectors.business_community_parser import (
@@ -265,6 +266,166 @@ class BusinessCommunitySourceTests(unittest.TestCase):
         self.assertEqual(excluded, "excluded")
         self.assertEqual(candidate_match, "accepted")
         self.assertEqual(seed_filtered, "seed_filtered")
+
+    def test_expanded_discovery_rows_use_row_page_count_override(self) -> None:
+        collector = BusinessCommunityCollector(
+            "klaviyo_community",
+            config={
+                "source_group": "business_communities",
+                "source_name": "Klaviyo Community",
+                "platform": "klaviyo",
+                "discovery_page_count": 25,
+                "discovery_urls": [
+                    {"url": "https://community.klaviyo.com/marketing-30", "board": "Marketing", "page_count": 3},
+                    {"url": "https://community.klaviyo.com/analytics-72", "board": "Analytics"},
+                ],
+            },
+            data_dir=ROOT / "data",
+        )
+        rows = collector._expanded_discovery_url_rows()
+        marketing_rows = [row for row in rows if row["listing_root"] == "https://community.klaviyo.com/marketing-30"]
+        analytics_rows = [row for row in rows if row["listing_root"] == "https://community.klaviyo.com/analytics-72"]
+        self.assertEqual(len(marketing_rows), 3)
+        self.assertEqual(len(analytics_rows), 25)
+
+    def test_discovery_stops_after_http_404_for_one_board(self) -> None:
+        collector = BusinessCommunityCollector(
+            "klaviyo_community",
+            config={
+                "source_group": "business_communities",
+                "source_name": "Klaviyo Community",
+                "platform": "klaviyo",
+                "check_robots": False,
+                "discovery_page_count": 5,
+                "stop_on_http_404_for_discovery": True,
+                "discovery_urls": [
+                    {"url": "https://community.klaviyo.com/service-35", "board": "Service"},
+                ],
+            },
+            data_dir=ROOT / "data",
+        )
+
+        class Response:
+            def __init__(self, ok: bool, status_code: int, body_text: str = "") -> None:
+                self.ok = ok
+                self.status_code = status_code
+                self.body_text = body_text
+                self.error_message = f"HTTP {status_code}" if not ok else ""
+                self.crawl_status = "ok" if ok else "http_error"
+
+        seen_urls: list[str] = []
+
+        def fake_fetch(url: str, user_agent: str, stage: str):
+            seen_urls.append(url)
+            if url.endswith("?page=2"):
+                return Response(False, 404)
+            return Response(True, 200, '<a href="/service-35/thread-1-100">Thread one</a>')
+
+        with patch.object(collector, "_fetch_with_retries", side_effect=fake_fetch):
+            links = collector._discover_threads()
+        self.assertEqual(len(links), 1)
+        self.assertEqual(len(seen_urls), 2)
+        self.assertFalse(any(url.endswith("?page=3") for url in seen_urls))
+
+    def test_discovery_stops_after_consecutive_duplicate_only_pages(self) -> None:
+        collector = BusinessCommunityCollector(
+            "klaviyo_community",
+            config={
+                "source_group": "business_communities",
+                "source_name": "Klaviyo Community",
+                "platform": "klaviyo",
+                "check_robots": False,
+                "discovery_page_count": 6,
+                "max_consecutive_duplicate_only_pages": 2,
+                "discovery_urls": [
+                    {"url": "https://community.klaviyo.com/analytics-72", "board": "Analytics"},
+                ],
+            },
+            data_dir=ROOT / "data",
+        )
+
+        class Response:
+            def __init__(self, body_text: str) -> None:
+                self.ok = True
+                self.status_code = 200
+                self.body_text = body_text
+                self.error_message = ""
+                self.crawl_status = "ok"
+
+        bodies = {
+            "https://community.klaviyo.com/analytics-72": '<a href="/analytics-72/thread-a-100">Thread A</a>',
+            "https://community.klaviyo.com/analytics-72?page=2": '<a href="/analytics-72/thread-a-100">Thread A</a>',
+            "https://community.klaviyo.com/analytics-72?page=3": '<a href="/analytics-72/thread-a-100">Thread A</a>',
+        }
+        seen_urls: list[str] = []
+
+        def fake_fetch(url: str, user_agent: str, stage: str):
+            seen_urls.append(url)
+            return Response(bodies.get(url, ""))
+
+        with patch.object(collector, "_fetch_with_retries", side_effect=fake_fetch):
+            links = collector._discover_threads()
+        self.assertEqual(len(links), 1)
+        self.assertEqual(seen_urls, [
+            "https://community.klaviyo.com/analytics-72",
+            "https://community.klaviyo.com/analytics-72?page=2",
+            "https://community.klaviyo.com/analytics-72?page=3",
+        ])
+
+    def test_sitemap_index_stops_after_consecutive_zero_accept_children(self) -> None:
+        collector = BusinessCommunityCollector(
+            "shopify_community",
+            config={
+                "source_group": "business_communities",
+                "source_name": "Shopify Community",
+                "platform": "shopify",
+                "check_robots": False,
+                "max_consecutive_zero_accept_sitemaps": 2,
+                "sitemap_index_urls": [
+                    {"url": "https://community.shopify.com/sitemap.xml", "board": "Shopify Community Sitemap"},
+                ],
+            },
+            data_dir=ROOT / "data",
+        )
+
+        class Response:
+            def __init__(self, ok: bool, status_code: int, body_text: str = "") -> None:
+                self.ok = ok
+                self.status_code = status_code
+                self.body_text = body_text
+                self.error_message = f"HTTP {status_code}" if not ok else ""
+                self.crawl_status = "ok" if ok else "http_error"
+
+        index_xml = """
+        <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+          <sitemap><loc>https://community.shopify.com/sitemap_1.xml</loc></sitemap>
+          <sitemap><loc>https://community.shopify.com/sitemap_2.xml</loc></sitemap>
+          <sitemap><loc>https://community.shopify.com/sitemap_3.xml</loc></sitemap>
+        </sitemapindex>
+        """
+        empty_urlset = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
+        seen_urls: list[str] = []
+
+        def fake_fetch(url: str, user_agent: str, stage: str):
+            seen_urls.append(url)
+            if url.endswith("sitemap.xml"):
+                return Response(True, 200, index_xml)
+            return Response(True, 200, empty_urlset)
+
+        with patch.object(collector, "_fetch_with_retries", side_effect=fake_fetch), patch(
+            "src.collectors.business_community_collector.fetch_text",
+            side_effect=lambda url, user_agent, timeout_seconds: fake_fetch(url, user_agent, "sitemap_fetch"),
+        ):
+            links = collector._discover_threads()
+        self.assertEqual(len(links), 0)
+        self.assertEqual(
+            seen_urls,
+            [
+                "https://community.shopify.com/sitemap.xml",
+                "https://community.shopify.com/sitemap_1.xml",
+                "https://community.shopify.com/sitemap_2.xml",
+            ],
+        )
 
 if __name__ == "__main__":
     unittest.main()

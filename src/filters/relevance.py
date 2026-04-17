@@ -658,7 +658,7 @@ def _sisense_whitelist_hits(lowered: str) -> list[str]:
 def _shopify_whitelist_hits(lowered: str) -> list[str]:
     """Return stricter Shopify rescue labels based on source-specific combos."""
     analytics_terms = ["report", "reporting", "analytics", "dashboard"]
-    export_terms = ["export", "csv", "spreadsheet", "spreadsheets", "bank account", "tax"]
+    export_terms = ["export", "csv", "spreadsheet", "spreadsheets", "bank account", "tax", "payout", "settlement"]
     metric_terms = [
         "conversion",
         "checkout",
@@ -674,8 +674,13 @@ def _shopify_whitelist_hits(lowered: str) -> list[str]:
         "days on hand",
         "transaction",
         "total sales",
+        "shipping",
+        "refund",
+        "payout",
+        "fees",
+        "taxes",
     ]
-    mismatch_terms = ["discrepancy", "mismatch", "wrong numbers", "not matching"]
+    mismatch_terms = ["discrepancy", "mismatch", "wrong numbers", "not matching", "off by", "source of truth"]
     trend_terms = ["compare periods", "weekly sales", "monthly sales", "trend", "cannot explain drop", "sales drop", "conversion drop"]
     reconciliation_terms = [
         "match against",
@@ -688,7 +693,16 @@ def _shopify_whitelist_hits(lowered: str) -> list[str]:
         "stopped syncing",
         "has anyone found",
         "found any solutions",
+        "reconcile",
+        "reconciliation",
+        "double check",
+        "validate",
+        "before sending",
+        "sign off",
     ]
+    finance_terms = ["finance", "accounting", "payout", "settlement", "bank deposit", "fees", "tax", "taxes"]
+    cross_source_terms = ["ga4", "google analytics", "google ads", "meta ads", "facebook ads", "source of truth"]
+    commerce_ops_terms = ["orders", "order count", "shipping", "shipment", "fulfilment", "payment", "payments", "inventory sync", "refund"]
 
     analytics_hit = any(_text_contains_term(lowered, term) for term in analytics_terms)
     metric_hit = any(_text_contains_term(lowered, term) for term in metric_terms)
@@ -696,6 +710,9 @@ def _shopify_whitelist_hits(lowered: str) -> list[str]:
     mismatch_hit = any(_text_contains_term(lowered, term) for term in mismatch_terms)
     trend_hit = any(_text_contains_term(lowered, term) for term in trend_terms)
     reconciliation_hit = any(_text_contains_term(lowered, term) for term in reconciliation_terms)
+    finance_hit = any(_text_contains_term(lowered, term) for term in finance_terms)
+    cross_source_hit = any(_text_contains_term(lowered, term) for term in cross_source_terms)
+    commerce_ops_hit = any(_text_contains_term(lowered, term) for term in commerce_ops_terms)
 
     hits: list[str] = []
     if analytics_hit and metric_hit:
@@ -706,6 +723,12 @@ def _shopify_whitelist_hits(lowered: str) -> list[str]:
         hits.append("shopify_export_report")
     if metric_hit and reconciliation_hit:
         hits.append("shopify_inventory_reconcile_combo")
+    if finance_hit and (mismatch_hit or reconciliation_hit or export_hit):
+        hits.append("shopify_finance_reconciliation")
+    if cross_source_hit and (mismatch_hit or analytics_hit):
+        hits.append("shopify_cross_source_mismatch")
+    if commerce_ops_hit and (mismatch_hit or reconciliation_hit):
+        hits.append("shopify_checkout_shipping_discrepancy")
     if trend_hit or (metric_hit and any(_text_contains_term(lowered, term) for term in ["drop", "down", "decline", "fell"])):
         hits.append("shopify_conversion_sales_trend")
     return hits
@@ -817,12 +840,16 @@ def _apply_shopify_rescue_signals(
     """Apply Shopify-specific rescue scoring for reporting and performance language."""
     lowered = str(text or "").lower()
     analytics_terms = ["report", "reporting", "analytics", "dashboard"]
-    export_terms = ["export", "csv"]
-    metric_terms = ["conversion", "checkout", "sessions", "sales", "revenue", "aov", "roas"]
-    mismatch_terms = ["discrepancy", "mismatch", "wrong numbers", "not matching"]
+    export_terms = ["export", "csv", "spreadsheet", "payout", "settlement"]
+    metric_terms = ["conversion", "checkout", "sessions", "sales", "revenue", "aov", "roas", "orders", "shipping", "refund", "inventory", "payout"]
+    mismatch_terms = ["discrepancy", "mismatch", "wrong numbers", "not matching", "off by", "source of truth"]
     trend_terms = ["compare periods", "weekly sales", "monthly sales", "trend", "sales drop", "conversion drop", "cannot explain drop"]
     tracking_terms = ["attribution", "pixel", "tracking", "customer segment"]
     performance_terms = ["product performance", "channel performance", "store performance"]
+    finance_terms = ["finance", "accounting", "bank account", "bank deposit", "payout", "settlement", "fees", "tax", "taxes"]
+    cross_source_terms = ["ga4", "google analytics", "google ads", "meta ads", "facebook ads"]
+    commerce_ops_terms = ["orders", "order count", "shipping", "shipment", "fulfilment", "payment", "payments", "refund", "inventory sync"]
+    validation_terms = ["before sending", "sign off", "validate", "validation", "double check", "reconcile", "reconciliation"]
 
     analytics_hit = any(_text_contains_term(lowered, term) for term in analytics_terms)
     metric_hit = any(_text_contains_term(lowered, term) for term in metric_terms)
@@ -831,6 +858,10 @@ def _apply_shopify_rescue_signals(
     trend_hit = any(_text_contains_term(lowered, term) for term in trend_terms)
     tracking_hit = any(_text_contains_term(lowered, term) for term in tracking_terms)
     performance_hit = any(_text_contains_term(lowered, term) for term in performance_terms)
+    finance_hit = any(_text_contains_term(lowered, term) for term in finance_terms)
+    cross_source_hit = any(_text_contains_term(lowered, term) for term in cross_source_terms)
+    commerce_ops_hit = any(_text_contains_term(lowered, term) for term in commerce_ops_terms)
+    validation_hit = any(_text_contains_term(lowered, term) for term in validation_terms)
 
     bonus = 0.0
     labels: list[str] = []
@@ -858,6 +889,25 @@ def _apply_shopify_rescue_signals(
         scores["segmentation_breakdown_score"] += 0.8
         bonus += 0.8
         labels.append("shopify_performance_views")
+    if finance_hit and (mismatch_hit or validation_hit or export_hit):
+        scores["dashboard_trust_score"] += 1.2
+        scores["excel_rework_score"] += 0.8
+        bonus += 2.0
+        labels.append("shopify_finance_reconciliation")
+    if cross_source_hit and (mismatch_hit or analytics_hit or tracking_hit):
+        scores["metric_definition_score"] += 1.0
+        scores["dashboard_trust_score"] += 1.0
+        bonus += 2.0
+        labels.append("shopify_cross_source_mismatch")
+    if commerce_ops_hit and (mismatch_hit or validation_hit):
+        scores["biz_workflow_score"] += 0.9
+        scores["root_cause_score"] += 0.8
+        bonus += 1.7
+        labels.append("shopify_checkout_shipping_discrepancy")
+    if validation_hit:
+        scores["stakeholder_pressure_score"] += 0.8
+        bonus += 0.8
+        labels.append("shopify_validation_signoff")
     if labels:
         unique_labels = list(dict.fromkeys(labels))
         positive_hits.append(("shopify_source_whitelist_score", round(bonus, 2)))
@@ -891,6 +941,13 @@ def _derive_dropped_reason(
     if source == "hubspot_community":
         return "prefilter_missing_hubspot_reporting_terms"
     if source == "klaviyo_community":
+        lowered_reasons = " ".join(source_reasons).lower()
+        if "klaviyo_revenue_attribution_trust" in lowered_reasons or "klaviyo_reporting" in lowered_reasons:
+            return "missing_klaviyo_revenue_reporting_terms"
+        if "klaviyo_segment_count_reconcile" in lowered_reasons:
+            return "missing_klaviyo_segment_reconciliation_terms"
+        if "klaviyo_export_report_trust" in lowered_reasons:
+            return "missing_klaviyo_export_trust_terms"
         return "prefilter_missing_klaviyo_reporting_terms"
     if source == "mixpanel_community":
         return "prefilter_missing_mixpanel_reporting_terms"
@@ -1107,6 +1164,13 @@ def _apply_source_specific_floor_override(
                 "sales history",
                 "days on hand",
                 "google ads",
+                "ga4",
+                "payout",
+                "settlement",
+                "fees",
+                "taxes",
+                "shipping",
+                "refund",
             ]
         )
         has_operational_pain = any(
@@ -1122,6 +1186,49 @@ def _apply_source_specific_floor_override(
                 "looking for",
                 "has anyone found",
                 "what works",
+                "reconcile",
+                "reconciliation",
+                "before sending",
+                "sign off",
+                "validate",
+                "double check",
+                "source of truth",
+            ]
+        )
+        if has_reporting_context and has_operational_pain and final_score >= floor:
+            return "borderline"
+    if source == "klaviyo_community":
+        floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.9))
+        has_reporting_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "revenue",
+                "attributed revenue",
+                "attribution",
+                "reporting",
+                "analytics",
+                "export",
+                "csv",
+                "benchmark",
+                "conversion",
+                "segment count",
+                "list count",
+                "profile count",
+            ]
+        )
+        has_operational_pain = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "mismatch",
+                "not matching",
+                "discrepancy",
+                "reporting lag",
+                "what changed",
+                "not syncing",
+                "not being added",
+                "manual process",
+                "reconcile",
+                "reconciliation",
             ]
         )
         if has_reporting_context and has_operational_pain and final_score >= floor:

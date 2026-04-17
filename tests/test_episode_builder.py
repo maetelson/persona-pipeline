@@ -123,6 +123,72 @@ class EpisodeBuilderTests(unittest.TestCase):
         self.assertIn(str(episodes_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
         self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
 
+    def test_shopify_reconciliation_context_rescues_weak_problem_phrasing(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "shopify_community",
+                    "raw_id": "shopify-3",
+                    "url": "https://example.com/thread/shopify-3",
+                    "source_type": "thread",
+                    "title": "Numbers for finance sign-off",
+                    "body": "We validate Shopify payouts against bank deposits, GA4, and Google Ads before sending the weekly report because totals look off.",
+                    "comments_text": "",
+                    "thread_title": "Numbers for finance sign-off",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "shopify"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_klaviyo_setup_tips_do_not_form_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-1",
+                    "url": "https://example.com/thread/klaviyo-1",
+                    "source_type": "thread",
+                    "title": "Need subject line ideas",
+                    "body": "What are the best practices for popup design and welcome series subject lines for a new list?",
+                    "comments_text": "",
+                    "thread_title": "Need subject line ideas",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "klaviyo"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 0)
+        self.assertEqual(str(debug_df.iloc[0]["quality_bucket"]), "fail")
+
+    def test_klaviyo_reporting_mismatch_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-2",
+                    "url": "https://example.com/thread/klaviyo-2",
+                    "source_type": "thread",
+                    "title": "Attributed revenue no longer matches benchmark report",
+                    "body": "Our segment count and attributed revenue export are not matching the benchmark report, and we are trying to figure out what changed before sharing the weekly performance summary.",
+                    "comments_text": "",
+                    "thread_title": "Attributed revenue no longer matches benchmark report",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "klaviyo"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
 
 if __name__ == "__main__":
     unittest.main()
