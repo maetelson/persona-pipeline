@@ -7,7 +7,7 @@ import runpy
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -41,7 +41,7 @@ def main() -> None:
     """Dispatch label-quality commands."""
     args = build_parser().parse_args()
     if args.command == "label":
-        runpy.run_path(str(ROOT / "run" / "05_label_episodes.py"), run_name="__main__")
+        runpy.run_path(str(ROOT / "run" / "pipeline" / "05_label_episodes.py"), run_name="__main__")
         return
     if args.command == "dry-run-labeler":
         policy = load_yaml(ROOT / "config" / "labeling_policy.yaml")

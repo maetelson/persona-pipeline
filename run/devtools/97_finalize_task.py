@@ -1,4 +1,4 @@
-"""Stage, commit, and push local repository updates with commit validation."""
+"""Finalize one work cycle by staging, committing, and pushing changes."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 import sys
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -14,15 +14,15 @@ from src.utils.git_sync import run_git, validate_commit_message
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the git-sync CLI."""
-    parser = argparse.ArgumentParser(description="Stage, commit, and push repository updates.")
+    """Build the task-finalizer CLI."""
+    parser = argparse.ArgumentParser(description="Finalize one task by stage+commit+push.")
     parser.add_argument("message", help="Commit message following type(scope): short summary")
-    parser.add_argument("--skip-push", action="store_true", help="Create the commit but skip the remote push.")
+    parser.add_argument("--allow-empty", action="store_true", help="Exit successfully when there is nothing to commit.")
     return parser
 
 
 def main() -> None:
-    """Run the sync flow."""
+    """Finalize the current task changes."""
     args = build_parser().parse_args()
     is_valid, error_message = validate_commit_message(args.message)
     if not is_valid:
@@ -32,6 +32,9 @@ def main() -> None:
     if status.returncode != 0:
         raise SystemExit(status.stderr.strip() or "Unable to read git status.")
     if not status.stdout.strip():
+        if args.allow_empty:
+            print("No local changes to commit.")
+            return
         raise SystemExit("No local changes to commit.")
 
     add = run_git(["add", "-A"], ROOT)
@@ -41,10 +44,6 @@ def main() -> None:
     commit = run_git(["commit", "-m", args.message], ROOT)
     if commit.returncode != 0:
         raise SystemExit(commit.stderr.strip() or commit.stdout.strip() or "Failed to create commit.")
-
-    if args.skip_push:
-        print(commit.stdout.strip())
-        return
 
     push = run_git(["push"], ROOT)
     if push.returncode != 0:

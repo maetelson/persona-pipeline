@@ -16,7 +16,7 @@ class PersonaCliSmokeTests(unittest.TestCase):
 
     def test_generate_persona_cards_completes(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/14_persona_cli.py", "generate-persona-cards"],
+            [sys.executable, "run/cli/14_persona_cli.py", "generate-persona-cards"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -27,7 +27,7 @@ class PersonaCliSmokeTests(unittest.TestCase):
 
     def test_audit_persona_naming_completes(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/14_persona_cli.py", "audit-persona-naming"],
+            [sys.executable, "run/cli/14_persona_cli.py", "audit-persona-naming"],
             cwd=ROOT,
             capture_output=True,
             text=True,

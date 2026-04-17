@@ -22,42 +22,42 @@ FUNNEL_STAGES = [
 ]
 STAGE_LINKS: dict[str, dict[str, str]] = {
     "raw_collected_rows": {
-        "script": "run/01_collect_all.py",
+        "script": "run/pipeline/01_collect_all.py",
         "function": "collector.collect()",
         "config": "config/sources/{source}.yaml",
     },
     "parsed_rows": {
-        "script": "run/01_collect_all.py",
+        "script": "run/pipeline/01_collect_all.py",
         "function": "collector.collect() / parser.parse_thread_page()",
         "config": "config/sources/{source}.yaml",
     },
     "normalized_rows": {
-        "script": "run/02_normalize_all.py",
+        "script": "run/pipeline/02_normalize_all.py",
         "function": "normalizer.normalize_row()",
         "config": "config/sources/{source}.yaml",
     },
     "valid_rows": {
-        "script": "run/03_filter_valid.py",
+        "script": "run/pipeline/03_filter_valid.py",
         "function": "apply_invalid_filter() / split_duplicate_posts()",
         "config": "config/invalid_rules.yaml",
     },
     "relevance_prefilter_passed_rows": {
-        "script": "run/03_5_prefilter_relevance.py",
+        "script": "run/pipeline/03_5_prefilter_relevance.py",
         "function": "apply_relevance_prefilter() / _evaluate_row_from_context()",
         "config": "config/relevance_rules.yaml",
     },
     "episode_built_rows": {
-        "script": "run/04_build_episodes.py",
+        "script": "run/pipeline/04_build_episodes.py",
         "function": "build_episode_outputs() / _assess_episode_quality()",
         "config": "config/segmentation_rules.yaml",
     },
     "labeled_rows": {
-        "script": "run/05_label_episodes.py",
+        "script": "run/pipeline/05_label_episodes.py",
         "function": "build_labelability_table() / prelabel_episodes()",
         "config": "config/labeling_policy.yaml",
     },
     "persona_relevant_promoted_rows": {
-        "script": "run/06_cluster_and_score.py",
+        "script": "run/pipeline/06_cluster_and_score.py",
         "function": "cluster + promotion outputs",
         "config": "docs/source_balance_policy.md",
     },

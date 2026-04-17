@@ -7,7 +7,7 @@ import runpy
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -34,7 +34,7 @@ def main() -> None:
         os.environ["COLLECT_MAX_PAGES_PER_QUERY"],
         os.environ["GITHUB_ENABLE_DISCUSSIONS"],
     )
-    runpy.run_path(str(ROOT / "run" / "01_collect_all.py"), run_name="__main__")
+    runpy.run_path(str(ROOT / "run" / "pipeline" / "01_collect_all.py"), run_name="__main__")
 
 
 if __name__ == "__main__":

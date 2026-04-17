@@ -15,7 +15,7 @@ class AxisCliSmokeTests(unittest.TestCase):
 
     def test_dry_run_axis_reduction_completes(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/11_axis_cli.py", "dry-run-axis-reduction"],
+            [sys.executable, "run/cli/11_axis_cli.py", "dry-run-axis-reduction"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -26,7 +26,7 @@ class AxisCliSmokeTests(unittest.TestCase):
 
     def test_export_axis_samples_completes(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/11_axis_cli.py", "export-axis-samples", "--axis", "workflow_stage", "--limit", "5"],
+            [sys.executable, "run/cli/11_axis_cli.py", "export-axis-samples", "--axis", "workflow_stage", "--limit", "5"],
             cwd=ROOT,
             capture_output=True,
             text=True,

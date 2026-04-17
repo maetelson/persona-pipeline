@@ -10,7 +10,7 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -144,7 +144,7 @@ def _restore_raw_files(backups: list[dict[str, Path | bool]]) -> None:
 def _run_step(step: str, timeout_seconds: int, env: dict[str, str]) -> dict[str, object]:
     """Run one pipeline step with a timeout."""
     started = time.monotonic()
-    command = [sys.executable, str(ROOT / "run" / step)]
+    command = [sys.executable, str(ROOT / "run" / "pipeline" / step)]
     try:
         completed = subprocess.run(
             command,

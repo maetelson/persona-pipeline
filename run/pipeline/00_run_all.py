@@ -7,7 +7,7 @@ import runpy
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -38,7 +38,7 @@ def main() -> None:
     load_dotenv(ROOT / ".env")
     _validate_required_env()
 
-    run_dir = ROOT / "run"
+    run_dir = ROOT / "run" / "pipeline"
     for step in STEPS:
         step_path = run_dir / step
         LOGGER.info("Starting %s", step)

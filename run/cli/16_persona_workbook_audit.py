@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -112,7 +112,7 @@ def build_audit_snapshot(root_dir: Path) -> dict[str, Any]:
 
     return {
         "source_of_truth": {
-            "entrypoint": "run/07_export_xlsx.py -> src.analysis.stage_service.run_final_report_stage -> src.exporters.xlsx_exporter.export_workbook_from_frames",
+            "entrypoint": "run/pipeline/07_export_xlsx.py -> src.analysis.stage_service.run_final_report_stage -> src.exporters.xlsx_exporter.export_workbook_from_frames",
             "bundle_builder": "src.analysis.stage_service.build_deterministic_analysis_outputs -> src.analysis.workbook_bundle.assemble_workbook_frames",
             "sheets": {
                 "overview": "src.analysis.persona_service._build_overview_df + src.analysis.stage_service._update_overview_quality",

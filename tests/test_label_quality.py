@@ -19,9 +19,9 @@ from src.labeling.rule_labeler import prelabel_episodes
 from src.utils.io import load_yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-_LABEL_EPISODES_SPEC = importlib.util.spec_from_file_location("run_05_label_episodes", ROOT / "run" / "05_label_episodes.py")
+_LABEL_EPISODES_SPEC = importlib.util.spec_from_file_location("run_05_label_episodes", ROOT / "run" / "pipeline" / "05_label_episodes.py")
 if _LABEL_EPISODES_SPEC is None or _LABEL_EPISODES_SPEC.loader is None:
-    raise RuntimeError("Unable to load run/05_label_episodes.py for tests.")
+    raise RuntimeError("Unable to load run/pipeline/05_label_episodes.py for tests.")
 _LABEL_EPISODES_MODULE = importlib.util.module_from_spec(_LABEL_EPISODES_SPEC)
 _LABEL_EPISODES_SPEC.loader.exec_module(_LABEL_EPISODES_MODULE)
 _write_before_after_quality_report = _LABEL_EPISODES_MODULE._write_before_after_quality_report
@@ -482,7 +482,7 @@ class LabelCliSmokeTests(unittest.TestCase):
 
     def test_dry_run_labeler_cli(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/15_label_cli.py", "dry-run-labeler"],
+            [sys.executable, "run/cli/15_label_cli.py", "dry-run-labeler"],
             cwd=ROOT,
             capture_output=True,
             text=True,

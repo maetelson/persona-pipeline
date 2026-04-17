@@ -15,7 +15,7 @@ class ExampleCliSmokeTests(unittest.TestCase):
 
     def test_select_representative_examples_completes(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/12_example_cli.py", "select-representative-examples"],
+            [sys.executable, "run/cli/12_example_cli.py", "select-representative-examples"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -26,7 +26,7 @@ class ExampleCliSmokeTests(unittest.TestCase):
 
     def test_compare_example_selection_completes(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/12_example_cli.py", "compare-example-selection"],
+            [sys.executable, "run/cli/12_example_cli.py", "compare-example-selection"],
             cwd=ROOT,
             capture_output=True,
             text=True,

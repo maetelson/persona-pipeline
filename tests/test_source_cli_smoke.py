@@ -18,7 +18,7 @@ class SourceCliSmokeTests(unittest.TestCase):
 
     def test_dry_run_cli_completes(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/10_source_cli.py", "dry-run", "--source-group", "reddit"],
+            [sys.executable, "run/cli/10_source_cli.py", "dry-run", "--source-group", "reddit"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -29,7 +29,7 @@ class SourceCliSmokeTests(unittest.TestCase):
 
     def test_dry_run_cli_supports_new_business_community_sources(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/10_source_cli.py", "dry-run", "--source", "mixpanel_community"],
+            [sys.executable, "run/cli/10_source_cli.py", "dry-run", "--source", "mixpanel_community"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -40,7 +40,7 @@ class SourceCliSmokeTests(unittest.TestCase):
 
     def test_show_and_validate_seed_cli_completes(self) -> None:
         show = subprocess.run(
-            [sys.executable, "run/10_source_cli.py", "show-seeds", "--source", "r/excel"],
+            [sys.executable, "run/cli/10_source_cli.py", "show-seeds", "--source", "r/excel"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -49,7 +49,7 @@ class SourceCliSmokeTests(unittest.TestCase):
         self.assertEqual(show.returncode, 0, msg=show.stderr)
 
         validate = subprocess.run(
-            [sys.executable, "run/10_source_cli.py", "validate-seeds", "--source-group", "reddit"],
+            [sys.executable, "run/cli/10_source_cli.py", "validate-seeds", "--source-group", "reddit"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -80,7 +80,7 @@ class SourceCliSmokeTests(unittest.TestCase):
             pd.DataFrame(columns=df.columns).to_parquet(invalid_path, index=False)
 
             prefilter = subprocess.run(
-                [sys.executable, "run/10_source_cli.py", "prefilter", "--source-group", "existing_forums", "--export-borderline", "--limit", "20"],
+                [sys.executable, "run/cli/10_source_cli.py", "prefilter", "--source-group", "existing_forums", "--export-borderline", "--limit", "20"],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
@@ -89,7 +89,7 @@ class SourceCliSmokeTests(unittest.TestCase):
             self.assertEqual(prefilter.returncode, 0, msg=prefilter.stderr)
 
             qa = subprocess.run(
-                [sys.executable, "run/10_source_cli.py", "qa-relevance", "--source", "reddit", "--limit", "20"],
+                [sys.executable, "run/cli/10_source_cli.py", "qa-relevance", "--source", "reddit", "--limit", "20"],
                 cwd=ROOT,
                 capture_output=True,
                 text=True,

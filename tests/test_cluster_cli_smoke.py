@@ -16,7 +16,7 @@ class ClusterCliSmokeTests(unittest.TestCase):
 
     def test_dry_run_recluster_completes(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/13_cluster_cli.py", "dry-run-recluster", "--mode", "bottleneck_first"],
+            [sys.executable, "run/cli/13_cluster_cli.py", "dry-run-recluster", "--mode", "bottleneck_first"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -26,7 +26,7 @@ class ClusterCliSmokeTests(unittest.TestCase):
 
     def test_name_clusters_writes_output(self) -> None:
         result = subprocess.run(
-            [sys.executable, "run/13_cluster_cli.py", "name-clusters", "--strategy", "bottleneck"],
+            [sys.executable, "run/cli/13_cluster_cli.py", "name-clusters", "--strategy", "bottleneck"],
             cwd=ROOT,
             capture_output=True,
             text=True,

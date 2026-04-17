@@ -113,7 +113,7 @@ class SourceStageProfilerReportTest(unittest.TestCase):
         report = render_profile_report(summary_df, stage_df)
 
         self.assertIn("# Source Stage Profile Report", report)
-        self.assertIn("run/01_collect_all.py", report)
+        self.assertIn("run/pipeline/01_collect_all.py", report)
         self.assertIn("RedditCollector.collect", report)
         self.assertIn("Reddit hotspot: collect", report)
         self.assertIn("avg_items_per_page", report)
