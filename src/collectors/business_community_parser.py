@@ -396,6 +396,7 @@ def _looks_like_thread_url(url: str, platform: str) -> bool:
             "/m-p/" in path
             or "/td-p/" in path
             or re.search(r"^/discussions/[^/]+/[^/]+/\d+$", path) is not None
+            or re.search(r"^/kb/[^/]+/[^/]+/\d+$", path) is not None
         )
     if platform == "google_support":
         return (
