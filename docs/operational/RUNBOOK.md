@@ -59,6 +59,7 @@ python run/pipeline/01_5_expand_queries_from_raw.py
 python run/pipeline/02_normalize_all.py
 python run/pipeline/02.5_filter_time_window.py
 python run/pipeline/03_filter_valid.py
+python run/pipeline/03_5_prefilter_relevance.py
 python run/pipeline/04_build_episodes.py
 python run/pipeline/05_label_episodes.py
 python run/pipeline/06_1_discover_persona_axes.py
