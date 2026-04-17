@@ -154,6 +154,7 @@ Diagnostics and experiments stay available, but are intentionally not the primar
 | `run/diagnostics/21_diagnose_source_funnels.py` | Source-specific stage funnel diagnosis |
 | `run/diagnostics/22_diagnose_source_collapse.py` | Reusable source-collapse diagnosis utility |
 | `run/diagnostics/23_validate_seed_system.py` | Offline seed-system validation against current artifacts |
+| `run/diagnostics/24_audit_business_source_inventory.py` | Discovery inventory vs downstream retention audit for business-community sources |
 | `run/experiments/17_debug_openai_labeler_call.py` | Run one minimal live OpenAI call through the labeler |
 | `run/experiments/18_prove_cache_vs_live_calls.py` | Controlled experiment: cache vs live OpenAI call behavior |
 

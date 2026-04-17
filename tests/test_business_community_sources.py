@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import unittest
 
+from src.collectors.business_community_collector import BusinessCommunityCollector
 from src.collectors.business_community_parser import (
     ThreadLink,
     canonicalize_business_url,
@@ -213,6 +214,57 @@ class BusinessCommunitySourceTests(unittest.TestCase):
         )
         self.assertEqual(parsed.parse_status, "ok")
         self.assertIn("ad group got disapproved", parsed.body_text)
+
+    def test_shopify_discovery_decision_distinguishes_excluded_and_seed_filtered(self) -> None:
+        collector = BusinessCommunityCollector(
+            "shopify_community",
+            config={
+                "source_group": "business_communities",
+                "source_name": "Shopify Community",
+                "platform": "shopify",
+                "product_or_tool": "Shopify",
+                "seed_bank_path": "config/seeds/business_communities/shopify_community.yaml",
+                "filter_discovery_by_seed": True,
+                "include_candidate_seed_pool_for_discovery": True,
+                "discovery_exclude_title_patterns": ["^about the .* category$"],
+                "discovery_exclude_url_patterns": [],
+                "seed_source_token": "shopify",
+                "seed_query_style": "support_community",
+                "check_robots": False,
+            },
+            data_dir=ROOT / "data",
+        )
+        queries = collector._discovery_queries()
+        excluded = collector._discovery_decision(
+            ThreadLink(
+                url="https://community.shopify.com/t/about-the-data-and-analytics-category/123",
+                title="About the Data and Analytics Category",
+                board="Data and Analytics",
+            ),
+            {},
+            queries,
+        )
+        candidate_match = collector._discovery_decision(
+            ThreadLink(
+                url="https://community.shopify.com/t/sales-attributed-to-marketing-not-showing/234",
+                title="Sales attributed to marketing not showing in analytics",
+                board="Shopify Discussion",
+            ),
+            {},
+            queries,
+        )
+        seed_filtered = collector._discovery_decision(
+            ThreadLink(
+                url="https://community.shopify.com/t/how-do-i-change-my-store-name/345",
+                title="Need a better product page design",
+                board="Shopify Discussion",
+            ),
+            {},
+            queries,
+        )
+        self.assertEqual(excluded, "excluded")
+        self.assertEqual(candidate_match, "accepted")
+        self.assertEqual(seed_filtered, "seed_filtered")
 
 if __name__ == "__main__":
     unittest.main()

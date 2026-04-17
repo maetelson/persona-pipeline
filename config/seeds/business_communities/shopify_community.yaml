@@ -32,6 +32,12 @@ candidate_seed_pool:
   - category breakdown not adding up
   - which products are causing the drop
   - finance numbers different from Shopify
+  - sales attributed to marketing not showing
+  - revenue not matching ga4
+  - analytics stopped tracking purchases
+  - why are conversions showing as direct
+  - total sales looks wrong
+  - conversion tracking not matching
 optional_templates:
   - template: conversion rate drop
     reason: Preserved as a subset branch under quantitative pain, but downgraded because it over-centers conversion.

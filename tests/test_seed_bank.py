@@ -28,7 +28,6 @@ class SeedBankTests(unittest.TestCase):
             ("business_communities", "hubspot_community"),
             ("business_communities", "klaviyo_community"),
             ("business_communities", "mixpanel_community"),
-            ("business_communities", "amplitude_community"),
             ("business_communities", "power_bi_community"),
             ("business_communities", "qlik_community"),
             ("business_communities", "sisense_community"),
@@ -81,6 +80,18 @@ class SeedBankTests(unittest.TestCase):
         self.assertNotIn("wrong analytics data", expanded)
         self.assertTrue(all("shopify" in query for query in expanded))
 
+    def test_shopify_discovery_queries_can_include_candidate_seed_pool(self) -> None:
+        config = load_yaml(ROOT / "config" / "sources" / "shopify_community.yaml")
+        queries = build_discovery_queries(
+            ROOT,
+            config=config,
+            source_id="shopify_community",
+            source_group="business_communities",
+        )
+        expanded = [query.expanded_query for query in queries]
+        self.assertIn("shopify sales attributed to marketing not showing", expanded)
+        self.assertIn("shopify analytics stopped tracking purchases", expanded)
+
     def test_power_bi_queries_use_power_bi_specific_seed_bank(self) -> None:
         config = load_yaml(ROOT / "config" / "sources" / "power_bi_community.yaml")
         queries = build_discovery_queries(
@@ -120,19 +131,6 @@ class SeedBankTests(unittest.TestCase):
         self.assertIn("wrong totals in qlik chart", expanded)
         self.assertIn("qlik set analysis result doesn't match total", expanded)
         self.assertIn("qlik dashboard and export don't match", expanded)
-
-    def test_amplitude_queries_use_amplitude_specific_seed_bank(self) -> None:
-        config = load_yaml(ROOT / "config" / "sources" / "amplitude_community.yaml")
-        queries = build_discovery_queries(
-            ROOT,
-            config=config,
-            source_id="amplitude_community",
-            source_group="business_communities",
-        )
-        expanded = [query.expanded_query for query in queries]
-        self.assertIn("amplitude event count doesn't match chart", expanded)
-        self.assertIn("amplitude retention analysis numbers don't make sense", expanded)
-        self.assertIn("amplitude what should i do based on this analysis", expanded)
 
     def test_sisense_queries_use_sisense_specific_seed_bank(self) -> None:
         config = load_yaml(ROOT / "config" / "sources" / "sisense_community.yaml")

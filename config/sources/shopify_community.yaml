@@ -12,10 +12,11 @@ seed_bank_path: config/seeds/business_communities/shopify_community.yaml
 discovery_page_count: 300
 sleep_seconds: 0.05
 filter_discovery_by_seed: true
-include_candidate_seed_pool_for_discovery: false
+include_candidate_seed_pool_for_discovery: true
 min_seed_term_matches: 1
 seed_source_token: shopify
 seed_query_style: support_community
+max_threads_per_run: 2500
 discovery_exclude_title_patterns:
   - "^about the .* category$"
   - "^what to measure in your first"
@@ -38,3 +39,6 @@ rss_discovery_urls:
     board: Data and Analytics
   - url: https://community.shopify.com/c/shopify-discussion/95.rss
     board: Shopify Discussion
+sitemap_index_urls:
+  - url: https://community.shopify.com/sitemap.xml
+    board: Shopify Community Sitemap

@@ -8,6 +8,12 @@ candidate_seed_pool:
   - hard to explain results to leadership
   - what changed after list growth slowed
   - hard to know what action to take next
+  - signup rate is low but traffic is stable
+  - forms not converting but traffic is there
+  - benchmark numbers don't match expectations
+  - revenue from flows not making sense
+  - segment size changed unexpectedly
+  - reporting results are delayed
 active_core_seeds:
   # Canonical axes: numbers_mismatch, trend_interpretation_confusion,
   # segmentation_breakdown_confusion, metric_definition_confusion,

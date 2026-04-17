@@ -126,6 +126,9 @@ def main() -> None:
             business_health = getattr(collector, "business_health", None)
             if business_health:
                 _write_business_collection_health([business_health])
+            discovery_audit_rows = getattr(collector, "discovery_audit_rows", None)
+            if discovery_audit_rows:
+                _write_business_discovery_audit(discovery_audit_rows)
             if _should_fail_low_raw(source_name, config, volume_status, fail_fast_on_low_raw):
                 _write_collection_audits(source_rows, page_rows, error_rows)
                 _raise_low_raw(source_name, len(records), source_raw_threshold)
@@ -151,6 +154,9 @@ def main() -> None:
             business_health = getattr(collector, "business_health", None)
             if business_health:
                 _write_business_collection_health([business_health])
+            discovery_audit_rows = getattr(collector, "discovery_audit_rows", None)
+            if discovery_audit_rows:
+                _write_business_discovery_audit(discovery_audit_rows)
             if fail_fast_on_low_raw:
                 _write_collection_audits(source_rows, page_rows, error_rows)
                 raise RuntimeError(f"Collector failed for {source_name}; stopping collection.") from exc
@@ -309,6 +315,18 @@ def _write_business_collection_health(rows: list[dict[str, object]]) -> None:
         updated = updated.drop_duplicates("source_id", keep="last").sort_values("source_id").reset_index(drop=True)
     updated.to_csv(path, index=False)
     write_parquet(updated, ROOT / "data" / "analysis" / "business_community_collection_health.parquet")
+
+
+def _write_business_discovery_audit(rows: list[dict[str, object]]) -> None:
+    """Append business-community discovery inventory diagnostics."""
+    path = ROOT / "data" / "analysis" / "business_community_discovery_audit.csv"
+    existing = pd.read_csv(path) if path.exists() else pd.DataFrame()
+    updated = pd.concat([existing, pd.DataFrame(rows)], ignore_index=True)
+    dedupe_keys = ["source_id", "channel", "surface_url"]
+    if not updated.empty and all(column in updated.columns for column in dedupe_keys):
+        updated = updated.drop_duplicates(dedupe_keys, keep="last").sort_values(dedupe_keys).reset_index(drop=True)
+    updated.to_csv(path, index=False)
+    write_parquet(updated, ROOT / "data" / "analysis" / "business_community_discovery_audit.parquet")
 
 
 if __name__ == "__main__":

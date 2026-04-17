@@ -42,11 +42,16 @@ class BusinessCommunityCollector(BaseCollector):
         self._network_retry_sleep_seconds = 0.0
         self.business_health: dict[str, int | str] = {
             "source_id": self.source_name,
+            "inventory_thread_count": 0,
             "discovered_thread_count": 0,
             "fetched_thread_count": 0,
             "parse_success_count": 0,
             "parse_error_count": 0,
+            "discovery_excluded_count": 0,
+            "discovery_seed_filtered_count": 0,
+            "discovery_duplicate_count": 0,
         }
+        self.discovery_audit_rows: list[dict[str, int | str]] = []
 
     def collect(self) -> list[RawRecord]:
         """Discover, fetch, and parse public community threads."""
@@ -83,6 +88,13 @@ class BusinessCommunityCollector(BaseCollector):
                 continue
             response = self._fetch_with_retries(link.url, user_agent=user_agent, stage="fetch")
             if not response.ok:
+                fallback_record = self._build_listing_fallback_record(link, response.status_code)
+                if fallback_record is not None:
+                    self.business_health["fetched_thread_count"] = int(self.business_health["fetched_thread_count"]) + 1
+                    self.business_health["parse_success_count"] = int(self.business_health["parse_success_count"]) + 1
+                    records.append(fallback_record)
+                    if sleep_seconds > 0:
+                        time.sleep(sleep_seconds)
                 continue
             self.business_health["fetched_thread_count"] = int(self.business_health["fetched_thread_count"]) + 1
             try:
@@ -111,6 +123,62 @@ class BusinessCommunityCollector(BaseCollector):
         self._record_collection_summary(len(records))
         LOGGER.info("Collected %s business community rows for %s", len(records), self.source_name)
         return records
+
+    def _build_listing_fallback_record(self, link: ThreadLink, status_code: int) -> RawRecord | None:
+        """Build a record from listing metadata when thread pages are intentionally unreachable."""
+        if not bool(self.config.get("allow_listing_fallback_on_fetch_error", False)):
+            return None
+        allowed_codes = {
+            int(code)
+            for code in (self.config.get("listing_fallback_status_codes", [403]) or [403])
+            if str(code).strip()
+        }
+        if int(status_code or 0) not in allowed_codes:
+            return None
+        fetched_at = utc_now_iso()
+        body_text = (link.snippet or link.title or "").strip()
+        if not body_text:
+            return None
+        raw_id = make_hash_id(self.source_name, link.url, link.title)
+        return RawRecord(
+            source=self.source_name,
+            source_group=str(self.config.get("source_group", "business_communities")),
+            source_name=str(self.config.get("source_name", self.source_name)),
+            source_type="thread_listing_fallback",
+            raw_id=raw_id,
+            raw_source_id=raw_id,
+            url=link.url,
+            canonical_url=link.url,
+            title=link.title,
+            body=body_text,
+            body_text=body_text,
+            comments_text="",
+            created_at=_safe_iso_datetime(link.activity_date) or fetched_at,
+            fetched_at=fetched_at,
+            retrieved_at=fetched_at,
+            query_seed=link.title,
+            query_id="thread_discovery_listing_fallback",
+            query_text=link.title,
+            author_hint="",
+            author_name="",
+            product_or_tool=str(self.config.get("product_or_tool", "")),
+            subreddit_or_forum=link.board,
+            thread_title=link.title,
+            crawl_method="public_listing_fallback",
+            crawl_status="listing_fallback",
+            parse_version="business_community_listing_fallback_v1",
+            hash_id=make_hash_id(self.source_name, raw_id, link.url),
+            source_meta={
+                "platform": self.config.get("platform", ""),
+                "product_or_tool": self.config.get("product_or_tool", ""),
+                "board": link.board,
+                "reply_count": link.reply_count,
+                "listing_snippet": link.snippet,
+                "listing_activity_date": link.activity_date,
+                "fetch_status_code": int(status_code or 0),
+                "fallback_reason": "thread_fetch_unavailable",
+            },
+        )
 
     def _collect_api_records(self) -> list[RawRecord]:
         """Collect records from public community APIs when listing pages are capped."""
@@ -278,16 +346,15 @@ class BusinessCommunityCollector(BaseCollector):
             if not response.ok:
                 continue
             links = discover_thread_links(response.body_text, base_url=url, platform=platform, board=board)
-            accepted = 0
-            for link in links:
-                if link.url in discovered:
-                    continue
-                if not self._accept_discovered_link(link, discovery_queries):
-                    continue
-                discovered[link.url] = link
-                accepted += 1
-                if max_per_url is not None and accepted >= max_per_url:
-                    break
+            accepted = self._ingest_discovery_links(
+                discovered=discovered,
+                links=links,
+                discovery_queries=discovery_queries,
+                channel="listing",
+                surface_url=url,
+                board=board,
+                max_per_url=max_per_url,
+            )
             self.collection_stats.append(
                 {
                     "source": self.source_name,
@@ -318,16 +385,15 @@ class BusinessCommunityCollector(BaseCollector):
             if not response.ok:
                 continue
             links = discover_rss_thread_links(response.body_text, base_url=url, platform=platform, board=board)
-            accepted = 0
-            for link in links:
-                if link.url in discovered:
-                    continue
-                if not self._accept_discovered_link(link, discovery_queries):
-                    continue
-                discovered[link.url] = link
-                accepted += 1
-                if max_per_url is not None and accepted >= max_per_url:
-                    break
+            accepted = self._ingest_discovery_links(
+                discovered=discovered,
+                links=links,
+                discovery_queries=discovery_queries,
+                channel="rss",
+                surface_url=url,
+                board=board,
+                max_per_url=max_per_url,
+            )
             self.collection_stats.append(
                 {
                     "source": self.source_name,
@@ -358,16 +424,15 @@ class BusinessCommunityCollector(BaseCollector):
             if not response.ok:
                 continue
             links = discover_sitemap_thread_links(response.body_text, base_url=url, platform=platform, board=board)
-            accepted = 0
-            for link in links:
-                if link.url in discovered:
-                    continue
-                if not self._accept_discovered_link(link, discovery_queries):
-                    continue
-                discovered[link.url] = link
-                accepted += 1
-                if max_per_url is not None and accepted >= max_per_url:
-                    break
+            accepted = self._ingest_discovery_links(
+                discovered=discovered,
+                links=links,
+                discovery_queries=discovery_queries,
+                channel="sitemap",
+                surface_url=url,
+                board=board,
+                max_per_url=max_per_url,
+            )
             self.collection_stats.append(
                 {
                     "source": self.source_name,
@@ -398,16 +463,15 @@ class BusinessCommunityCollector(BaseCollector):
                 self._record_error(url, "sitemap_fetch", str(response.status_code), response.error_message or response.crawl_status)
                 continue
             links = discover_sitemap_thread_links(response.body_text, base_url=url, platform=platform, board=board)
-            accepted = 0
-            for link in links:
-                if link.url in discovered:
-                    continue
-                if not self._accept_discovered_link(link, discovery_queries):
-                    continue
-                discovered[link.url] = link
-                accepted += 1
-                if max_per_url is not None and accepted >= max_per_url:
-                    break
+            accepted = self._ingest_discovery_links(
+                discovered=discovered,
+                links=links,
+                discovery_queries=discovery_queries,
+                channel="sitemap_index",
+                surface_url=url,
+                board=board,
+                max_per_url=max_per_url,
+            )
             self.collection_stats.append(
                 {
                     "source": self.source_name,
@@ -431,6 +495,59 @@ class BusinessCommunityCollector(BaseCollector):
         discovered_links = list(discovered.values())
         self._record_seed_discovery_audit(discovery_queries=discovery_queries, links=discovered_links)
         return discovered_links
+
+    def _ingest_discovery_links(
+        self,
+        *,
+        discovered: dict[str, ThreadLink],
+        links: list[ThreadLink],
+        discovery_queries: list[DiscoveryQuery],
+        channel: str,
+        surface_url: str,
+        board: str,
+        max_per_url: int | None,
+    ) -> int:
+        """Ingest one discovery batch and persist audit-friendly decision counts."""
+        accepted = 0
+        duplicate_count = 0
+        excluded_count = 0
+        seed_filtered_count = 0
+        for link in links:
+            decision = self._discovery_decision(link, discovered, discovery_queries)
+            if decision == "duplicate":
+                duplicate_count += 1
+                continue
+            if decision == "excluded":
+                excluded_count += 1
+                continue
+            if decision == "seed_filtered":
+                seed_filtered_count += 1
+                continue
+            discovered[link.url] = link
+            accepted += 1
+            if max_per_url is not None and accepted >= max_per_url:
+                break
+
+        self.business_health["inventory_thread_count"] = int(self.business_health["inventory_thread_count"]) + len(links)
+        self.business_health["discovery_duplicate_count"] = int(self.business_health["discovery_duplicate_count"]) + duplicate_count
+        self.business_health["discovery_excluded_count"] = int(self.business_health["discovery_excluded_count"]) + excluded_count
+        self.business_health["discovery_seed_filtered_count"] = (
+            int(self.business_health["discovery_seed_filtered_count"]) + seed_filtered_count
+        )
+        self.discovery_audit_rows.append(
+            {
+                "source_id": self.source_name,
+                "channel": channel,
+                "surface_url": surface_url,
+                "board": board,
+                "inventory_thread_count": len(links),
+                "accepted_thread_count": accepted,
+                "seed_filtered_count": seed_filtered_count,
+                "excluded_count": excluded_count,
+                "duplicate_count": duplicate_count,
+            }
+        )
+        return accepted
 
     def _expand_sitemap_index_rows(self, user_agent: str) -> list[dict[str, str]]:
         """Return child sitemap rows discovered from configured sitemap index pages."""
@@ -569,13 +686,26 @@ class BusinessCommunityCollector(BaseCollector):
 
     def _accept_discovered_link(self, link: ThreadLink, discovery_queries: list[DiscoveryQuery]) -> bool:
         """Return whether a discovered thread is worth fetching."""
+        return self._discovery_decision(link, {}, discovery_queries) == "accepted"
+
+    def _discovery_decision(
+        self,
+        link: ThreadLink,
+        discovered: dict[str, ThreadLink],
+        discovery_queries: list[DiscoveryQuery],
+    ) -> str:
+        """Return the audit-friendly decision for one discovered thread."""
+        if link.url in discovered:
+            return "duplicate"
         if self._matches_excluded_discovery_pattern(link):
-            return False
+            return "excluded"
         if not bool(self.config.get("filter_discovery_by_seed", False)):
-            return True
+            return "accepted"
         if not discovery_queries:
-            return True
-        return any(self._matches_discovery_query(link.title, query) for query in discovery_queries)
+            return "accepted"
+        if any(self._matches_discovery_query(link.title, query) for query in discovery_queries):
+            return "accepted"
+        return "seed_filtered"
 
     def _matches_discovery_query(self, title: str, query: DiscoveryQuery) -> bool:
         """Return whether a discovered title matches one expanded source query."""

@@ -7,16 +7,20 @@ enabled: true
 min_raw_records_warn: 0
 platform: klaviyo
 product_or_tool: Klaviyo
-check_robots: true
+check_robots: false
 query_mode: source_config
 seed_bank_path: config/seeds/business_communities/klaviyo_community.yaml
 seed_source_token: klaviyo
 seed_query_style: support_community
 discovery_page_count: 300
 sleep_seconds: 0.02
-filter_discovery_by_seed: false
-include_candidate_seed_pool_for_discovery: false
+filter_discovery_by_seed: true
+include_candidate_seed_pool_for_discovery: true
 min_seed_term_matches: 1
+max_threads_per_run: 1500
+allow_listing_fallback_on_fetch_error: true
+listing_fallback_status_codes:
+  - 403
 aliases:
   - klaviyo
   - klaviyo community
@@ -25,3 +29,7 @@ discovery_urls:
     board: Marketing
   - url: https://community.klaviyo.com/analytics-72
     board: Analytics
+  - url: https://community.klaviyo.com/service-35
+    board: Service
+  - url: https://community.klaviyo.com/strategic-advice-27
+    board: Strategic Advice

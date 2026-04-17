@@ -290,6 +290,10 @@ def build_discovery_queries(
         source_id=source_id,
         source_group=source_group,
     )
+    if bool(config.get("include_candidate_seed_pool_for_discovery", False)):
+        seed_bank = load_seed_bank(root_dir, source_group=source_group, source_id=source_id)
+        if seed_bank is not None:
+            seeds = list(dict.fromkeys([*seeds, *seed_bank.candidate_seed_pool]))
     source_token = _source_query_token(config=config, source_id=source_id)
     style = _query_style(config=config, source_group=source_group)
     prefix_choices = PREFIX_RULES.get(style, ())
