@@ -43,27 +43,27 @@ $env:OPENAI_API_KEY="your_api_key"
 한 번에 전체 실행:
 
 ```bash
-python run/00_run_all.py
+python run/pipeline/00_run_all.py
 ```
 
 ```bash
-python run/00_generate_time_slices.py
+python run/pipeline/00_generate_time_slices.py
 ```
 
 수동으로 단계 실행:
 
 ```bash
-python run/00_generate_time_slices.py
-python run/01_collect_all.py
-python run/01_5_expand_queries_from_raw.py
-python run/02_normalize_all.py
-python run/02.5_filter_time_window.py
-python run/03_filter_valid.py
-python run/04_build_episodes.py
-python run/05_label_episodes.py
-python run/06_1_discover_persona_axes.py
-python run/06_cluster_and_score.py
-python run/07_export_xlsx.py
+python run/pipeline/00_generate_time_slices.py
+python run/pipeline/01_collect_all.py
+python run/pipeline/01_5_expand_queries_from_raw.py
+python run/pipeline/02_normalize_all.py
+python run/pipeline/02.5_filter_time_window.py
+python run/pipeline/03_filter_valid.py
+python run/pipeline/04_build_episodes.py
+python run/pipeline/05_label_episodes.py
+python run/pipeline/06_1_discover_persona_axes.py
+python run/pipeline/06_cluster_and_score.py
+python run/pipeline/07_export_xlsx.py
 ```
 
 Reddit collection policy diagnostics:

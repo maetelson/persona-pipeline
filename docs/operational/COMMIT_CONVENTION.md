@@ -48,7 +48,7 @@ type(scope): short summary
 Install the tracked git hooks once:
 
 ```text
-python run/99_install_git_hooks.py
+python run/devtools/99_install_git_hooks.py
 ```
 
 After that:
@@ -59,11 +59,11 @@ After that:
 If you want one command for stage + commit + push:
 
 ```text
-python run/98_git_sync.py "type(scope): short summary"
+python run/devtools/98_git_sync.py "type(scope): short summary"
 ```
 
 If you want the same flow explicitly tied to the end of one work cycle:
 
 ```text
-python run/97_finalize_task.py "type(scope): short summary"
+python run/devtools/97_finalize_task.py "type(scope): short summary"
 ```

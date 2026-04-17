@@ -17,7 +17,7 @@ It documents current inconsistencies before any business-logic fixes.
 
 Primary execution path:
 
-1. `python run/07_export_xlsx.py`
+1. `python run/pipeline/07_export_xlsx.py`
 2. `src.analysis.stage_service.run_final_report_stage`
 3. `src.analysis.stage_service.run_analysis_stage`
 4. `src.analysis.stage_service.build_deterministic_analysis_outputs`
@@ -211,30 +211,30 @@ Supporting data-shape decisions:
 Rebuild analysis artifacts and workbook bundle:
 
 ```powershell
-python run/06_cluster_and_score.py
+python run/pipeline/06_cluster_and_score.py
 ```
 
 Inspect workbook-facing intermediate metrics without touching the xlsx:
 
 ```powershell
-python run/16_persona_workbook_audit.py
+python run/cli/16_persona_workbook_audit.py
 ```
 
 Machine-readable audit dump:
 
 ```powershell
-python run/16_persona_workbook_audit.py --json
+python run/cli/16_persona_workbook_audit.py --json
 ```
 
 Export the final workbook after generator fixes and after closing Excel:
 
 ```powershell
-python run/07_export_xlsx.py
+python run/pipeline/07_export_xlsx.py
 ```
 
 ## Current Audit Summary
 
-- The workbook is generated from code, not hand-authored, and the main source-of-truth path is `run/07_export_xlsx.py -> stage_service -> workbook bundle -> xlsx exporter`.
+- The workbook is generated from code, not hand-authored, and the main source-of-truth path is `run/pipeline/07_export_xlsx.py -> stage_service -> workbook bundle -> xlsx exporter`.
 - The biggest consistency problem is denominator mixing between:
   - all labeled rows: `472`
   - persona-core labeled rows: `289`

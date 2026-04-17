@@ -4,22 +4,22 @@
 
 Recommended:
 
-0. `run/00_run_all.py`
+0. `run/pipeline/00_run_all.py`
 
 Expanded sequence used by `00_run_all.py`:
 
-1. `run/00_generate_time_slices.py`
-2. `run/01_collect_all.py`
-3. `run/01_5_expand_queries_from_raw.py`
-4. `run/02_normalize_all.py`
-5. `run/02.5_filter_time_window.py`
-6. `run/03_filter_valid.py`
-7. `run/03_5_prefilter_relevance.py`
-8. `run/04_build_episodes.py`
-9. `run/05_label_episodes.py`
-10. `run/06_1_discover_persona_axes.py`
-11. `run/06_cluster_and_score.py`
-12. `run/07_export_xlsx.py`
+1. `run/pipeline/00_generate_time_slices.py`
+2. `run/pipeline/01_collect_all.py`
+3. `run/pipeline/01_5_expand_queries_from_raw.py`
+4. `run/pipeline/02_normalize_all.py`
+5. `run/pipeline/02.5_filter_time_window.py`
+6. `run/pipeline/03_filter_valid.py`
+7. `run/pipeline/03_5_prefilter_relevance.py`
+8. `run/pipeline/04_build_episodes.py`
+9. `run/pipeline/05_label_episodes.py`
+10. `run/pipeline/06_1_discover_persona_axes.py`
+11. `run/pipeline/06_cluster_and_score.py`
+12. `run/pipeline/07_export_xlsx.py`
 
 ## Execution discipline
 
