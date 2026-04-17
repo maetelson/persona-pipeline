@@ -21,14 +21,8 @@ aliases:
   - amplitude
   - amplitude community
 discovery_urls:
-  - url: https://community.amplitude.com/discussions
-    board: All Discussions
-  - url: https://community.amplitude.com/discussions/unanswered
-    board: Unanswered Questions
   - url: https://community.amplitude.com/categories/building-and-sharing-your-analysis/p2
     board: Building and Sharing Your Analysis
-  - url: https://community.amplitude.com/categories/data-instrumentation/p2
-    board: Data Instrumentation
 discovery_exclude_url_patterns:
   - /events/
   - /idea/

@@ -22,18 +22,9 @@ api_discovery:
   page_size: 100
   board_ids:
     - marketing_reports
-    - marketing_contacts
-    - marketing_conversion
-    - sales_CRM
 aliases:
   - hubspot
   - hubspot community
 discovery_urls:
   - url: https://community.hubspot.com/t5/Reporting-Dashboards/bd-p/marketing_reports
     board: Reporting & Analytics
-  - url: https://community.hubspot.com/t5/Lists-Lead-Scoring-Workflows/bd-p/marketing_contacts
-    board: Lists, Lead Scoring & Workflows
-  - url: https://community.hubspot.com/t5/Lead-Capture-Tools/bd-p/marketing_conversion
-    board: Lead Capture Tools
-  - url: https://community.hubspot.com/t5/CRM/bd-p/sales_CRM
-    board: CRM

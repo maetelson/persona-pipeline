@@ -14,7 +14,7 @@ seed_source_token: mixpanel
 seed_query_style: support_community
 discovery_page_count: 20
 sleep_seconds: 0.15
-filter_discovery_by_seed: false
+filter_discovery_by_seed: true
 include_candidate_seed_pool_for_discovery: false
 min_seed_term_matches: 1
 aliases:
@@ -34,7 +34,16 @@ sitemap_discovery_urls:
   - url: https://community.mixpanel.com/sitemap-posts/2.xml
     board: Community Questions
 discovery_exclude_url_patterns:
-  - /x/ask-ai
   - /x/announcements
   - /x/learning-resources
   - /x/product-ideas
+discovery_exclude_title_patterns:
+  - "\\bmcp\\b"
+  - "\\bclaude\\b"
+  - "\\bchatgpt\\b"
+  - "\\bsdk\\b"
+  - "\\bflutter\\b"
+  - "\\bios\\b"
+  - "\\bandroid\\b"
+  - "\\breact\\b"
+  - "\\bjavascript\\b"

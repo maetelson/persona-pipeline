@@ -21,8 +21,6 @@ aliases:
   - sisense
   - sisense community
 discovery_urls:
-  - url: https://community.sisense.com/
-    board: Sisense Community
   - url: https://community.sisense.com/t5/Help-and-How-To/bg-p/help_and_how_to
     board: Help and How-To
   - url: https://community.sisense.com/t5/Troubleshooting/bg-p/troubleshooting
@@ -43,15 +41,9 @@ sitemap_index_urls:
 sitemap_index_include_patterns:
   - sitemap_help_and_how_to
   - sitemap_troubleshooting
-  - sitemap_data_sources
-  - sitemap_embedding_analytics
   - sitemap_widget_and_dashboard_scripts
   - sitemap_data_models
-  - sitemap_sisense_intelligence
-  - sitemap_sisense_administration
-  - sitemap_cloud_managed_service
-  - sitemap_add-ons_and_plug-ins
-  - sitemap_blox
+  - sitemap_data_sources
 sitemap_index_exclude_patterns:
   - sitemap_blog_
   - sitemap_ideas

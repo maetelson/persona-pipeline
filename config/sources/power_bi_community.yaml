@@ -24,8 +24,6 @@ api_discovery:
   board_ids:
     - power-bi-designer
     - power-bi-web-app
-    - ReportServer
-    - power-bi-services
     - DAXCommands
 aliases:
   - power bi
@@ -36,9 +34,5 @@ discovery_urls:
     board: Desktop
   - url: https://community.fabric.microsoft.com/t5/Service/bd-p/power-bi-web-app
     board: Service
-  - url: https://community.fabric.microsoft.com/t5/Report-Server/bd-p/ReportServer
-    board: Report Server
-  - url: https://community.fabric.microsoft.com/t5/Power-Query/bd-p/power-bi-services
-    board: Power Query
   - url: https://community.fabric.microsoft.com/t5/DAX-Commands-and-Tips/bd-p/DAXCommands
     board: DAX Commands and Tips

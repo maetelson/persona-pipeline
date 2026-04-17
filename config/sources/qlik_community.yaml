@@ -23,30 +23,15 @@ api_discovery:
   where_clause: AND depth=0
   top_level_only: true
   page_size: 100
+  max_items_per_board: 250
   board_ids:
     - new-to-qlik-sense
-    - qlik-sense-app-development
-    - qlikview-app-development
     - reporting-service
-    - qlik-sense-dashboard-design
-    - deployment-framework
-    - connectivity-data-prep
-    - visualization-and-usability
 aliases:
   - qlik
   - qlik community
 discovery_urls:
   - url: https://community.qlik.com/t5/Visualization-and-Usability/bd-p/new-to-qlik-sense
     board: Visualization and Usability
-  - url: https://community.qlik.com/t5/App-Development/bd-p/qlik-sense-app-development
-    board: App Development
-  - url: https://community.qlik.com/t5/QlikView-App-Dev/bd-p/qlikview-app-development
-    board: QlikView App Dev
   - url: https://community.qlik.com/t5/Reporting-Service-Alerting/bd-p/reporting-service
     board: Reporting Service and Alerting
-  - url: https://community.qlik.com/t5/Visualization-and-Usability/bd-p/qlik-sense-dashboard-design
-    board: Dashboard Design
-  - url: https://community.qlik.com/t5/Deployment-Management/bd-p/deployment-framework
-    board: Deployment and Management
-  - url: https://community.qlik.com/t5/Connectivity-Data-Prep/bd-p/connectivity-data-prep
-    board: Connectivity and Data Prep
