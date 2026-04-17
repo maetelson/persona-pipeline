@@ -46,7 +46,6 @@ TOOL_PATTERNS = {
     "spreadsheet": r"\bspreadsheet\b|\bgoogle sheets\b|\bsheet\b",
     "dashboard": r"\bdashboard\b|\breport view\b|\bkpi dashboard\b",
     "bi": r"\bbi\b|\bbusiness intelligence\b|\breporting tool\b",
-    "ga4": r"\bga4\b|\bgoogle analytics 4\b|\bgoogle analytics\b",
     "sql": r"\bsql\b|\bsql query\b|\bquery layer\b",
     "data warehouse": r"\bdata warehouse\b|\bwarehouse\b|\bsnowflake\b|\bbigquery\b|\bredshift\b",
     "data team": r"\bdata team\b|\banalytics team\b|\bbi team\b|\bdata engineering\b",
@@ -351,7 +350,7 @@ def _is_too_generic_phrase(phrase: str) -> bool:
 def _has_signal_token(tokens: list[str]) -> bool:
     """Keep phrases only when they contain real collection signal."""
     signal_tokens = {
-        "excel", "spreadsheet", "dashboard", "bi", "ga4", "sql", "warehouse", "report", "reporting", "validate",
+        "excel", "spreadsheet", "dashboard", "bi", "sql", "warehouse", "report", "reporting", "validate",
         "validation", "mismatch", "segment", "stakeholder", "leadership", "manual", "pivot", "numbers", "drop",
         "root", "automation", "ad", "hoc", "trust",
     }

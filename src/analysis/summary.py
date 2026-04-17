@@ -8,6 +8,7 @@ import pandas as pd
 from src.analysis.diagnostics import count_raw_jsonl_by_source
 from src.analysis.stage_counts import build_pipeline_stage_counts, build_pipeline_stage_rows
 from src.analysis.quality_status import build_quality_metrics, quality_display_thresholds
+from src.utils.source_registry import load_enabled_source_ids
 from src.utils.pipeline_schema import (
     DENOMINATOR_EPISODE_ROWS,
     DENOMINATOR_LABELED_EPISODE_ROWS,
@@ -100,9 +101,14 @@ def build_final_source_distribution(
         else pd.DataFrame(columns=["source"])
     )
     sources = sorted(
-        set(raw_counts_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name).tolist())
-        | set(source_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name).tolist())
-        | set(labeled_with_source.get("source", pd.Series(dtype=str)).dropna().astype(str).map(canonical_source_name).tolist())
+        _workbook_source_candidates(
+            root_dir=root_dir,
+            source_sets=[
+                set(source_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name).tolist()),
+                set(prefiltered_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name).tolist()),
+                set(labeled_with_source.get("source", pd.Series(dtype=str)).dropna().astype(str).map(canonical_source_name).tolist()),
+            ],
+        )
     )
     total_labeled = int(len(labeled_with_source))
     rows: list[dict[str, object]] = []
@@ -122,6 +128,15 @@ def build_final_source_distribution(
             }
         )
     return pd.DataFrame(rows)
+
+
+def _workbook_source_candidates(root_dir: Path | None, source_sets: list[set[str]]) -> set[str]:
+    """Return workbook-visible sources from enabled configs plus downstream evidence."""
+    evidence_sources = {source for source_set in source_sets for source in source_set if str(source).strip()}
+    if root_dir is None:
+        return evidence_sources
+    enabled_sources = {canonical_source_name(source_id) for source_id in load_enabled_source_ids(root_dir)}
+    return {source for source in evidence_sources if source in enabled_sources}
 
 
 def build_taxonomy_summary(final_axis_schema: list[dict[str, object]]) -> pd.DataFrame:

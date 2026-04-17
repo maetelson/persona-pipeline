@@ -73,8 +73,6 @@ source_whitelist_terms:
       terms: [report, export, tax, spreadsheet, bank account, transaction]
     - label: shopify_inventory_sales_combo
       terms: [stock on hand, units sold, inventory, sales history, report]
-    - label: shopify_feed_metrics_combo
-      terms: [google ads, gmc, merchant center, product feed, conversions, 0 metrics]
     - label: shopify_analytics_merge_pain
       terms: [analytics, merge them together, manual, basic report, confusing]
     - label: shopify_recommendation_metrics
@@ -382,7 +380,6 @@ medium_positive_lexicon:
     - dax
     - power query
     - tableau calc
-    - looker studio formula
     - pivot table
     - calculated field
     - filter context
@@ -416,7 +413,6 @@ positive_context_terms:
 bi_tool_terms:
   - power bi
   - tableau
-  - looker studio
   - excel
   - google sheets
   - dax

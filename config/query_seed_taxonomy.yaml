@@ -98,17 +98,6 @@ query_seed_taxonomy:
         - trend_interpretation_confusion
         - source_of_truth_conflict
         - insight_to_action_failure
-    amplitude_community:
-      language_style:
-        - event and chart trust
-        - retention and funnel interpretation
-        - property breakdown confusion
-      prioritize_axes:
-        - numbers_mismatch
-        - metric_definition_confusion
-        - trend_interpretation_confusion
-        - segmentation_breakdown_confusion
-        - source_of_truth_conflict
     qlik_community:
       language_style:
         - wrong totals
@@ -241,8 +230,6 @@ query_seed_taxonomy:
   tool_terms:
   - Power BI
   - Tableau
-  - Looker
-  - GA4
   - Google Analytics
   - Metabase
   - Superset
@@ -375,10 +362,8 @@ query_seed_taxonomy:
     - export dashboard data to excel for analysis
     - using excel after power bi
     - using excel after tableau
-    - using excel after looker
     - ad hoc analysis in power bi
     - ad hoc analysis in tableau
-    - ad hoc analysis in looker
     - how to drill down KPI changes
     - how to investigate traffic drop by segment
     - how to find why conversion rate dropped
@@ -459,11 +444,6 @@ query_seed_taxonomy:
     - tableau trust dashboard numbers
     - tableau drill down KPI change
     - tableau ad hoc analysis workflow
-    - looker dashboard metric definition mismatch
-    - looker explore too hard for business users
-    - looker explain why metric changed
-    - looker weekly KPI breakdown
-    - looker dashboard export for excel analysis
     - metabase dashboard numbers mismatch
     - metabase need better drill down
     - metabase explain metric change
@@ -473,9 +453,6 @@ query_seed_taxonomy:
     - redash export query result to excel
     - redash dashboard stakeholder requests
     - google analytics conversion drop by segment
-    - ga4 conversion reporting confusion
-    - ga4 event date vs conversion date
-    - ga4 trust dashboard numbers
     role_based_raw_seeds:
     - marketer dashboard export to excel
     - marketing KPI changed how to explain

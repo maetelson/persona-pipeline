@@ -16,6 +16,19 @@ from src.utils.io import write_jsonl, write_parquet
 class SourceDiagnosticsTests(unittest.TestCase):
     """Verify source diagnostics uses explicit grains and same-grain funnels only."""
 
+    def _write_source_configs(self, root: Path, *sources: str, disabled_sources: set[str] | None = None) -> None:
+        """Write minimal source configs for source-diagnostic tests."""
+        disabled_sources = disabled_sources or set()
+        config_dir = root / "config" / "sources"
+        config_dir.mkdir(parents=True, exist_ok=True)
+        for source in sources:
+            source_group = "reddit" if source.startswith("reddit") else "business_communities"
+            enabled = "false" if source in disabled_sources else "true"
+            (config_dir / f"{source}.yaml").write_text(
+                f"source_id: {source}\nsource_group: {source_group}\nenabled: {enabled}\n",
+                encoding="utf-8",
+            )
+
     def _write_source_fixture(
         self,
         root: Path,
@@ -26,6 +39,7 @@ class SourceDiagnosticsTests(unittest.TestCase):
         relevance_drop_rows: list[dict[str, str]] | None = None,
         invalid_rows: list[dict[str, str]] | None = None,
     ) -> None:
+        self._write_source_configs(root, *raw_counts.keys())
         for source, count in raw_counts.items():
             write_jsonl(
                 root / "data" / "raw" / source / "page_001.jsonl",
@@ -39,6 +53,7 @@ class SourceDiagnosticsTests(unittest.TestCase):
     def test_build_source_diagnostics_separates_post_episode_and_bridge_metrics(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
+            self._write_source_configs(root, "reddit")
             write_jsonl(
                 root / "data" / "raw" / "reddit" / "page_001.jsonl",
                 [{"id": "r1"}, {"id": "r2"}],
@@ -94,9 +109,33 @@ class SourceDiagnosticsTests(unittest.TestCase):
             pct_rows = diagnostics_df[diagnostics_df["metric_type"] == "percentage"]
             self.assertTrue(((pct_rows["metric_value"].astype(float) >= 0.0) & (pct_rows["metric_value"].astype(float) <= 100.0)).all())
 
+    def test_build_source_stage_counts_excludes_stale_or_disabled_sources_from_workbook_diagnostics(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            self._write_source_configs(root, "reddit", "ga4_help_community", "amplitude_community", disabled_sources={"amplitude_community"})
+            self._write_source_fixture(
+                root,
+                raw_counts={"reddit": 2, "ga4_help_community": 2, "amplitude_community": 2},
+                prefiltered_sources=["reddit"],
+                labelability_rows=[{"episode_id": "e1", "labelability_status": "labelable"}],
+            )
+
+            stage_counts_df = build_source_stage_counts(
+                root_dir=root,
+                normalized_df=pd.DataFrame({"source": ["reddit"]}),
+                valid_df=pd.DataFrame({"source": ["reddit"]}),
+                episodes_df=pd.DataFrame({"episode_id": ["e1"], "source": ["reddit"]}),
+                labeled_df=pd.DataFrame({"episode_id": ["e1"]}),
+                persona_assignments_df=pd.DataFrame({"episode_id": ["e1"], "persona_id": ["persona_01"]}),
+                cluster_stats_df=pd.DataFrame({"persona_id": ["persona_01"], "promotion_status": ["promoted_persona"]}),
+            )
+
+            self.assertEqual(stage_counts_df["source"].astype(str).tolist(), ["reddit"])
+
     def test_build_source_stage_counts_rejects_non_monotonic_post_or_episode_funnels(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
+            self._write_source_configs(root, "reddit")
             write_jsonl(root / "data" / "raw" / "reddit" / "page_001.jsonl", [{"id": "r1"}])
             write_parquet(pd.DataFrame({"source": ["reddit", "reddit"]}), root / "data" / "valid" / "valid_candidates_prefiltered.parquet")
             write_parquet(pd.DataFrame({"episode_id": ["e1"], "labelability_status": ["labelable"]}), root / "data" / "labeled" / "labelability_audit.parquet")

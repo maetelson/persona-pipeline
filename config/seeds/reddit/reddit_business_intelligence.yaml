@@ -30,8 +30,6 @@ optional_templates:
     reason: More concrete dashboard-trust phrase.
   - template: dashboard vs source data
     reason: Pulls validation and reconciliation threads.
-  - template: looker drill down issue
-    reason: Adds tool-specific breakdown friction.
 negative_terms:
   - homework
   - assignment

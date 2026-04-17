@@ -536,7 +536,6 @@ def _stackoverflow_whitelist_hits(lowered: str) -> list[str]:
         "power bi",
         "dax",
         "power query",
-        "looker studio",
         "reporting services",
         "ssrs",
         "pivot table",
@@ -675,10 +674,6 @@ def _shopify_whitelist_hits(lowered: str) -> list[str]:
         "days on hand",
         "transaction",
         "total sales",
-        "gmc",
-        "merchant center",
-        "google ads",
-        "product feed",
     ]
     mismatch_terms = ["discrepancy", "mismatch", "wrong numbers", "not matching"]
     trend_terms = ["compare periods", "weekly sales", "monthly sales", "trend", "cannot explain drop", "sales drop", "conversion drop"]
@@ -711,10 +706,6 @@ def _shopify_whitelist_hits(lowered: str) -> list[str]:
         hits.append("shopify_export_report")
     if metric_hit and reconciliation_hit:
         hits.append("shopify_inventory_reconcile_combo")
-    if any(_text_contains_term(lowered, term) for term in ["gmc", "merchant center", "google ads", "product feed"]) and (
-        reconciliation_hit or any(_text_contains_term(lowered, term) for term in ["0 metrics", "stopped syncing", "conversion"])
-    ):
-        hits.append("shopify_feed_metrics_combo")
     if trend_hit or (metric_hit and any(_text_contains_term(lowered, term) for term in ["drop", "down", "decline", "fell"])):
         hits.append("shopify_conversion_sales_trend")
     return hits
@@ -1115,8 +1106,6 @@ def _apply_source_specific_floor_override(
                 "units sold",
                 "sales history",
                 "days on hand",
-                "gmc",
-                "merchant center",
                 "google ads",
             ]
         )

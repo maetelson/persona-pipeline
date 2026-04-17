@@ -216,6 +216,8 @@ Expanded sequence used by `00_run_all.py`:
 - all stages overwrite their own output files
 - no database migration or server state required
 - safe to rerun from any stage if upstream files are already present
+- after retiring a source, remove or archive stale `data/raw/{source}/` folders before future collection audits
+- workbook-facing source sheets now use enabled source configs plus downstream evidence; raw-only stale folders should not appear in export, but they can still confuse local audits if left around
 - practical rule:
   - after config/code changes in `filters`, rerun `03 -> 03.5 -> 04 -> 05 -> 06.1 -> 06 -> 07`
   - after changes in `episodes`, rerun `04 -> 05 -> 06.1 -> 06 -> 07`

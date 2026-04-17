@@ -1,12 +1,10 @@
 source_id: reddit_marketing_analytics
 source_group: reddit
 max_query_count: 10
-source_notes: "r/MarketingAnalytics seeds center campaign reporting, GA4 and ads mismatch pain, attribution confusion, and channel or device follow-up cuts."
+source_notes: "r/MarketingAnalytics seeds center campaign reporting, ads mismatch pain, attribution confusion, and channel or device follow-up cuts."
 core_seeds:
   - seed: conversion drop
     reason: Targets campaign root-cause questions.
-  - seed: GA4 numbers off
-    reason: Pulls direct GA4 trust and validation pain.
   - seed: attribution mismatch
     reason: Captures attribution confusion in marketer language.
   - seed: channel breakdown
@@ -24,8 +22,6 @@ core_seeds:
   - seed: Ads mismatch
     reason: Pulls paid-media validation pain across tools.
 optional_templates:
-  - template: ga4 vs ads numbers
-    reason: Captures cross-tool mismatch checks.
   - template: why did ROAS drop
     reason: Pulls marketing-specific KPI interpretation pain.
   - template: weekly campaign report

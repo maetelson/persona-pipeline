@@ -50,8 +50,3 @@ negative_terms:
   - career
   - installation
   - server setup
-legacy_seed_notes:
-  - seed: looker studio scorecard doesn't match table
-    action: removed
-    why: duplicate coverage
-    note: Replaced by Qlik-native chart, straight-table, and set-analysis mismatch phrasing.

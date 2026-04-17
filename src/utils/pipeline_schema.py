@@ -42,7 +42,7 @@ RECORD_TEXT_FIELDS = [
 RECORD_SOURCE_TEXT_FIELDS = ["body", "body_text", "comments_text", "raw_text", "thread_title", "parent_context"]
 SOURCE_META_JSON_KEY = "json"
 ROLE_HEAVY_NAME_TERMS = ["analyst", "manager", "marketer", "user", "persona"]
-TOOL_HEAVY_NAME_TERMS = ["power bi", "tableau", "excel", "looker", "sigma", "google sheets", "sheets"]
+TOOL_HEAVY_NAME_TERMS = ["power bi", "tableau", "excel", "sigma", "google sheets", "sheets"]
 GENERIC_PERSONA_NAMES = {"mixed workflow friction", "workflow friction", "mixed persona", "persona"}
 
 LABEL_CODE_COLUMNS = [

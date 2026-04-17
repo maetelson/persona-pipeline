@@ -160,14 +160,6 @@ source_templates:
       - trend_interpretation_confusion
       - source_of_truth_conflict
       - insight_to_action_failure
-  amplitude_community:
-    preferred_banks:
-      - numbers_mismatch
-      - metric_definition_confusion
-      - trend_interpretation_confusion
-      - segmentation_breakdown_confusion
-      - source_of_truth_conflict
-      - insight_to_action_failure
   qlik_community:
     preferred_banks:
       - numbers_mismatch

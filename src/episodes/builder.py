@@ -546,10 +546,7 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             "orders",
             "sales",
             "checkout",
-            "ga4",
             "inventory",
-            "merchant center",
-            "feed",
         ]
         required_terms = [
             *required_terms,
@@ -2051,10 +2048,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
     metric_presence = any(term in lowered for term in ["metric", "metrics", "report", "reporting", "analytics", "dashboard", "export", "csv"])
     discrepancy_presence = any(term in lowered for term in ["discrepancy", "mismatch", "not matching", "wrong", "confusion", "off by"])
     business_metric_presence = any(term in lowered for term in ["sales", "revenue", "orders", "sessions", "conversion", "aov", "roas", "checkout"])
-    analysis_context = any(term in lowered for term in ["compare", "comparison", "trend", "weekly", "monthly", "performance", "ga4", "merchant center"])
+    analysis_context = any(term in lowered for term in ["compare", "comparison", "trend", "weekly", "monthly", "performance"])
     explanation_burden = any(term in lowered for term in ["figure out", "cannot explain", "explain", "why", "interpret", "understand", "what changed"])
     discussion_style = any(term in lowered for term in ["feedback", "curious", "anyone else", "what do you check first", "how do you handle", "looking for advice"])
-    operational_context = any(term in lowered for term in ["store", "campaign", "product", "inventory", "checkout", "merchant center", "report", "dashboard"])
+    operational_context = any(term in lowered for term in ["store", "campaign", "product", "inventory", "checkout", "report", "dashboard"])
     pure_feature_request = any(term in lowered for term in ["feature request", "would be nice", "idea:"]) and not metric_presence and not business_metric_presence
     generic_tips = any(term in lowered for term in ["tips", "best apps", "inspiration", "advice"]) and not metric_presence and not discrepancy_presence
     low_signal = not any([metric_presence, discrepancy_presence, business_metric_presence, analysis_context, explanation_burden])

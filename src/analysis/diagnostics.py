@@ -9,6 +9,7 @@ import pandas as pd
 
 from src.analysis.quality_status import QUALITY_STATUS_POLICY, flatten_quality_status_result
 from src.utils.io import load_yaml, read_parquet
+from src.utils.source_registry import load_enabled_source_ids
 from src.utils.pipeline_schema import (
     CLUSTER_DOMINANCE_SHARE_PCT,
     DENOMINATOR_EPISODE_ROWS,
@@ -253,15 +254,19 @@ def build_source_stage_counts(
     normalized_grounded_contributions = _persona_capped_source_contributions(grounded_with_source, _source_influence_cap_pct())
 
     sources = sorted(
-        set(raw_counts_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name))
-        | set(normalized_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name))
-        | set(valid_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name))
-        | set(episodes_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name))
-        | set(prefiltered_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name))
-        | set(labelable_with_source.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name))
-        | set(labeled_with_source.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name))
-        | set(promoted_with_source.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name))
-        | set(grounded_with_source.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name))
+        _workbook_visible_sources(
+            root_dir=root_dir,
+            source_sets=[
+                set(normalized_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name)),
+                set(valid_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name)),
+                set(episodes_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name)),
+                set(prefiltered_df.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name)),
+                set(labelable_with_source.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name)),
+                set(labeled_with_source.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name)),
+                set(promoted_with_source.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name)),
+                set(grounded_with_source.get("source", pd.Series(dtype=str)).astype(str).map(canonical_source_name)),
+            ],
+        )
     )
     rows: list[dict[str, Any]] = []
     for source in sources:
@@ -325,6 +330,13 @@ def build_source_stage_counts(
     )
     _validate_source_stage_counts(result)
     return result
+
+
+def _workbook_visible_sources(root_dir: Path, source_sets: list[set[str]]) -> set[str]:
+    """Return workbook-visible sources from enabled configs with downstream evidence."""
+    evidence_sources = {source for source_set in source_sets for source in source_set if str(source).strip()}
+    enabled_sources = {canonical_source_name(source_id) for source_id in load_enabled_source_ids(root_dir)}
+    return {source for source in evidence_sources if source in enabled_sources}
 
 
 def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFrame:

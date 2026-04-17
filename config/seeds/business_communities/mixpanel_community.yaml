@@ -50,8 +50,3 @@ negative_terms:
   - ios sdk
   - webhook
   - job
-legacy_seed_notes:
-  - seed: ga4 revenue doesn't match shopify
-    action: removed
-    why: community-language mismatch
-    note: Replaced by Mixpanel-native event, funnel, and property breakdown trust phrases.

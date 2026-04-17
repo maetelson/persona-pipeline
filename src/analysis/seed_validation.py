@@ -24,7 +24,7 @@ CANONICAL_AXIS_PATTERNS: dict[str, tuple[str, ...]] = {
     "business_question_translation_failure": ("what should i analyze", "which report", "what should i look at"),
     "stakeholder_explanation_pressure": ("boss", "leadership", "stakeholder", "explain"),
     "insight_to_action_failure": ("what should i do", "what action", "optimize"),
-    "attribution_tracking_issue": ("attribution", "tracking", "ga4", "conversion path"),
+    "attribution_tracking_issue": ("attribution", "tracking", "conversion path"),
     "funnel_conversion_drop": ("conversion", "revenue down", "checkout", "drop off"),
 }
 

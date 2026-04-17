@@ -76,6 +76,12 @@ python run/diagnostics/19_analyze_reddit_retention.py
 - The retention command writes per-seed, per-subreddit, and seed-by-subreddit retention artifacts under `data/analysis/`.
 - It also writes Reddit policy audit artifacts that show the configured policy and the latest observed early-stop/runtime counters.
 
+### Source retirement note
+
+- Current query-map snapshot: `161` priority seed queries and `68` active expanded queries.
+- If a source is retired, remove it from `config/sources/` first and then clean up stale `data/raw/{source}/` folders as a separate manual step.
+- Workbook source sheets now require both an enabled source config and downstream evidence, so raw-only stale folders no longer appear in export output.
+
 ## 3.5 Query 설계 파일
 
 - `config/query_seed_taxonomy.yaml`
@@ -105,7 +111,7 @@ python run/diagnostics/19_analyze_reddit_retention.py
 - 현재 taxonomy 기준 축:
   - role: analyst, marketer, manager, strategy planner, ops planner, business user
   - problem: why did it drop, validate numbers, metric mismatch, reporting bottleneck, segment comparison, stakeholder explanation, ad hoc analysis, manual spreadsheet work, root cause analysis, automation gap
-  - tool: Excel, spreadsheet, dashboard, BI, GA4, SQL, data warehouse, data team, report
+  - tool: Excel, spreadsheet, dashboard, BI, SQL, data warehouse, data team, report
   - work moment: weekly reporting, monthly reporting, validation, anomaly triage, ad hoc request, automation handoff
 
 ## 3.6 Time slicing

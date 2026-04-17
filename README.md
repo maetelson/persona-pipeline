@@ -210,7 +210,6 @@ Policy docs remain in `docs/`:
 | Qlik Community | Implemented | Public business community collector |
 | Shopify Community | Implemented | Public business community collector |
 | Sisense Community | Implemented | Public business community collector |
-| Amplitude Community | Config present, currently low/zero yield | Not a stable contributor in the latest local run |
 
 ## Requirements
 

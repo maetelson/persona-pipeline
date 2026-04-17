@@ -91,7 +91,7 @@ llm_labeling:
       unknown_when: "Only when no environment is mentioned."
       boundary_rules:
         - "E_SPREADSHEET for Excel, Sheets, workbook, csv cleanup, or spreadsheet delivery."
-        - "E_SQL_BI for Power BI, Tableau, Looker, Sigma, dashboard, report builder, SQL-based BI usage."
+        - "E_SQL_BI for Power BI, Tableau, Sigma, dashboard, report builder, SQL-based BI usage."
         - "E_PYTHON for notebook, pandas, python script, or scripting workaround."
         - "E_WAREHOUSE for Snowflake, BigQuery, Redshift, Oracle, or warehouse-first context."
     workaround_codes:
@@ -124,7 +124,7 @@ llm_labeling:
       unknown_when: "Only when the row is low-signal or clearly outside persona mining scope."
 few_shot_examples:
   business_communities:
-    - text: "Shopify analytics shows conversion rate down and sessions not tracking after our GA4 change."
+    - text: "Shopify analytics shows conversion rate down and sessions not tracking after the tracking change."
       labels:
         question_codes: Q_VALIDATE_NUMBERS
         pain_codes: P_DATA_QUALITY
@@ -274,8 +274,6 @@ labelability:
     - inventory feed
     - data feed
     - physical store
-    - google merchant center
-    - merchant center
     - google ads
     - impressions
     - clicks
@@ -353,7 +351,6 @@ repair:
       - executive
       - board report
       - finance review
-      - merchant
       - store owner
       - business owner
     marketer:

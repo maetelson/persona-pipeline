@@ -62,6 +62,11 @@ def load_source_definitions(root_dir: Path, include_disabled: bool = True) -> li
     return definitions
 
 
+def load_enabled_source_ids(root_dir: Path) -> list[str]:
+    """Return enabled source ids from the current source registry."""
+    return [definition.source_id for definition in load_source_definitions(root_dir, include_disabled=False)]
+
+
 def filter_source_definitions(
     definitions: list[SourceDefinition],
     source_group: str | None = None,

@@ -116,7 +116,6 @@ solution_guardrails:
     - "power bi"
     - "tableau"
     - "excel"
-    - "looker"
     - "metabase"
 
 quality_thresholds:

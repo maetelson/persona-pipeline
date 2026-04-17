@@ -21,7 +21,6 @@ WORKFLOW_TERMS = [
     "sql",
     "tableau",
     "power bi",
-    "looker",
     "metabase",
     "analytics",
     "analysis",

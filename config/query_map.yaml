@@ -25,15 +25,15 @@ design_notes:
   - forecasting
   - visualization gallery
 seed_summary:
-  total_priority_seed_queries: 169
-  total_expanded_queries: 69
-  active_expanded_queries: 54
+  total_priority_seed_queries: 161
+  total_expanded_queries: 68
+  active_expanded_queries: 68
   priority_distribution:
-    high: 136
+    high: 129
   source_seed_counts:
     reddit: 31
-    stackoverflow: 43
-    github_discussions: 14
+    stackoverflow: 37
+    github_discussions: 12
 source_seed_banks:
   stackoverflow_raw_seeds:
   - how to analyze conversion drop
@@ -48,10 +48,8 @@ source_seed_banks:
   - export dashboard data to excel for analysis
   - using excel after power bi
   - using excel after tableau
-  - using excel after looker
   - ad hoc analysis in power bi
   - ad hoc analysis in tableau
-  - ad hoc analysis in looker
   - how to drill down KPI changes
   - how to investigate traffic drop by segment
   - how to find why conversion rate dropped
@@ -132,11 +130,6 @@ source_seed_banks:
   - tableau trust dashboard numbers
   - tableau drill down KPI change
   - tableau ad hoc analysis workflow
-  - looker dashboard metric definition mismatch
-  - looker explore too hard for business users
-  - looker explain why metric changed
-  - looker weekly KPI breakdown
-  - looker dashboard export for excel analysis
   - metabase dashboard numbers mismatch
   - metabase need better drill down
   - metabase explain metric change
@@ -146,9 +139,6 @@ source_seed_banks:
   - redash export query result to excel
   - redash dashboard stakeholder requests
   - google analytics conversion drop by segment
-  - ga4 conversion reporting confusion
-  - ga4 event date vs conversion date
-  - ga4 trust dashboard numbers
   role_based_raw_seeds:
   - marketer dashboard export to excel
   - marketing KPI changed how to explain
@@ -301,11 +291,6 @@ priority_seed_queries:
   priority: high
   source_applicability:
   - stackoverflow
-- query_id: Q013
-  query_text: using excel after looker
-  priority: high
-  source_applicability:
-  - stackoverflow
 - query_id: Q014
   query_text: ad hoc analysis in power bi
   priority: high
@@ -313,11 +298,6 @@ priority_seed_queries:
   - stackoverflow
 - query_id: Q015
   query_text: ad hoc analysis in tableau
-  priority: high
-  source_applicability:
-  - stackoverflow
-- query_id: Q016
-  query_text: ad hoc analysis in looker
   priority: high
   source_applicability:
   - stackoverflow
@@ -461,16 +441,6 @@ priority_seed_queries:
   priority: high
   source_applicability:
   - stackoverflow
-- query_id: Q045
-  query_text: looker dashboard metric definition mismatch
-  priority: high
-  source_applicability:
-  - stackoverflow
-- query_id: Q046
-  query_text: looker dashboard export for excel analysis
-  priority: high
-  source_applicability:
-  - stackoverflow
 - query_id: Q047
   query_text: metabase dashboard numbers mismatch
   priority: high
@@ -483,16 +453,6 @@ priority_seed_queries:
   - stackoverflow
 - query_id: Q049
   query_text: redash export query result to excel
-  priority: high
-  source_applicability:
-  - stackoverflow
-- query_id: Q050
-  query_text: ga4 conversion reporting confusion
-  priority: high
-  source_applicability:
-  - stackoverflow
-- query_id: Q051
-  query_text: ga4 event date vs conversion date
   priority: high
   source_applicability:
   - stackoverflow
@@ -731,11 +691,6 @@ priority_seed_queries:
   priority: high
   source_applicability:
   - github_discussions
-- query_id: Q099
-  query_text: looker explore too hard for business users
-  priority: high
-  source_applicability:
-  - github_discussions
 - query_id: Q100
   query_text: metabase need better drill down
   priority: high
@@ -753,11 +708,6 @@ priority_seed_queries:
   - github_discussions
 - query_id: Q103
   query_text: redash dashboard stakeholder requests
-  priority: high
-  source_applicability:
-  - github_discussions
-- query_id: Q104
-  query_text: ga4 trust dashboard numbers
   priority: high
   source_applicability:
   - github_discussions
@@ -1219,17 +1169,6 @@ expanded_queries:
   seed_origin: stackoverflow_source_friendly
   query_family: workflow_howto
   priority_query_text: created_at vs signup_date reporting
-- query_id: Q025
-  query_text: using excel after looker
-  axes_used:
-  - tool_terms
-  source_applicability:
-  - stackoverflow
-  priority: high
-  expected_signal_type: workflow_pain
-  seed_origin: stackoverflow_source_friendly
-  query_family: workflow_howto
-  priority_query_text: metric definition mismatch dashboard
 - query_id: Q032
   query_text: how to analyze csv without database
   axes_used:
@@ -1474,7 +1413,7 @@ expanded_queries:
   expected_signal_type: stakeholder_pullback
   seed_origin: reddit_source_friendly
   query_family: persona_complaint
-  priority_query_text: ga4 trust dashboard numbers
+  priority_query_text: still using excel after dashboard
 - query_id: Q105
   query_text: have to export to excel every time
   axes_used:

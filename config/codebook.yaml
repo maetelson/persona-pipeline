@@ -25,7 +25,6 @@ role_keywords:
     - board report
     - monthly business review
     - finance review
-    - merchant
     - store owner
     - ecommerce owner
     - account owner
@@ -77,7 +76,6 @@ moment_keywords:
     - analytics discrepancy
     - price mismatch
     - shipping mismatch
-    - ga4 mismatch
     - not syncing
   M_TRIAGE:
     - investigate
@@ -137,7 +135,6 @@ question_codes:
     - reconcile dashboard with source data
     - wrong analytics data
     - analytics discrepancy
-    - shopify ga4 mismatch
     - price mismatch
     - shipping mismatch
     - sales report wrong
@@ -307,8 +304,6 @@ env_codes:
     - qlik
     - superset
     - metabase
-    - looker
-    - looker studio
     - sigma
     - domo
     - thoughtspot

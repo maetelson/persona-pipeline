@@ -41,3 +41,5 @@ Use this folder when you need to change collection scope, filtering behavior, ep
 
 - Keep configs split by responsibility; this repo intentionally avoids one giant YAML.
 - Ignore `__pycache__/` and runtime artifact folders when judging structure complexity.
+- When a source is retired, remove its YAML from `sources/` and clean up stale `data/raw/{source}/` artifacts separately.
+- Workbook source summaries now follow the enabled source registry plus downstream evidence, not raw-folder presence alone.

@@ -170,7 +170,6 @@ def _collect_counts_for_source(source: str, root_dir: Path, artifacts: dict[str,
     provenance["raw_collected_rows"] = f"data/raw/{source}/raw.jsonl"
 
     if source in {
-        "amplitude_community",
         "hubspot_community",
         "klaviyo_community",
         "mixpanel_community",
