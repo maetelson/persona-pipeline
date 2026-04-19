@@ -6,12 +6,14 @@ import json
 import os
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from src.collectors.base import BaseCollector, PageResult, QuerySeedTask, RawRecord, TimeSlice
+from src.utils.io import load_yaml
 
 
 class StackOverflowCollector(BaseCollector):
@@ -27,22 +29,88 @@ class StackOverflowCollector(BaseCollector):
             raise ValueError("Stack Overflow collector requires at least one query seed or expanded query task.")
         return self.collect_with_pagination(self._fetch_page)
 
+    def get_query_seed_tasks(self) -> list[QuerySeedTask]:
+        """Resolve Stack Overflow pain-family tasks when configured."""
+        query_mode = str(self.config.get("query_mode", "source_config") or "source_config")
+        if query_mode != "pain_family_search":
+            return super().get_query_seed_tasks()
+
+        seed_bank_path = str(self.config.get("seed_bank_path", "") or "").strip()
+        if not seed_bank_path:
+            return []
+        payload = load_yaml(self.root_dir / Path(seed_bank_path))
+        pain_families = payload.get("pain_families", []) or []
+        tag_bundles = payload.get("tag_bundles", []) or []
+        tasks: list[QuerySeedTask] = []
+        for family in pain_families:
+            family_id = str(family.get("family_id", "") or "").strip()
+            family_priority = str(family.get("priority", "high") or "high").strip().lower()
+            expected_signal_type = str(family.get("expected_signal_type", family_id or "pain_family") or "pain_family")
+            query_terms = [str(term).strip() for term in family.get("query_terms", []) or [] if str(term).strip()]
+            title_terms = [str(term).strip() for term in family.get("title_terms", []) or [] if str(term).strip()]
+            body_terms = [str(term).strip() for term in family.get("body_terms", []) or [] if str(term).strip()]
+            family_nottagged = [str(tag).strip() for tag in family.get("nottagged", []) or [] if str(tag).strip()]
+            if not family_id or not (query_terms or title_terms or body_terms):
+                continue
+            for bundle in tag_bundles:
+                bundle_id = str(bundle.get("bundle_id", "") or "").strip()
+                tagged = [str(tag).strip() for tag in bundle.get("tagged", []) or [] if str(tag).strip()]
+                nottagged = [str(tag).strip() for tag in bundle.get("nottagged", []) or [] if str(tag).strip()]
+                if not bundle_id or not tagged:
+                    continue
+                query_variants = query_terms or [""]
+                for query_term in query_variants:
+                    params: dict[str, str] = {
+                        "tagged": ";".join(tagged),
+                        "nottagged": ";".join([*family_nottagged, *nottagged]),
+                    }
+                    if query_term:
+                        params["q"] = query_term
+                    else:
+                        params["title"] = " ".join(title_terms)
+                        params["body"] = " ".join(body_terms)
+                    if title_terms:
+                        params["title_terms"] = "|".join(title_terms)
+                    if body_terms:
+                        params["body_terms"] = "|".join(body_terms)
+                    query_label = query_term or f"{family_id}_{bundle_id}"
+                    tasks.append(
+                        QuerySeedTask(
+                            query_id=f"SO_PAIN_{len(tasks) + 1:03d}",
+                            query_text=f"{family_id}__{bundle_id}__{query_label}",
+                            axes_used=[family_id, bundle_id],
+                            source_applicability=[self.source_name],
+                            priority=family_priority,
+                            expected_signal_type=expected_signal_type,
+                            search_params=params,
+                        )
+                    )
+
+        max_queries = self.config.get("max_queries_per_run")
+        if max_queries not in (None, ""):
+            tasks = tasks[: int(max_queries)]
+        return tasks
+
     def _fetch_page(self, query_task: QuerySeedTask, time_slice: TimeSlice, page_no: int) -> PageResult:
         """Fetch one Stack Overflow result page for a query/time-window pair."""
-        payload = self._fetch_questions_page(query_task.query_text, time_slice, page_no)
+        payload = self._fetch_questions_page(query_task, time_slice, page_no)
         question_items = payload.get("items", [])
         question_ids = [str(item["question_id"]) for item in question_items if item.get("question_id")]
+        fetch_thread_context = bool(self.config.get("fetch_answers_and_comments", True))
+        answers_by_question: dict[str, list[dict[str, Any]]] = {}
+        question_comments: dict[str, list[dict[str, Any]]] = {}
+        answer_comments: dict[str, list[dict[str, Any]]] = {}
+        if fetch_thread_context:
+            answers_by_question = self._fetch_answers_by_question(question_ids)
+            question_comments = self._fetch_comments_for_posts(question_ids, post_type="questions")
 
-        answers_by_question = self._fetch_answers_by_question(question_ids)
-        question_comments = self._fetch_comments_for_posts(question_ids, post_type="questions")
-
-        answer_ids = [
-            str(answer.get("answer_id"))
-            for answers in answers_by_question.values()
-            for answer in answers
-            if answer.get("answer_id")
-        ]
-        answer_comments = self._fetch_comments_for_posts(answer_ids, post_type="answers")
+            answer_ids = [
+                str(answer.get("answer_id"))
+                for answers in answers_by_question.values()
+                for answer in answers
+                if answer.get("answer_id")
+            ]
+            answer_comments = self._fetch_comments_for_posts(answer_ids, post_type="answers")
 
         records: list[RawRecord] = []
         for item_index, question in enumerate(question_items, start=1):
@@ -125,6 +193,7 @@ class StackOverflowCollector(BaseCollector):
                     "query_seed": query_task.query_text,
                     "site": self.config.get("site", "stackoverflow"),
                     "page_no": page_no,
+                    **dict(query_task.search_params or {}),
                 },
                 "raw_question": question,
                 "raw_question_comments": question_comments,
@@ -133,12 +202,11 @@ class StackOverflowCollector(BaseCollector):
             },
         )
 
-    def _fetch_questions_page(self, query_seed: str, time_slice: TimeSlice, page_no: int) -> dict[str, Any]:
+    def _fetch_questions_page(self, query_task: QuerySeedTask, time_slice: TimeSlice, page_no: int) -> dict[str, Any]:
         """Fetch a single Stack Overflow search page within one exact time slice."""
         pagesize = int(os.getenv("STACKOVERFLOW_PAGE_SIZE", self.config.get("pagesize", 10)))
         params = {
             "site": self.config.get("site", "stackoverflow"),
-            "q": query_seed,
             "fromdate": int(time_slice.start_at.timestamp()),
             "todate": int(time_slice.end_at.timestamp()),
             "pagesize": pagesize,
@@ -147,6 +215,14 @@ class StackOverflowCollector(BaseCollector):
             "sort": self.config.get("search_sort", "relevance"),
             "filter": "withbody",
         }
+        search_params = dict(query_task.search_params or {})
+        if search_params:
+            search_params.pop("title_terms", None)
+            search_params.pop("body_terms", None)
+            search_params.pop("nottagged", None)
+            params.update({key: value for key, value in search_params.items() if value})
+        else:
+            params["q"] = query_task.query_text
         return self._fetch_json("https://api.stackexchange.com/2.3/search/advanced", params, request_kind="search")
 
     def _fetch_answers_by_question(self, question_ids: list[str]) -> dict[str, list[dict[str, Any]]]:
@@ -222,7 +298,7 @@ class StackOverflowCollector(BaseCollector):
             request_params["key"] = key
 
         url = f"{base_url}?{urlencode(request_params)}"
-        max_retries = int(os.getenv("STACKOVERFLOW_REQUEST_RETRIES", "2"))
+        max_retries = int(os.getenv("STACKOVERFLOW_REQUEST_RETRIES", "5"))
         for attempt in range(max_retries + 1):
             request = Request(url, headers={"Accept": "application/json", "User-Agent": "persona-pipeline/0.1"})
             request_started_at = time.perf_counter()
@@ -233,6 +309,15 @@ class StackOverflowCollector(BaseCollector):
                 return payload
             except HTTPError as exc:
                 self.record_request(request_kind, time.perf_counter() - request_started_at, success=False)
+                if exc.code in {429, 502, 503, 504} and attempt < max_retries:
+                    retry_after_header = ""
+                    if exc.headers is not None:
+                        retry_after_header = str(exc.headers.get("Retry-After", "") or "").strip()
+                    retry_sleep_seconds = float(retry_after_header) if retry_after_header.isdigit() else 10.0 * (attempt + 1)
+                    self.record_request_retry()
+                    self.record_backoff_sleep(retry_sleep_seconds)
+                    time.sleep(retry_sleep_seconds)
+                    continue
                 raise RuntimeError(f"Stack Overflow request failed with HTTP {exc.code} for URL: {url}") from exc
             except URLError as exc:
                 self.record_request(request_kind, time.perf_counter() - request_started_at, success=False)

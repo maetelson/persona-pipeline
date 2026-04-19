@@ -12,7 +12,7 @@ query_mode: source_config
 seed_bank_path: config/seeds/business_communities/mixpanel_community.yaml
 seed_source_token: mixpanel
 seed_query_style: support_community
-discovery_page_count: 35
+discovery_page_count: 50
 sleep_seconds: 0.15
 filter_discovery_by_seed: true
 include_candidate_seed_pool_for_discovery: true
@@ -35,9 +35,17 @@ sitemap_discovery_urls:
     board: Community Questions
 discovery_exclude_url_patterns:
   - /x/announcements
+  - /x/ask-ai
   - /x/learning-resources
   - /x/product-ideas
+  - /x/resources
 discovery_exclude_title_patterns:
+  - "\\bapi\\b"
+  - "\\bsdk install\\b"
+  - "\\binstrumentation\\b"
+  - "\\bhow do i send events\\b"
+  - "\\bmobile sdk\\b"
+  - "\\bwebhook\\b"
   - "\\bmcp\\b"
   - "\\bclaude\\b"
   - "\\bchatgpt\\b"
@@ -47,3 +55,5 @@ discovery_exclude_title_patterns:
   - "\\bandroid\\b"
   - "\\breact\\b"
   - "\\bjavascript\\b"
+  - "\\bmixpanel bot\\b"
+  - "\\bask ai\\b"

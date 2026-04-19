@@ -1800,11 +1800,9 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "pdf",
                 "report",
                 "reporting",
-                "api",
-                "build",
-                "builds",
-                "cube",
-                "cubes",
+                "wrong totals",
+                "source data",
+                "ssrs",
             ]
         )
         discrepancy_presence = any(
@@ -1830,6 +1828,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "best practice",
                 "error details",
                 "show",
+                "wrong totals",
+                "not matching",
+                "mismatch",
+                "does not match",
             ]
         )
         analysis_context = any(
@@ -1854,6 +1856,8 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "filters of the dashboard",
                 "replacing ssrs",
                 "live detail reporting",
+                "widget value does not match table",
+                "source data and sisense report don't match",
             ]
         )
         explanation_burden = any(
@@ -1891,6 +1895,34 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "community manager",
             ]
         ) and not discrepancy_presence
+        infra_noise = any(
+            term in lowered
+            for term in [
+                "kubernetes",
+                "helm",
+                "upgrade",
+                "installation",
+                "install",
+                "auth0",
+                "jwt",
+                "sso",
+                "support ticket",
+                "eks",
+                "linux self-hosted",
+            ]
+        ) and not any(
+            term in lowered
+            for term in [
+                "dashboard",
+                "widget",
+                "pivot table",
+                "wrong totals",
+                "export",
+                "reporting",
+                "replacing ssrs",
+                "live detail reporting",
+            ]
+        )
         low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
 
         score = 0.0
@@ -1901,6 +1933,7 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
         score += 0.7 if has_workflow_pain else 0.0
         score += 0.5 if discussion_style and (metric_presence or discrepancy_presence or analysis_context) else 0.0
         score -= 1.2 if support_boilerplate else 0.0
+        score -= 1.4 if infra_noise else 0.0
         score -= 0.8 if usage_only else 0.0
 
         signal_count = sum(
@@ -1918,6 +1951,14 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 score=round(score, 3),
                 bucket="fail",
                 fail_reason="support_reply_without_analysis_context",
+                rescue_reason="",
+                passes=False,
+            )
+        if infra_noise:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="sisense_infra_install_noise",
                 rescue_reason="",
                 passes=False,
             )
@@ -1971,6 +2012,12 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "city",
                 "session duration",
                 "conversion time",
+                "report",
+                "dashboard",
+                "export",
+                "csv",
+                "source of truth",
+                "trend",
             ]
         )
         discrepancy_presence = any(
@@ -1986,6 +2033,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "hurdle",
                 "issue",
                 "problem",
+                "mismatch",
+                "not matching",
+                "source of truth",
+                "what changed",
             ]
         )
         analysis_context = any(
@@ -1993,7 +2044,6 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             for term in [
                 "new project",
                 "mirror sync",
-                "sdk",
                 "segment",
                 "customer web app",
                 "marketing website",
@@ -2001,6 +2051,9 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "query",
                 "ui",
                 "screen",
+                "which report should i use",
+                "figure out",
+                "explain",
             ]
         )
         explanation_burden = any(
@@ -2012,6 +2065,34 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "why is",
                 "can someone help",
                 "how can i",
+                "what changed",
+                "which report should i use",
+            ]
+        )
+        setup_noise = any(
+            term in lowered
+            for term in [
+                "api",
+                "sdk",
+                "instrumentation",
+                "webhook",
+                "mobile sdk",
+                "send events",
+                "implementation",
+            ]
+        ) and not any(
+            term in lowered
+            for term in [
+                "report",
+                "dashboard",
+                "export",
+                "csv",
+                "funnel",
+                "insights",
+                "retention",
+                "breakdown",
+                "source of truth",
+                "mismatch",
             ]
         )
         low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
@@ -2022,6 +2103,7 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
         score += 0.9 if analysis_context else 0.0
         score += 0.8 if explanation_burden else 0.0
         score += 0.7 if has_workflow_pain else 0.0
+        score -= 1.4 if setup_noise else 0.0
         score -= 0.8 if usage_only else 0.0
 
         signal_count = sum(
@@ -2042,6 +2124,14 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 rescue_reason="",
                 passes=False,
             )
+        if setup_noise:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="mixpanel_api_setup_noise",
+                rescue_reason="",
+                passes=False,
+            )
         if signal_count >= 3 and (discrepancy_presence or has_required_problem or explanation_burden):
             return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
         if signal_count >= 2:
@@ -2058,6 +2148,167 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             score=round(score, 3),
             bucket="fail",
             fail_reason="mixpanel_problem_without_reporting_context",
+            rescue_reason="",
+            passes=False,
+        )
+
+    if source == "stackoverflow":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "dashboard",
+                "report",
+                "reporting",
+                "matrix",
+                "pivot",
+                "tableau",
+                "power bi",
+                "powerbi",
+                "dax",
+                "power query",
+                "powerquery",
+                "sql server",
+                "postgresql",
+                "mysql",
+                "reporting services",
+                "ssrs",
+                "excel",
+                "csv",
+            ]
+        )
+        discrepancy_presence = any(
+            term in lowered
+            for term in [
+                "wrong total",
+                "wrong totals",
+                "not matching",
+                "mismatch",
+                "count distinct",
+                "group by",
+                "left join",
+                "duplicate rows",
+                "date filter",
+                "created_at",
+                "event_date",
+                "source of truth",
+                "rows do not add up",
+            ]
+        )
+        analysis_context = any(
+            term in lowered
+            for term in [
+                "reconcile",
+                "reconciliation",
+                "summary detail",
+                "business definition",
+                "calculated field",
+                "export csv",
+                "rows total",
+                "query result",
+                "dashboard total",
+            ]
+        )
+        explanation_burden = any(
+            term in lowered
+            for term in [
+                "trying to",
+                "need to",
+                "how can i",
+                "why does",
+                "why is",
+                "figure out",
+                "manual",
+                "stakeholder",
+                "before sending",
+                "sign off",
+                "validate",
+            ]
+        )
+        setup_noise = any(
+            term in lowered
+            for term in [
+                "react",
+                "javascript",
+                "css",
+                "html",
+                "docker",
+                "oauth",
+                "selenium",
+                "web scraping",
+                "strapi",
+                "grafana",
+                "prometheus",
+            ]
+        ) and not any(
+            term in lowered
+            for term in [
+                "dashboard",
+                "report",
+                "reporting",
+                "pivot",
+                "power bi",
+                "powerbi",
+                "tableau",
+                "sql server",
+                "postgresql",
+                "mysql",
+                "wrong total",
+                "mismatch",
+            ]
+        )
+        low_signal = not any([metric_presence, discrepancy_presence, analysis_context, explanation_burden])
+
+        score = 0.0
+        score += 1.0 if metric_presence else 0.0
+        score += 1.25 if discrepancy_presence or has_required_problem else 0.0
+        score += 0.9 if analysis_context else 0.0
+        score += 0.7 if explanation_burden else 0.0
+        score += 0.65 if has_workflow_pain else 0.0
+        score -= 1.3 if setup_noise else 0.0
+        score -= 0.8 if usage_only else 0.0
+
+        signal_count = sum(
+            int(flag)
+            for flag in [
+                metric_presence,
+                discrepancy_presence or has_required_problem,
+                analysis_context,
+                explanation_burden,
+                has_workflow_pain,
+            ]
+        )
+        if low_signal:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="stackoverflow_low_signal",
+                rescue_reason="",
+                passes=False,
+            )
+        if setup_noise:
+            return QualityAssessment(
+                score=round(score, 3),
+                bucket="fail",
+                fail_reason="stackoverflow_generic_dev_noise",
+                rescue_reason="",
+                passes=False,
+            )
+        if signal_count >= 3 and (discrepancy_presence or has_required_problem or analysis_context):
+            return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
+        if signal_count >= 2:
+            rescue_reason = "stackoverflow_bi_reconciliation_rescue"
+            fail_reason = "weak_problem_phrasing"
+            if metric_presence and not (discrepancy_presence or has_required_problem):
+                fail_reason = "metric_present_but_no_explicit_blocker"
+                rescue_reason = "stackoverflow_metric_context_rescue"
+            elif not has_workflow_pain and (metric_presence or analysis_context):
+                fail_reason = "weak_workflow_signal"
+                rescue_reason = "stackoverflow_workflow_weak_rescue"
+            return QualityAssessment(score=round(score, 3), bucket="borderline", fail_reason=fail_reason, rescue_reason=rescue_reason, passes=True)
+        return QualityAssessment(
+            score=round(score, 3),
+            bucket="fail",
+            fail_reason="stackoverflow_problem_without_reporting_context",
             rescue_reason="",
             passes=False,
         )

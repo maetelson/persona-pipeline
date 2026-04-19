@@ -397,6 +397,29 @@ def enrich_with_llm_labels(
             audit_rows.append(audit_row)
             continue
 
+        if runtime["mode"] == "cache_only":
+            audit_row["llm_status"] = "cache_only_miss"
+            audit_row["llm_reason"] = "llm:cache_only:miss"
+            audit_row["skip_category"] = "cache_only_miss"
+            _log_llm_event(
+                "llm_labeler_call_skipped",
+                {
+                    "job_id": str(runtime["job_id"]),
+                    "episode_id": str(row["episode_id"]),
+                    "skip_category": "cache_only_miss",
+                    "reason": "llm:cache_only:miss",
+                    "target_reason": str(target_reason),
+                    "cache_key": cache_key,
+                    "model": str(runtime["model_primary"]),
+                },
+            )
+            result.at[index, "label_reason"] = _append_reason(
+                str(row.get("label_reason", "")),
+                f"llm:cache_only:miss:{target_meta['reason']}",
+            )
+            audit_rows.append(audit_row)
+            continue
+
         if runtime["dry_run"]:
             audit_row["llm_status"] = "dry_run"
             audit_row["llm_reason"] = "llm:disabled:dry_run"
@@ -569,6 +592,7 @@ def resolve_llm_runtime(config: dict[str, Any] | None = None) -> dict[str, Any]:
         default=str(cfg.get("force_llm_for_targeted", "false")),
     ).lower() == "true"
     only_uncached = _first_non_empty("LLM_ONLY_UNCACHED", default=str(cfg.get("only_uncached", "false"))).lower() == "true"
+    cache_only = _first_non_empty("LLM_CACHE_ONLY", default=str(cfg.get("cache_only", "false"))).lower() == "true"
     organization = _first_non_empty("OPENAI_ORG", "OPENAI_ORGANIZATION", default=str(cfg.get("organization", ""))).strip()
     project = _first_non_empty("OPENAI_PROJECT", default=str(cfg.get("project", ""))).strip()
     base_url = _first_non_empty("OPENAI_BASE_URL", default=str(cfg.get("base_url", DEFAULT_OPENAI_BASE_URL))).strip().rstrip("/") or DEFAULT_OPENAI_BASE_URL
@@ -579,7 +603,9 @@ def resolve_llm_runtime(config: dict[str, Any] | None = None) -> dict[str, Any]:
 
     skip_reason = ""
     mode = "direct"
-    if not enabled:
+    if cache_only:
+        mode = "cache_only"
+    elif not enabled:
         skip_reason = "llm:disabled:feature_flag_off"
         mode = "disabled"
     elif not model_primary:
@@ -619,6 +645,7 @@ def resolve_llm_runtime(config: dict[str, Any] | None = None) -> dict[str, Any]:
         "cache_path": cache_path,
         "force_llm_for_targeted": force_llm_for_targeted,
         "only_uncached": only_uncached,
+        "cache_only": cache_only,
         "organization": organization,
         "project": project,
         "base_url": base_url,

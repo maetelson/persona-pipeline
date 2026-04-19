@@ -30,3 +30,68 @@ source_overrides:
 exclude_missing_created_at: true
 missing_created_at_reason: missing_created_at
 outside_time_window_reason: outside_time_window
+
+source_rescue_rules:
+  qlik_community:
+    include_any_terms:
+      - wrong total
+      - wrong totals
+      - not matching
+      - mismatch
+      - set analysis
+      - straight table
+      - pivot table
+      - nprinting
+      - pixel perfect
+      - export
+      - kpi
+      - cannot explain
+      - root cause
+      - manual reporting
+      - export to excel
+      - wrong values exported
+      - total line
+      - adhoc reporting
+      - date export
+      - percentage changes
+    exclude_any_terms:
+      - release notes
+      - patch release
+      - deprecated
+      - qlikview 11
+      - qlik sense november
+      - qlik sense september
+      - upgrade to
+      - upgraded to
+      - migration
+      - migrated
+      - support end
+    oldest_allowed_text_year: 2020
+    stale_version_pattern: "\\bv(?:ersion)?\\s?(?:1[0-9]|20\\.[0-9]|201[0-9])\\b"
+  metabase_discussions:
+    include_any_terms:
+      - dashboard
+      - query
+      - wrong numbers
+      - source of truth
+      - metric definition
+      - export csv
+      - pivot
+      - xlsx export
+      - root cause
+      - cannot explain
+      - why did
+      - drill down
+      - manual reporting
+    exclude_any_terms:
+      - release notes
+      - deprecated
+      - upgrade guide
+      - migrated from
+      - metabase v0.
+      - metabase 0.
+      - old version
+      - release candidate
+      - migration
+    oldest_allowed_text_year: 2023
+    stale_version_pattern: "\\b(?:metabase\\s*)?v?0\\.[0-3][0-9]\\b"

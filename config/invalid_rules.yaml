@@ -728,6 +728,81 @@ source_invalid_reason_exemptions:
         - resolve
         - not linking
         - wrong
+        - source of truth
+        - what changed
+        - explain this drop
+        - which report should i use
+        - dashboard says one thing
+        - export says another
+        - why did
+        - difference between
+        - different from
+        - trust
+        - benchmark
+        - drop
+        - duplicate events
+        - duplicate event
+        - exported data
+        - timezone differences
+        - timezone mismatch
+        - undefined user emails
+        - export compared to reports
+        - raw usage data
+        - raw activity feed
+      require_signal_match: false
+  klaviyo_community:
+    missing_business_signal:
+      when_any_terms:
+        - klaviyo
+        - report
+        - reporting
+        - export
+        - benchmark
+        - google sheets
+        - segment export
+        - power query
+        - overview dashboard
+        - bulk export
+        - ga4
+        - google analytics
+      require_signal_match: false
+    missing_pain_signal:
+      when_any_terms:
+        - attributed revenue
+        - revenue mismatch
+        - attribution mismatch
+        - reporting lag
+        - benchmark report
+        - segment count
+        - list count
+        - profile count
+        - source of truth
+        - weekly reporting
+        - export excel
+        - manual spreadsheet
+        - segmentation
+        - attribution
+        - what changed
+        - before sending
+        - reconcile
+        - reconciliation
+        - google sheets
+        - exported emails
+        - custom report
+        - segment export
+        - revenue attribution
+        - skipped report
+        - message was skipped
+        - skip reason
+        - power query
+        - missing profiles
+        - missing emails
+        - overview dashboard
+        - compare segments
+        - bulk export
+        - export all metric data
+        - ga4
+        - google analytics
       require_signal_match: false
   qlik_community:
     missing_business_signal:
@@ -765,6 +840,13 @@ source_invalid_reason_exemptions:
         - goal is
         - would like to know
         - how to
+        - export to excel
+        - wrong values exported
+        - total line
+        - export icon
+        - adhoc reporting
+        - date export
+        - percentage changes
       require_signal_match: false
   sisense_community:
     missing_business_signal:

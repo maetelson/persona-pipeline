@@ -110,6 +110,22 @@ class LlmLabelerRuntimeTests(unittest.TestCase):
         self.assertEqual(int(runtime["max_output_tokens"]), DEFAULT_MAX_OUTPUT_TOKENS)
         self.assertEqual(int(base_config["max_output_tokens"]), DEFAULT_MAX_OUTPUT_TOKENS)
 
+    def test_cache_only_mode_uses_cache_without_live_runtime_disable(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "ENABLE_LLM_LABELER": "false",
+                "LLM_CACHE_ONLY": "true",
+                "OPENAI_API_KEY": "",
+            },
+            clear=False,
+        ):
+            runtime = resolve_llm_runtime({"enabled": False, "cache_only": True, "cache_enabled": True})
+
+        self.assertEqual(runtime["mode"], "cache_only")
+        self.assertEqual(runtime["skip_reason"], "")
+        self.assertTrue(bool(runtime["cache_enabled"]))
+
 
 if __name__ == "__main__":
     unittest.main()

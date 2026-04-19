@@ -3,11 +3,16 @@ source_group: business_communities
 max_query_count: 10
 source_notes: "Qlik Community seeds emphasize wrong totals, set-analysis confusion, filter and date logic, summary-vs-detail mismatch, and dashboard trust."
 candidate_seed_pool:
-  - qlik chart values look wrong
-  - why did this KPI change in qlik
-  - which dimension caused the change
-  - export doesn't match chart
-  - users don't trust the dashboard
+  - qlik export values look wrong in excel
+  - board report export does not reconcile
+  - qlik totals do not match excel
+  - users don't trust the qlik dashboard numbers
+  - KPI and chart are showing different averages
+  - set analysis total is wrong
+  - straight table and chart are different
+  - pivot table values do not reconcile
+  - filter and dimension search changes values
+  - nprinting report has wrong totals
 active_core_seeds:
   # Canonical axes: numbers_mismatch, metric_definition_confusion,
   # aggregation_filter_issue, dashboard_confusion,
@@ -22,6 +27,10 @@ active_core_seeds:
     reason: Captures aggregation and filter-context confusion in native UI language.
   - seed: dashboard and export don't match
     reason: Keeps dashboard-versus-export discrepancy explicit.
+  - seed: qlik export values are wrong in excel
+    reason: Strong export-integrity phrase tied to manual reporting output.
+  - seed: board report totals do not reconcile
+    reason: Keeps stakeholder-facing report reconciliation explicit.
   - seed: summary and detail values are different
     reason: Strong reconciliation language for operator pain.
   - seed: breakdown by dimension does not add up
@@ -32,6 +41,20 @@ active_core_seeds:
     reason: Explicit source-of-truth conflict in community language.
   - seed: what caused this KPI change in qlik
     reason: Adds trend interpretation and explanation burden without centering conversion.
+  - seed: KPI and chart are showing different averages
+    reason: Community-native phrasing for summary-versus-visual trust conflicts.
+  - seed: set analysis total is wrong in qlik
+    reason: High-signal measure logic phrasing that captures native Qlik pain.
+  - seed: straight table and chart are different
+    reason: Reinforces view-versus-view reconciliation pain using common Qlik objects.
+  - seed: pivot table total is wrong in qlik
+    reason: Extends totals-trust recall into another common Qlik visual.
+  - seed: filter and dimension values don't match
+    reason: Adds dimension/filter interaction pain beyond generic dashboard complaints.
+  - seed: nprinting report has wrong totals
+    reason: Captures reporting-service output errors with high analyst pain.
+  - seed: qlik numbers are correct in excel but wrong in chart
+    reason: Preserves cross-output trust failure instead of generic chart help.
 optional_templates:
   - template: count distinct doesn't match qlik total
     reason: Preserved as a useful metric branch, but downgraded due to overlap with stronger total-mismatch phrasing.
@@ -39,6 +62,12 @@ optional_templates:
     reason: Preserved because pivot tables are common, but optional to avoid concentrating on one visual family.
   - template: qlik set analysis makes no sense
     reason: Preserved as a broad operator phrase, but optional because set-analysis mismatch is already covered in core seeds.
+  - template: KPI does not match straight table
+    reason: Preserved as a native mismatch variant that often signals stakeholder trust pain.
+  - template: chart average is different from table average
+    reason: Preserved as a visual reconciliation variant that still reflects metric-trust pain.
+  - template: export line values show in scientific notation
+    reason: Preserved as an export-integrity variant when numbers become unusable in Excel packs.
 negative_terms:
   - api
   - extension api
@@ -50,3 +79,7 @@ negative_terms:
   - career
   - installation
   - server setup
+  - line / area chart
+  - color few columns
+  - sort pivot table
+  - hide measure values

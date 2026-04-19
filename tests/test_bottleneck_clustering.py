@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.analysis.bottleneck_clustering import (
+    _overlap_merge_comparison,
     assign_bottleneck_clusters,
     build_bottleneck_feature_table,
     build_cluster_naming_recommendations,
@@ -240,6 +241,67 @@ class BottleneckClusteringTests(unittest.TestCase):
         assignments_df = assign_bottleneck_clusters(pd.DataFrame(rows), config)
         self.assertEqual(assignments_df["persona_id"].nunique(), 1)
         self.assertIn("merged_low_separation_cluster", assignments_df["robustness_action"].tolist())
+
+    def test_same_primary_clusters_stay_split_when_reporting_and_triage_jobs_conflict(self) -> None:
+        config = dict(self.config)
+        config["clustering"] = dict(self.config.get("clustering", {}))
+        config["robustness"] = dict(self.config.get("robustness", {}))
+        config["clustering"]["min_anchor_size"] = 2
+        config["clustering"]["min_anchor_share"] = 0.0
+        config["clustering"]["merge_similarity_threshold"] = 0.95
+        config["clustering"]["merge_signature_floor"] = 0.95
+        feature_columns = list(config.get("core_features", []))
+        rows = []
+        for episode_id, signature, values, workflow_stage, analysis_goal, output_expectation in [
+            ("r1", "primary=manual_reporting||secondary=recurring_export_work", {"manual_reporting": 2.1, "recurring_export_work": 1.5, "spreadsheet_rework": 1.1}, "reporting", "report_speed", "excel_ready_output"),
+            ("r2", "primary=manual_reporting||secondary=recurring_export_work", {"manual_reporting": 2.0, "recurring_export_work": 1.4, "spreadsheet_rework": 1.0}, "reporting", "report_speed", "excel_ready_output"),
+            ("t1", "primary=manual_reporting||secondary=root_cause_analysis_difficulty", {"manual_reporting": 2.0, "root_cause_analysis_difficulty": 1.4, "numbers_visible_but_not_explainable": 1.2}, "triage", "diagnose_change", "dashboard_update"),
+            ("t2", "primary=manual_reporting||secondary=root_cause_analysis_difficulty", {"manual_reporting": 2.0, "root_cause_analysis_difficulty": 1.3, "numbers_visible_but_not_explainable": 1.1}, "triage", "diagnose_change", "dashboard_update"),
+        ]:
+            row = {
+                "episode_id": episode_id,
+                "cluster_signature": signature,
+                "primary_bottleneck": "manual_reporting",
+                "secondary_bottlenecks": "",
+                "primary_score": 2.0,
+                "role_metadata": "analyst",
+                "source_metadata": "reddit",
+                "workflow_stage": workflow_stage,
+                "analysis_goal": analysis_goal,
+                "output_expectation": output_expectation,
+            }
+            for feature in feature_columns:
+                row[feature] = float(values.get(feature, 0.0))
+            rows.append(row)
+        assignments_df = assign_bottleneck_clusters(pd.DataFrame(rows), config)
+        self.assertEqual(assignments_df["persona_id"].nunique(), 2)
+
+    def test_unassigned_overlap_profiles_do_not_merge_without_near_identity(self) -> None:
+        merge_cfg = dict(self.config.get("persona_overlap_merge", {}))
+        profile = {
+            "centroid": {"manual_reporting": 1.8, "recurring_export_work": 1.4},
+            "role_context": "analyst_operator",
+            "recurring_job": "unassigned::unassigned",
+            "expected_output": "unassigned",
+            "parent_persona_name": "Analyst Unassigned Unassigned",
+            "workaround_pattern": "manual_patch_and_rebuild",
+            "trust_failure_mode": "numbers_not_safe_to_share",
+            "role_share": 0.8,
+            "cluster_size": 300,
+        }
+        candidate = {
+            "centroid": {"manual_reporting": 1.9, "root_cause_analysis_difficulty": 1.2},
+            "role_context": "analyst_operator",
+            "recurring_job": "unassigned::unassigned",
+            "expected_output": "unassigned",
+            "parent_persona_name": "Analyst Unassigned Unassigned",
+            "workaround_pattern": "manual_patch_and_rebuild",
+            "trust_failure_mode": "numbers_not_safe_to_share",
+            "role_share": 0.75,
+            "cluster_size": 180,
+        }
+        comparison = _overlap_merge_comparison(profile, candidate, merge_cfg)
+        self.assertFalse(bool(comparison["should_merge"]))
 
     def test_cluster_robustness_outputs_summarize_stability_metrics(self) -> None:
         cluster_audit_df = pd.DataFrame(

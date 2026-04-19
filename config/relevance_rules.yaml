@@ -17,34 +17,34 @@ source_defaults:
     source_weight: 1.05
   stackoverflow:
     source_group: existing_forums
-    source_weight: 0.98
+    source_weight: 1.06
   github_discussions:
     source_group: existing_forums
-    source_weight: 0.72
+    source_weight: 0.82
   hubspot_community:
     source_group: business_communities
     source_weight: 1.0
   klaviyo_community:
     source_group: business_communities
-    source_weight: 1.0
+    source_weight: 1.28
   metabase_discussions:
     source_group: discourse
     source_weight: 1.0
   power_bi_community:
     source_group: business_communities
-    source_weight: 1.0
+    source_weight: 0.9
   mixpanel_community:
     source_group: business_communities
-    source_weight: 1.0
+    source_weight: 1.18
   qlik_community:
     source_group: business_communities
-    source_weight: 1.0
+    source_weight: 1.03
   sisense_community:
     source_group: business_communities
     source_weight: 1.0
   shopify_community:
     source_group: business_communities
-    source_weight: 1.0
+    source_weight: 1.1
 source_whitelist_terms:
   reddit:
     - label: reddit_reporting_ops_combo
@@ -99,6 +99,12 @@ source_whitelist_terms:
       terms: [report, dashboard, export, not matching, discrepancy, wrong, trust]
     - label: mixpanel_breakdown_action
       terms: [breakdown, segment, property, what changed, what should i do]
+    - label: mixpanel_source_of_truth
+      terms: [source of truth, dashboard says one thing, export says another, event count mismatch]
+    - label: mixpanel_trend_diagnosis
+      terms: [why did this change, explain this drop, trend changed suddenly, which report should i use]
+    - label: mixpanel_export_integrity
+      terms: [duplicate events, duplicate event, export compared to reports, exported data, exported csv, timezone differences, timezone mismatch, raw usage data, raw activity feed, undefined user emails]
   qlik_community:
     - label: qlik_total_logic
       terms: [wrong total, wrong totals, total level, global totals, summary and detail, does not add up]
@@ -110,6 +116,8 @@ source_whitelist_terms:
       terms: [reporting, report, dashboard, export, nprinting, pixel perfect]
     - label: qlik_mismatch
       terms: [not matching, mismatch, incorrect data, wrong numbers, unexpected]
+    - label: qlik_export_integrity
+      terms: [export to excel, wrong values exported, total line, export icon, adhoc reporting, date export, decimal, percentage changes, correct in excel, huge difference, e format, shown as text]
   sisense_community:
     - label: sisense_dashboard_filter
       terms: [dashboard filter, background dashboard filter, single filter, list selection, jump to dashboard]
@@ -125,6 +133,10 @@ source_whitelist_terms:
       terms: [exports, xlsx, csv, pdf, dashboard title, show filters, live detail reporting, replacing ssrs]
     - label: sisense_build_schedule
       terms: [schedule builds, schedule all, builds in bulk, build error details, cube names, through the ui]
+    - label: sisense_total_filter_trust
+      terms: [wrong totals, dashboard numbers don't match, widget value does not match table, filter changes totals]
+    - label: sisense_live_detail_replace
+      terms: [replacing ssrs, live detail reporting, detailed list, report replacement]
   shopify_community:
     - label: shopify_reporting_analytics
       terms: [report, reporting, analytics, dashboard, export, csv]
@@ -148,13 +160,17 @@ source_whitelist_terms:
       terms: [shipping, shipment, fulfilment, refund, payment, payouts, order count, inventory sync]
   klaviyo_community:
     - label: klaviyo_revenue_attribution_trust
-      terms: [attributed revenue, revenue mismatch, attribution mismatch, reporting lag, what changed]
+      terms: [attributed revenue, revenue mismatch, attribution mismatch, reporting lag, what changed, ga4, google analytics, revenue attribution skewed]
     - label: klaviyo_segment_count_reconcile
-      terms: [segment count, list count, profile count, not matching, reconcile, discrepancy]
+      terms: [segment count, list count, profile count, not matching, reconcile, discrepancy, active profiles, missing profiles, compare segments]
     - label: klaviyo_export_report_trust
-      terms: [report export, csv export, benchmark report, analytics export, empty file]
+      terms: [report export, csv export, benchmark report, analytics export, empty file, bulk export, export all metric data, overview dashboard]
     - label: klaviyo_conversion_diagnose
-      terms: [conversion drop, click drop, revenue drop, benchmark, diagnose, why did]
+      terms: [conversion drop, click drop, revenue drop, benchmark, diagnose, why did, reporting lag, skipped report]
+    - label: klaviyo_export_integrity
+      terms: [google sheets, excel, segment export, exported emails, custom report challenges, custom report, power query, skipped report, message was skipped, skip reason, missing profiles, missing emails, revenue attribution skewed]
+    - label: klaviyo_profile_math
+      terms: [active profiles, suppressed profiles, total number of profiles, does not equal, compare segments, order number]
   github_discussions:
     - label: github_export_excel
       terms: [export to excel, manual reporting]
@@ -168,6 +184,8 @@ source_whitelist_terms:
       terms: [questions/model, generated from questions, embedded dashboard, csv export, export all results, filter]
     - label: github_metric_semantics
       terms: [metric formulas, formula, semi-additive metrics, source of truth, numbers don't match]
+    - label: github_ratio_semantics
+      terms: [share of total, conversion rate, denominator, wrong totals, ratio metric]
 reddit:
   relevant_subreddits:
     r/analytics: 2.2
@@ -185,7 +203,10 @@ reddit:
   negative_subreddit_weight: -1.8
 stackoverflow:
   strong_positive_tags:
+    powerbi: 2.4
     power-bi: 2.4
+    powerbi-desktop: 2.1
+    tableau-desktop: 2.2
     tableau: 2.2
     excel: 2.3
     google-sheets: 1.8
@@ -196,11 +217,18 @@ stackoverflow:
     reporting-services: 1.8
   conditional_tags:
     sql: 0.4
+    sql-server: 0.9
+    postgresql: 0.8
+    mysql: 0.7
     csv: 0.5
     pivot-table: 1.0
     formulas: 0.8
     calculated-columns: 0.8
   negative_tags:
+    python: 1.1
+    pandas: 1.2
+    grafana: 1.4
+    prometheus: 1.4
     selenium: 2.5
     oauth-2.0: 2.4
     npm: 2.2
@@ -226,6 +254,12 @@ stackoverflow:
     - workaround
     - roll up
     - pre-grouped
+klaviyo_community:
+  borderline_floor_with_reporting_context: 2.9
+mixpanel_community:
+  borderline_floor_with_reporting_context: 3.0
+qlik_community:
+  borderline_floor_with_reporting_context: 3.8
 github_discussions:
   positive_repo_terms:
     - metabase

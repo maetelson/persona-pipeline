@@ -7,19 +7,20 @@ normalizer_kind: existing_forums
 enabled: true
 use_stub: false
 source_type: qa
-query_mode: source_config
+query_mode: pain_family_search
 seed_bank_path: config/seeds/existing_forums/stackoverflow.yaml
 allowed_query_priorities:
   - high
   - medium
 site: stackoverflow
-pagesize: 20
-max_pages_per_query: 35
-max_answers_per_question: 20
-max_comments_per_post: 50
+pagesize: 100
+max_pages_per_query:
+fetch_answers_and_comments: false
+max_answers_per_question: 5
+max_comments_per_post: 10
 search_sort: relevance
 search_order: desc
-sleep_seconds: 0.75
+sleep_seconds: 1.0
 aliases:
   - stackoverflow
   - stack overflow

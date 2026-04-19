@@ -305,6 +305,8 @@ def _overlap_merge_comparison(profile: dict[str, Any], candidate: dict[str, Any]
     compatible_workaround = str(profile.get("workaround_pattern", "")) in compatible_workarounds and str(candidate.get("workaround_pattern", "")) in compatible_workarounds
     compatible_trust_mode = str(profile.get("trust_failure_mode", "")) in compatible_trust and str(candidate.get("trust_failure_mode", "")) in compatible_trust
     role_gap_ok = abs(float(profile.get("role_share", 0.0) or 0.0) - float(candidate.get("role_share", 0.0) or 0.0)) <= float(merge_cfg.get("max_role_share_gap", 0.35))
+    material_context_conflict = _profile_merge_conflict(profile, candidate)
+    unassigned_profile = _is_unassigned_profile(profile) or _is_unassigned_profile(candidate)
     min_cluster_size = min(int(profile.get("cluster_size", 0) or 0), int(candidate.get("cluster_size", 0) or 0))
     similarity_floor = float(merge_cfg.get("similarity_floor", 0.55))
     if min_cluster_size <= int(merge_cfg.get("micro_cluster_size", 8)):
@@ -332,15 +334,31 @@ def _overlap_merge_comparison(profile: dict[str, Any], candidate: dict[str, Any]
         )
         and ((same_workaround or compatible_workaround) or same_parent_name)
     )
+    if unassigned_profile and not (
+        same_parent_name
+        and same_workaround
+        and same_trust
+        and similarity >= float(merge_cfg.get("unassigned_profile_similarity_floor", 0.92))
+    ):
+        micro_cluster_absorb_ok = False
     should_merge = (
         same_role
         and (same_job or compatible_job)
         and (same_output or compatible_output)
         and role_gap_ok
+        and not material_context_conflict
         and ((same_trust or compatible_trust_mode) or micro_cluster_absorb_ok)
         and profile_match_score >= int(merge_cfg.get("compatible_profile_score_floor", 4))
         and similarity >= similarity_floor
     )
+    if unassigned_profile and not (
+        same_parent_name
+        and same_workaround
+        and same_trust
+        and profile_match_score >= int(merge_cfg.get("unassigned_profile_match_score_floor", 5))
+        and similarity >= float(merge_cfg.get("unassigned_profile_similarity_floor", 0.92))
+    ):
+        should_merge = False
     merge_rationale = (
         f"merged because role context={profile.get('role_context', '')}, recurring job={profile.get('recurring_job', '')}, "
         f"expected output={profile.get('expected_output', '')}, workaround pattern={profile.get('workaround_pattern', '')}, "
@@ -353,6 +371,13 @@ def _overlap_merge_comparison(profile: dict[str, Any], candidate: dict[str, Any]
         "profile_match_score": profile_match_score,
         "merge_rationale": merge_rationale,
     }
+
+
+def _is_unassigned_profile(profile: dict[str, Any]) -> bool:
+    """Return True when overlap-merge profile fields are too vague for safe parent absorption."""
+    recurring_job = str(profile.get("recurring_job", "") or "").strip().lower()
+    expected_output = str(profile.get("expected_output", "") or "").strip().lower()
+    return recurring_job.startswith("unassigned") or expected_output.startswith("unassigned")
 
 
 def _best_distinct_candidate(profile: dict[str, Any], profiles: dict[str, dict[str, Any]], merge_cfg: dict[str, Any]) -> dict[str, Any] | None:
@@ -387,6 +412,27 @@ def _differentiating_axis(profile: dict[str, Any], candidate: dict[str, Any]) ->
         if profile_value != candidate_value:
             return axis
     return ""
+
+
+def _profile_merge_conflict(profile: dict[str, Any], candidate: dict[str, Any]) -> bool:
+    """Return True when two nearby personas still imply materially different product jobs."""
+    workflow_a = str(profile.get("workflow", "") or "").strip().lower()
+    workflow_b = str(candidate.get("workflow", "") or "").strip().lower()
+    goal_a = str(profile.get("analysis_goal", "") or "").strip().lower()
+    goal_b = str(candidate.get("analysis_goal", "") or "").strip().lower()
+    output_a = str(profile.get("expected_output", "") or "").strip().lower()
+    output_b = str(candidate.get("expected_output", "") or "").strip().lower()
+    trust_a = str(profile.get("trust_failure_mode", "") or "").strip().lower()
+    trust_b = str(candidate.get("trust_failure_mode", "") or "").strip().lower()
+
+    reporting_vs_triage = {workflow_a, workflow_b} == {"reporting", "triage"}
+    speed_vs_diagnose = {goal_a, goal_b} == {"report_speed", "diagnose_change"}
+    output_conflict = {output_a, output_b} == {"excel_ready_output", "dashboard_update"}
+    trust_conflict = {trust_a, trust_b} == {
+        "numbers_do_not_reconcile_or_feel_safe_to_share",
+        "context_is_not_explainable_without_manual_follow_up",
+    }
+    return any([reporting_vs_triage, speed_vs_diagnose, output_conflict, trust_conflict])
 
 
 def _dominant_value(group: pd.DataFrame, column: str) -> str:
@@ -591,6 +637,10 @@ def build_bottleneck_feature_table(
                 "primary_score": round(primary_score, 4),
                 "role_metadata": _role_metadata(row),
                 "source_metadata": str(row.get("source", "")),
+                "workflow_stage": str(row.get("workflow_stage", "") or ""),
+                "analysis_goal": str(row.get("analysis_goal", "") or ""),
+                "output_expectation": str(row.get("output_expectation", "") or ""),
+                "trust_validation_need": str(row.get("trust_validation_need", "") or ""),
             }
         )
     return pd.DataFrame(rows)
@@ -831,6 +881,7 @@ def _apply_cluster_robustness_policy(
     residual_bucket_by_primary = bool(robustness_config.get("residual_bucket_by_primary", True))
     residual_bucket_max_count = int(robustness_config.get("residual_bucket_max_count", 4))
     residual_fragile_cluster_size = int(robustness_config.get("residual_fragile_cluster_size", max(micro_cluster_size, 14)))
+    signature_context_lookup = _signature_context_lookup(feature_df)
 
     resolved_signatures = list(dict.fromkeys(signature_to_anchor.values()))
     anchor_sizes = feature_df["cluster_signature"].astype(str).map(signature_to_anchor).value_counts().to_dict()
@@ -854,6 +905,7 @@ def _apply_cluster_robustness_policy(
             anchor_sizes,
             anchor_feature_lookup,
             naming_lookup,
+            signature_context_lookup,
             micro_cluster_size,
             same_primary_absorb_similarity,
             same_base_name_absorb_similarity,
@@ -903,6 +955,7 @@ def _apply_cluster_robustness_policy(
             anchor_sizes=current_anchor_sizes,
             anchor_feature_lookup=current_feature_lookup,
             naming_lookup=naming_lookup,
+            signature_context_lookup=signature_context_lookup,
             total_rows=total_rows,
             low_separation_absorb_similarity=low_separation_absorb_similarity,
             low_separation_ceiling=low_separation_ceiling,
@@ -957,6 +1010,7 @@ def _choose_cluster_absorption_target(
     anchor_sizes: dict[str, int],
     anchor_feature_lookup: dict[str, dict[str, float]],
     naming_lookup: dict[str, str],
+    signature_context_lookup: dict[str, dict[str, str]],
     micro_cluster_size: int,
     same_primary_absorb_similarity: float,
     same_base_name_absorb_similarity: float,
@@ -978,6 +1032,8 @@ def _choose_cluster_absorption_target(
         same_name = naming_lookup.get(signature, "") == naming_lookup.get(candidate, "")
         same_base_name = _base_cluster_name(naming_lookup.get(signature, "")) == _base_cluster_name(naming_lookup.get(candidate, ""))
         shared_secondary = bool(set(mapping.get("secondary", [])) & set(candidate_mapping.get("secondary", [])))
+        if _signature_context_conflict(signature_context_lookup.get(signature, {}), signature_context_lookup.get(candidate, {})):
+            continue
         base_name_floor = micro_same_base_name_absorb_similarity if cluster_size <= micro_cluster_size else same_base_name_absorb_similarity
         name_floor = micro_same_name_absorb_similarity if cluster_size <= micro_cluster_size else same_name_absorb_similarity
         can_absorb = False
@@ -1047,6 +1103,7 @@ def _choose_low_separation_absorption_candidate(
     anchor_sizes: dict[str, int],
     anchor_feature_lookup: dict[str, dict[str, float]],
     naming_lookup: dict[str, str],
+    signature_context_lookup: dict[str, dict[str, str]],
     total_rows: int,
     low_separation_absorb_similarity: float,
     low_separation_ceiling: float,
@@ -1075,6 +1132,8 @@ def _choose_low_separation_absorption_candidate(
             same_name = naming_lookup.get(signature, "") == naming_lookup.get(candidate, "")
             same_base_name = _base_cluster_name(naming_lookup.get(signature, "")) == _base_cluster_name(naming_lookup.get(candidate, ""))
             shared_secondary = bool(set(mapping.get("secondary", [])) & set(candidate_mapping.get("secondary", [])))
+            if _signature_context_conflict(signature_context_lookup.get(signature, {}), signature_context_lookup.get(candidate, {})):
+                continue
             if similarity < low_separation_absorb_similarity or separation > low_separation_ceiling:
                 continue
             if not (same_primary or same_name or same_base_name or shared_secondary):
@@ -1329,6 +1388,50 @@ def _parse_signature(signature: str) -> dict[str, Any]:
         elif key == "secondary":
             mapping["secondary"] = [item for item in value.split("|") if item]
     return mapping
+
+
+def _signature_context_lookup(feature_df: pd.DataFrame) -> dict[str, dict[str, str]]:
+    """Build dominant axis context per signature so robust-merge guards can keep distinct jobs apart."""
+    if feature_df.empty or "cluster_signature" not in feature_df.columns:
+        return {}
+    rows: dict[str, dict[str, str]] = {}
+    for signature, group in feature_df.groupby("cluster_signature", dropna=False):
+        rows[str(signature)] = {
+            "workflow_stage": _dominant_context_value(group, "workflow_stage"),
+            "analysis_goal": _dominant_context_value(group, "analysis_goal"),
+            "output_expectation": _dominant_context_value(group, "output_expectation"),
+            "trust_validation_need": _dominant_context_value(group, "trust_validation_need"),
+        }
+    return rows
+
+
+def _dominant_context_value(group: pd.DataFrame, column: str) -> str:
+    """Return the dominant non-empty value for a context column."""
+    if column not in group.columns:
+        return ""
+    values = group[column].astype(str).str.strip()
+    values = values[(values != "") & (values.str.lower() != "unassigned")]
+    if values.empty:
+        return ""
+    return str(values.value_counts().idxmax())
+
+
+def _signature_context_conflict(left: dict[str, str], right: dict[str, str]) -> bool:
+    """Return True when two clusters imply different jobs despite lexical similarity."""
+    workflow_a = str(left.get("workflow_stage", "") or "").strip().lower()
+    workflow_b = str(right.get("workflow_stage", "") or "").strip().lower()
+    goal_a = str(left.get("analysis_goal", "") or "").strip().lower()
+    goal_b = str(right.get("analysis_goal", "") or "").strip().lower()
+    output_a = str(left.get("output_expectation", "") or "").strip().lower()
+    output_b = str(right.get("output_expectation", "") or "").strip().lower()
+
+    return any(
+        [
+            {workflow_a, workflow_b} == {"reporting", "triage"},
+            {goal_a, goal_b} == {"report_speed", "diagnose_change"},
+            {output_a, output_b} == {"excel_ready_output", "dashboard_update"},
+        ]
+    )
 
 
 def _row_text_blob(row: pd.Series) -> str:

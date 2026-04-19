@@ -14,8 +14,14 @@ seed_source_token: qlik
 seed_query_style: support_community
 discovery_page_count: 300
 sleep_seconds: 0.05
-filter_discovery_by_seed: false
-include_candidate_seed_pool_for_discovery: false
+discovery_sleep_seconds: 0.1
+filter_discovery_by_seed: true
+include_candidate_seed_pool_for_discovery: true
+min_seed_term_matches: 3
+stop_on_http_404_for_discovery: true
+max_consecutive_empty_discovery_pages: 2
+max_consecutive_duplicate_only_pages: 3
+max_consecutive_seed_filtered_only_pages: 5
 api_discovery:
   enabled: true
   kind: khoros_search
@@ -23,15 +29,35 @@ api_discovery:
   where_clause: AND depth=0
   top_level_only: true
   page_size: 100
-  max_items_per_board: 250
   board_ids:
-    - new-to-qlik-sense
     - reporting-service
+    - qlik-sense-app-development
 aliases:
   - qlik
   - qlik community
 discovery_urls:
+  - url: https://community.qlik.com/t5/App-Development/bd-p/qlik-sense-app-development
+    board: App Development
   - url: https://community.qlik.com/t5/Visualization-and-Usability/bd-p/new-to-qlik-sense
     board: Visualization and Usability
   - url: https://community.qlik.com/t5/Reporting-Service-Alerting/bd-p/reporting-service
     board: Reporting Service and Alerting
+discovery_exclude_title_patterns:
+  - "^how to\\b"
+  - "^can i\\b"
+  - "^is it possible\\b"
+  - "^line / area chart\\b"
+  - "^hide measure values\\b"
+  - "^sorting pivot tables\\b"
+  - "^pivot table alternatives\\b"
+  - "^how to improve pivot table\\b"
+  - "\\bapi\\b"
+  - "\\bextension\\b"
+  - "\\bembed\\b"
+  - "\\bmashup\\b"
+  - "\\bjavascript\\b"
+  - "\\bplugin\\b"
+  - "\\binstallation\\b"
+  - "\\bserver setup\\b"
+  - "\\bcertification\\b"
+  - "\\bcourse\\b"

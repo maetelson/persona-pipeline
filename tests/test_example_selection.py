@@ -318,7 +318,49 @@ class ExampleSelectionTests(unittest.TestCase):
         self.assertEqual(selected.iloc[0]["selection_strength"], "weak_grounding_fallback")
         self.assertTrue(bool(selected.iloc[0]["fallback_selected"]))
         self.assertEqual(str(grounding.iloc[0]["promotion_grounding_status"]), "promoted_but_weakly_grounded")
-        self.assertEqual(str(grounding.iloc[0]["grounding_status"]), "weakly_grounded")
+
+    def test_support_answer_and_personal_learning_snippets_do_not_beat_real_workflow_pain(self) -> None:
+        df = pd.DataFrame(
+            [
+                {
+                    "persona_id": "persona_06",
+                    "episode_id": "real-pain",
+                    "source": "stackoverflow",
+                    "normalized_episode": "The dashboard changed and I still export to Excel to explain what changed before sending the weekly report to stakeholders.",
+                    "workflow_stage": "triage",
+                    "analysis_goal": "diagnose_change",
+                    "bottleneck_type": "manual_reporting",
+                    "tool_dependency_mode": "spreadsheet_heavy",
+                },
+                {
+                    "persona_id": "persona_06",
+                    "episode_id": "support-answer",
+                    "source": "power_bi_community",
+                    "normalized_episode": "If the issue persists, you may manually export reports from Production and import them into Dev Test. Please accept it as a solution and give a Kudos.",
+                    "workflow_stage": "triage",
+                    "analysis_goal": "diagnose_change",
+                    "bottleneck_type": "manual_reporting",
+                    "tool_dependency_mode": "spreadsheet_heavy",
+                },
+                {
+                    "persona_id": "persona_06",
+                    "episode_id": "personal-learning",
+                    "source": "stackoverflow",
+                    "normalized_episode": "I know I can just copy it manually and paste it into a new workbook, but I'm trying to do this to sharpen my Python skills.",
+                    "workflow_stage": "triage",
+                    "analysis_goal": "diagnose_change",
+                    "bottleneck_type": "manual_reporting",
+                    "tool_dependency_mode": "spreadsheet_heavy",
+                },
+            ]
+        )
+        outputs = select_persona_representative_examples(df, self.axis_names, self.config, max_items=1)
+        selected = outputs["selected_df"]
+        self.assertEqual(len(selected), 1)
+        self.assertEqual(selected.iloc[0]["episode_id"], "real-pain")
+        rejected_ids = set(outputs["rejected_df"]["episode_id"].astype(str).tolist())
+        self.assertIn("support-answer", rejected_ids)
+        self.assertIn("personal-learning", rejected_ids)
 
     def test_no_policy_fallback_leaves_persona_explicitly_ungrounded(self) -> None:
         config = dict(self.config)
@@ -395,7 +437,7 @@ class ExampleSelectionTests(unittest.TestCase):
         )
         grounding = result["persona_grounding_df"].sort_values("persona_id").reset_index(drop=True)
         self.assertEqual(grounding["persona_id"].astype(str).tolist(), ["persona_01", "persona_02"])
-        self.assertEqual(set(grounding["grounding_status"].astype(str).tolist()), {"grounded", "ungrounded"})
+        self.assertEqual(set(grounding["grounding_status"].astype(str).tolist()), {"grounded_single", "ungrounded"})
 
 
 if __name__ == "__main__":

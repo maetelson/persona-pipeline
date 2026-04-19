@@ -465,6 +465,7 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
         "genericness_penalty": _pattern_score(text, negative_patterns.get("genericness", [])),
         "technical_noise_penalty": _pattern_score(text, negative_patterns.get("technical_noise", [])),
         "generic_product_statement_penalty": _pattern_score(text, negative_patterns.get("generic_product_statement", [])),
+        "source_specific_example_penalty": _source_specific_example_penalty(source=str(get_record_source(row) or ""), text=text),
         "no_user_pain_context_penalty": _no_user_pain_context_penalty(text),
         "short_no_workflow_evidence_penalty": _short_no_workflow_penalty(text),
         "critical_axis_mismatch_penalty": float(alignment["critical_mismatch_count"]),
@@ -496,6 +497,7 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
         - score_breakdown["genericness_penalty"] * float(weights.get("genericness_penalty", 1.0))
         - score_breakdown["technical_noise_penalty"] * float(weights.get("technical_noise_penalty", 1.0))
         - score_breakdown["generic_product_statement_penalty"] * float(weights.get("generic_product_statement_penalty", 2.2))
+        - score_breakdown["source_specific_example_penalty"] * float(weights.get("source_specific_example_penalty", 2.0))
         - score_breakdown["no_user_pain_context_penalty"] * float(weights.get("no_user_pain_context_penalty", 2.0))
         - score_breakdown["short_no_workflow_evidence_penalty"] * float(weights.get("short_no_workflow_evidence_penalty", 2.0))
         - score_breakdown["critical_axis_mismatch_penalty"] * float(weights.get("critical_axis_mismatch_penalty", 1.0))
@@ -676,6 +678,8 @@ def _quote_quality(score_breakdown: dict[str, float], final_score: float, config
         return "reject"
     if hard_penalty and not (has_bottleneck and strong_work_context):
         return "reject"
+    if score_breakdown["source_specific_example_penalty"] >= 1 and not strong_work_context:
+        return "reject"
     if final_score >= float(thresholds.get("strong_representative_min_score", 8.0)) and has_bottleneck and has_context:
         return "strong_representative"
     if final_score >= float(thresholds.get("usable_min_score", 5.5)) and (has_bottleneck or strong_work_context):
@@ -693,6 +697,8 @@ def _rejection_reason(score_breakdown: dict[str, float], quality: str) -> str:
         return "technical implementation/debugging dominates the text"
     if score_breakdown["generic_product_statement_penalty"] >= 1:
         return "generic product statement, not a grounded user pain example"
+    if score_breakdown["source_specific_example_penalty"] >= 1:
+        return "support answer or personal workflow snippet is too far from the target analyst pain"
     if score_breakdown["no_user_pain_context_penalty"] >= 1:
         return "no clear user pain or workflow pressure"
     if score_breakdown["short_no_workflow_evidence_penalty"] >= 1:
@@ -719,9 +725,57 @@ def _non_genericness_score(text: str) -> float:
     return min(float(sum(1 for term in concrete_terms if term in text)), 3.0)
 
 
+def _source_specific_example_penalty(source: str, text: str) -> float:
+    """Down-rank support-answer snippets and personal automation anecdotes that pollute grounding."""
+    lowered = str(text or "").lower()
+    penalty = 0.0
+    support_answer_terms = [
+        "if the issue persists",
+        "for your reference",
+        "accept it as a solution",
+        "give a kudos",
+        "best practices",
+        "go through the below documentation",
+        "you may manually export",
+    ]
+    personal_learning_terms = [
+        "sharpen my python skills",
+        "personal project",
+        "learning exercise",
+        "copy it manually",
+        "paste it into a new workbook",
+    ]
+    if any(term in lowered for term in support_answer_terms):
+        penalty += 1.0
+    if source == "stackoverflow" and any(term in lowered for term in personal_learning_terms):
+        penalty += 1.2
+    if source == "github_discussions" and "minor release" in lowered and "downloads" in lowered and "workaround" in lowered:
+        penalty += 0.8
+    return round(min(penalty, 2.0), 4)
+
+
 def _no_user_pain_context_penalty(text: str) -> float:
     """Penalize snippets without a user pain or pressure cue."""
-    pain_terms = ["can't", "cannot", "need", "problem", "issue", "wrong", "mismatch", "manual", "reconcile", "blocked", "not enough", "how do i", "why"]
+    pain_terms = [
+        "can't",
+        "cannot",
+        "need",
+        "problem",
+        "issue",
+        "wrong",
+        "mismatch",
+        "manual",
+        "reconcile",
+        "blocked",
+        "not enough",
+        "how do i",
+        "why",
+        "what changed",
+        "explain what changed",
+        "before sending",
+        "figure out",
+        "source of truth",
+    ]
     return 0.0 if any(term in text for term in pain_terms) else 1.0
 
 

@@ -1,38 +1,94 @@
 source_id: stackoverflow
 source_group: existing_forums
-max_query_count: 10
-source_notes: "Stack Overflow seeds target quantitative interpretation failures expressed through SQL, aggregation, filters, joins, date logic, and reconciliation language rather than general programming help."
-candidate_seed_pool:
-  - why are summary and detail totals different
-  - report total differs from table rows
-  - dashboard total not matching sql
-  - export to csv not matching chart
-  - attribution query not matching platform
-active_core_seeds:
-  # Canonical axes: aggregation_filter_issue, numbers_mismatch,
-  # metric_definition_confusion, segmentation_breakdown_confusion,
-  # dashboard_confusion, attribution_tracking_issue.
-  - seed: sql total higher after group by
-    reason: Adds SQL context so aggregation-pain phrasing stays tied to analytic interpretation questions.
-  - seed: count distinct returns wrong total
-    reason: Narrows the seed toward reconciliation questions with explicit total disagreement.
-  - seed: left join duplicates rows in report
-    reason: Keeps duplicate-count pain but anchors it to report interpretation rather than generic query tuning.
-  - seed: event_date and created_at counts differ
-    reason: More natural date-basis conflict phrasing than generic reporting wording.
-  - seed: calculated field total does not match rows
-    reason: Captures visual/detail mismatch with explicit row-total reconciliation language.
-  - seed: date filter changes totals unexpectedly
-    reason: Adds aggregation/filter pain with a clearer analytics outcome.
-  - seed: sql result does not match dashboard total
-    reason: Preserves source-of-truth conflict while staying grounded in BI validation language.
-  - seed: channel totals do not add up in report
-    reason: Keeps breakdown confusion but removes looser wording that matched non-analytic threads.
-  - seed: report total does not match table rows
-    reason: Better matches BI/SQL troubleshooting posts about summary-vs-detail disagreement.
-  - seed: metric logic does not match business definition
-    reason: Preserves definition confusion in wording closer to actual reporting questions.
-optional_templates: []
+max_query_count: 60
+source_notes: "Stack Overflow pain-family search targets BI validation, reconciliation, and report-integrity questions while avoiding generic programming help."
+pain_families:
+  - family_id: reconciliation_mismatch
+    priority: high
+    expected_signal_type: metric_definition_conflict
+    query_terms: [wrong total, not matching]
+    title_terms: [dashboard total, sql result, report total, summary detail]
+    body_terms: [not matching, left join duplicates, rows do not add up, reconcile]
+    nottagged: [reactjs, javascript, css, html, docker, oauth-2.0, selenium, web-scraping]
+  - family_id: metric_definition_conflict
+    priority: high
+    expected_signal_type: metric_definition_conflict
+    query_terms: [date filter total, calculated field]
+    title_terms: [metric definition, created_at, event_date, business definition]
+    body_terms: [wrong total, date basis, calculated field, reporting]
+    nottagged: [reactjs, javascript, css, html, docker, oauth-2.0, selenium, web-scraping]
+  - family_id: export_report_integrity
+    priority: high
+    expected_signal_type: export_revalidation
+    query_terms: [export csv, rows total]
+    title_terms: [report export, rows total, table rows, csv export]
+    body_terms: [not matching, report integrity, formatted report, dashboard export]
+    nottagged: [reactjs, javascript, css, html, docker, oauth-2.0, selenium, web-scraping]
+  - family_id: segmentation_breakdown_confusion
+    priority: high
+    expected_signal_type: segment_breakdown
+    query_terms: [distinct count, group by wrong]
+    title_terms: [channel totals, breakdown, device breakdown, group by]
+    body_terms: [does not add up, filter total, segment totals, report]
+    nottagged: [reactjs, javascript, css, html, docker, oauth-2.0, selenium, web-scraping]
+  - family_id: attribution_source_of_truth
+    priority: medium
+    expected_signal_type: attribution_tracking_issue
+    query_terms: [source of truth, dashboard mismatch]
+    title_terms: [platform mismatch, attribution mismatch, source of truth, event date]
+    body_terms: [dashboard does not match, query does not match, report mismatch, not matching]
+    nottagged: [reactjs, javascript, css, html, docker, oauth-2.0, selenium, web-scraping]
+tag_bundles:
+  - bundle_id: sql
+    tagged: [sql]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: sql_server
+    tagged: [sql-server]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: postgresql
+    tagged: [postgresql]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: mysql
+    tagged: [mysql]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: powerbi
+    tagged: [powerbi]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: powerbi_desktop
+    tagged: [powerbi-desktop]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: dax
+    tagged: [dax]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: powerquery
+    tagged: [powerquery]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: tableau_desktop
+    tagged: [tableau-desktop]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: excel
+    tagged: [excel]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: google_sheets
+    tagged: [google-sheets]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: reporting_services
+    tagged: [reporting-services]
+    nottagged: [python, pandas, grafana, prometheus]
+  - bundle_id: powerpivot
+    tagged: [powerpivot]
+    nottagged: [python, pandas, grafana, prometheus]
+legacy_sentence_seeds:
+  - sql total higher after group by
+  - count distinct returns wrong total
+  - left join duplicates rows in report
+  - event_date and created_at counts differ
+  - calculated field total does not match rows
+  - date filter changes totals unexpectedly
+  - sql result does not match dashboard total
+  - channel totals do not add up in report
+  - report total does not match table rows
+  - metric logic does not match business definition
 negative_terms:
   - api
   - oauth
@@ -44,20 +100,3 @@ negative_terms:
   - html
   - react
   - homework
-legacy_seed_notes:
-  - seed: how to analyze conversion drop
-    action: downgraded
-    why: conversion-centric bias
-    note: Useful as a subset, but no longer representative of the overall Stack Overflow seed frame.
-  - seed: using excel after power bi
-    action: downgraded
-    why: duplicate coverage
-    note: Related workflow pain is still covered through reconciliation and export-mismatch families.
-  - seed: dashboard total not matching sql
-    action: removed_from_core
-    why: tutorial/setup noise
-    note: Validation samples overmatched generic dashboard implementation and export workflows.
-  - seed: join causing duplicate counts
-    action: removed_from_core
-    why: too technical and detached from target persona
-    note: The phrasing often surfaced generic database-performance questions rather than reporting pain.

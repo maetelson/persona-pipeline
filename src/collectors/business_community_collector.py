@@ -208,6 +208,7 @@ class BusinessCommunityCollector(BaseCollector):
         page_size = min(max(int(api_cfg.get("page_size", 100)), 1), 100)
         top_level_only = bool(api_cfg.get("top_level_only", False))
         user_agent = self._user_agent()
+        discovery_queries = self._discovery_queries()
         records: list[RawRecord] = []
         seen_ids: set[str] = set()
         for board_id in board_ids:
@@ -231,11 +232,26 @@ class BusinessCommunityCollector(BaseCollector):
                     break
                 items = _khoros_items(response.body_text)
                 accepted = 0
+                seed_filtered = 0
+                excluded = 0
                 for item in items:
                     if top_level_only and int(item.get("depth", 0) or 0) > 0:
                         continue
                     raw_id = str(item.get("id", "") or "").strip()
                     if not raw_id or raw_id in seen_ids:
+                        continue
+                    title = _clean_khoros_title(str(item.get("subject", "") or ""))
+                    url = str(item.get("view_href", "") or "")
+                    conversation = item.get("conversation", {}) if isinstance(item.get("conversation"), dict) else {}
+                    if str(conversation.get("view_href", "") or "").strip():
+                        url = str(conversation.get("view_href", "") or "").strip()
+                    link = ThreadLink(url=url, title=title, board=board_id)
+                    decision = self._discovery_decision(link, {}, discovery_queries)
+                    if decision == "excluded":
+                        excluded += 1
+                        continue
+                    if decision == "seed_filtered":
+                        seed_filtered += 1
                         continue
                     seen_ids.add(raw_id)
                     records.append(self._build_khoros_record(item, board_id=board_id))
@@ -252,9 +268,11 @@ class BusinessCommunityCollector(BaseCollector):
                         "page_no": int(offset / page_size) + 1,
                         "page_raw_count": accepted,
                         "page_raw_count_before_dedupe": len(items),
-                        "duplicate_count": max(0, len(items) - accepted),
-                        "duplicate_ratio": round((max(0, len(items) - accepted) / max(len(items), 1)), 4),
+                        "duplicate_count": max(0, len(items) - accepted - seed_filtered - excluded),
+                        "duplicate_ratio": round((max(0, len(items) - accepted - seed_filtered - excluded) / max(len(items), 1)), 4),
                         "stop_reason": "ok" if items else "empty_results",
+                        "seed_filtered_count": seed_filtered,
+                        "excluded_count": excluded,
                     }
                 )
                 if len(items) < limit:

@@ -90,6 +90,7 @@ weights:
   genericness_penalty: 1.4
   technical_noise_penalty: 1.6
   generic_product_statement_penalty: 2.2
+  source_specific_example_penalty: 2.0
   no_user_pain_context_penalty: 2.0
   short_no_workflow_evidence_penalty: 2.0
   duplicate_penalty: 1.5

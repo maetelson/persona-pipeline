@@ -189,6 +189,138 @@ class EpisodeBuilderTests(unittest.TestCase):
         self.assertEqual(len(episodes_df), 1)
         self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
 
+    def test_mixpanel_api_setup_noise_does_not_form_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "mixpanel_community",
+                    "raw_id": "mixpanel-1",
+                    "url": "https://example.com/thread/mixpanel-1",
+                    "source_type": "thread",
+                    "title": "Need help sending events with SDK",
+                    "body": "How do I send events with the mobile SDK webhook API for a new implementation?",
+                    "comments_text": "",
+                    "thread_title": "Need help sending events with SDK",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "mixpanel"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 0)
+        self.assertEqual(str(debug_df.iloc[0]["quality_bucket"]), "fail")
+
+    def test_mixpanel_reporting_trust_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "mixpanel_community",
+                    "raw_id": "mixpanel-2",
+                    "url": "https://example.com/thread/mixpanel-2",
+                    "source_type": "thread",
+                    "title": "Dashboard says one thing export says another",
+                    "body": "Our funnel insights and CSV export are not matching, and we need a source of truth before sharing the report.",
+                    "comments_text": "",
+                    "thread_title": "Dashboard says one thing export says another",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "mixpanel"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_sisense_infra_noise_does_not_form_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "sisense_community",
+                    "raw_id": "sisense-1",
+                    "url": "https://example.com/thread/sisense-1",
+                    "source_type": "thread",
+                    "title": "JWT token not working after upgrade",
+                    "body": "Our Kubernetes deployment needs Auth0 and SSO troubleshooting after install.",
+                    "comments_text": "",
+                    "thread_title": "JWT token not working after upgrade",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "sisense"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 0)
+        self.assertEqual(str(debug_df.iloc[0]["quality_bucket"]), "fail")
+
+    def test_sisense_dashboard_trust_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "sisense_community",
+                    "raw_id": "sisense-2",
+                    "url": "https://example.com/thread/sisense-2",
+                    "source_type": "thread",
+                    "title": "Widget value does not match table",
+                    "body": "The dashboard export and widget totals are not matching the source data, and we are replacing SSRS with live detail reporting.",
+                    "comments_text": "",
+                    "thread_title": "Widget value does not match table",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "sisense"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_stackoverflow_bi_reconciliation_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "stackoverflow",
+                    "raw_id": "so-episode-1",
+                    "url": "https://example.com/thread/so-episode-1",
+                    "source_type": "thread",
+                    "title": "Power BI wrong total after date filter",
+                    "body": "Our dashboard total is not matching the SQL Server query result, and we need a source of truth before sending the report to stakeholders.",
+                    "comments_text": "",
+                    "thread_title": "Power BI wrong total after date filter",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "stackoverflow"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_stackoverflow_generic_export_help_does_not_form_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "stackoverflow",
+                    "raw_id": "so-episode-2",
+                    "url": "https://example.com/thread/so-episode-2",
+                    "source_type": "thread",
+                    "title": "Strapi export csv with React frontend",
+                    "body": "How do I export CSV from a React app with a Strapi API and JavaScript table component?",
+                    "comments_text": "",
+                    "thread_title": "Strapi export csv with React frontend",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "stackoverflow"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 0)
+        self.assertEqual(str(debug_df.iloc[0]["quality_bucket"]), "fail")
+
 
 if __name__ == "__main__":
     unittest.main()

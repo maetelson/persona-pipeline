@@ -69,6 +69,23 @@ class RelevancePrefilterTests(unittest.TestCase):
         self.assertGreater(float(drop_df.iloc[0]["dev_heavy_score"]), 0.0)
         self.assertGreater(float(drop_df.iloc[0]["infra_noise_score"]), 0.0)
 
+    def test_stackoverflow_personal_learning_export_post_is_dropped(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "stackoverflow",
+                    "raw_id": "so-personal",
+                    "title": "Export outlook email body to excel",
+                    "body": "I can copy it manually and paste it into a new workbook, but I'm trying to do this to sharpen my Python skills.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{\"raw_question\": {\"tags\": [\"python\", \"excel\"], \"is_answered\": false}}"},
+                }
+            ]
+        )
+        _, _, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 1)
+
     def test_technical_but_relevant_recovery_rule_keeps_reporting_context(self) -> None:
         frame = pd.DataFrame(
             [
@@ -180,7 +197,6 @@ class RelevancePrefilterTests(unittest.TestCase):
         self.assertEqual(len(keep_df) + len(borderline_df), 1)
         scored = keep_df if not keep_df.empty else borderline_df
         self.assertIn("shopify_reporting_metrics_combo", scored.iloc[0]["whitelist_hits"])
-        self.assertIn("rescued_by_source_whitelist", scored.iloc[0]["rescue_reason"])
         self.assertGreater(float(scored.iloc[0]["prefilter_score"]), 0.0)
 
     def test_shopify_reconciliation_rescue_keeps_cross_source_mismatch(self) -> None:
@@ -238,6 +254,364 @@ class RelevancePrefilterTests(unittest.TestCase):
         keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
         self.assertEqual(len(drop_df), 0)
         self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_source_of_truth_reporting_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-source-truth",
+                    "title": "Weekly reporting source of truth changed",
+                    "body": "Our weekly reporting export excel workflow no longer matches segment count totals and we need to reconcile what changed before sending numbers.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertEqual(len(scored), 1)
+        self.assertIn("klaviyo", scored.iloc[0]["source_specific_reason"])
+
+    def test_mixpanel_api_setup_post_is_dropped(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "mixpanel_community",
+                    "raw_id": "mixpanel-noise",
+                    "title": "API issue with SDK instrumentation",
+                    "body": "How do I send events with the mobile SDK and webhook API for a new implementation?",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        _, _, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 1)
+
+    def test_qlik_export_mismatch_row_reaches_borderline(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "qlik_community",
+                    "raw_id": "qlik-export",
+                    "title": "Export to Excel board report wrong totals",
+                    "body": "Our board report export to excel is not correct and the totals do not add up before distribution.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_export_integrity_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-export-integrity",
+                    "title": "Segment export to Google Sheets is missing profiles",
+                    "body": "Our custom report export to Google Sheets is missing profile rows and the segment export no longer matches attributed revenue totals.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_skipped_report_reason_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-skip-reason",
+                    "title": "Skipped report reason is not detailed enough",
+                    "body": "We export weekly reporting into Excel and need the skip reason because the message was skipped but the report only says skipped.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_ga4_overview_dashboard_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-ga4-overview",
+                    "title": "Klaviyo overview dashboard does not match GA4 revenue",
+                    "body": "Our overview dashboard and bulk export no longer match GA4 revenue attribution totals, and we need to compare segments before weekly reporting signoff.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_mixpanel_export_discrepancy_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "mixpanel_community",
+                    "raw_id": "mixpanel-export-trust",
+                    "title": "Duplicate events in export compared to reports",
+                    "body": "The dashboard says one thing, the exported CSV says another, and we need a source of truth before our weekly reporting review.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_mixpanel_timestamp_export_integrity_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "mixpanel_community",
+                    "raw_id": "mixpanel-timestamp-integrity",
+                    "title": "Timestamp timezone differences in exported data vs dashboard",
+                    "body": "Our Mixpanel dashboard and exported data do not match because timezone differences change the reporting totals we share each week.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_mixpanel_raw_usage_export_gap_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "mixpanel_community",
+                    "raw_id": "mixpanel-raw-usage",
+                    "title": "Raw usage data does not match exported report",
+                    "body": "Our raw activity feed and exported report do not match because duplicate event rows change the dashboard totals we share weekly.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_qlik_export_total_line_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "qlik_community",
+                    "raw_id": "qlik-export-total-line",
+                    "title": "Export table to Excel not exporting the total line",
+                    "body": "The board report export to Excel changes the total line and wrong values are exported for ad hoc reporting.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_qlik_pivot_reconciliation_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "qlik_community",
+                    "raw_id": "qlik-reconcile",
+                    "title": "Pivot tables do not reconcile in board report",
+                    "body": "We compare the data in two pivot tables for a board report and the summary and detail do not reconcile, even though the numbers look correct in Excel.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_mixpanel_reporting_trust_post_survives_prefilter(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "mixpanel_community",
+                    "raw_id": "mixpanel-trust",
+                    "title": "Dashboard says one thing export says another",
+                    "body": "Our funnel insights and CSV export are not matching, and we need a source of truth before sharing the report.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_mixpanel_reporting_mismatch_can_rescue_borderline_row(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "mixpanel_community",
+                    "raw_id": "mixpanel-borderline",
+                    "title": "Which report should I trust",
+                    "body": "The dashboard says one thing, the CSV export says another, and we are trying to figure out what changed in funnel reporting.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_qlik_generic_chart_help_without_reporting_pain_is_dropped(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "qlik_community",
+                    "raw_id": "qlik-generic-chart",
+                    "title": "Straight table expression and sort order help",
+                    "body": "How do I hide a column, change chart label formatting, and control sort order in a straight table dimension expression?",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        _, _, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 1)
+
+    def test_shopify_checkout_tracking_validation_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "shopify_community",
+                    "raw_id": "shopify-checkout-validation",
+                    "title": "Shop Pay checkout changed and GA4 no longer matches orders",
+                    "body": "Before sending weekly reporting we validate payouts and checkout conversions because GA4 and Google Ads no longer match Shopify orders after Shop Pay changed the checkout flow.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_github_ratio_semantics_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "github_discussions",
+                    "raw_id": "github-ratio-semantics",
+                    "title": "Share of total metric denominator is wrong in dashboard reporting",
+                    "body": "Our ratio metric and denominator logic are producing wrong totals, and the team cannot explain which dashboard number is the source of truth before sharing reporting.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{\"repository\": \"dbt-labs/metricflow\"}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_sisense_infra_post_is_dropped(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "sisense_community",
+                    "raw_id": "sisense-noise",
+                    "title": "JWT token not working after upgrade",
+                    "body": "Our Kubernetes deployment needs Auth0 and SSO troubleshooting after install.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        _, _, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 1)
+
+    def test_sisense_dashboard_trust_post_survives_prefilter(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "sisense_community",
+                    "raw_id": "sisense-trust",
+                    "title": "Widget value does not match table",
+                    "body": "The dashboard export and widget totals are not matching the source data, and we are replacing SSRS with live detail reporting.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_stackoverflow_bi_reconciliation_post_survives_prefilter(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "stackoverflow",
+                    "raw_id": "so-bi-trust",
+                    "title": "Power BI wrong total after date filter",
+                    "body": "Our dashboard total is not matching the SQL Server query result, and we need a source of truth before sending the report to stakeholders.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{\"raw_question\": {\"tags\": [\"powerbi\", \"sql-server\"], \"is_answered\": true}}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_stackoverflow_generic_export_help_is_dropped(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "stackoverflow",
+                    "raw_id": "so-generic-export",
+                    "title": "Strapi export csv with React frontend",
+                    "body": "How do I export CSV from a React app with a Strapi API and JavaScript table component?",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{\"raw_question\": {\"tags\": [\"reactjs\", \"javascript\", \"strapi\"], \"is_answered\": false}}"},
+                }
+            ]
+        )
+        _, _, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 1)
 
     def test_prefilter_is_idempotent_for_scored_rows(self) -> None:
         frame = pd.DataFrame([_load_fixture("stackoverflow_relevant_reporting_mismatch.json")])

@@ -804,6 +804,16 @@ def _persona_schema_fields(
     recurring_job_to_be_done = _recurring_job_to_be_done(goal, workflow, output_mode)
     typical_trigger_event = _typical_trigger_event(group, goal, workflow, bottleneck, trust)
     expected_output_artifact = _expected_output_artifact(output_mode, workflow)
+    functional_context, recurring_job_to_be_done, expected_output_artifact = _stabilize_generic_persona_context(
+        functional_context=functional_context,
+        recurring_job_to_be_done=recurring_job_to_be_done,
+        expected_output_artifact=expected_output_artifact,
+        workflow=workflow,
+        goal=goal,
+        bottleneck=bottleneck,
+        trust=trust_failure_mode,
+        tool_mode=tool_mode,
+    )
     frequency_of_need = _frequency_of_need(goal, workflow, bottleneck)
     why_current_tools_fail = _why_current_tools_fail(bottleneck, trust_failure_mode, workaround_pattern, tool_mode)
     why_this_persona_would_use_our_product = _why_this_persona_would_use_our_product(
@@ -1101,6 +1111,52 @@ def _persona_profile_name(user_role_family: str, recurring_job_to_be_done: str, 
         "move_analysis_work_to_a_shareable_output": "Analysis Operator",
     }.get(str(recurring_job_to_be_done).strip().lower(), _titleize(functional_context, "analysis operations"))
     return f"{role_label} {job_label}".strip()
+
+
+def _stabilize_generic_persona_context(
+    functional_context: str,
+    recurring_job_to_be_done: str,
+    expected_output_artifact: str,
+    workflow: str,
+    goal: str,
+    bottleneck: str,
+    trust: str,
+    tool_mode: str,
+) -> tuple[str, str, str]:
+    """Replace generic fallback persona fields with bottleneck-aware defaults."""
+    workflow_key = str(workflow).strip().lower()
+    goal_key = str(goal).strip().lower()
+    bottleneck_key = str(bottleneck).strip().lower()
+    trust_key = str(trust).strip().lower()
+    tool_mode_key = str(tool_mode).strip().lower()
+    generic_context = str(functional_context).strip().lower() == "analytics_workflow_execution"
+    generic_job = str(recurring_job_to_be_done).strip().lower() == "move_analysis_work_to_a_shareable_output"
+    generic_output = str(expected_output_artifact).strip().lower() == "shareable_analysis_output"
+
+    if bottleneck_key == "data_quality" or goal_key == "validate_numbers" or workflow_key == "validation":
+        functional_context = "metric_validation_and_signoff"
+        if generic_job:
+            recurring_job_to_be_done = "validate_numbers_before_sharing_or_acting"
+        if generic_output:
+            expected_output_artifact = "validated_metric_pack_before_distribution"
+    elif workflow_key == "triage" or goal_key == "diagnose_change" or "not_explainable" in trust_key:
+        functional_context = "performance_monitoring_and_issue_triage"
+        if generic_job:
+            recurring_job_to_be_done = "explain_metric_or_dashboard_changes_fast"
+        if generic_output:
+            expected_output_artifact = "updated_dashboard_or_explanation_for_existing_dashboard"
+    elif bottleneck_key == "manual_reporting" or workflow_key == "reporting" or goal_key == "report_speed":
+        functional_context = "reporting_and_performance_management"
+        if generic_job:
+            recurring_job_to_be_done = "deliver_recurring_reporting_without_manual_repackaging"
+        if generic_output:
+            expected_output_artifact = "stakeholder_ready_export_or_packaged_report"
+    elif bottleneck_key == "tool_limitation" and tool_mode_key in {"script_assisted", "spreadsheet_heavy"}:
+        if generic_context:
+            functional_context = "workflow_automation_and_delivery"
+        if generic_job:
+            recurring_job_to_be_done = "turn_repeated_analysis_work_into_repeatable_ops"
+    return functional_context, recurring_job_to_be_done, expected_output_artifact
 
 
 def _summary_examples_lookup(selected_examples_df: pd.DataFrame) -> dict[str, list[str]]:

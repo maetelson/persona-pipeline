@@ -312,6 +312,8 @@ persona_overlap_merge:
   compatible_profile_score_floor: 4
   similarity_floor: 0.50
   minimum_similarity_floor: 0.35
+  unassigned_profile_match_score_floor: 5
+  unassigned_profile_similarity_floor: 0.92
   max_role_share_gap: 0.35
   small_cluster_size: 24
   small_cluster_similarity_relief: 0.08
@@ -330,10 +332,10 @@ persona_overlap_merge:
 
 promotion_scoring:
   enabled: true
-  promote_score_min: 0.72
+  promote_score_min: 0.69
   candidate_score_min: 0.58
-  near_threshold_size_gap_max: 1
-  near_threshold_promote_score_min: 0.72
+  near_threshold_size_gap_max: 8
+  near_threshold_promote_score_min: 0.69
   near_threshold_structural_stability_min: 0.50
   near_threshold_cross_source_robustness_min: 0.70
   minimum_actionability_score: 0.55

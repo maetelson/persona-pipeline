@@ -77,6 +77,7 @@ class QuerySeedTask:
     source_applicability: list[str]
     priority: str
     expected_signal_type: str
+    search_params: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
@@ -242,6 +243,7 @@ class BaseCollector(ABC):
                     source_applicability=source_applicability,
                     priority=priority,
                     expected_signal_type=str(row.get("expected_signal_type", "unknown")),
+                    search_params=dict(row.get("search_params", {}) or {}),
                 )
             )
 
@@ -298,7 +300,8 @@ class BaseCollector(ABC):
         records: list[RawRecord] = []
         seen_ids: set[tuple[str, str, str, str]] = set()
         duplicate_ratio_stop = float(self.config.get("duplicate_ratio_stop", 0.75))
-        max_pages = int(self.config.get("max_pages_per_query", 2))
+        raw_max_pages = self.config.get("max_pages_per_query", 2)
+        max_pages = None if raw_max_pages in (None, "") else int(raw_max_pages)
         max_pages_override = os.getenv("COLLECT_MAX_PAGES_PER_QUERY", "").strip()
         if max_pages_override:
             max_pages = int(max_pages_override)
@@ -307,7 +310,8 @@ class BaseCollector(ABC):
         for query_task in self.get_query_seed_tasks():
             for time_slice in self.get_collection_time_slices():
                 stop_reason = ""
-                for page_no in range(1, max_pages + 1):
+                page_no = 1
+                while True:
                     page_started_at = time.perf_counter()
                     try:
                         page_result = page_fetcher(query_task, time_slice, page_no)
@@ -371,7 +375,7 @@ class BaseCollector(ABC):
                         stop_reason = "duplicate_heavy_page"
                     elif not page_result.has_more:
                         stop_reason = stop_reason or "no_more_results"
-                    elif page_no >= max_pages:
+                    elif max_pages is not None and page_no >= max_pages:
                         stop_reason = "max_pages_per_query"
 
                     records.extend(unique_page_records)
@@ -403,8 +407,9 @@ class BaseCollector(ABC):
 
                     if stop_reason:
                         break
+                    page_no += 1
 
-                if not stop_reason:
+                if not stop_reason and max_pages is not None:
                     self.collection_stats.append(
                         {
                             "source": self.source_name,

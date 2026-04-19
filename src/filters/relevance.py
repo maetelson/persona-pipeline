@@ -401,6 +401,22 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
         rescue_bonus, _ = _apply_reddit_rescue_signals(text, normalized["subreddit"], scores, positive_hits, source_reasons)
         if rescue_bonus:
             scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
+    if source == "stackoverflow":
+        rescue_bonus, _ = _apply_stackoverflow_rescue_signals(text, scores, positive_hits, source_reasons)
+        if rescue_bonus:
+            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
+    if source == "mixpanel_community":
+        rescue_bonus, _ = _apply_mixpanel_rescue_signals(text, scores, positive_hits, source_reasons)
+        if rescue_bonus:
+            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
+    if source == "klaviyo_community":
+        rescue_bonus, _ = _apply_klaviyo_rescue_signals(text, scores, positive_hits, source_reasons)
+        if rescue_bonus:
+            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
+    if source == "qlik_community":
+        rescue_bonus, _ = _apply_qlik_rescue_signals(text, scores, positive_hits, source_reasons)
+        if rescue_bonus:
+            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
     if source == "sisense_community":
         rescue_bonus, _ = _apply_sisense_rescue_signals(text, scores, positive_hits, source_reasons)
         if rescue_bonus:
@@ -516,6 +532,12 @@ def _source_whitelist_hits(source: str, text: str, rules: dict[str, Any]) -> lis
         return _reddit_whitelist_hits(lowered)
     if source == "stackoverflow":
         return _stackoverflow_whitelist_hits(lowered)
+    if source == "mixpanel_community":
+        return _mixpanel_whitelist_hits(lowered)
+    if source == "klaviyo_community":
+        return _klaviyo_whitelist_hits(lowered)
+    if source == "qlik_community":
+        return _qlik_whitelist_hits(lowered)
     if source == "sisense_community":
         hits.extend(_sisense_whitelist_hits(lowered))
     if source == "shopify_community":
@@ -534,8 +556,14 @@ def _stackoverflow_whitelist_hits(lowered: str) -> list[str]:
     """Return stricter Stack Overflow rescue labels for BI reporting workflow posts."""
     bi_terms = [
         "power bi",
+        "powerbi",
         "dax",
         "power query",
+        "powerquery",
+        "sql server",
+        "postgresql",
+        "mysql",
+        "tableau",
         "reporting services",
         "ssrs",
         "pivot table",
@@ -612,6 +640,219 @@ def _stackoverflow_whitelist_hits(lowered: str) -> list[str]:
         hits.append("stackoverflow_manual_reporting_export")
     if export_hit and reporting_hit and output_shape_hit:
         hits.append("stackoverflow_export_output_shape")
+    return hits
+
+
+def _apply_stackoverflow_rescue_signals(
+    text: str,
+    scores: dict[str, float],
+    positive_hits: list[tuple[str, float]],
+    source_reasons: list[str],
+) -> tuple[float, list[str]]:
+    """Apply Stack Overflow rescue scoring for BI reconciliation and report-integrity questions."""
+    lowered = str(text or "").lower()
+    reporting_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["dashboard", "report", "reporting", "matrix", "pivot", "visual", "table", "csv", "excel", "spreadsheet"]
+    )
+    bi_tool_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "power bi",
+            "powerbi",
+            "dax",
+            "power query",
+            "powerquery",
+            "tableau",
+            "sql server",
+            "postgresql",
+            "mysql",
+            "reporting services",
+            "ssrs",
+        ]
+    )
+    reconciliation_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "wrong total",
+            "wrong totals",
+            "not matching",
+            "mismatch",
+            "count distinct",
+            "group by",
+            "left join",
+            "duplicate rows",
+            "date filter",
+            "created_at",
+            "event_date",
+            "source of truth",
+            "summary detail",
+        ]
+    )
+    generic_dev_noise = any(
+        _text_contains_term(lowered, term)
+        for term in ["react", "javascript", "css", "html", "docker", "oauth", "selenium", "web scraping", "strapi", "grafana"]
+    )
+    generic_help_only = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "how to export",
+            "how can i export",
+            "save to csv",
+            "write to excel",
+            "openpyxl",
+            "xlsxwriter",
+            "pandas excel writer",
+        ]
+    )
+    personal_automation_noise = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "sharpen my python skills",
+            "personal project",
+            "copy it manually",
+            "paste it into a new workbook",
+            "outlook email",
+        ]
+    )
+
+    bonus = 0.0
+    labels: list[str] = []
+    if reporting_hit and reconciliation_hit and (bi_tool_hit or "sql" in lowered):
+        scores["reporting_pain_score"] += 0.75
+        scores["metric_definition_score"] += 0.55
+        positive_hits.append(("stackoverflow_reporting_reconciliation", 1.3))
+        source_reasons.append("stackoverflow_reporting_reconciliation")
+        bonus += 0.55
+        labels.append("stackoverflow_reporting_reconciliation")
+    if reporting_hit and any(_text_contains_term(lowered, term) for term in ["export", "csv", "excel"]) and any(
+        _text_contains_term(lowered, term) for term in ["rows", "columns", "format", "sheet", "table"]
+    ):
+        scores["excel_rework_score"] += 0.45
+        positive_hits.append(("stackoverflow_export_integrity", 0.45))
+        source_reasons.append("stackoverflow_export_integrity")
+        bonus += 0.2
+        labels.append("stackoverflow_export_integrity")
+    if reporting_hit and any(_text_contains_term(lowered, term) for term in ["source of truth", "not matching", "mismatch", "different numbers", "reconcile"]):
+        scores["dashboard_trust_score"] += 0.8
+        scores["stakeholder_pressure_score"] += 0.35
+        positive_hits.append(("stackoverflow_source_of_truth_conflict", 1.15))
+        source_reasons.append("stackoverflow_source_of_truth_conflict")
+        bonus += 0.45
+        labels.append("stackoverflow_source_of_truth_conflict")
+    if generic_dev_noise and not (reporting_hit and reconciliation_hit):
+        scores["generic_programming_score"] += 0.8
+    if generic_help_only and not (reconciliation_hit or bi_tool_hit):
+        scores["generic_programming_score"] += 1.2
+        scores["implementation_only_score"] += 0.9
+    if personal_automation_noise and not any(_text_contains_term(lowered, term) for term in ["stakeholder", "leadership", "finance", "reporting pack", "board report"]):
+        scores["generic_programming_score"] += 1.1
+        scores["implementation_only_score"] += 0.6
+    return round(bonus, 4), labels
+
+
+def _mixpanel_whitelist_hits(lowered: str) -> list[str]:
+    """Return stricter Mixpanel rescue labels for trust and interpretation pain."""
+    reporting_terms = ["report", "reports", "dashboard", "export", "csv", "insights", "funnel", "funnels", "retention", "breakdown", "session duration"]
+    trust_terms = [
+        "not matching", "mismatch", "discrepancy", "wrong", "source of truth", "says one thing", "says another",
+        "duplicate events", "export compared to reports", "timezone differences",
+    ]
+    workflow_terms = [
+        "what changed", "which report should i use", "explain this drop", "trend changed", "figure out", "why does", "why is",
+        "difference between", "different from", "undefined user emails",
+    ]
+    noise_terms = ["api", "sdk", "instrumentation", "webhook", "mobile sdk", "send events"]
+
+    reporting_hit = any(_text_contains_term(lowered, term) for term in reporting_terms)
+    trust_hit = any(_text_contains_term(lowered, term) for term in trust_terms)
+    workflow_hit = any(_text_contains_term(lowered, term) for term in workflow_terms)
+    export_integrity_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["exported data", "export compared to reports", "undefined user emails", "timestamp timezone", "raw usage data"]
+    )
+    noise_hit = any(_text_contains_term(lowered, term) for term in noise_terms)
+
+    if noise_hit and not (trust_hit or workflow_hit):
+        return []
+
+    hits: list[str] = []
+    if reporting_hit and trust_hit:
+        hits.append("mixpanel_reporting_trust")
+    if reporting_hit and workflow_hit:
+        hits.append("mixpanel_trend_diagnosis")
+    if trust_hit and any(_text_contains_term(lowered, term) for term in ["export", "csv", "dashboard"]):
+        hits.append("mixpanel_export_discrepancy")
+    if reporting_hit and export_integrity_hit:
+        hits.append("mixpanel_export_integrity")
+    return hits
+
+
+def _klaviyo_whitelist_hits(lowered: str) -> list[str]:
+    """Return Klaviyo rescue labels for reporting trust and segmentation pain."""
+    reporting_terms = [
+        "report", "reporting", "analytics", "benchmark", "export", "csv", "weekly reporting",
+        "attributed revenue", "revenue", "attribution", "segment count", "list count", "profile count",
+    ]
+    trust_terms = [
+        "source of truth", "not matching", "mismatch", "discrepancy", "reporting lag",
+        "reconcile", "reconciliation", "what changed", "why did",
+    ]
+    ops_terms = ["export excel", "manual spreadsheet", "before sending", "weekly reporting"]
+    reporting_hit = any(_text_contains_term(lowered, term) for term in reporting_terms)
+    trust_hit = any(_text_contains_term(lowered, term) for term in trust_terms)
+    ops_hit = any(_text_contains_term(lowered, term) for term in ops_terms)
+    segment_hit = any(_text_contains_term(lowered, term) for term in ["segment count", "list count", "profile count", "segmentation"])
+    attribution_hit = any(_text_contains_term(lowered, term) for term in ["attributed revenue", "revenue mismatch", "attribution mismatch", "attribution"])
+
+    hits: list[str] = []
+    if reporting_hit and trust_hit:
+        hits.append("klaviyo_reporting_trust")
+    if segment_hit and trust_hit:
+        hits.append("klaviyo_segment_count_reconcile")
+    if ops_hit and (reporting_hit or trust_hit):
+        hits.append("klaviyo_export_report_trust")
+    if attribution_hit and trust_hit:
+        hits.append("klaviyo_revenue_attribution_trust")
+    if any(_text_contains_term(lowered, term) for term in ["google sheets", "segment export", "exported emails", "custom report"]) and (reporting_hit or trust_hit):
+        hits.append("klaviyo_export_integrity")
+    if any(_text_contains_term(lowered, term) for term in ["skipped report", "message was skipped", "skip reason"]) and reporting_hit:
+        hits.append("klaviyo_skip_reason_reporting")
+    return hits
+
+
+def _qlik_whitelist_hits(lowered: str) -> list[str]:
+    """Return stricter Qlik rescue labels only when chart/expression issues carry analyst pain."""
+    reporting_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["report", "reporting", "export", "nprinting", "pixel perfect", "dashboard", "manual reporting"]
+    )
+    mismatch_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "wrong total", "wrong totals", "not matching", "mismatch", "cannot explain", "can't explain", "root cause",
+            "wrong values exported", "export issue", "does not appear", "0 values", "total line", "not exported",
+            "doesn't work", "doesnt work", "date export", "percentage changes",
+        ]
+    )
+    set_analysis_hit = any(_text_contains_term(lowered, term) for term in ["set analysis", "aggr", "expression", "measure"])
+    visual_hit = any(_text_contains_term(lowered, term) for term in ["straight table", "pivot table", "combo chart", "gauge chart"])
+    export_context_hit = any(_text_contains_term(lowered, term) for term in ["board report", "export to excel", "export excel", "export issue"])
+
+    hits: list[str] = []
+    if mismatch_hit and reporting_hit:
+        hits.append("qlik_reporting_mismatch")
+    if set_analysis_hit and mismatch_hit:
+        hits.append("qlik_set_analysis")
+    if visual_hit and (mismatch_hit or reporting_hit):
+        hits.append("qlik_visual_filter")
+    if export_context_hit and (mismatch_hit or reporting_hit):
+        hits.append("qlik_export_reporting")
+    if export_context_hit and any(
+        _text_contains_term(lowered, term)
+        for term in ["wrong values exported", "total line", "date export", "percentage changes", "0 values", "not exported"]
+    ):
+        hits.append("qlik_export_integrity")
     return hits
 
 
@@ -827,6 +1068,371 @@ def _apply_sisense_rescue_signals(
         unique_labels = list(dict.fromkeys(labels))
         positive_hits.append(("sisense_source_whitelist_score", round(bonus, 2)))
         source_reasons.append(f"sisense_rescue_candidate:{'|'.join(unique_labels)}")
+        return round(bonus, 4), unique_labels
+    return 0.0, []
+
+
+def _apply_mixpanel_rescue_signals(
+    text: str,
+    scores: dict[str, float],
+    positive_hits: list[tuple[str, float]],
+    source_reasons: list[str],
+) -> tuple[float, list[str]]:
+    """Apply Mixpanel-specific rescue scoring for reporting trust and trend diagnosis."""
+    lowered = str(text or "").lower()
+    reporting_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["report", "reports", "dashboard", "export", "csv", "insights", "funnel", "funnels", "retention", "breakdown", "session duration"]
+    )
+    trust_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "not matching",
+            "mismatch",
+            "discrepancy",
+            "wrong",
+            "source of truth",
+            "says one thing",
+            "says another",
+            "doesn't match",
+            "doesnt match",
+            "difference between",
+            "not correctly",
+        ]
+    )
+    workflow_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "what changed", "which report should i use", "explain this drop", "trend changed", "figure out", "why does", "why is",
+            "duplicate events", "duplicate event", "timezone differences", "timestamp timezone", "timezone mismatch",
+            "undefined user emails", "export compared to reports", "raw usage data", "raw activity feed",
+        ]
+    )
+    noise_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["api", "sdk", "instrumentation", "webhook", "mobile sdk", "send events"]
+    )
+
+    if noise_hit and not (trust_hit or workflow_hit):
+        return 0.0, []
+
+    bonus = 0.0
+    labels: list[str] = []
+    if reporting_hit and trust_hit:
+        scores["dashboard_trust_score"] += 1.3
+        scores["reporting_pain_score"] += 1.0
+        bonus += 2.3
+        labels.append("mixpanel_reporting_trust")
+    if reporting_hit and workflow_hit:
+        scores["root_cause_score"] += 1.0
+        bonus += 1.0
+        labels.append("mixpanel_trend_diagnosis")
+    if trust_hit and any(_text_contains_term(lowered, term) for term in ["export", "csv", "dashboard", "reports"]):
+        scores["excel_rework_score"] += 0.9
+        bonus += 0.9
+        labels.append("mixpanel_export_discrepancy")
+    if reporting_hit and any(_text_contains_term(lowered, term) for term in ["source of truth", "which report should i use", "why does", "explain this drop"]):
+        scores["dashboard_trust_score"] += 0.8
+        scores["root_cause_score"] += 0.6
+        bonus += 0.8
+        labels.append("mixpanel_report_interpretation")
+    if reporting_hit and any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "duplicate events",
+            "duplicate event",
+            "timestamp timezone",
+            "timezone mismatch",
+            "exported data",
+            "export compared to reports",
+            "raw usage data",
+            "raw activity feed",
+            "undefined user emails",
+        ]
+    ):
+        scores["dashboard_trust_score"] += 0.9
+        scores["excel_rework_score"] += 0.55
+        bonus += 0.9
+        labels.append("mixpanel_export_integrity")
+    if labels:
+        unique_labels = list(dict.fromkeys(labels))
+        positive_hits.append(("mixpanel_source_whitelist_score", round(bonus, 2)))
+        source_reasons.append(f"mixpanel_rescue_candidate:{'|'.join(unique_labels)}")
+        return round(bonus, 4), unique_labels
+    return 0.0, []
+
+
+def _apply_klaviyo_rescue_signals(
+    text: str,
+    scores: dict[str, float],
+    positive_hits: list[tuple[str, float]],
+    source_reasons: list[str],
+) -> tuple[float, list[str]]:
+    """Apply Klaviyo-specific rescue scoring for attribution, segmentation, and reporting trust."""
+    lowered = str(text or "").lower()
+    reporting_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "report",
+            "reporting",
+            "analytics",
+            "benchmark",
+            "export",
+            "csv",
+            "weekly reporting",
+            "export excel",
+            "custom report",
+            "google sheets",
+            "segment export",
+            "power query",
+            "skip reason",
+            "message was skipped",
+            "skipped report",
+            "overview dashboard",
+            "campaigns breakdown by segment",
+            "bulk export",
+            "ga4",
+            "google analytics",
+        ]
+    )
+    trust_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "source of truth",
+            "not matching",
+            "mismatch",
+            "discrepancy",
+            "reporting lag",
+            "reconcile",
+            "reconciliation",
+            "what changed",
+            "why did",
+            "missing profiles",
+            "missing emails",
+            "skewed",
+            "inflated",
+            "compare",
+            "does not equal",
+            "doesn't equal",
+            "doesnt equal",
+        ]
+    )
+    segment_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "segment count",
+            "list count",
+            "profile count",
+            "segmentation",
+            "segment export",
+            "missing profiles",
+            "campaigns breakdown by segment",
+            "compare segments",
+            "segment performance",
+        ]
+    )
+    attribution_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "attributed revenue",
+            "revenue mismatch",
+            "attribution mismatch",
+            "attribution",
+            "ga4",
+            "google analytics",
+            "recharge",
+            "revenue attribution skewed",
+        ]
+    )
+    ops_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "before sending",
+            "manual spreadsheet",
+            "weekly reporting",
+            "export excel",
+            "google sheets",
+            "power query",
+            "custom report",
+            "overview dashboard",
+            "bulk export",
+            "export all metric data",
+        ]
+    )
+    export_integrity_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "google sheets",
+            "segment export",
+            "exported emails",
+            "custom report",
+            "power query",
+            "revenue attribution skewed",
+            "missing profiles",
+            "missing emails",
+            "bulk export",
+            "export all metric data",
+            "overview dashboard",
+        ]
+    )
+    skip_reason_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["skipped report", "message was skipped", "skip reason"]
+    )
+
+    bonus = 0.0
+    labels: list[str] = []
+    if reporting_hit and trust_hit:
+        scores["dashboard_trust_score"] += 1.0
+        bonus += 1.0
+        labels.append("klaviyo_reporting_trust")
+    if segment_hit and trust_hit:
+        scores["segmentation_breakdown_score"] += 0.9
+        scores["dashboard_trust_score"] += 0.5
+        bonus += 0.9
+        labels.append("klaviyo_segment_count_reconcile")
+    if attribution_hit and trust_hit:
+        scores["dashboard_trust_score"] += 0.9
+        scores["root_cause_score"] += 0.5
+        bonus += 0.8
+        labels.append("klaviyo_revenue_attribution_trust")
+    if ops_hit and (reporting_hit or trust_hit):
+        scores["excel_rework_score"] += 0.7
+        scores["reporting_pain_score"] += 0.4
+        bonus += 0.6
+        labels.append("klaviyo_export_report_trust")
+    if reporting_hit and segment_hit and any(
+        _text_contains_term(lowered, term)
+        for term in ["compare", "breakdown", "overview dashboard", "performance", "not showing", "missing"]
+    ):
+        scores["segmentation_breakdown_score"] += 0.8
+        scores["reporting_pain_score"] += 0.4
+        bonus += 0.6
+        labels.append("klaviyo_segment_reporting_breakdown")
+    if export_integrity_hit and (reporting_hit or trust_hit or attribution_hit or segment_hit):
+        scores["excel_rework_score"] += 0.55
+        scores["reporting_pain_score"] += 0.45
+        bonus += 0.65
+        labels.append("klaviyo_export_integrity")
+    if skip_reason_hit and reporting_hit:
+        scores["root_cause_score"] += 1.0
+        scores["reporting_pain_score"] += 0.6
+        bonus += 0.95
+        labels.append("klaviyo_skip_reason_reporting")
+    if labels:
+        unique_labels = list(dict.fromkeys(labels))
+        positive_hits.append(("klaviyo_source_whitelist_score", round(bonus, 2)))
+        source_reasons.append(f"klaviyo_rescue_candidate:{'|'.join(unique_labels)}")
+        return round(bonus, 4), unique_labels
+    return 0.0, []
+
+
+def _apply_qlik_rescue_signals(
+    text: str,
+    scores: dict[str, float],
+    positive_hits: list[tuple[str, float]],
+    source_reasons: list[str],
+) -> tuple[float, list[str]]:
+    """Apply Qlik-specific rescue scoring for export integrity and reconciliation pain."""
+    lowered = str(text or "").lower()
+    reporting_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "report",
+            "reporting",
+            "dashboard",
+            "board report",
+            "adhoc reporting",
+            "nprinting",
+            "pixel perfect",
+            "export",
+            "export to excel",
+            "export excel",
+        ]
+    )
+    trust_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "wrong total",
+            "wrong totals",
+            "not matching",
+            "mismatch",
+            "cannot explain",
+            "can't explain",
+            "root cause",
+            "wrong values exported",
+            "total line",
+            "not exported",
+            "incorrect",
+            "incorrect values",
+            "correct in excel",
+            "huge difference",
+        ]
+    )
+    export_integrity_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "wrong values exported",
+            "total line",
+            "date export",
+            "percentage changes",
+            "0 values",
+            "not exported",
+            "e format",
+            "shown as text",
+            "same excel file",
+            "one excel workbook",
+        ]
+    )
+    reconcile_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "reconcile",
+            "reconciled",
+            "difference in reconciliation",
+            "compare the data",
+            "comparison table",
+            "summary and detail",
+            "business users",
+        ]
+    )
+    generic_helper_only = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "sort order",
+            "chart color",
+            "color few columns",
+            "trendline",
+            "show totals",
+            "subtotals",
+            "drill another sheet",
+        ]
+    )
+
+    if generic_helper_only and not (trust_hit or export_integrity_hit or reconcile_hit):
+        return 0.0, []
+
+    bonus = 0.0
+    labels: list[str] = []
+    if reporting_hit and trust_hit:
+        scores["reporting_pain_score"] += 0.9
+        scores["dashboard_trust_score"] += 0.8
+        bonus += 0.9
+        labels.append("qlik_reporting_mismatch")
+    if export_integrity_hit:
+        scores["excel_rework_score"] += 0.9
+        scores["dashboard_trust_score"] += 0.35
+        bonus += 0.65
+        labels.append("qlik_export_integrity")
+    if reconcile_hit and (trust_hit or reporting_hit):
+        scores["root_cause_score"] += 0.65
+        scores["biz_workflow_score"] += 0.4
+        bonus += 0.55
+        labels.append("qlik_reconciliation_context")
+    if labels:
+        unique_labels = list(dict.fromkeys(labels))
+        positive_hits.append(("qlik_source_whitelist_score", round(bonus, 2)))
+        source_reasons.append(f"qlik_rescue_candidate:{'|'.join(unique_labels)}")
         return round(bonus, 4), unique_labels
     return 0.0, []
 
@@ -1104,6 +1710,25 @@ def _apply_source_specific_floor_override(
         )
         if discourse_hits >= 2 and has_persona_pain_language and final_score >= discourse_floor:
             return "borderline"
+        has_reconciliation_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "source of truth",
+                "summary different from detail",
+                "dashboard vs",
+                "wrong total",
+                "wrong totals",
+                "group by",
+                "duplicate rows",
+                "date basis",
+                "date filter",
+                "created_at",
+                "event_date",
+                "rows vs totals",
+            ]
+        )
+        if has_tag_boost and has_reconciliation_context and final_score >= 4.3:
+            return "borderline"
     if source == "github_discussions":
         floor = float(source_cfg.get("borderline_floor_with_workflow_context", 5.5))
         strong_floor = float(source_cfg.get("borderline_floor_with_strong_workflow_context", floor))
@@ -1130,6 +1755,24 @@ def _apply_source_specific_floor_override(
             if _text_contains_term(lowered, str(term).lower())
         )
         if has_workflow_context and strong_workflow_hits >= 2 and final_score >= strong_floor:
+            return "borderline"
+        has_metric_semantics_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "source of truth",
+                "numbers don't match",
+                "numbers do not match",
+                "metric definition",
+                "wrong totals",
+                "ratio metric",
+                "denominator",
+                "drill down",
+                "drill-down",
+                "share of total",
+                "conversion rate",
+            ]
+        )
+        if has_workflow_context and has_metric_semantics_context and final_score >= 4.7:
             return "borderline"
     if source == "reddit":
         floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.6))
@@ -1197,6 +1840,99 @@ def _apply_source_specific_floor_override(
         )
         if has_reporting_context and has_operational_pain and final_score >= floor:
             return "borderline"
+        has_cross_source_validation = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "ga4",
+                "google analytics",
+                "google ads",
+                "meta ads",
+                "facebook ads",
+                "shop pay",
+                "checkout",
+                "payout",
+                "stripe",
+                "source of truth",
+            ]
+        )
+        if has_reporting_context and has_cross_source_validation and final_score >= max(floor - 1.2, 2.6):
+            return "borderline"
+    if source == "qlik_community":
+        floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.8))
+        strong_reporting_pain = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "wrong total",
+                "wrong totals",
+                "not matching",
+                "mismatch",
+                "cannot explain",
+                "can't explain",
+                "root cause",
+                "manual reporting",
+                "nprinting",
+                "pixel perfect",
+                "export",
+                "export to excel",
+                "wrong values exported",
+                "total line",
+                "date export",
+                "adhoc reporting",
+                "reconcile",
+                "reconciled",
+                "difference in reconciliation",
+                "correct in excel",
+                "huge difference",
+            ]
+        )
+        generic_chart_help = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "straight table",
+                "pivot table",
+                "combo chart",
+                "chart color",
+                "chart label",
+                "dimension",
+                "expression",
+                "filter pane",
+                "show value",
+                "hide column",
+                "sort order",
+            ]
+        )
+        if generic_chart_help and not strong_reporting_pain:
+            return "drop"
+        qlik_export_context = any(
+            _text_contains_term(lowered, term)
+            for term in ["board report", "export to excel", "export excel", "export issue", "nprinting", "pixel perfect", "adhoc reporting"]
+        )
+        qlik_export_pain = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "wrong", "mismatch", "not correct", "doesn't add up", "doesnt add up", "failed", "limitation", "unavailable",
+                "wrong values exported", "total line", "percentage changes", "date export",
+                "e format", "shown as text", "correct in excel", "huge difference",
+            ]
+        )
+        if qlik_export_context and qlik_export_pain and final_score >= floor:
+            return "borderline"
+        if qlik_export_context and qlik_export_pain and final_score >= 2.4:
+            return "borderline"
+        qlik_reconcile_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "reconcile",
+                "reconciled",
+                "difference in reconciliation",
+                "compare the data",
+                "comparison table",
+                "summary and detail",
+                "correct in excel",
+            ]
+        )
+        if qlik_reconcile_context and strong_reporting_pain and final_score >= 2.55:
+            return "borderline"
     if source == "klaviyo_community":
         floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.9))
         has_reporting_context = any(
@@ -1214,6 +1950,18 @@ def _apply_source_specific_floor_override(
                 "segment count",
                 "list count",
                 "profile count",
+                "source of truth",
+                "weekly reporting",
+                "export excel",
+                "manual spreadsheet",
+                "segmentation",
+                "google sheets",
+                "power query",
+                "custom report",
+                "overview dashboard",
+                "segment export",
+                "ga4",
+                "google analytics",
             ]
         )
         has_operational_pain = any(
@@ -1229,9 +1977,90 @@ def _apply_source_specific_floor_override(
                 "manual process",
                 "reconcile",
                 "reconciliation",
+                "before sending",
+                "why did",
+                "skip reason",
+                "skipped report",
+                "inflated",
+                "skewed",
+                "missing profiles",
+                "missing emails",
             ]
         )
         if has_reporting_context and has_operational_pain and final_score >= floor:
+            return "borderline"
+        has_export_integrity_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "google sheets",
+                "segment export",
+                "exported emails",
+                "custom report",
+                "power query",
+                "skip reason",
+                "message was skipped",
+                "skipped report",
+                "missing profiles",
+                "missing emails",
+                "bulk export",
+                "export all metric data",
+                "overview dashboard",
+                "ga4",
+                "google analytics",
+            ]
+        )
+        if has_reporting_context and has_export_integrity_context and final_score >= max(floor - 1.2, 2.15):
+            return "borderline"
+    if source == "mixpanel_community":
+        floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.2))
+        has_reporting_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "report",
+                "dashboard",
+                "export",
+                "csv",
+                "insights",
+                "funnel",
+                "retention",
+                "breakdown",
+                "session duration",
+                "source of truth",
+            ]
+        )
+        has_operational_pain = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "mismatch",
+                "not matching",
+                "discrepancy",
+                "wrong",
+                "what changed",
+                "which report should i use",
+                "explain this drop",
+                "figure out",
+                "duplicate events",
+                "timestamp timezone",
+                "undefined user emails",
+            ]
+        )
+        if has_reporting_context and has_operational_pain and final_score >= floor:
+            return "borderline"
+        has_export_integrity_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "exported data",
+                "export compared to reports",
+                "timestamp timezone",
+                "timezone mismatch",
+                "duplicate events",
+                "duplicate event",
+                "raw usage data",
+                "raw activity feed",
+                "undefined user emails",
+            ]
+        )
+        if has_reporting_context and has_export_integrity_context and final_score >= max(floor - 1.0, 2.35):
             return "borderline"
     if source == "sisense_community":
         floor = float(source_cfg.get("borderline_floor_with_reporting_context", 3.4))
