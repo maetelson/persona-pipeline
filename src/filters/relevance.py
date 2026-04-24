@@ -425,6 +425,18 @@ def _evaluate_row_from_context(row: pd.Series, rules: dict[str, Any], normalized
         rescue_bonus, _ = _apply_shopify_rescue_signals(text, scores, positive_hits, source_reasons)
         if rescue_bonus:
             scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
+    if source == "google_developer_forums":
+        rescue_bonus, _ = _apply_google_developer_forums_rescue_signals(text, scores, positive_hits, source_reasons)
+        if rescue_bonus:
+            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
+    if source == "adobe_analytics_community":
+        rescue_bonus, _ = _apply_adobe_analytics_rescue_signals(text, scores, positive_hits, source_reasons)
+        if rescue_bonus:
+            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
+    if source == "domo_community_forum":
+        rescue_bonus, _ = _apply_domo_rescue_signals(text, scores, positive_hits, source_reasons)
+        if rescue_bonus:
+            scores["final_relevance_score"] = round(float(scores["final_relevance_score"]) + rescue_bonus, 4)
     whitelist_labels = _source_whitelist_hits(source=source, text=text, rules=rules)
     rescue_reason = ""
     whitelist_hits = "|".join(whitelist_labels)
@@ -542,6 +554,12 @@ def _source_whitelist_hits(source: str, text: str, rules: dict[str, Any]) -> lis
         hits.extend(_sisense_whitelist_hits(lowered))
     if source == "shopify_community":
         return _shopify_whitelist_hits(lowered)
+    if source == "google_developer_forums":
+        return _google_developer_forums_whitelist_hits(lowered)
+    if source == "adobe_analytics_community":
+        return _adobe_analytics_whitelist_hits(lowered)
+    if source == "domo_community_forum":
+        return _domo_whitelist_hits(lowered)
     for row in source_terms:
         label = str(row.get("label", "") or "").strip()
         terms = [str(term).lower().strip() for term in row.get("terms", []) or [] if str(term).strip()]
@@ -793,17 +811,45 @@ def _klaviyo_whitelist_hits(lowered: str) -> list[str]:
     reporting_terms = [
         "report", "reporting", "analytics", "benchmark", "export", "csv", "weekly reporting",
         "attributed revenue", "revenue", "attribution", "segment count", "list count", "profile count",
+        "ga4", "google analytics", "overview dashboard", "campaigns breakdown by segment", "segment export",
     ]
     trust_terms = [
         "source of truth", "not matching", "mismatch", "discrepancy", "reporting lag",
-        "reconcile", "reconciliation", "what changed", "why did",
+        "reconcile", "reconciliation", "what changed", "why did", "different", "compare",
+        "does not equal", "doesn't equal", "doesnt equal",
     ]
-    ops_terms = ["export excel", "manual spreadsheet", "before sending", "weekly reporting"]
+    ops_terms = ["export excel", "manual spreadsheet", "before sending", "weekly reporting", "google sheets", "power query"]
     reporting_hit = any(_text_contains_term(lowered, term) for term in reporting_terms)
     trust_hit = any(_text_contains_term(lowered, term) for term in trust_terms)
     ops_hit = any(_text_contains_term(lowered, term) for term in ops_terms)
-    segment_hit = any(_text_contains_term(lowered, term) for term in ["segment count", "list count", "profile count", "segmentation"])
-    attribution_hit = any(_text_contains_term(lowered, term) for term in ["attributed revenue", "revenue mismatch", "attribution mismatch", "attribution"])
+    segment_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "segment count",
+            "list count",
+            "profile count",
+            "segmentation",
+            "segment export",
+            "campaigns breakdown by segment",
+            "suppressed profiles",
+            "total profile number",
+            "compare segments",
+        ]
+    )
+    attribution_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "attributed revenue",
+            "revenue mismatch",
+            "attribution mismatch",
+            "attribution",
+            "ga4",
+            "google analytics",
+            "active on site metric",
+            "users metric",
+            "source/medium discrepancy",
+        ]
+    )
 
     hits: list[str] = []
     if reporting_hit and trust_hit:
@@ -814,6 +860,11 @@ def _klaviyo_whitelist_hits(lowered: str) -> list[str]:
         hits.append("klaviyo_export_report_trust")
     if attribution_hit and trust_hit:
         hits.append("klaviyo_revenue_attribution_trust")
+    if segment_hit and reporting_hit and any(
+        _text_contains_term(lowered, term)
+        for term in ["breakdown", "compare", "performance", "suppressed profiles", "total profile number", "not equaling"]
+    ):
+        hits.append("klaviyo_segment_reporting_breakdown")
     if any(_text_contains_term(lowered, term) for term in ["google sheets", "segment export", "exported emails", "custom report"]) and (reporting_hit or trust_hit):
         hits.append("klaviyo_export_integrity")
     if any(_text_contains_term(lowered, term) for term in ["skipped report", "message was skipped", "skip reason"]) and reporting_hit:
@@ -832,12 +883,16 @@ def _qlik_whitelist_hits(lowered: str) -> list[str]:
         for term in [
             "wrong total", "wrong totals", "not matching", "mismatch", "cannot explain", "can't explain", "root cause",
             "wrong values exported", "export issue", "does not appear", "0 values", "total line", "not exported",
-            "doesn't work", "doesnt work", "date export", "percentage changes",
+            "doesn't work", "doesnt work", "date export", "percentage changes", "too large", "correct results",
+            "right results", "incorrect results", "not correct", "does not add up",
         ]
     )
     set_analysis_hit = any(_text_contains_term(lowered, term) for term in ["set analysis", "aggr", "expression", "measure"])
     visual_hit = any(_text_contains_term(lowered, term) for term in ["straight table", "pivot table", "combo chart", "gauge chart"])
-    export_context_hit = any(_text_contains_term(lowered, term) for term in ["board report", "export to excel", "export excel", "export issue"])
+    export_context_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["board report", "export to excel", "export excel", "export issue", "excel export", "hypercube results are too large"]
+    )
 
     hits: list[str] = []
     if mismatch_hit and reporting_hit:
@@ -973,6 +1028,439 @@ def _shopify_whitelist_hits(lowered: str) -> list[str]:
     if trend_hit or (metric_hit and any(_text_contains_term(lowered, term) for term in ["drop", "down", "decline", "fell"])):
         hits.append("shopify_conversion_sales_trend")
     return hits
+
+
+def _google_developer_forums_whitelist_hits(lowered: str) -> list[str]:
+    """Return Google Developer Forums rescue labels for BI trust and reporting workflow threads."""
+    looker_terms = [
+        "looker",
+        "looker studio",
+        "data studio",
+        "lookml",
+        "ga4",
+        "google analytics 4",
+        "bigquery",
+        "scorecard",
+        "bar chart",
+        "dashboard",
+        "alerts",
+        "scheduled",
+        "slack",
+        "pivot",
+    ]
+    trust_terms = [
+        "doesn't match",
+        "does not match",
+        "not the same",
+        "values are different",
+        "wrong",
+        "mismatch",
+        "showstopper",
+        "not usable",
+        "missing data",
+        "filter confusion",
+        "source of truth",
+        "configuration error",
+        "summary row incorrect",
+        "stopped working",
+        "returning null values",
+        "incorrect result",
+        "not working",
+    ]
+    workflow_terms = [
+        "schedule",
+        "scheduled report",
+        "alerting",
+        "dashboard",
+        "export",
+        "client",
+        "stakeholder",
+        "send",
+        "slack",
+        "look/dashboard",
+        "pivot table",
+        "blend data",
+        "calculated metric",
+        "calculated field",
+        "summary row",
+    ]
+
+    looker_hit = any(_text_contains_term(lowered, term) for term in looker_terms)
+    trust_hit = any(_text_contains_term(lowered, term) for term in trust_terms)
+    workflow_hit = any(_text_contains_term(lowered, term) for term in workflow_terms)
+
+    hits: list[str] = []
+    if looker_hit and trust_hit:
+        hits.append("google_bi_metric_mismatch")
+    if looker_hit and workflow_hit:
+        hits.append("google_reporting_workflow")
+    if any(_text_contains_term(lowered, term) for term in ["scheduled", "slack", "alert", "alerts"]) and workflow_hit:
+        hits.append("google_scheduled_reporting_delivery")
+    return hits
+
+
+def _adobe_analytics_whitelist_hits(lowered: str) -> list[str]:
+    """Return Adobe Analytics rescue labels for Workspace trust and admin-analysis friction."""
+    adobe_terms = [
+        "adobe analytics",
+        "workspace",
+        "report suite",
+        "segment",
+        "calculated metric",
+        "evar",
+        "prop",
+        "classification",
+        "data feed",
+        "debugger",
+        "attribution",
+        "anomaly",
+        "cja",
+        "customer journey analytics",
+        "data warehouse",
+        "virtual report suite",
+        "people metric",
+        "unique visitors",
+    ]
+    trust_terms = [
+        "doesn't match",
+        "does not appear",
+        "not in workspace",
+        "visible in debugger",
+        "looks wrong",
+        "mismatch",
+        "spike",
+        "drop",
+        "not reliable",
+        "difference between",
+        "time delay",
+        "different numbers",
+        "grand total",
+        "incorrect",
+        "none",
+        "unspecified",
+    ]
+    workflow_terms = [
+        "analysis",
+        "report",
+        "workspace",
+        "alert",
+        "breakpoints",
+        "monitor resolution",
+        "mobile screen size",
+        "customers metric",
+        "seo",
+        "direct traffic",
+        "csv",
+        "full table export",
+        "data warehouse",
+        "virtual report suite",
+    ]
+
+    adobe_hit = any(_text_contains_term(lowered, term) for term in adobe_terms)
+    trust_hit = any(_text_contains_term(lowered, term) for term in trust_terms)
+    workflow_hit = any(_text_contains_term(lowered, term) for term in workflow_terms)
+
+    hits: list[str] = []
+    if adobe_hit and trust_hit:
+        hits.append("adobe_workspace_trust")
+    if adobe_hit and workflow_hit:
+        hits.append("adobe_reporting_analysis_workflow")
+    if any(_text_contains_term(lowered, term) for term in ["debugger", "workspace"]) and trust_hit:
+        hits.append("adobe_debugger_workspace_gap")
+    return hits
+
+
+def _domo_whitelist_hits(lowered: str) -> list[str]:
+    """Return Domo rescue labels for card, ETL, and dataset workflow friction."""
+    domo_terms = [
+        "domo",
+        "card",
+        "dashboard",
+        "analyzer",
+        "beast mode",
+        "magic etl",
+        "dataflow",
+        "dataset",
+        "connector",
+        "api",
+        "filter card",
+        "data table",
+        "hourly chart",
+        "pivot",
+    ]
+    trust_terms = [
+        "wrong",
+        "doesn't match",
+        "does not match",
+        "broken",
+        "forcing",
+        "issue",
+        "error",
+        "not allow",
+        "not usable",
+        "mismatch",
+        "sync failed",
+        "changed schema",
+    ]
+    workflow_terms = [
+        "chart",
+        "table",
+        "filter",
+        "export",
+        "dataset",
+        "etl",
+        "append api",
+        "connector",
+        "card",
+        "app",
+    ]
+
+    domo_hit = any(_text_contains_term(lowered, term) for term in domo_terms)
+    trust_hit = any(_text_contains_term(lowered, term) for term in trust_terms)
+    workflow_hit = any(_text_contains_term(lowered, term) for term in workflow_terms)
+
+    hits: list[str] = []
+    if domo_hit and trust_hit:
+        hits.append("domo_card_workflow_friction")
+    if domo_hit and workflow_hit:
+        hits.append("domo_reporting_or_etl_workflow")
+    if any(_text_contains_term(lowered, term) for term in ["beast mode", "magic etl", "dataset", "connector", "append api"]) and trust_hit:
+        hits.append("domo_data_model_or_pipeline_gap")
+    return hits
+
+
+def _apply_google_developer_forums_rescue_signals(
+    text: str,
+    scores: dict[str, float],
+    positive_hits: list[tuple[str, float]],
+    source_reasons: list[str],
+) -> tuple[float, list[str]]:
+    """Apply Google Developer Forums rescue scoring for Looker and reporting trust threads."""
+    lowered = str(text or "").lower()
+    looker_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "looker",
+            "looker studio",
+            "data studio",
+            "lookml",
+            "ga4",
+            "google analytics 4",
+            "scorecard",
+            "bar chart",
+            "pivot table",
+            "blend data",
+            "calculated metric",
+            "calculated field",
+        ]
+    )
+    mismatch_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["doesn't match", "does not match", "not the same", "values are different", "wrong", "mismatch", "showstopper", "not usable"]
+    )
+    reporting_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "dashboard",
+            "report",
+            "scheduled",
+            "slack",
+            "alert",
+            "alerts",
+            "client",
+            "stakeholder",
+            "export",
+            "look/dashboard",
+            "pivot table",
+            "blend data",
+            "summary row",
+            "configuration error",
+        ]
+    )
+    operational_bug_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "configuration error",
+            "summary row incorrect",
+            "returning null values",
+            "stopped working",
+            "incorrect result",
+            "not working",
+            "unable to create a report",
+            "502 error",
+        ]
+    )
+
+    bonus = 0.0
+    labels: list[str] = []
+    if looker_hit and mismatch_hit:
+        scores["dashboard_trust_score"] += 1.0
+        scores["metric_definition_score"] += 0.65
+        positive_hits.append(("google_looker_metric_mismatch", 1.65))
+        source_reasons.append("google_looker_metric_mismatch")
+        bonus += 0.85
+        labels.append("google_looker_metric_mismatch")
+    if looker_hit and reporting_hit:
+        scores["reporting_pain_score"] += 0.75
+        scores["stakeholder_pressure_score"] += 0.35
+        positive_hits.append(("google_reporting_delivery", 1.1))
+        source_reasons.append("google_reporting_delivery")
+        bonus += 0.45
+        labels.append("google_reporting_delivery")
+    if looker_hit and operational_bug_hit:
+        scores["root_cause_score"] += 0.7
+        scores["reporting_pain_score"] += 0.45
+        positive_hits.append(("google_operational_reporting_bug", 1.15))
+        source_reasons.append("google_operational_reporting_bug")
+        bonus += 0.55
+        labels.append("google_operational_reporting_bug")
+    return round(bonus, 4), labels
+
+
+def _apply_adobe_analytics_rescue_signals(
+    text: str,
+    scores: dict[str, float],
+    positive_hits: list[tuple[str, float]],
+    source_reasons: list[str],
+) -> tuple[float, list[str]]:
+    """Apply Adobe Analytics rescue scoring for Workspace trust and validation pain."""
+    lowered = str(text or "").lower()
+    adobe_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "adobe analytics",
+            "workspace",
+            "report suite",
+            "segment",
+            "evar",
+            "prop",
+            "classification",
+            "debugger",
+            "attribution",
+            "cja",
+            "customer journey analytics",
+            "data warehouse",
+            "virtual report suite",
+            "people metric",
+            "unique visitors",
+        ]
+    )
+    trust_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "doesn't match",
+            "not in workspace",
+            "visible in debugger",
+            "spike",
+            "drop",
+            "time delay",
+            "not reliable",
+            "difference between",
+            "looks wrong",
+            "different numbers",
+            "grand total",
+            "incorrect",
+            "unspecified",
+            "under none",
+            "under direct",
+        ]
+    )
+    analysis_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "analysis",
+            "alert",
+            "workspace",
+            "customers metric",
+            "seo",
+            "direct traffic",
+            "monitor resolution",
+            "mobile screen size",
+            "csv",
+            "full table export",
+            "data warehouse",
+            "virtual report suite",
+            "power bi",
+        ]
+    )
+    export_or_metric_integrity_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "full table export",
+            "csv downloads",
+            "export csv",
+            "data warehouse",
+            "grand total",
+            "people metric",
+            "unique visitors",
+            "typed/bookmarked",
+            "none",
+            "direct marketing channels",
+        ]
+    )
+
+    bonus = 0.0
+    labels: list[str] = []
+    if adobe_hit and trust_hit:
+        scores["dashboard_trust_score"] += 0.95
+        scores["reporting_pain_score"] += 0.55
+        positive_hits.append(("adobe_workspace_trust_gap", 1.5))
+        source_reasons.append("adobe_workspace_trust_gap")
+        bonus += 0.8
+        labels.append("adobe_workspace_trust_gap")
+    if adobe_hit and analysis_hit:
+        scores["biz_workflow_score"] += 0.7
+        positive_hits.append(("adobe_analysis_workflow_context", 0.7))
+        source_reasons.append("adobe_analysis_workflow_context")
+        bonus += 0.3
+        labels.append("adobe_analysis_workflow_context")
+    if adobe_hit and export_or_metric_integrity_hit:
+        scores["reporting_pain_score"] += 0.55
+        scores["metric_definition_score"] += 0.45
+        positive_hits.append(("adobe_metric_export_integrity", 1.0))
+        source_reasons.append("adobe_metric_export_integrity")
+        bonus += 0.45
+        labels.append("adobe_metric_export_integrity")
+    return round(bonus, 4), labels
+
+
+def _apply_domo_rescue_signals(
+    text: str,
+    scores: dict[str, float],
+    positive_hits: list[tuple[str, float]],
+    source_reasons: list[str],
+) -> tuple[float, list[str]]:
+    """Apply Domo rescue scoring for chart, ETL, and card workflow pain."""
+    lowered = str(text or "").lower()
+    domo_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["domo", "card", "dashboard", "analyzer", "beast mode", "magic etl", "dataset", "connector", "append api", "filter card", "data table"]
+    )
+    trust_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["wrong", "forcing", "broken", "issue", "error", "mismatch", "not allow", "not usable", "sync failed", "changed schema"]
+    )
+    reporting_hit = any(
+        _text_contains_term(lowered, term)
+        for term in ["chart", "table", "filter", "export", "dataset", "etl", "card", "app"]
+    )
+
+    bonus = 0.0
+    labels: list[str] = []
+    if domo_hit and trust_hit:
+        scores["reporting_pain_score"] += 0.8
+        scores["dashboard_trust_score"] += 0.65
+        positive_hits.append(("domo_card_or_etl_friction", 1.45))
+        source_reasons.append("domo_card_or_etl_friction")
+        bonus += 0.75
+        labels.append("domo_card_or_etl_friction")
+    if domo_hit and reporting_hit:
+        scores["biz_workflow_score"] += 0.65
+        positive_hits.append(("domo_reporting_workflow_context", 0.65))
+        source_reasons.append("domo_reporting_workflow_context")
+        bonus += 0.25
+        labels.append("domo_reporting_workflow_context")
+    return round(bonus, 4), labels
 
 
 def _apply_reddit_rescue_signals(
@@ -1901,7 +2389,21 @@ def _apply_source_specific_floor_override(
                 "sort order",
             ]
         )
-        if generic_chart_help and not strong_reporting_pain:
+        chart_integrity_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "wrong results",
+                "right results",
+                "not correct",
+                "incorrect",
+                "too large",
+                "0 values",
+                "missing values",
+                "exporting",
+                "export to excel",
+            ]
+        )
+        if generic_chart_help and not (strong_reporting_pain or chart_integrity_context):
             return "drop"
         qlik_export_context = any(
             _text_contains_term(lowered, term)
@@ -1932,6 +2434,8 @@ def _apply_source_specific_floor_override(
             ]
         )
         if qlik_reconcile_context and strong_reporting_pain and final_score >= 2.55:
+            return "borderline"
+        if chart_integrity_context and final_score >= 1.8:
             return "borderline"
     if source == "klaviyo_community":
         floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.9))
@@ -2010,6 +2514,75 @@ def _apply_source_specific_floor_override(
             ]
         )
         if has_reporting_context and has_export_integrity_context and final_score >= max(floor - 1.2, 2.15):
+            return "borderline"
+    if source == "google_developer_forums":
+        floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.0))
+        has_reporting_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "looker",
+                "looker studio",
+                "data studio",
+                "dashboard",
+                "report",
+                "export",
+                "pivot table",
+                "blend data",
+                "calculated metric",
+                "calculated field",
+                "summary row",
+            ]
+        )
+        has_operational_pain = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "configuration error",
+                "returning null values",
+                "stopped working",
+                "incorrect result",
+                "not working",
+                "502 error",
+                "null values",
+                "summary row incorrect",
+            ]
+        )
+        if has_reporting_context and has_operational_pain and final_score >= max(floor - 1.6, 2.1):
+            return "borderline"
+    if source == "adobe_analytics_community":
+        floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.0))
+        has_reporting_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "workspace",
+                "report suite",
+                "cja",
+                "customer journey analytics",
+                "data warehouse",
+                "segment",
+                "calculated metric",
+                "data feed",
+                "csv",
+                "full table export",
+                "virtual report suite",
+                "unique visitors",
+                "people metric",
+            ]
+        )
+        has_operational_pain = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "different numbers",
+                "grand total",
+                "not in workspace",
+                "visible in debugger",
+                "difference between",
+                "looks wrong",
+                "under none",
+                "under direct",
+                "incorrect",
+            ]
+        )
+        if has_reporting_context and has_operational_pain and final_score >= max(floor - 1.7, 2.0):
             return "borderline"
     if source == "mixpanel_community":
         floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.2))

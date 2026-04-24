@@ -433,6 +433,11 @@ def evaluate_quality_status(metrics: dict[str, object]) -> dict[str, object]:
     composite_reason_keys = _collect_reason_keys(axes)
     composite_status = _compose_status([axis["status"] for axis in axes.values()])
     readiness = evaluate_persona_readiness(metrics)
+    readiness = _cap_readiness_by_quality_status(
+        readiness=readiness,
+        composite_status=composite_status,
+        quality_flag=_quality_flag_from_status(composite_status),
+    )
     result = {
         "metrics": dict(metrics),
         "axes": axes,
@@ -531,6 +536,43 @@ def evaluate_persona_readiness(metrics: dict[str, object]) -> dict[str, object]:
         "summary": str(meta.get("summary", "")),
         "usage_restriction": str(meta.get("usage_restriction", "")),
         "completion_claim_allowed": chosen_state in {"deck_ready", "production_persona_ready"},
+        "next_target_state": next_target or "",
+    }
+
+
+def _cap_readiness_by_quality_status(
+    readiness: dict[str, object],
+    composite_status: str,
+    quality_flag: str,
+) -> dict[str, object]:
+    """Keep workbook readiness conservative when workbook quality is still warning or failing."""
+    chosen_state = str(readiness.get("state", "exploratory_only") or "exploratory_only")
+    if composite_status == STATUS_OK and quality_flag == QUALITY_FLAG_OK:
+        return readiness
+
+    capped_state = "exploratory_only"
+    if composite_status == STATUS_WARN and quality_flag == QUALITY_FLAG_EXPLORATORY:
+        capped_state = "reviewable_but_not_deck_ready"
+    if chosen_state not in {"deck_ready", "production_persona_ready"} and chosen_state == capped_state:
+        return readiness
+    if chosen_state == "exploratory_only" and capped_state == "reviewable_but_not_deck_ready":
+        return readiness
+
+    meta = dict(READINESS_STATE_META[capped_state])
+    existing_blockers = [item for item in str(readiness.get("blockers", "") or "").split(" | ") if item]
+    quality_blocker = f"overall_status={composite_status} keeps workbook below deck_ready"
+    blockers = " | ".join([quality_blocker, *existing_blockers]) if quality_blocker not in existing_blockers else " | ".join(existing_blockers)
+    next_target = _next_readiness_target(capped_state)
+    return {
+        **readiness,
+        "state": capped_state,
+        "label": str(meta.get("label", "")),
+        "asset_class": str(meta.get("asset_class", "")),
+        "gate_status": str(meta.get("gate_status", STATUS_FAIL)),
+        "summary": str(meta.get("summary", "")),
+        "usage_restriction": str(meta.get("usage_restriction", "")),
+        "completion_claim_allowed": False,
+        "blockers": blockers,
         "next_target_state": next_target or "",
     }
 

@@ -189,6 +189,50 @@ class EpisodeBuilderTests(unittest.TestCase):
         self.assertEqual(len(episodes_df), 1)
         self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
 
+    def test_adobe_workspace_debugger_gap_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-1",
+                    "url": "https://example.com/thread/adobe-1",
+                    "source_type": "thread",
+                    "title": "Adobe Analytics data visible in Debugger but not in Workspace for one user",
+                    "body": "I can see the data firing correctly in the Adobe Analytics Debugger, but the same data does not appear in Workspace for one user in the banking mobile app UAT environment.",
+                    "comments_text": "",
+                    "thread_title": "Adobe Analytics data visible in Debugger but not in Workspace for one user",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_domo_hourly_chart_issue_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "domo_community_forum",
+                    "raw_id": "domo-1",
+                    "url": "https://example.com/thread/domo-1",
+                    "source_type": "thread",
+                    "title": "Why is Domo Forcing Daily Data onto Hourly Chart?",
+                    "body": "The Graph By is set to Day, but I am still being given an hourly chart and it is hard to get MTD excluding today.",
+                    "comments_text": "",
+                    "thread_title": "Why is Domo Forcing Daily Data onto Hourly Chart?",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "domo"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
     def test_mixpanel_api_setup_noise_does_not_form_episode(self) -> None:
         rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
         df = pd.DataFrame(

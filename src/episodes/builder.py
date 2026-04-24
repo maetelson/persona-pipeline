@@ -693,6 +693,93 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             "best way",
             "please help",
         ]
+    if source == "adobe_analytics_community":
+        workflow_terms = [
+            *workflow_terms,
+            "adobe analytics",
+            "workspace",
+            "debugger",
+            "report suite",
+            "segment",
+            "calculated metric",
+            "evar",
+            "prop",
+            "classification",
+            "attribution",
+            "data feed",
+            "alert",
+            "anomaly alert",
+            "direct traffic",
+            "seo",
+        ]
+        metric_terms = [
+            *metric_terms,
+            "workspace",
+            "debugger",
+            "report suite",
+            "segment",
+            "calculated metric",
+            "evar",
+            "prop",
+            "classification",
+            "attribution",
+            "direct traffic",
+            "seo",
+            "customers metric",
+            "traffic",
+        ]
+        required_terms = [
+            *required_terms,
+            "not in workspace",
+            "does not appear",
+            "doesn't appear",
+            "visible in debugger",
+            "spike",
+            "drop",
+            "time delay",
+            "way earlier",
+            "sent after",
+            "is there a way",
+        ]
+    if source == "domo_community_forum":
+        workflow_terms = [
+            *workflow_terms,
+            "domo",
+            "card",
+            "chart",
+            "graph by",
+            "hourly chart",
+            "time scale",
+            "filter card",
+            "filter view",
+            "data table",
+            "analyzer",
+            "beast mode",
+            "dataset",
+        ]
+        metric_terms = [
+            *metric_terms,
+            "domo",
+            "card",
+            "chart",
+            "graph by",
+            "hourly chart",
+            "time scale",
+            "filter card",
+            "data table",
+            "dataset",
+            "month end date",
+        ]
+        required_terms = [
+            *required_terms,
+            "forcing",
+            "hard to get",
+            "default selection",
+            "not allow user to clear filter",
+            "always have something selected",
+            "is it possible",
+            "why is",
+        ]
     if source == "power_bi_community":
         # Power BI threads often describe interpretation and diagnosis pain with BI-native
         # language like measures, visuals, refresh, service/desktop differences, and filter
@@ -1418,6 +1505,157 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 rescue_reason="",
                 passes=False,
             )
+
+    if source == "adobe_analytics_community":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "adobe analytics",
+                "workspace",
+                "debugger",
+                "report suite",
+                "segment",
+                "calculated metric",
+                "evar",
+                "prop",
+                "classification",
+                "attribution",
+                "direct traffic",
+                "seo",
+                "customers metric",
+                "alert",
+            ]
+        )
+        discrepancy_presence = any(
+            term in lowered
+            for term in [
+                "not in workspace",
+                "does not appear",
+                "doesn't appear",
+                "visible in debugger",
+                "spike",
+                "drop in seo",
+                "time delay",
+                "way earlier",
+                "sent after",
+                "updated after",
+                "impact ios",
+                "wrong channel",
+            ]
+        )
+        analysis_context = any(
+            term in lowered
+            for term in [
+                "banking mobile app",
+                "uat environment",
+                "anomaly alert",
+                "alert",
+                "debugger",
+                "workspace",
+                "traffic",
+                "ios",
+                "bookmarked",
+            ]
+        )
+        explanation_burden = any(
+            term in lowered
+            for term in [
+                "is there a way",
+                "currently validating",
+                "we have noticed",
+                "we investigated",
+                "could find",
+                "i want to set up",
+            ]
+        )
+        signal_count = sum(
+            int(flag)
+            for flag in [
+                metric_presence,
+                discrepancy_presence or has_required_problem,
+                analysis_context,
+                explanation_burden,
+                has_workflow_pain,
+            ]
+        )
+        if signal_count >= 3 and (discrepancy_presence or analysis_context):
+            return QualityAssessment(score=0.92, bucket="hard_pass", fail_reason="", rescue_reason="adobe_analytics_context_rescue", passes=True)
+        if signal_count >= 2 and (metric_presence or analysis_context):
+            return QualityAssessment(score=0.72, bucket="borderline", fail_reason="weak_problem_phrasing", rescue_reason="adobe_analytics_domain_rescue", passes=True)
+        return QualityAssessment(score=0.0, bucket="fail", fail_reason="adobe_low_signal", rescue_reason="", passes=False)
+
+    if source == "domo_community_forum":
+        metric_presence = any(
+            term in lowered
+            for term in [
+                "domo",
+                "card",
+                "chart",
+                "graph by",
+                "hourly chart",
+                "time scale",
+                "filter card",
+                "filter view",
+                "data table",
+                "dataset",
+                "month end date",
+            ]
+        )
+        discrepancy_presence = any(
+            term in lowered
+            for term in [
+                "forcing",
+                "hard to get",
+                "default selection",
+                "not allow user to clear filter",
+                "always have something selected",
+                "wrong",
+                "broken",
+                "not possible",
+                "is it possible",
+            ]
+        )
+        analysis_context = any(
+            term in lowered
+            for term in [
+                "graph by",
+                "hourly chart",
+                "time scale",
+                "filter view",
+                "drop down filter",
+                "month end date",
+                "data table",
+            ]
+        )
+        explanation_burden = any(
+            term in lowered
+            for term in [
+                "why is",
+                "is it possible",
+                "i want",
+                "however, i want",
+                "recommend",
+            ]
+        )
+        ideas_exchange_noise = "ideas exchange" in lowered and not (discrepancy_presence or analysis_context)
+        app_framework_noise = any(term in lowered for term in ["custom app", "app framework", "react", "vue", "ddx"]) and not discrepancy_presence
+        if ideas_exchange_noise or app_framework_noise:
+            return QualityAssessment(score=0.0, bucket="fail", fail_reason="domo_platform_discussion_without_workflow_pain", rescue_reason="", passes=False)
+        signal_count = sum(
+            int(flag)
+            for flag in [
+                metric_presence,
+                discrepancy_presence or has_required_problem,
+                analysis_context,
+                explanation_burden,
+                has_workflow_pain,
+            ]
+        )
+        if signal_count >= 3 and (discrepancy_presence or analysis_context):
+            return QualityAssessment(score=0.9, bucket="hard_pass", fail_reason="", rescue_reason="domo_chart_filter_rescue", passes=True)
+        if signal_count >= 2 and metric_presence and (discrepancy_presence or analysis_context):
+            return QualityAssessment(score=0.7, bucket="borderline", fail_reason="weak_problem_phrasing", rescue_reason="domo_domain_rescue", passes=True)
+        return QualityAssessment(score=0.0, bucket="fail", fail_reason="domo_low_signal", rescue_reason="", passes=False)
         if signal_count >= 3 and (discrepancy_presence or has_required_problem or explanation_burden):
             return QualityAssessment(score=round(score, 3), bucket="hard_pass", fail_reason="", rescue_reason="", passes=True)
         if signal_count >= 2:

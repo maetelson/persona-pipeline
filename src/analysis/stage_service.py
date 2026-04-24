@@ -185,6 +185,21 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         labeled_df=labeled_df,
         root_dir=root_dir,
     )
+    initial_source_stage_counts_df = build_source_stage_counts(
+        root_dir=root_dir,
+        normalized_df=normalized_df,
+        valid_df=valid_df,
+        episodes_df=episodes_df,
+        labeled_df=labeled_df,
+        persona_assignments_df=persona_service_outputs["persona_assignments_df"],
+        cluster_stats_df=persona_service_outputs["cluster_stats_df"],
+    )
+    initial_source_balance_audit_df = build_source_balance_audit(initial_source_stage_counts_df)
+    persona_service_outputs, promotion_constraint_summary = _apply_workbook_promotion_constraints(
+        persona_service_outputs=persona_service_outputs,
+        clustering_episodes_df=clustering_episodes_df,
+        source_balance_audit_df=initial_source_balance_audit_df,
+    )
     source_stage_counts_df = build_source_stage_counts(
         root_dir=root_dir,
         normalized_df=normalized_df,
@@ -208,6 +223,10 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
     )
     evaluated_quality = evaluate_quality_status(quality_metrics)
     quality_checks = finalize_quality_checks(evaluated_quality)
+    quality_checks |= promotion_constraint_summary
+    quality_checks["source_action_priority_summary"] = _source_action_priority_summary(source_balance_audit_df)
+    quality_checks["fix_now_source_count"] = int(source_balance_audit_df.get("priority_tier", pd.Series(dtype=str)).astype(str).eq("fix_now").sum()) if "priority_tier" in source_balance_audit_df.columns else int((source_balance_audit_df.get("failure_level", pd.Series(dtype=str)).astype(str) == "failure").sum())
+    quality_checks["tune_soon_source_count"] = int(source_balance_audit_df.get("priority_tier", pd.Series(dtype=str)).astype(str).eq("tune_soon").sum()) if "priority_tier" in source_balance_audit_df.columns else int((source_balance_audit_df.get("failure_level", pd.Series(dtype=str)).astype(str) == "warning").sum())
     persona_service_outputs["cluster_stats_df"] = _annotate_persona_readiness_frame(
         persona_service_outputs["cluster_stats_df"],
         quality_checks,
@@ -486,9 +505,19 @@ def _annotate_persona_readiness_frame(df: pd.DataFrame, quality_checks: dict[str
     if df is None:
         return pd.DataFrame()
     result = df.copy()
-    result["workbook_readiness_state"] = quality_checks.get("persona_readiness_state", "exploratory_only")
+    readiness_state = str(quality_checks.get("persona_readiness_state", "exploratory_only") or "exploratory_only")
+    result["workbook_readiness_state"] = readiness_state
     result["workbook_readiness_gate_status"] = quality_checks.get("persona_readiness_gate_status", "FAIL")
     result["workbook_usage_restriction"] = quality_checks.get("persona_usage_restriction", "")
+    if readiness_state not in {"deck_ready", "production_persona_ready"}:
+        if "deck_ready_persona" in result.columns:
+            result["deck_ready_persona"] = False
+        if "deck_readiness_state" in result.columns:
+            result["deck_readiness_state"] = readiness_state
+        if "reporting_readiness_status" in result.columns:
+            result["reporting_readiness_status"] = result["reporting_readiness_status"].astype(str).replace(
+                {"deck_ready_persona": "reviewable_but_not_deck_ready"}
+            )
     return result
 
 
@@ -497,6 +526,7 @@ def _build_final_overview_df(
     quality_checks: dict[str, Any],
     stage_counts: dict[str, int],
     cluster_stats_df: pd.DataFrame,
+    persona_core_labeled_rows: int | None = None,
 ) -> pd.DataFrame:
     """Render overview directly from the evaluated quality result and stable report counts."""
     if not cluster_stats_df.empty:
@@ -526,6 +556,9 @@ def _build_final_overview_df(
         {"metric": "persona_readiness_summary", "value": quality_checks.get("persona_readiness_summary", "")},
         {"metric": "persona_readiness_blockers", "value": quality_checks.get("persona_readiness_blockers", "")},
         {"metric": "persona_readiness_rule", "value": quality_checks.get("persona_readiness_rule", "")},
+        {"metric": "promotion_constraint_status", "value": quality_checks.get("promotion_constraint_status", "")},
+        {"metric": "promotion_constraint_summary", "value": quality_checks.get("promotion_constraint_summary", "")},
+        {"metric": "source_action_priority_summary", "value": quality_checks.get("source_action_priority_summary", "")},
         {"metric": "overall_status", "value": quality_checks.get("overall_status", "")},
         {"metric": "quality_flag", "value": quality_checks.get("quality_flag", "")},
         {"metric": "quality_flag_rule", "value": quality_checks.get("quality_flag_rule", "")},
@@ -572,6 +605,8 @@ def _build_final_overview_df(
         {"metric": "largest_source_influence_share_pct", "value": quality_checks.get("largest_source_influence_share_pct", 0.0)},
         {"metric": "weak_source_cost_center_count", "value": quality_checks.get("weak_source_cost_center_count", 0)},
         {"metric": "weak_source_cost_centers", "value": quality_checks.get("weak_source_cost_centers", "")},
+        {"metric": "fix_now_source_count", "value": quality_checks.get("fix_now_source_count", 0)},
+        {"metric": "tune_soon_source_count", "value": quality_checks.get("tune_soon_source_count", 0)},
         {"metric": "promoted_candidate_persona_count", "value": quality_checks.get("promoted_candidate_persona_count", promotion_visibility_persona_count)},
         {"metric": "promotion_visibility_persona_count", "value": promotion_visibility_persona_count},
         {"metric": "headline_persona_count", "value": quality_checks.get("headline_persona_count", final_usable_persona_count)},
@@ -589,3 +624,185 @@ def _build_final_overview_df(
         {"metric": "clustering_mode", "value": "bottleneck_first_robust"},
     ]
     return pd.DataFrame(rows)
+
+
+def _apply_workbook_promotion_constraints(
+    persona_service_outputs: dict[str, Any],
+    clustering_episodes_df: pd.DataFrame,
+    source_balance_audit_df: pd.DataFrame,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Downgrade borderline promoted personas when concentration and source-balance risks stay high."""
+    outputs = dict(persona_service_outputs)
+    cluster_stats_df = outputs.get("cluster_stats_df", pd.DataFrame()).copy()
+    persona_summary_df = outputs.get("persona_summary_df", pd.DataFrame()).copy()
+    audit_df = outputs.get("persona_promotion_grounding_audit_df", pd.DataFrame()).copy()
+    if cluster_stats_df.empty or persona_summary_df.empty:
+        return outputs, {
+            "promotion_constraint_status": "not_applicable",
+            "promotion_constraint_summary": "",
+        }
+
+    weak_sources = set(
+        source_balance_audit_df.loc[
+            source_balance_audit_df.get("weak_source_cost_center", pd.Series(dtype=bool)).fillna(False).astype(bool),
+            "source",
+        ].astype(str).tolist()
+    ) if not source_balance_audit_df.empty and "source" in source_balance_audit_df.columns else set()
+    top_3_share = round(float(pd.to_numeric(cluster_stats_df.get("share_of_core_labeled", pd.Series(dtype=float)), errors="coerce").fillna(0.0).nlargest(3).sum()), 1)
+    largest_source_influence_share = float(pd.to_numeric(source_balance_audit_df.get("blended_influence_share_pct", pd.Series(dtype=float)), errors="coerce").fillna(0.0).max()) if not source_balance_audit_df.empty else 0.0
+    guard_failures: list[str] = []
+    if top_3_share >= 80.0:
+        guard_failures.append(f"top_3_cluster_share_of_core_labeled={top_3_share}")
+    if largest_source_influence_share >= 33.0:
+        guard_failures.append(f"largest_source_influence_share_pct={round(largest_source_influence_share, 1)}")
+    if weak_sources:
+        guard_failures.append("weak_source_cost_centers_present")
+    if not guard_failures:
+        return outputs, {
+            "promotion_constraint_status": "clear",
+            "promotion_constraint_summary": "Promotion set clears concentration and source-balance guards.",
+        }
+
+    episode_source = clustering_episodes_df[["episode_id", "source"]].drop_duplicates("episode_id") if {"episode_id", "source"}.issubset(clustering_episodes_df.columns) else pd.DataFrame(columns=["episode_id", "source"])
+    assignments = outputs.get("persona_assignments_df", pd.DataFrame()).copy()
+    assignments_with_source = assignments.merge(episode_source, on="episode_id", how="left") if not assignments.empty else pd.DataFrame(columns=["persona_id", "source"])
+    persona_source_rank = (
+        assignments_with_source.groupby(["persona_id", "source"], dropna=False).size().reset_index(name="count")
+        if not assignments_with_source.empty
+        else pd.DataFrame(columns=["persona_id", "source", "count"])
+    )
+    primary_source_lookup = (
+        persona_source_rank.sort_values(["persona_id", "count", "source"], ascending=[True, False, True]).drop_duplicates("persona_id").set_index("persona_id")["source"].astype(str).to_dict()
+        if not persona_source_rank.empty
+        else {}
+    )
+
+    promoted = cluster_stats_df[cluster_stats_df.get("promotion_status", pd.Series(dtype=str)).astype(str).eq("promoted_persona")].copy()
+    if promoted.empty:
+        return outputs, {
+            "promotion_constraint_status": "constrained_without_promoted_personas",
+            "promotion_constraint_summary": "Promotion guards failed, but no promoted personas were available for constraint handling.",
+        }
+    promoted["primary_source"] = promoted["persona_id"].astype(str).map(primary_source_lookup)
+    promoted["share_rank"] = promoted["share_of_core_labeled"].rank(method="first", ascending=False)
+    promoted["borderline_candidate"] = (
+        (pd.to_numeric(promoted.get("promotion_score", pd.Series(dtype=float)), errors="coerce").fillna(0.0) < 0.82)
+        | (pd.to_numeric(promoted.get("cross_source_robustness_score", pd.Series(dtype=float)), errors="coerce").fillna(0.0) < 0.55)
+        | (pd.to_numeric(promoted.get("selected_example_count", pd.Series(dtype=int)), errors="coerce").fillna(0).astype(int) < 2)
+        | (pd.to_numeric(promoted.get("bundle_episode_count", pd.Series(dtype=int)), errors="coerce").fillna(0).astype(int) < 3)
+    )
+    promoted["weak_source_link"] = promoted["primary_source"].astype(str).isin(weak_sources)
+    promoted["constraint_priority"] = (
+        promoted["weak_source_link"].astype(int) * 100
+        + (promoted["share_rank"] > 2).astype(int) * 10
+        + promoted["borderline_candidate"].astype(int)
+    )
+    candidates = promoted[
+        promoted["borderline_candidate"] | promoted["weak_source_link"] | (promoted["share_rank"] > 2)
+    ].sort_values(
+        ["constraint_priority", "promotion_score", "persona_size"],
+        ascending=[False, True, True],
+    )
+    if candidates.empty:
+        return outputs, {
+            "promotion_constraint_status": "constrained_no_borderline_match",
+            "promotion_constraint_summary": "Promotion guards failed, but no borderline promoted persona met the downgrade rules.",
+        }
+
+    downgrade_target = 0
+    if top_3_share >= 80.0:
+        downgrade_target = max(downgrade_target, min(len(candidates), max(int(len(promoted) - 3), 1)))
+    if largest_source_influence_share >= 33.0:
+        downgrade_target = max(downgrade_target, 1)
+    if weak_sources:
+        downgrade_target = max(downgrade_target, 1)
+    selected_ids = candidates.head(downgrade_target)["persona_id"].astype(str).tolist()
+    if not selected_ids:
+        return outputs, {
+            "promotion_constraint_status": "constrained_no_selection",
+            "promotion_constraint_summary": "Promotion guards failed, but no promoted persona was selected for downgrade.",
+        }
+
+    for persona_id in selected_ids:
+        primary_source = str(primary_source_lookup.get(persona_id, "") or "")
+        reason_parts = [
+            "promotion constrained by workbook concentration and source-balance policy",
+            *guard_failures,
+        ]
+        if primary_source and primary_source in weak_sources:
+            reason_parts.append(f"primary_source={primary_source}")
+        reason = "; ".join(reason_parts)
+        for frame in [cluster_stats_df, persona_summary_df, audit_df]:
+            if frame.empty or "persona_id" not in frame.columns:
+                continue
+            mask = frame["persona_id"].astype(str).eq(persona_id)
+            if not mask.any():
+                continue
+            if "promotion_status" in frame.columns:
+                frame.loc[mask, "promotion_status"] = "exploratory_bucket"
+            if "promotion_grounding_status" in frame.columns:
+                frame.loc[mask, "promotion_grounding_status"] = "promotion_constrained_by_workbook_policy"
+            if "promotion_action" in frame.columns:
+                frame.loc[mask, "promotion_action"] = "downgraded_to_exploratory"
+            if "visibility_state" in frame.columns:
+                frame.loc[mask, "visibility_state"] = "exploratory_bucket"
+            if "usability_state" in frame.columns:
+                frame.loc[mask, "usability_state"] = "not_final_usable"
+            if "reporting_readiness_status" in frame.columns:
+                frame.loc[mask, "reporting_readiness_status"] = "promotion_constrained_by_workbook_policy"
+            if "workbook_review_visible" in frame.columns:
+                frame.loc[mask, "workbook_review_visible"] = False
+            if "final_usable_persona" in frame.columns:
+                frame.loc[mask, "final_usable_persona"] = False
+            if "deck_ready_persona" in frame.columns:
+                frame.loc[mask, "deck_ready_persona"] = False
+            if "deck_readiness_state" in frame.columns:
+                frame.loc[mask, "deck_readiness_state"] = "exploratory_only"
+            if "promotion_reason" in frame.columns:
+                existing = frame.loc[mask, "promotion_reason"].astype(str).str.strip()
+                frame.loc[mask, "promotion_reason"] = existing.map(lambda value: f"{value}; {reason}".strip("; "))
+            if "one_line_summary" in frame.columns:
+                existing = frame.loc[mask, "one_line_summary"].astype(str).str.strip()
+                frame.loc[mask, "one_line_summary"] = existing.map(lambda value: f"Exploratory bucket retained for caution: {value}" if value else "Exploratory bucket retained for caution.")
+            if "evidence_caution" in frame.columns:
+                existing = frame.loc[mask, "evidence_caution"].astype(str).str.strip()
+                frame.loc[mask, "evidence_caution"] = existing.map(lambda value: f"{value} Promotion is additionally constrained by concentration and source-balance risk.".strip())
+
+    outputs["cluster_stats_df"] = cluster_stats_df
+    outputs["persona_summary_df"] = persona_summary_df
+    outputs["persona_promotion_grounding_audit_df"] = audit_df
+    return outputs, {
+        "promotion_constraint_status": "constrained",
+        "promotion_constraint_summary": (
+            f"Promotion set constrained by concentration/source-balance policy; downgraded {len(selected_ids)} borderline promoted personas: "
+            + " | ".join(selected_ids)
+        ),
+    }
+
+
+def _source_action_priority_summary(source_balance_audit_df: pd.DataFrame) -> str:
+    """Return a short workbook-facing action summary for the highest-priority sources."""
+    if source_balance_audit_df.empty:
+        return ""
+    frame = source_balance_audit_df.copy()
+    frame["priority_tier"] = frame.apply(
+        lambda row: "fix_now"
+        if bool(row.get("weak_source_cost_center", False))
+        or str(row.get("source_balance_status", "") or "") == "overdominant_source_risk"
+        or str(row.get("failure_level", "") or "") == "failure"
+        else "tune_soon"
+        if str(row.get("failure_level", "") or "") == "warning"
+        else "monitor",
+        axis=1,
+    )
+    ranked = frame[frame["priority_tier"].isin({"fix_now", "tune_soon"})].sort_values(
+        ["priority_tier", "blended_influence_share_pct", "raw_record_count", "source"],
+        ascending=[True, False, False, True],
+    )
+    if ranked.empty:
+        return "No immediate source action required beyond monitoring."
+    summaries = [
+        f"{row.source}:{row.priority_tier}:{row.collapse_stage}:{row.policy_action}"
+        for row in ranked.head(5).itertuples(index=False)
+    ]
+    return " | ".join(summaries)

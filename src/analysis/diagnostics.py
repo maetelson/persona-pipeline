@@ -90,7 +90,7 @@ def build_metric_glossary() -> pd.DataFrame:
         ("promotion_visibility_persona_count", "persona_cluster_rows", "Count of promoted personas that remain visible in the workbook for reviewer inspection after grounding policy merge. Under the current flag policy this includes grounded, weakly grounded, and ungrounded promoted personas."),
         ("headline_persona_count", "persona_cluster_rows", "Headline persona count shown to workbook readers. This must equal final_usable_persona_count so review-visible unsupported personas never inflate the apparent usable persona total."),
         ("final_usable_persona_count", "persona_cluster_rows", "Count of final usable personas for downstream reporting. Under the current policy this includes only structurally supported and grounded promoted personas, not structurally weak, weakly grounded, or ungrounded review-visible personas."),
-        ("deck_ready_persona_count", "persona_cluster_rows", "Count of personas safe to present as deck-ready headline personas. Under the current policy this matches final_usable_persona_count."),
+        ("deck_ready_persona_count", "persona_cluster_rows", "Count of personas safe to present as deck-ready headline personas under the current workbook readiness gate. This is zero whenever persona_readiness_state is below deck_ready."),
         ("persona_readiness_state", "explicit_metric_value", "Workbook-level readiness state derived from policy-backed thresholds across overall unknown rate, persona-core coverage, promoted persona grounding coverage, final usable persona count, source influence concentration, and fragile tail share."),
         ("persona_readiness_label", "explicit_metric_value", "Reviewer-facing interpretation label for the current workbook state: Hypothesis Material, Reviewable Draft, or Final Persona Asset."),
         ("persona_asset_class", "explicit_metric_value", "Workbook asset class derived from persona_readiness_state. Below deck_ready this will never be final_persona_asset."),
@@ -138,7 +138,7 @@ def build_metric_glossary() -> pd.DataFrame:
         ("structural_support_reason", "persona_cluster_row", "Reviewer-facing explanation for why a cluster is structurally supported or blocked, such as low separation or residual fragility."),
         ("visibility_state", "persona_cluster_row", "Explicit visibility state for one persona after policy merge. Promoted candidates that remain visible but unsupported use review_visible_persona."),
         ("usability_state", "persona_cluster_row", "Explicit downstream usability state. Only final_usable_persona rows count toward the headline persona total."),
-        ("deck_readiness_state", "persona_cluster_row", "Explicit presentation-readiness state. Only deck_ready_persona rows are safe for deck-ready headline use."),
+        ("deck_readiness_state", "persona_cluster_row", "Explicit presentation-readiness state after workbook gating. Below deck_ready, rows must not present themselves as deck-ready even when they remain analytically usable."),
         ("promotion_action", "persona_cluster_row", "Recommended reviewer action after grounding merge: remain_promoted, remain_review_visible, promotion_candidate_pending_review, or downgraded_to_exploratory."),
         ("promoted_candidate_persona", "persona_cluster_row", "Boolean flag showing whether a row passed the base promotion gate before grounding review."),
         ("workbook_review_visible", "persona_cluster_row", "Boolean flag showing whether a row remains visible in the workbook's review set, including review_visible_persona rows."),
@@ -159,6 +159,12 @@ def build_metric_glossary() -> pd.DataFrame:
         ("coverage_selection_reason", "persona_example_row", "Why a row was selected: normal score_plus_diversity_policy or explicit minimum coverage policy."),
         ("grounding_fit_score", "persona_example_row", "Selection-time score component that rewards axis fit and penalizes mismatches for grounding quality."),
         ("top_failure_reason", "source_diagnostic_reason", "Top ranked source_diagnostics bottleneck reason. Values identify the strongest source-specific issue after comparing stage retention, episode yield, labelability, grounding contribution, concentration risk, and diversity contribution."),
+        ("primary_collapse_stage", "source_diagnostic_reason", "Primary pipeline stage where the source collapses under current diagnostics policy."),
+        ("recommended_action", "source_diagnostic_reason", "Single workbook-facing next action for the source after combining failure reason, concentration risk, and weak-source policy."),
+        ("priority_tier", "source_diagnostic_reason", "Workbook-facing action priority tier for the source: fix_now, tune_soon, or monitor."),
+        ("severity", "source_diagnostic_reason", "Workbook-facing severity for the current top source issue."),
+        ("source_balance_status", "source_diagnostic_reason", "Source-balance classification summarizing whether the source is healthy, overdominant, weak, or on a watchlist."),
+        ("weak_source_cost_center_status", "source_diagnostic_reason", "Explicit flag showing whether the source is currently treated as a weak-source cost center."),
         ("dominant_invalid_reason", "source_diagnostic_reason", "Most frequent invalid_reason observed for the source in invalid_candidates_with_prefilter.parquet. This is diagnostic context, not a funnel metric."),
         ("dominant_prefilter_reason", "source_diagnostic_reason", "Most frequent prefilter_reason observed for the source in relevance_drop.parquet. This is diagnostic context, not a funnel metric."),
         ("valid_retention_reason", "source_diagnostic_reason", "Post-funnel diagnosis for normalized_post_count to valid_post_count retention. Uses low_valid_post_retention with the dominant invalid reason when the stage is weak, otherwise a healthy_* status."),
@@ -279,6 +285,12 @@ def build_source_stage_counts(
         raw_count = max(raw_count, normalized_count)
         valid_count = source_row_count(valid_df, source)
         prefiltered_count = source_row_count(prefiltered_df, source)
+        # Some historical valid_candidates artifacts preserve downstream rows
+        # while dropping source fidelity on the broader valid set. Keep the
+        # invariant valid>=prefiltered by using the observed downstream floor.
+        valid_count = max(valid_count, prefiltered_count)
+        normalized_count = max(normalized_count, valid_count)
+        raw_count = max(raw_count, normalized_count)
         episode_count = source_row_count(episodes_df, source)
         labelable_count = source_row_count(labelable_with_source, source)
         labeled_count = source_row_count(labeled_with_source, source)
@@ -379,6 +391,42 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
         failure_reason_top = str(source_row.get("failure_reason_top", "") or "")
         failure_level = str(source_row.get("failure_level", "") or "")
         recommended_seed_set = str(source_row.get("recommended_seed_set", "") or "")
+        labeled_share_pct = round_pct(labeled_episode_count, int(pd.to_numeric(source_stage_counts_df.get("labeled_episode_count", pd.Series(dtype=int)), errors="coerce").fillna(0).sum()))
+        prefilter_retention_pct = round_pct(prefiltered_valid_post_count, valid_post_count) if valid_post_count else 0.0
+        episode_yield_ratio = round(float(episode_count) / float(prefiltered_valid_post_count), 2) if prefiltered_valid_post_count else 0.0
+        labelable_ratio_pct = round_pct(labelable_episode_count, labeled_episode_count) if labeled_episode_count else 0.0
+        diagnostic_policy_row = pd.Series(
+            {
+                **source_row.to_dict(),
+                "labeled_share_pct": labeled_share_pct,
+                "prefiltered_valid_posts_per_valid_post_pct": prefilter_retention_pct,
+                "episodes_per_prefiltered_valid_post": episode_yield_ratio,
+                "labelable_episode_ratio_pct": labelable_ratio_pct,
+            }
+        )
+        collapse_stage = _collapse_stage_for_reason(failure_reason_top)
+        weak_source_cost_center = _is_weak_source_cost_center_row(diagnostic_policy_row)
+        source_balance_status = _source_balance_status(
+            pd.Series(
+                {
+                    **diagnostic_policy_row.to_dict(),
+                    "weak_source_cost_center": weak_source_cost_center,
+                }
+            )
+        )
+        recommended_action = _source_balance_action(
+            pd.Series(
+                {
+                    **diagnostic_policy_row.to_dict(),
+                    "weak_source_cost_center": weak_source_cost_center,
+                }
+            )
+        )
+        priority_tier = _source_priority_tier(
+            failure_level=failure_level,
+            source_balance_status=source_balance_status,
+            weak_source_cost_center=weak_source_cost_center,
+        )
 
         metric_specs = [
             ("raw_ingest", "other", "raw_record_count", raw_record_count, "count", "", "", "", "", False),
@@ -513,6 +561,13 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
             rows.append(
                 {
                     "source": source,
+                    "priority_tier": priority_tier,
+                    "primary_collapse_stage": collapse_stage,
+                    "recommended_action": recommended_action,
+                    "severity": failure_level or "pass",
+                    "failure_reason_top": failure_reason_top,
+                    "source_balance_status": source_balance_status,
+                    "weak_source_cost_center": weak_source_cost_center,
                     "section": section,
                     "row_kind": "metric",
                     "grain": grain,
@@ -530,6 +585,12 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
             )
         diagnostic_specs = [
             ("diagnostic_reasons", "other", "top_failure_reason", failure_reason_top, "diagnostic_reason", "", "", "", "", False, failure_level),
+            ("diagnostic_reasons", "other", "severity", failure_level or "pass", "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "priority_tier", priority_tier, "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "primary_collapse_stage", collapse_stage, "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "recommended_action", recommended_action, "diagnostic_intervention", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "source_balance_status", source_balance_status, "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "weak_source_cost_center_status", "weak_source_cost_center" if weak_source_cost_center else "not_weak_source_cost_center", "diagnostic_reason", "", "", "", "", False, "warning" if weak_source_cost_center else "pass"),
             ("diagnostic_reasons", "post", "dominant_invalid_reason", str(source_row.get("dominant_invalid_reason", "reason_unavailable") or "reason_unavailable"), "diagnostic_reason", "", "", "", "", False, "pass"),
             ("diagnostic_reasons", "post", "dominant_prefilter_reason", str(source_row.get("dominant_prefilter_reason", "reason_unavailable") or "reason_unavailable"), "diagnostic_reason", "", "", "", "", False, "pass"),
             ("diagnostic_reasons", "post", "valid_retention_reason", str(source_row.get("valid_retention_reason", "") or ""), "diagnostic_reason", "normalized_post_count", "post", normalized_post_count, "", False, str(source_row.get("valid_retention_level", "pass") or "pass")),
@@ -548,6 +609,13 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
             rows.append(
                 {
                     "source": source,
+                    "priority_tier": priority_tier,
+                    "primary_collapse_stage": collapse_stage,
+                    "recommended_action": recommended_action,
+                    "severity": failure_level or "pass",
+                    "failure_reason_top": failure_reason_top,
+                    "source_balance_status": source_balance_status,
+                    "weak_source_cost_center": weak_source_cost_center,
                     "section": section,
                     "row_kind": "diagnostic",
                     "grain": grain,
@@ -564,6 +632,26 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
                 }
             )
     result = pd.DataFrame(rows)
+    if not result.empty:
+        row_order = {"diagnostic": 0, "metric": 1}
+        section_order = {"diagnostic_reasons": 0, "raw_ingest": 1, "post_funnel": 2, "episode_funnel": 3, "cross_grain_bridge": 4, "source_quality": 5}
+        metric_order = {
+            "top_failure_reason": 0,
+            "severity": 1,
+            "priority_tier": 2,
+            "primary_collapse_stage": 3,
+            "recommended_action": 4,
+            "source_balance_status": 5,
+            "weak_source_cost_center_status": 6,
+        }
+        result["_row_order"] = result["row_kind"].astype(str).map(row_order).fillna(9)
+        result["_section_order"] = result["section"].astype(str).map(section_order).fillna(9)
+        result["_metric_order"] = result["metric_name"].astype(str).map(metric_order).fillna(99)
+        result = (
+            result.sort_values(["priority_tier", "severity", "source", "_row_order", "_section_order", "_metric_order", "metric_name"], ascending=[True, True, True, True, True, True, True])
+            .drop(columns=["_row_order", "_section_order", "_metric_order"])
+            .reset_index(drop=True)
+        )
     _validate_source_diagnostics_frame(result)
     return result
 
@@ -628,6 +716,14 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
     frame["weak_source_cost_center"] = frame.apply(_is_weak_source_cost_center_row, axis=1)
     frame["source_balance_status"] = frame.apply(_source_balance_status, axis=1)
     frame["policy_action"] = frame.apply(_source_balance_action, axis=1)
+    frame["priority_tier"] = frame.apply(
+        lambda row: _source_priority_tier(
+            failure_level=str(row.get("failure_level", "") or ""),
+            source_balance_status=str(row.get("source_balance_status", "") or ""),
+            weak_source_cost_center=bool(row.get("weak_source_cost_center", False)),
+        ),
+        axis=1,
+    )
     preferred = [
         "source",
         "raw_record_count",
@@ -654,6 +750,7 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
         "source_balance_status",
         "weak_source_cost_center",
         "policy_action",
+        "priority_tier",
     ]
     available = [column for column in preferred if column in frame.columns]
     return frame[available].sort_values(["blended_influence_share_pct", "labeled_episode_count", "source"], ascending=[False, False, True]).reset_index(drop=True)
@@ -769,7 +866,26 @@ def build_quality_failures(
 
 def finalize_quality_checks(evaluated_quality_result: dict[str, Any]) -> dict[str, Any]:
     """Flatten the evaluated quality policy result for workbook rendering only."""
-    return flatten_quality_status_result(evaluated_quality_result)
+    flattened = flatten_quality_status_result(evaluated_quality_result)
+    readiness_state = str(flattened.get("persona_readiness_state", "exploratory_only") or "exploratory_only")
+    if readiness_state not in {"deck_ready", "production_persona_ready"}:
+        flattened["deck_ready_persona_count"] = 0
+    else:
+        flattened["deck_ready_persona_count"] = int(flattened.get("final_usable_persona_count", 0) or 0)
+    return flattened
+
+
+def _source_priority_tier(
+    failure_level: str,
+    source_balance_status: str,
+    weak_source_cost_center: bool,
+) -> str:
+    """Return one workbook-facing priority tier for the source."""
+    if weak_source_cost_center or source_balance_status == "overdominant_source_risk" or str(failure_level).strip() == "failure":
+        return "fix_now"
+    if str(failure_level).strip() == "warning" or source_balance_status == "watchlist":
+        return "tune_soon"
+    return "monitor"
 
 
 def build_survival_funnel_by_source(source_stage_counts_df: pd.DataFrame) -> pd.DataFrame:
@@ -1164,6 +1280,8 @@ def _collapse_stage_for_reason(reason: str) -> str:
         return "healthy"
     if value in {"no_raw_records", "raw_not_normalized"}:
         return "collection_or_normalization"
+    if value.startswith("low_valid_post_retention: outside_time_window"):
+        return "time_window"
     if value.startswith("low_valid_post_retention"):
         return "valid_filtering"
     if value.startswith("low_prefilter_retention"):
@@ -1210,9 +1328,12 @@ def _source_balance_action(row: pd.Series) -> str:
     if str(row.get("concentration_risk_reason", "") or "") == "overconcentration_risk":
         return "diversify_other_sources_before_scaling_this_source"
     reason = str(row.get("failure_reason_top", "") or "")
+    dominant_invalid_reason = str(row.get("dominant_invalid_reason", "") or "")
     if reason.startswith("low_prefilter_retention"):
-        return "tune_source_seeds_and_prefilter_rules"
+        return "review_source_specific_prefilter_terms"
     if reason.startswith("low_valid_post_retention"):
+        if dominant_invalid_reason == "outside_time_window":
+            return "review_time_window_policy"
         return "review_source_specific_valid_filtering"
     if reason == "low_episode_yield":
         return "tighten_episode_segmentation_for_source"
@@ -1222,6 +1343,8 @@ def _source_balance_action(row: pd.Series) -> str:
         return "expand_grounded_persona_coverage_before_promotion"
     if reason == "weak_diversity_contribution":
         return "raise_targeted_collection_on_underrepresented_source"
+    if reason in {"no_raw_records", "raw_not_normalized"}:
+        return "review_collect_depth"
     return "monitor_source"
 
 
@@ -1381,6 +1504,7 @@ def _seed_path(root_dir: Path, source: str) -> Path | None:
     """Find the local seed file for a source."""
     candidates = [
         root_dir / "config" / "seeds" / "business_communities" / f"{source}.yaml",
+        root_dir / "config" / "seeds" / "discourse" / f"{source}.yaml",
         root_dir / "config" / "seeds" / "existing_forums" / f"{source}.yaml",
         root_dir / "config" / "seeds" / "reddit" / f"{source}.yaml",
     ]

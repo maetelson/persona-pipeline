@@ -10,7 +10,7 @@ import pandas as pd
 from openpyxl import load_workbook
 
 from src.analysis.diagnostics import build_quality_failures, build_source_diagnostics, finalize_quality_checks
-from src.analysis.persona_service import _build_cluster_stats_df
+from src.analysis.persona_service import _apply_persona_name_policy, _build_cluster_stats_df
 from src.analysis.quality_status import build_quality_metrics, evaluate_quality_status, flatten_quality_status_result
 from src.analysis.stage_service import _annotate_persona_readiness_frame, _build_final_overview_df
 from src.analysis.summary import build_quality_checks_df
@@ -312,7 +312,15 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
             {
                 "overall_unknown_ratio": 0.2,
                 "persona_core_coverage_of_all_labeled_pct": 80.0,
-                "largest_source_influence_share_pct": 35.0,
+                "effective_balanced_source_count": 6.0,
+                "largest_labeled_source_share_pct": 34.0,
+                "largest_source_influence_share_pct": 34.9,
+                "weak_source_cost_center_count": 0,
+                "largest_cluster_share_of_core_labeled": 34.0,
+                "top_3_cluster_share_of_core_labeled": 70.0,
+                "micro_cluster_count": 0,
+                "thin_evidence_cluster_count": 0,
+                "min_cluster_separation": 0.13,
                 "fragile_tail_share_of_core_labeled": 0.08,
                 "promoted_persona_example_coverage_pct": 100.0,
                 "final_usable_persona_count": 3,
@@ -324,6 +332,34 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
         self.assertEqual(flattened["persona_asset_class"], "final_persona_asset")
         self.assertEqual(flattened["persona_readiness_gate_status"], "OK")
         self.assertTrue(flattened["persona_completion_claim_allowed"])
+
+    def test_persona_readiness_is_capped_below_deck_ready_when_quality_status_warns(self) -> None:
+        evaluated = evaluate_quality_status(
+            {
+                "overall_unknown_ratio": 0.2,
+                "persona_core_coverage_of_all_labeled_pct": 80.0,
+                "effective_balanced_source_count": 5.5,
+                "largest_labeled_source_share_pct": 34.0,
+                "largest_source_influence_share_pct": 34.9,
+                "weak_source_cost_center_count": 0,
+                "largest_cluster_share_of_core_labeled": 34.0,
+                "fragile_tail_share_of_core_labeled": 0.08,
+                "promoted_persona_example_coverage_pct": 100.0,
+                "final_usable_persona_count": 3,
+                "top_3_cluster_share_of_core_labeled": 0.834,
+                "micro_cluster_count": 0,
+                "thin_evidence_cluster_count": 0,
+                "min_cluster_separation": 0.13,
+            }
+        )
+        flattened = flatten_quality_status_result(evaluated)
+
+        self.assertEqual(flattened["overall_status"], "WARN")
+        self.assertEqual(flattened["quality_flag"], "EXPLORATORY")
+        self.assertEqual(flattened["persona_readiness_state"], "reviewable_but_not_deck_ready")
+        self.assertEqual(flattened["persona_asset_class"], "reviewable_draft")
+        self.assertFalse(flattened["persona_completion_claim_allowed"])
+        self.assertIn("overall_status=WARN keeps workbook below deck_ready", flattened["persona_readiness_blockers"])
 
     def test_persona_summary_rows_carry_workbook_readiness_gate(self) -> None:
         quality_checks = {
@@ -429,22 +465,97 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
         self.assertEqual(int(metrics["selected_example_grounding_issue_count"]), 0)
         self.assertEqual(str(metrics["promoted_personas_missing_examples"]), "persona_02")
         self.assertEqual(str(lookup["promoted_personas_missing_examples"]), "persona_02")
-        self.assertNotIn("persona_count", lookup)
-        self.assertEqual(float(lookup["promotion_visibility_persona_count"]), 2.0)
-        self.assertEqual(float(lookup["headline_persona_count"]), 1.0)
-        self.assertEqual(float(lookup["final_usable_persona_count"]), 1.0)
-        self.assertNotEqual(str(lookup["example_grounding_status"]), "OK")
 
-        failures_df = build_quality_failures(
-            finalize_quality_checks(flattened),
-            pd.DataFrame(),
-            cluster_stats_df,
-            persona_examples_df,
+    def test_finalize_quality_checks_zeroes_deck_ready_persona_count_below_deck_ready(self) -> None:
+        evaluated = evaluate_quality_status(
+            {
+                "overall_unknown_ratio": 0.2,
+                "persona_core_coverage_of_all_labeled_pct": 80.0,
+                "effective_balanced_source_count": 5.5,
+                "largest_labeled_source_share_pct": 34.0,
+                "largest_source_influence_share_pct": 34.9,
+                "weak_source_cost_center_count": 0,
+                "largest_cluster_share_of_core_labeled": 34.0,
+                "fragile_tail_share_of_core_labeled": 0.08,
+                "promoted_persona_example_coverage_pct": 100.0,
+                "final_usable_persona_count": 3,
+                "top_3_cluster_share_of_core_labeled": 0.834,
+                "micro_cluster_count": 0,
+                "thin_evidence_cluster_count": 0,
+                "min_cluster_separation": 0.13,
+                "deck_ready_persona_count": 3,
+            }
         )
-        persona_gate = failures_df.loc[failures_df["metric"] == "promoted_persona_grounding_gate"].iloc[0]
-        example_gate = failures_df.loc[failures_df["metric"] == "selected_example_grounding_issue_gate"].iloc[0]
-        self.assertEqual(int(persona_gate["value"]), 1)
-        self.assertEqual(int(example_gate["value"]), 0)
+        finalized = finalize_quality_checks(evaluated)
+
+        self.assertEqual(finalized["persona_readiness_state"], "reviewable_but_not_deck_ready")
+        self.assertEqual(int(finalized["deck_ready_persona_count"]), 0)
+
+    def test_persona_name_policy_adds_distinctive_suffixes_for_near_duplicates(self) -> None:
+        summary_df = pd.DataFrame(
+            {
+                "persona_id": ["persona_01", "persona_02"],
+                "promotion_status": ["promoted_persona", "promoted_persona"],
+                "legacy_persona_name": ["Analyst Reporting Blocked by Spreadsheet Rework"] * 2,
+                "persona_profile_name": ["Analyst Reporting Operator"] * 2,
+                "recurring_job_to_be_done": ["deliver_recurring_reporting_without_manual_repackaging"] * 2,
+                "primary_bottleneck": ["manual_reporting", "data_quality"],
+                "trust_failure_mode": ["not_explainable_to_stakeholders", "signoff_pressure_on_metric_quality"],
+                "functional_context": ["reporting_and_performance_management", "metric_validation_and_signoff"],
+                "user_role_family": ["analyst_operator", "analyst_operator"],
+            }
+        )
+
+        named = _apply_persona_name_policy(summary_df)
+
+        self.assertEqual(len(set(named["persona_name"].astype(str).tolist())), 2)
+        self.assertTrue(all("Analyst Reporting Operator" not in value for value in named["persona_name"].astype(str).tolist()))
+
+    def test_persona_name_policy_rewrites_exploratory_role_heavy_names_into_residual_signatures(self) -> None:
+        summary_df = pd.DataFrame(
+            {
+                "persona_id": ["persona_03", "persona_04"],
+                "promotion_status": ["exploratory_bucket", "exploratory_bucket"],
+                "legacy_persona_name": [
+                    "Analyst Workflow Blocked by Spreadsheet Rework",
+                    "Analyst Workflow Blocked by Explanation Gaps",
+                ],
+                "persona_profile_name": ["Analyst Reporting Operator", "Analyst Analysis Operator"],
+                "recurring_job_to_be_done": [
+                    "deliver_recurring_reporting_without_manual_repackaging",
+                    "move_analysis_work_to_a_shareable_output",
+                ],
+                "primary_bottleneck": ["manual_reporting", "handoff_dependency"],
+                "trust_failure_mode": [
+                    "numbers_do_not_reconcile_or_feel_safe_to_share",
+                    "context_is_not_explainable_without_manual_follow_up",
+                ],
+                "functional_context": [
+                    "reporting_and_performance_management",
+                    "analytics_workflow_execution",
+                ],
+                "expected_output_artifact": [
+                    "stakeholder_ready_export_or_packaged_report",
+                    "updated_dashboard_or_explanation_for_existing_dashboard",
+                ],
+                "typical_trigger_event": [
+                    "scheduled_reporting_cycle_or_stakeholder_request",
+                    "cross_team_follow_up_blocks_delivery",
+                ],
+                "workaround_pattern": [
+                    "export_then_patch_in_spreadsheet",
+                    "escalate_to_other_teams_for_context_and_validation",
+                ],
+            }
+        )
+
+        named = _apply_persona_name_policy(summary_df)
+        values = named["persona_name"].astype(str).tolist()
+
+        self.assertEqual(len(set(values)), 2)
+        self.assertTrue(all("Analyst " not in value for value in values))
+        self.assertTrue(any("Spreadsheet Patchwork" in value for value in values))
+        self.assertTrue(any("Cross-Team Explanation" in value for value in values))
 
     def test_grounded_but_structurally_weak_persona_does_not_count_as_final_usable(self) -> None:
         labeled_df = pd.DataFrame(

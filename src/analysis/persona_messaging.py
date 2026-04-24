@@ -63,6 +63,8 @@ def build_persona_messaging_outputs(
             {
                 "persona_id": persona_id,
                 "primary_persona_name": proposed_name,
+                "evidence_confidence_tier": summary.get("evidence_confidence_tier", ""),
+                "evidence_caution": summary.get("evidence_caution", ""),
                 "persona_schema_version": summary.get("persona_schema_version", ""),
                 "persona_profile_name": summary.get("persona_profile_name", proposed_name),
                 "user_role_family": summary.get("user_role_family", ""),
@@ -268,6 +270,8 @@ def _alternative_names(primary_signal: str, secondary_signals: list[str], config
 def _name_centering_type(name: str, config: dict[str, Any]) -> str:
     """Classify whether a name is role-heavy, tool-heavy, or bottleneck-centered."""
     lowered = str(name or "").strip().lower()
+    if lowered.startswith("exploratory ") and any(token in lowered for token in ["patchwork", "reconciliation", "explanation", "workaround", "pattern"]):
+        return "residual-signature"
     role_terms = list(config.get("solution_guardrails", {}).get("role_heavy_terms", [])) or ROLE_HEAVY_NAME_TERMS
     tool_terms = list(config.get("solution_guardrails", {}).get("tool_heavy_terms", [])) or TOOL_HEAVY_NAME_TERMS
     if contains_any_term(lowered, role_terms):
@@ -292,6 +296,8 @@ def _readability_rating(name: str) -> int:
 def _presentation_rating(name: str) -> int:
     """Return a simple presentation-usability rating from 1 to 5."""
     lowered = str(name or "").lower()
+    if lowered.startswith("exploratory ") and "pattern" in lowered:
+        return 3
     if any(token in lowered for token in ["cluster", "type", "user", "persona"]):
         return 2
     if "+" in lowered:

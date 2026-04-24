@@ -81,6 +81,28 @@ class PersonaMessagingTests(unittest.TestCase):
         }
         self.assertTrue(expected.issubset(set(outputs["persona_cards_v2_df"].columns)))
 
+    def test_exploratory_pattern_name_is_not_flagged_role_heavy(self) -> None:
+        outputs = build_persona_messaging_outputs(
+            cluster_audit_df=_cluster_audit_df(),
+            naming_df=_naming_df(),
+            persona_summary_df=pd.DataFrame(
+                [
+                    {
+                        "persona_id": "persona_01",
+                        "persona_name": "Exploratory Spreadsheet Patchwork Pattern for Pre-Share Validation",
+                        "evidence_confidence_tier": "thin",
+                        "evidence_caution": "Representative examples are thin.",
+                    }
+                ]
+            ),
+            examples_df=pd.DataFrame(),
+            personas=_legacy_personas(),
+        )
+        audit = outputs["naming_audit_df"]
+        self.assertEqual(audit.iloc[0]["name_centering_type"], "residual-signature")
+        cards = outputs["persona_cards_v2_df"]
+        self.assertEqual(cards.iloc[0]["evidence_confidence_tier"], "thin")
+
 
 def _cluster_audit_df() -> pd.DataFrame:
     return pd.DataFrame(

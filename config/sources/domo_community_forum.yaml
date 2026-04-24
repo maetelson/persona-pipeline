@@ -1,0 +1,50 @@
+source_id: domo_community_forum
+source_name: Domo Community Forum
+source_group: business_communities
+collector_kind: business_communities
+normalizer_kind: business_communities
+enabled: true
+min_raw_records_warn: 0
+platform: domo
+product_or_tool: Domo
+check_robots: true
+query_mode: source_config
+seed_bank_path: config/seeds/business_communities/domo_community_forum.yaml
+seed_source_token: domo
+seed_query_style: support_community
+discovery_page_count: 40
+sleep_seconds: 0.08
+discovery_sleep_seconds: 0.03
+filter_discovery_by_seed: true
+include_candidate_seed_pool_for_discovery: true
+min_seed_term_matches: 1
+aliases:
+  - domo
+  - domo community
+  - domo forum
+discovery_urls:
+  - url: https://community-forums.domo.com/main/categories/charting
+    board: Charting & Analyzer
+    page_count: 60
+  - url: https://community-forums.domo.com/main/categories/etl
+    board: Magic ETL
+    page_count: 50
+  - url: https://community-forums.domo.com/main/categories/datasets
+    board: Datasets
+    page_count: 40
+  - url: https://community-forums.domo.com/main/categories/connectors
+    board: Connectors
+    page_count: 50
+  - url: https://community-forums.domo.com/main/categories/api
+    board: APIs & Domo Developer
+    page_count: 30
+sitemap_index_urls:
+  - url: https://community-forums.domo.com/sitemapindex.xml
+    board: Domo Community Sitemap
+discovery_exclude_title_patterns:
+  - "\\bcommunity idea\\b"
+  - "\\breact app\\b"
+  - "\\bcss\\b"
+  - "\\bembed\\b"
+  - "\\bsso\\b"
+  - "\\btheme\\b"

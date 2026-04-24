@@ -287,7 +287,6 @@ def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> lis
         "promotion_visibility_persona_count": promotion_visibility_count,
         "headline_persona_count": final_usable_count,
         "final_usable_persona_count": final_usable_count,
-        "deck_ready_persona_count": final_usable_count,
     }
     for metric, expected_value in expected.items():
         if metric not in overview_lookup:
@@ -306,11 +305,17 @@ def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> lis
             messages.append("persona readiness metric mismatch: final persona asset class is forbidden below deck_ready")
         if completion_allowed not in {"false", "0", ""}:
             messages.append("persona readiness metric mismatch: persona_completion_claim_allowed must be false below deck_ready")
+        deck_ready_count = _normalize_stage_metric_value(overview_lookup.get("deck_ready_persona_count", 0))
+        if deck_ready_count != 0:
+            messages.append("persona readiness metric mismatch: deck_ready_persona_count must be 0 below deck_ready")
     if readiness_state in {"deck_ready", "production_persona_ready"}:
         if asset_class != "final_persona_asset":
             messages.append("persona readiness metric mismatch: final persona asset class required at deck_ready or above")
         if completion_allowed not in {"true", "1"}:
             messages.append("persona readiness metric mismatch: persona_completion_claim_allowed must be true at deck_ready or above")
+        deck_ready_count = _normalize_stage_metric_value(overview_lookup.get("deck_ready_persona_count", 0))
+        if deck_ready_count != final_usable_count:
+            messages.append(f"persona readiness metric mismatch: deck_ready_persona_count differs from final_usable_persona_count above deck_ready (overview={deck_ready_count}, cluster_stats={final_usable_count})")
     expected_restriction = str(overview_lookup.get("persona_usage_restriction", "") or "")
     expected_gate_status = str(overview_lookup.get("persona_readiness_gate_status", "") or "")
     for sheet_name in ["persona_summary", "cluster_stats"]:

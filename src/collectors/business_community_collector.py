@@ -1107,6 +1107,11 @@ def _paginate_listing_url(url: str, platform: str, page_no: int) -> str:
             path = re.sub(r"/p\d+$", f"/p{page_no}", path)
             return urlunparse((parsed.scheme, parsed.netloc, path, "", parsed.query, ""))
         return urlunparse((parsed.scheme, parsed.netloc, f"{path}/p{page_no}", "", parsed.query, ""))
+    if platform == "domo":
+        if re.search(r"/p\d+$", path):
+            path = re.sub(r"/p\d+$", f"/p{page_no}", path)
+            return urlunparse((parsed.scheme, parsed.netloc, path, "", parsed.query, ""))
+        return urlunparse((parsed.scheme, parsed.netloc, f"{path}/p{page_no}", "", parsed.query, ""))
     query = dict(parse_qsl(parsed.query, keep_blank_values=False))
     query["page"] = str(page_no)
     return urlunparse((parsed.scheme, parsed.netloc, parsed.path, "", urlencode(query), ""))

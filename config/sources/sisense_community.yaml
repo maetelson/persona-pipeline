@@ -12,9 +12,10 @@ query_mode: source_config
 seed_bank_path: config/seeds/business_communities/sisense_community.yaml
 seed_source_token: sisense
 seed_query_style: support_community
-discovery_page_count: 50
+discovery_page_count: 1
 sleep_seconds: 0.05
-filter_discovery_by_seed: true
+max_threads_per_run: 800
+filter_discovery_by_seed: false
 include_candidate_seed_pool_for_discovery: true
 min_seed_term_matches: 1
 aliases:
@@ -23,13 +24,13 @@ aliases:
 discovery_urls:
   - url: https://community.sisense.com/t5/Help-and-How-To/bg-p/help_and_how_to
     board: Help and How-To
-    page_count: 40
+    page_count: 1
   - url: https://community.sisense.com/t5/Troubleshooting/bg-p/troubleshooting
     board: Troubleshooting
-    page_count: 40
+    page_count: 1
   - url: https://community.sisense.com/t5/technical-troubleshooting/bd-p/technical_troubleshooting
     board: Technical Troubleshooting
-    page_count: 30
+    page_count: 1
 discovery_exclude_url_patterns:
   - /events
   - /blogs

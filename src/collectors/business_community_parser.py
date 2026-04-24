@@ -8,7 +8,7 @@ from html.parser import HTMLParser
 import json
 import re
 from typing import Any
-from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
+from urllib.parse import parse_qsl, quote, urlencode, urljoin, urlparse, urlunparse
 import xml.etree.ElementTree as ET
 
 from src.utils.text import clean_text, make_hash_id
@@ -160,6 +160,15 @@ def canonicalize_business_url(url: str, base_url: str, platform: str) -> str:
         match = re.search(r"(/t/[^/?#]+/\d+)", path)
         if match:
             path = match.group(1)
+    if platform == "domo":
+        match = re.search(r"(/main/discussion/\d+/[^/?#]+)", path)
+        if match:
+            path = match.group(1)
+    if platform == "adobe_insided":
+        match = re.search(r"(/adobe-analytics-3/[^/?#]+-\d+)", path)
+        if match:
+            path = match.group(1)
+    path = quote(path or "/", safe="/-._~%")
     allowed_query_keys: set[str] = set()
     query = urlencode(
         [(key, value) for key, value in parse_qsl(parsed.query, keep_blank_values=False) if key in allowed_query_keys]
@@ -247,8 +256,7 @@ def discover_sitemap_thread_links(xml_text: str, base_url: str, platform: str, b
         canonical = canonicalize_business_url(href, base_url=base_url, platform=platform)
         if not _looks_like_thread_url(canonical, platform):
             continue
-        slug = urlparse(canonical).path.rstrip("/").split("/")[-1]
-        title = _clean_title(slug.replace("-", " "), platform)
+        title = _title_from_sitemap_url(canonical, platform)
         discovered[canonical] = ThreadLink(
             url=canonical,
             title=title,
@@ -256,6 +264,18 @@ def discover_sitemap_thread_links(xml_text: str, base_url: str, platform: str, b
             activity_date=activity_date,
         )
     return list(discovered.values())
+
+
+def _title_from_sitemap_url(url: str, platform: str) -> str:
+    """Derive a human-readable sitemap title from a canonical thread URL."""
+    path_parts = [part for part in urlparse(url).path.rstrip("/").split("/") if part]
+    if not path_parts:
+        return ""
+    if platform == "sisense" and len(path_parts) >= 2:
+        # Sisense discussion URLs end with a numeric message id, so the preceding
+        # slug is the actual topic title we want for discovery/seed matching.
+        return _clean_title(path_parts[-2].replace("-", " "), platform)
+    return _clean_title(path_parts[-1].replace("-", " "), platform)
 
 
 def discover_sitemap_index_urls(xml_text: str) -> list[str]:
@@ -403,6 +423,16 @@ def _looks_like_thread_url(url: str, platform: str) -> bool:
             parsed.netloc.endswith("support.google.com")
             and re.search(r"/(?:google-ads|merchants|analytics|looker-studio)/thread/\d+/[^/]+$", path) is not None
         )
+    if platform == "domo":
+        return (
+            parsed.netloc.endswith("community-forums.domo.com")
+            and re.search(r"^/main/discussion/\d+/[^/?#]+$", path) is not None
+        )
+    if platform == "adobe_insided":
+        return (
+            parsed.netloc.endswith("experienceleaguecommunities.adobe.com")
+            and re.search(r"^/adobe-analytics-3/[^/?#]+-\d+$", path) is not None
+        )
     return False
 
 
@@ -427,6 +457,9 @@ def _clean_title(value: str, platform: str) -> str:
         " | Qlik Community",
         " - Sisense Community",
         " | Sisense Community",
+        " - Domo Community Forum",
+        " | Domo Community Forum",
+        " | Community",
     ]
     for replacement in replacements:
         title = title.replace(replacement, "")
@@ -436,6 +469,10 @@ def _clean_title(value: str, platform: str) -> str:
         title = re.split(r"\s+\d+\s+Recommended Answers?\b", title, maxsplit=1)[0]
         title = re.split(r"\s+\d+\s+Replies?\b", title, maxsplit=1)[0]
         title = re.split(r"\s+\d+\s+Upvotes?\b", title, maxsplit=1)[0]
+    if platform == "domo":
+        title = re.sub(r"\s+-\s+Domo Community Forum\s*$", "", title)
+    if platform == "adobe_insided":
+        title = re.sub(r"\s+\|\s+Community\s*$", "", title)
     return clean_text(title)
 
 
@@ -573,9 +610,15 @@ def _first_int(*values: object) -> int | None:
 
 
 def _raw_id_from_url(url: str) -> str:
+    domo_match = re.search(r"/discussion/(\d+)(?:/|$)", urlparse(url).path)
+    if domo_match:
+        return domo_match.group(1)
     support_match = re.search(r"/thread/(\d+)(?:/|$)", urlparse(url).path)
     if support_match:
         return support_match.group(1)
+    adobe_match = re.search(r"-(\d+)$", urlparse(url).path)
+    if adobe_match:
+        return adobe_match.group(1)
     match = re.search(r"/(\d+)$", urlparse(url).path)
     if match:
         return match.group(1)

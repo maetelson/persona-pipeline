@@ -1,0 +1,37 @@
+source_id: adobe_analytics_community
+source_name: Adobe Analytics Community
+source_group: business_communities
+collector_kind: business_communities
+normalizer_kind: business_communities
+enabled: true
+min_raw_records_warn: 0
+platform: adobe_insided
+product_or_tool: Adobe Analytics
+check_robots: true
+query_mode: source_config
+seed_bank_path: config/seeds/business_communities/adobe_analytics_community.yaml
+seed_source_token: adobe analytics
+seed_query_style: support_community
+discovery_page_count: 120
+sleep_seconds: 0.02
+discovery_sleep_seconds: 0.0
+max_threads_per_run: 10000
+filter_discovery_by_seed: false
+include_candidate_seed_pool_for_discovery: true
+min_seed_term_matches: 1
+aliases:
+  - adobe analytics
+  - adobe analytics community
+  - experience league adobe analytics
+discovery_urls:
+  - url: https://experienceleaguecommunities.adobe.com/adobe-analytics-3
+    board: Adobe Analytics
+discovery_exclude_title_patterns:
+  - "^adobe analytics resources$"
+  - "\\bcertification\\b"
+  - "\\bcourse\\b"
+  - "\\bsummit\\b"
+  - "\\bresource\\b"
+  - "\\bidea submission\\b"
+api_discovery:
+  enabled: false

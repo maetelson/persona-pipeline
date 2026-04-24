@@ -8,7 +8,16 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from src.labeling.llm_labeler import DEFAULT_MAX_OUTPUT_TOKENS, debug_openai_labeler_call, llm_runtime_snapshot, resolve_llm_runtime
+import pandas as pd
+
+from src.labeling.llm_labeler import (
+    DEFAULT_MAX_OUTPUT_TOKENS,
+    _build_target_rows,
+    enrich_with_llm_labels,
+    debug_openai_labeler_call,
+    llm_runtime_snapshot,
+    resolve_llm_runtime,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 _EXPERIMENT_SPEC = importlib.util.spec_from_file_location(
@@ -125,6 +134,140 @@ class LlmLabelerRuntimeTests(unittest.TestCase):
         self.assertEqual(runtime["mode"], "cache_only")
         self.assertEqual(runtime["skip_reason"], "")
         self.assertTrue(bool(runtime["cache_enabled"]))
+
+    def test_target_unknown_only_skips_fully_resolved_rule_rows(self) -> None:
+        labeled_df = pd.DataFrame(
+            [
+                {
+                    "episode_id": "ep_resolved",
+                    "role_codes": "R_ANALYST",
+                    "moment_codes": "M_REPORTING",
+                    "question_codes": "Q_VALIDATE_NUMBERS",
+                    "pain_codes": "P_DATA_QUALITY",
+                    "env_codes": "E_SPREADSHEET",
+                    "workaround_codes": "W_MANUAL",
+                    "output_codes": "O_XLSX",
+                    "fit_code": "F_STRONG",
+                    "label_confidence": 0.9,
+                    "label_reason": "rule",
+                    "rule_hit_count": 7,
+                    "rule_core_known_count": 4,
+                    "rule_unknown_family_count": 0,
+                    "rule_coarse_match": "",
+                    "labelability_status": "labelable",
+                    "labelability_score": 0.9,
+                    "labelability_reason": "ready",
+                    "persona_core_eligible": True,
+                }
+            ]
+        )
+
+        targets = _build_target_rows(
+            labeled_df=labeled_df,
+            threshold=0.72,
+            target_unknown_only=True,
+            episode_lookup=pd.DataFrame(),
+        )
+
+        self.assertEqual(targets, {})
+
+    def test_persistent_cache_hit_avoids_live_llm_call(self) -> None:
+        episodes_df = pd.DataFrame(
+            [
+                {
+                    "episode_id": "ep_cache",
+                    "source": "reddit",
+                    "raw_id": "r1",
+                    "normalized_episode": "Need to validate dashboard numbers before sharing.",
+                    "evidence_snippet": "dashboard numbers do not match source of truth",
+                    "role_clue": "analyst",
+                    "work_moment": "reporting",
+                    "business_question": "which number should I trust",
+                    "tool_env": "excel",
+                    "bottleneck_text": "numbers do not match",
+                    "workaround_text": "manual comparison",
+                    "desired_output": "xlsx_report",
+                    "product_fit": "strong",
+                }
+            ]
+        )
+        labeled_df = pd.DataFrame(
+            [
+                {
+                    "episode_id": "ep_cache",
+                    "role_codes": "R_ANALYST",
+                    "moment_codes": "M_REPORTING",
+                    "question_codes": "Q_VALIDATE_NUMBERS",
+                    "pain_codes": "P_DATA_QUALITY",
+                    "env_codes": "unknown",
+                    "workaround_codes": "W_MANUAL",
+                    "output_codes": "O_XLSX",
+                    "fit_code": "F_REVIEW",
+                    "label_confidence": 0.61,
+                    "label_reason": "rule",
+                    "rule_hit_count": 3,
+                    "rule_core_known_count": 3,
+                    "rule_unknown_family_count": 1,
+                    "rule_coarse_match": "",
+                    "labelability_status": "labelable",
+                    "labelability_score": 0.8,
+                    "labelability_reason": "ready",
+                    "persona_core_eligible": True,
+                }
+            ]
+        )
+        cache_path = ROOT / "data" / "test_tmp_llm_cache.jsonl"
+        if cache_path.exists():
+            cache_path.unlink()
+        config = {
+            "enabled": True,
+            "model_primary": "gpt-5.4-mini",
+            "backend": "http",
+            "cache_enabled": True,
+            "cache_path": cache_path,
+            "target_unknown_only": True,
+            "codebook": {
+                "role_keywords": {"R_ANALYST": ["analyst"]},
+                "moment_keywords": {"M_REPORTING": ["report"]},
+                "question_codes": {"Q_VALIDATE_NUMBERS": ["validate"]},
+                "pain_codes": {"P_DATA_QUALITY": ["quality"]},
+                "env_codes": {"E_SPREADSHEET": ["excel"]},
+                "workaround_codes": {"W_MANUAL": ["manual"]},
+                "output_codes": {"O_XLSX": ["xlsx"]},
+                "fit_keywords": {"F_REVIEW": ["review"]},
+            },
+            "policy": {},
+        }
+        with patch.dict(
+            os.environ,
+            {
+                "ENABLE_LLM_LABELER": "true",
+                "OPENAI_API_KEY": "sk-proj-1234567890abcdefghijklmnop9012",
+            },
+            clear=False,
+        ):
+            with patch(
+                "src.labeling.llm_labeler.load_jsonl_cache",
+                return_value={
+                    "cache_key_ep_cache": {
+                        "env_codes": "E_SPREADSHEET",
+                        "label_confidence": 0.88,
+                        "label_reason": "llm:cache_hit",
+                    }
+                },
+            ) as load_cache_mock:
+                with patch("src.labeling.llm_labeler._call_llm_labeler") as call_mock:
+                    with patch(
+                        "src.labeling.llm_labeler._cache_key_for_prompt",
+                        return_value="cache_key_ep_cache",
+                    ):
+                        result_df, audit_df = enrich_with_llm_labels(episodes_df, labeled_df, config=config)
+
+        self.assertTrue(load_cache_mock.called)
+        self.assertFalse(call_mock.called)
+        self.assertEqual(str(result_df.iloc[0]["env_codes"]), "E_SPREADSHEET")
+        self.assertEqual(str(audit_df.iloc[0]["llm_status"]), "cache_hit")
+        self.assertFalse(bool(audit_df.iloc[0]["was_llm_called"]))
 
 
 if __name__ == "__main__":

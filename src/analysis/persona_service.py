@@ -30,6 +30,7 @@ from src.utils.pipeline_schema import (
     unique_record_count,
 )
 from src.utils.io import ensure_dir, load_yaml
+from src.utils.text import clean_text
 
 
 def build_persona_outputs(
@@ -298,6 +299,10 @@ def _build_persona_summary_df(
         output_mode = top_non_unknown_value(group, "output_expectation")
         top_pain_points = _top_themes(group, ["pain_codes", "question_codes"], limit=4)
         representative_examples = summary_examples_lookup.get(str(persona_id), [])
+        fallback_examples_used = False
+        if not representative_examples:
+            representative_examples = _fallback_representative_examples(group)
+            fallback_examples_used = bool(representative_examples)
         cluster_name = naming_lookup.get(str(persona_id), str(group.get("cluster_name", pd.Series([persona_id])).iloc[0]))
         promotion = cluster_policy["status_by_persona"].get(str(persona_id), {})
         legacy_persona_name = _archetype_name(role, workflow, bottleneck, goal, output_mode, promotion.get("status", "exploratory_bucket"))
@@ -314,6 +319,9 @@ def _build_persona_summary_df(
             representative_examples=representative_examples,
         )
         persona_name = str(schema_fields.get("persona_profile_name", "") or legacy_persona_name)
+        selected_example_count = int(promotion.get("selected_example_count", 0) or 0)
+        display_example_count = max(selected_example_count, len(representative_examples))
+        limited_examples = display_example_count < 2
         rows.append(
             {
                 "persona_id": persona_id,
@@ -367,8 +375,17 @@ def _build_persona_summary_df(
                 "bundle_grounding_status": promotion.get("bundle_grounding_status", ""),
                 "bundle_grounding_reason": promotion.get("bundle_grounding_reason", ""),
                 "bundle_support_examples": promotion.get("bundle_support_examples", ""),
-                "selected_example_count": int(promotion.get("selected_example_count", 0) or 0),
+                "selected_example_count": selected_example_count,
                 "fallback_selected_count": int(promotion.get("fallback_selected_count", 0) or 0),
+                "display_example_count": display_example_count,
+                "fallback_examples_used": fallback_examples_used,
+                "limited_examples": limited_examples,
+                "evidence_caution": _evidence_caution(promotion, limited_examples),
+                "evidence_confidence_tier": _evidence_confidence_tier(
+                    promotion=promotion,
+                    limited_examples=limited_examples,
+                    fallback_examples_used=fallback_examples_used,
+                ),
                 "cluster_stability_status": promotion.get("cluster_stability_status", ""),
                 "cluster_evidence_status": promotion.get("cluster_evidence_status", ""),
                 "cluster_concentration_status": promotion.get("cluster_concentration_status", ""),
@@ -399,7 +416,10 @@ def _build_persona_summary_df(
                 **schema_fields,
             }
         )
-    return pd.DataFrame(rows).sort_values(["persona_size", "persona_id"], ascending=[False, True]).reset_index(drop=True)
+    summary_df = pd.DataFrame(rows).sort_values(["persona_size", "persona_id"], ascending=[False, True]).reset_index(drop=True)
+    if summary_df.empty:
+        return summary_df
+    return _apply_persona_name_policy(summary_df)
 
 
 def _build_persona_axes_df(persona_assignments_df: pd.DataFrame, axis_long_df: pd.DataFrame) -> pd.DataFrame:
@@ -625,6 +645,11 @@ def _build_cluster_stats_df(
                 "bundle_grounding_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("bundle_grounding_reason", ""),
                 "selected_example_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("selected_example_count", 0) or 0),
                 "fallback_selected_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("fallback_selected_count", 0) or 0),
+                "limited_examples": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("selected_example_count", 0) or 0) < 2,
+                "evidence_caution": _evidence_caution(
+                    cluster_policy["status_by_persona"].get(str(persona_id), {}),
+                    int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("selected_example_count", 0) or 0) < 2,
+                ),
                 "cluster_stability_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_stability_status", ""),
                 "cluster_evidence_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_evidence_status", ""),
                 "cluster_concentration_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_concentration_status", ""),
@@ -639,6 +664,197 @@ def _build_cluster_stats_df(
             }
         )
     return pd.DataFrame(rows).sort_values(["persona_size", "persona_id"], ascending=[False, True]).reset_index(drop=True)
+
+
+def _evidence_caution(promotion: dict[str, Any], limited_examples: bool) -> str:
+    """Return a concise workbook-facing evidence qualifier."""
+    promotion_grounding_status = str(promotion.get("promotion_grounding_status", "") or "")
+    if limited_examples:
+        return "Representative examples are thin, so this persona should stay hypothesis-only and review-safe."
+    if promotion_grounding_status in {"promoted_but_weakly_grounded", "promoted_but_ungrounded", "grounded_but_structurally_weak"}:
+        return "Evidence is directionally useful for review, but not strong enough for overconfident persona claims."
+    return "Evidence is grounded enough for analyst review under the current policy."
+
+
+def _evidence_confidence_tier(
+    promotion: dict[str, Any],
+    limited_examples: bool,
+    fallback_examples_used: bool,
+) -> str:
+    """Return a workbook-visible evidence tier for persona rows."""
+    promotion_status = str(promotion.get("status", "") or "")
+    promotion_grounding_status = str(promotion.get("promotion_grounding_status", "") or "")
+    if promotion_status == "promoted_persona" and promotion_grounding_status == "promoted_and_grounded" and not limited_examples:
+        return "grounded"
+    if limited_examples or fallback_examples_used or promotion_grounding_status in {"promoted_but_weakly_grounded", "grounded_but_structurally_weak"}:
+        return "thin"
+    return "residual"
+
+
+def _fallback_representative_examples(group: pd.DataFrame, max_items: int = 1) -> list[str]:
+    """Return a tiny fallback example set for exploratory personas with no selected examples."""
+    examples: list[str] = []
+    seen: set[str] = set()
+    for column in ["normalized_episode", "evidence_snippet", "business_question"]:
+        if column not in group.columns:
+            continue
+        for value in group[column].astype(str).tolist():
+            cleaned = clean_text(value)[:320]
+            if not cleaned or cleaned.lower() in {"", "nan"} or cleaned in seen:
+                continue
+            examples.append(cleaned)
+            seen.add(cleaned)
+            if len(examples) >= max_items:
+                return examples
+    return examples
+
+
+def _apply_persona_name_policy(persona_summary_df: pd.DataFrame) -> pd.DataFrame:
+    """Reduce repetitive role-first naming and force a differentiator for promoted personas."""
+    if persona_summary_df.empty:
+        return persona_summary_df.copy()
+    frame = persona_summary_df.copy()
+    frame["persona_name"] = frame.apply(_persona_name_with_distinctiveness, axis=1)
+    return _dedupe_persona_names(frame)
+
+
+def _persona_name_with_distinctiveness(row: pd.Series) -> str:
+    """Generate a persona name that separates workflow, failure mode, and trust context."""
+    promotion_status = str(row.get("promotion_status", "") or "")
+    recurring_job = str(row.get("recurring_job_to_be_done", "") or "")
+    primary_bottleneck = str(row.get("primary_bottleneck", row.get("dominant_bottleneck", "")) or "")
+    trust_failure = str(row.get("trust_failure_mode", row.get("trust_explanation_need", "")) or "")
+    functional_context = str(row.get("functional_context", row.get("main_workflow_context", "")) or "")
+    role_family = str(row.get("user_role_family", "") or "")
+    expected_output = str(row.get("expected_output_artifact", row.get("primary_output_expectation", "")) or "")
+    trigger_event = str(row.get("typical_trigger_event", "") or "")
+    workaround_pattern = str(row.get("workaround_pattern", "") or "")
+
+    base_name = {
+        "deliver_recurring_reporting_without_manual_repackaging": "Reporting Packager",
+        "explain_metric_or_dashboard_changes_fast": "Metric Change Explainer",
+        "validate_numbers_before_sharing_or_acting": "Pre-Share Metric Gatekeeper",
+        "turn_repeated_analysis_work_into_repeatable_ops": "Workflow Automator",
+        "move_analysis_work_to_a_shareable_output": "Insight Translator",
+    }.get(recurring_job.lower(), _titleize(functional_context, "Workflow Persona"))
+    differentiator = _persona_name_differentiator(
+        primary_bottleneck=primary_bottleneck,
+        trust_failure=trust_failure,
+        functional_context=functional_context,
+        role_family=role_family,
+    )
+    if promotion_status in {"promoted_persona", "review_visible_persona"}:
+        return f"{base_name} {differentiator}".strip()
+    return _exploratory_persona_name(
+        primary_bottleneck=primary_bottleneck,
+        trust_failure=trust_failure,
+        expected_output=expected_output,
+        trigger_event=trigger_event,
+        workaround_pattern=workaround_pattern,
+        fallback_name=base_name,
+    )
+
+
+def _persona_name_differentiator(
+    primary_bottleneck: str,
+    trust_failure: str,
+    functional_context: str,
+    role_family: str,
+) -> str:
+    """Return a non-role differentiator so persona names are not repeated role shells."""
+    bottleneck_key = str(primary_bottleneck).strip().lower()
+    trust_key = str(trust_failure).strip().lower()
+    context_key = str(functional_context).strip().lower()
+    if bottleneck_key == "manual_reporting":
+        return "for Stakeholder-Ready Reporting"
+    if bottleneck_key == "data_quality" or "signoff" in trust_key:
+        return "for Sign-Off Validation"
+    if bottleneck_key == "tool_limitation":
+        return "Across Tool-Limit Workflows"
+    if bottleneck_key == "handoff_dependency" or "explain" in trust_key:
+        return "for Explanation Handoffs"
+    if context_key == "performance_monitoring_and_issue_triage":
+        return "for Change Triage"
+    if context_key == "analytics_operations_and_automation":
+        return "for Repeatable Analytics Ops"
+    return f"for {_titleize(role_family.replace('_operator', '').replace('_', ' '), 'Workflow Delivery')}"
+
+
+def _exploratory_persona_name(
+    *,
+    primary_bottleneck: str,
+    trust_failure: str,
+    expected_output: str,
+    trigger_event: str,
+    workaround_pattern: str,
+    fallback_name: str,
+) -> str:
+    """Name exploratory personas as residual signatures instead of role-heavy shells."""
+    bottleneck_key = str(primary_bottleneck).strip().lower()
+    trust_key = str(trust_failure).strip().lower()
+    output_key = str(expected_output).strip().lower()
+    trigger_key = str(trigger_event).strip().lower()
+    workaround_key = str(workaround_pattern).strip().lower()
+
+    base_name = {
+        "manual_reporting": "Exploratory Spreadsheet Patchwork Pattern",
+        "data_quality": "Exploratory Number Reconciliation Pattern",
+        "handoff_dependency": "Exploratory Cross-Team Explanation Pattern",
+        "tool_limitation": "Exploratory Tool-Workaround Pattern",
+    }.get(bottleneck_key, f"Exploratory {_titleize(fallback_name, 'Residual Pattern')}")
+
+    if "signoff" in trust_key or "safe_to_share" in trust_key or "reconcile" in trust_key:
+        return f"{base_name} for Pre-Share Validation"
+    if "dashboard" in output_key or "dashboard" in trust_key:
+        return f"{base_name} for Dashboard Trust Recovery"
+    if "scheduled_reporting" in trigger_key or "stakeholder_request" in trigger_key:
+        return f"{base_name} under Reporting Deadlines"
+    if "spreadsheet" in workaround_key or "export_then_patch" in workaround_key:
+        return f"{base_name} under Spreadsheet Rework"
+    if "cross_team" in workaround_key or "handoff" in trigger_key:
+        return f"{base_name} for Handoff Alignment"
+    return base_name
+
+
+def _dedupe_persona_names(persona_summary_df: pd.DataFrame) -> pd.DataFrame:
+    """Avoid near-duplicate promoted persona names by appending stable differentiators."""
+    frame = persona_summary_df.copy()
+    collision_counts: Counter[str] = Counter()
+    for index, row in frame.iterrows():
+        current = str(row.get("persona_name", "") or "").strip()
+        if not current:
+            continue
+        signature = _persona_name_signature(current)
+        collision_counts[signature] += 1
+        if collision_counts[signature] <= 1:
+            continue
+        suffix = _persona_name_collision_suffix(row)
+        frame.at[index, "persona_name"] = f"{current} ({suffix})".strip()
+    return frame
+
+
+def _persona_name_signature(name: str) -> str:
+    """Normalize a persona name enough to catch trivial collisions."""
+    tokens = [
+        token
+        for token in re.split(r"[^a-z0-9]+", str(name or "").strip().lower())
+        if token and token not in {"the", "for", "and", "under", "operator", "analyst", "workflow", "review", "visible", "exploratory"}
+    ]
+    return " ".join(tokens)
+
+
+def _persona_name_collision_suffix(row: pd.Series) -> str:
+    """Return a stable suffix when two names are still too similar."""
+    for value in [
+        str(row.get("primary_bottleneck", "") or ""),
+        str(row.get("trust_failure_mode", "") or ""),
+        str(row.get("functional_context", "") or ""),
+        str(row.get("persona_id", "") or ""),
+    ]:
+        cleaned = _titleize(value.replace("_", " "), "")
+        if cleaned:
+            return cleaned
+    return str(row.get("persona_id", "") or "variant")
 
 
 def _empty_outputs() -> dict[str, Any]:
@@ -764,7 +980,7 @@ def _one_line_summary(
     elif promotion_status == "review_visible_persona":
         prefix = "Review-visible persona"
     else:
-        prefix = "Promoted persona" if promotion_status == "promoted_persona" else "Exploratory residual group"
+          prefix = "Promoted persona" if promotion_status == "promoted_persona" else "Hypothesis-only residual group"
     return (
         f"{prefix}: {cluster_name} repeatedly works in {_titleize(workflow, 'mixed workflow').lower()} "
         f"to {_titleize(goal, 'move analysis forward').lower()}, but {_titleize(bottleneck, 'general friction').lower()} "

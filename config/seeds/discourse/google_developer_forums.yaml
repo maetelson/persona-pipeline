@@ -1,0 +1,53 @@
+source_id: google_developer_forums
+source_group: discourse
+max_query_count: 10
+source_notes: "Google Developer Forums seeds focus on reporting trust, dashboard mismatch, metric interpretation, scheduled reporting failures, and stakeholder explanation pressure across Looker, Looker Studio, and Cloud Data Analytics."
+candidate_seed_pool:
+  - report looks wrong
+  - dashboard says one thing export says another
+  - stakeholder asked why numbers changed
+  - scheduled report missing data
+  - looker filter confusion
+  - scorecard total wrong
+  - active users mismatch
+  - looker alert bug
+  - slack schedule not usable
+active_core_seeds:
+  - seed: report doesn't match
+    reason: Broad trust-language for mismatched analytics and BI outputs.
+  - seed: dashboard says one thing
+    reason: Captures dashboard-versus-export and dashboard-versus-query conflicts.
+  - seed: which metric should I trust
+    reason: Preserves operator trust framing over implementation detail.
+  - seed: scheduled report failed
+    reason: Finds recurring reporting workflow breaks.
+  - seed: stakeholder question about numbers
+    reason: Adds explanation pressure from downstream consumers.
+  - seed: lookml confusion
+    reason: Captures semantic-layer confusion in the Looker area.
+  - seed: looker studio filter issue
+    reason: Targets common Looker Studio reporting/filter failures.
+  - seed: data studio report wrong
+    reason: Preserves legacy Data Studio phrasing still used in topics.
+  - seed: source of truth conflict
+    reason: Captures repeated trust and reconciliation language.
+  - seed: export doesn't match dashboard
+    reason: Explicitly targets export-versus-view mismatch.
+  - seed: scorecard total doesn't match
+    reason: Captures Looker Studio scorecard-versus-chart reconciliation pain directly.
+  - seed: alerts pivot issue
+    reason: Finds alerting and pivot-table workflow blockers in Looker.
+  - seed: slack schedule not usable
+    reason: Captures recurring delivery friction when scheduled outputs are not presentation-ready.
+optional_templates: []
+negative_terms:
+  - vertex
+  - gemini
+  - apigee
+  - oauth setup
+  - sdk
+  - terraform
+  - kubernetes
+  - docker
+  - deployment
+  - api auth

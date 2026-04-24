@@ -318,6 +318,138 @@ source_signal_overrides:
       - not correct
       - strange
       - weird
+  google_developer_forums:
+    business_signal_keywords:
+      - looker
+      - looker studio
+      - data studio
+      - lookml
+      - ga4
+      - google analytics 4
+      - bigquery
+      - dashboard
+      - scorecard
+      - bar chart
+      - active users
+      - scheduled report
+      - alerts
+      - slack
+      - pivot
+      - dimension
+    pain_signal_keywords:
+      - doesn't match
+      - does not match
+      - mismatch
+      - values are different
+      - not the same
+      - wrong
+      - showstopper
+      - not usable
+      - missing data
+      - failed
+      - confusion
+      - issue
+      - bug
+      - workaround
+  adobe_analytics_community:
+    business_signal_keywords:
+      - adobe analytics
+      - analysis workspace
+      - workspace
+      - report suite
+      - report builder
+      - segment
+      - calculated metric
+      - evar
+      - prop
+      - classification
+      - classification set
+      - data feed
+      - data warehouse
+      - debugger
+      - cja
+      - customer journey analytics
+      - marketing channel
+      - direct marketing channel
+      - browser name
+      - table builder
+      - activity map
+      - data collection
+      - datastream
+      - library build
+      - mobile sdk
+      - video tracking
+      - ftp
+      - omniture
+      - visitor_id
+      - visid_high
+      - visid_low
+      - attribution
+      - anomaly alert
+      - direct traffic
+      - seo
+      - customers metric
+    pain_signal_keywords:
+      - time delay
+      - not in workspace
+      - visible in debugger
+      - looks wrong
+      - not showing up
+      - not showing
+      - not updating
+      - not available
+      - not useful
+      - not provisioned
+      - not seeing
+      - seems wrong
+      - stopped working
+      - unable to connect
+      - unable to access
+      - higher than
+      - different numbers
+      - unspecified
+      - none
+      - mismatch
+      - spike
+      - drop
+      - not reliable
+      - issue
+      - confusion
+      - delay
+      - wrong
+      - missing
+  domo_community_forum:
+    business_signal_keywords:
+      - domo
+      - card
+      - dashboard
+      - analyzer
+      - beast mode
+      - magic etl
+      - dataflow
+      - dataset
+      - connector
+      - append api
+      - filter card
+      - data table
+      - hourly chart
+      - pivot
+      - graph by
+    pain_signal_keywords:
+      - wrong
+      - doesn't match
+      - does not match
+      - mismatch
+      - broken
+      - forcing
+      - issue
+      - error
+      - not allow
+      - not usable
+      - sync failed
+      - changed schema
+      - weird
+      - confusion
       - how to
       - stuck
       - trying to
@@ -847,6 +979,130 @@ source_invalid_reason_exemptions:
         - adhoc reporting
         - date export
         - percentage changes
+      require_signal_match: false
+  google_developer_forums:
+    missing_business_signal:
+      when_any_terms:
+        - looker
+        - looker studio
+        - data studio
+        - lookml
+        - ga4
+        - google analytics 4
+        - scorecard
+        - bar chart
+        - dashboard
+        - scheduled report
+        - alert
+        - slack
+      require_signal_match: false
+    missing_pain_signal:
+      when_any_terms:
+        - doesn't match
+        - does not match
+        - mismatch
+        - values are different
+        - wrong
+        - showstopper
+        - not usable
+        - failed
+        - confusion
+        - issue
+        - bug
+      require_signal_match: false
+  adobe_analytics_community:
+    missing_business_signal:
+      when_any_terms:
+        - adobe analytics
+        - analysis workspace
+        - workspace
+        - report suite
+        - report builder
+        - segment
+        - calculated metric
+        - evar
+        - prop
+        - classification
+        - classification set
+        - data warehouse
+        - debugger
+        - cja
+        - customer journey analytics
+        - marketing channel
+        - direct marketing channel
+        - browser name
+        - table builder
+        - activity map
+        - data collection
+        - datastream
+        - library build
+        - mobile sdk
+        - video tracking
+        - ftp
+        - omniture
+        - visitor_id
+        - visid_high
+        - visid_low
+        - attribution
+        - anomaly alert
+      require_signal_match: false
+    missing_pain_signal:
+      when_any_terms:
+        - time delay
+        - not in workspace
+        - visible in debugger
+        - looks wrong
+        - not showing up
+        - not showing
+        - not updating
+        - not available
+        - not useful
+        - not provisioned
+        - not seeing
+        - seems wrong
+        - stopped working
+        - unable to connect
+        - unable to access
+        - higher than
+        - different numbers
+        - unspecified
+        - none
+        - mismatch
+        - spike
+        - drop
+        - not reliable
+        - issue
+        - confusion
+        - difference between
+      require_signal_match: false
+  domo_community_forum:
+    missing_business_signal:
+      when_any_terms:
+        - domo
+        - card
+        - analyzer
+        - beast mode
+        - magic etl
+        - dataset
+        - connector
+        - append api
+        - filter card
+        - data table
+        - hourly chart
+      require_signal_match: false
+    missing_pain_signal:
+      when_any_terms:
+        - wrong
+        - forcing
+        - broken
+        - mismatch
+        - issue
+        - error
+        - not allow
+        - not usable
+        - sync failed
+        - changed schema
+        - weird
       require_signal_match: false
   sisense_community:
     missing_business_signal:

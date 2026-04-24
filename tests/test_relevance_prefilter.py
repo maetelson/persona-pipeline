@@ -310,6 +310,102 @@ class RelevancePrefilterTests(unittest.TestCase):
         self.assertEqual(len(drop_df), 0)
         self.assertEqual(len(keep_df) + len(borderline_df), 1)
 
+    def test_google_developer_forums_metric_mismatch_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "raw_id": "google-mismatch",
+                    "title": "Scorecard total doesn't match Bar chart total",
+                    "body": "In Looker Studio our scorecard and bar chart show different active users for the same time range and the client is asking which number to trust.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertEqual(len(scored), 1)
+        self.assertIn("google_bi_metric_mismatch", scored.iloc[0]["whitelist_hits"])
+
+    def test_google_developer_forums_blend_data_operational_bug_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "raw_id": "google-blend-null",
+                    "title": "Blended Tables Returning Null Values Where No Data",
+                    "body": "In Looker Studio our blend data pivot table now returns null values and the summary row is incorrect, so the reporting view is not usable.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_adobe_workspace_debugger_gap_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-debugger-gap",
+                    "title": "Adobe Analytics data visible in Debugger but not in Workspace",
+                    "body": "I can see the data firing in Adobe Analytics Debugger, but the same data does not appear in Workspace for this validation workflow.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertEqual(len(scored), 1)
+        self.assertIn("adobe_debugger_workspace_gap", scored.iloc[0]["whitelist_hits"])
+
+    def test_adobe_cja_export_metric_gap_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-cja-export",
+                    "title": "Add Calculated Metrics to CJA Full Table Export",
+                    "body": "Our Customer Journey Analytics full table export is missing calculated metrics, which makes the csv download unreliable for reporting validation.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_domo_card_chart_issue_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "domo_community_forum",
+                    "raw_id": "domo-chart-issue",
+                    "title": "Why is Domo forcing daily data onto hourly chart?",
+                    "body": "This Domo chart is forcing an hourly chart even though the data is daily, and the card is not usable for reporting.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertEqual(len(scored), 1)
+        self.assertIn("domo_card_workflow_friction", scored.iloc[0]["whitelist_hits"])
+
     def test_klaviyo_export_integrity_row_is_rescued(self) -> None:
         frame = pd.DataFrame(
             [
@@ -354,6 +450,24 @@ class RelevancePrefilterTests(unittest.TestCase):
                     "raw_id": "klaviyo-ga4-overview",
                     "title": "Klaviyo overview dashboard does not match GA4 revenue",
                     "body": "Our overview dashboard and bulk export no longer match GA4 revenue attribution totals, and we need to compare segments before weekly reporting signoff.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_ga4_metric_compare_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-ga4-metric-compare",
+                    "title": "How does your Klaviyo Active on Site Metric compare to Google Analytics Users Metric?",
+                    "body": "Our weekly reporting keeps showing different numbers between Klaviyo active on site and Google Analytics users, and we need to reconcile the discrepancy before signoff.",
                     "comments_text": "",
                     "raw_text": "",
                     "source_meta": {"json": "{}"},
@@ -426,6 +540,24 @@ class RelevancePrefilterTests(unittest.TestCase):
                     "raw_id": "qlik-export-total-line",
                     "title": "Export table to Excel not exporting the total line",
                     "body": "The board report export to Excel changes the total line and wrong values are exported for ad hoc reporting.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_qlik_export_error_row_reaches_borderline(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "qlik_community",
+                    "raw_id": "qlik-hypercube-export",
+                    "title": "Error in Qlik sense excel export like The hypercube results are too large",
+                    "body": "When we export to Excel from a Qlik Sense table the hypercube results are too large and the report export fails for analysts.",
                     "comments_text": "",
                     "raw_text": "",
                     "source_meta": {"json": "{}"},

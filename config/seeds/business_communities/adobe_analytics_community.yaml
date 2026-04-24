@@ -1,0 +1,50 @@
+source_id: adobe_analytics_community
+source_group: business_communities
+max_query_count: 10
+source_notes: "Adobe Analytics Community seeds focus on Workspace trust, segment/report-suite confusion, attribution issues, calculated metrics, and debugging cases where visible hits do not match reporting outputs."
+candidate_seed_pool:
+  - workspace report looks wrong
+  - debugger sees data but report does not
+  - attribution numbers changed
+  - report not matching export
+  - adobe analytics source of truth
+  - alert sent too early
+  - direct traffic spike
+  - workspace missing data for one user
+active_core_seeds:
+  - seed: workspace data doesn't match
+    reason: Strong Adobe Analytics trust phrasing tied to Workspace outputs.
+  - seed: segment not working
+    reason: Captures segmentation failures in analyst language.
+  - seed: calculated metric issue
+    reason: Preserves metric-calculation troubleshooting framing.
+  - seed: evar prop confusion
+    reason: Targets data model interpretation pain without over-indexing on implementation setup.
+  - seed: report suite mismatch
+    reason: Captures cross-suite trust and comparison issues.
+  - seed: attribution looks wrong
+    reason: Keeps attribution interpretation and trust failures explicit.
+  - seed: classification set performance
+    reason: Covers admin/analyst governance pain that affects reporting reliability.
+  - seed: data feed missing
+    reason: Captures feed/warehouse gap language tied to reporting workflows.
+  - seed: debugger shows data but workspace doesn't
+    reason: Directly targets ingestion-versus-reporting trust conflicts.
+  - seed: export does not match workspace
+    reason: Preserves export-versus-UI mismatch phrasing.
+  - seed: alert time delay
+    reason: Captures timing and anomaly-alert workflow friction tied to reporting tables.
+  - seed: direct traffic spike after ios update
+    reason: Covers attribution/source-of-truth issues framed as channel mix changes.
+  - seed: debugger data not in workspace
+    reason: Captures debugger-versus-Workspace trust breakdown in analyst validation flows.
+optional_templates: []
+negative_terms:
+  - launch implementation
+  - web sdk setup
+  - api 2.0 feature request
+  - certification
+  - course
+  - summit
+  - training
+  - career

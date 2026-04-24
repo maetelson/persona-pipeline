@@ -105,6 +105,10 @@ class SourceDiagnosticsTests(unittest.TestCase):
             top_reason_row = diagnostics_df[diagnostics_df["metric_name"] == "top_failure_reason"].iloc[0]
             self.assertEqual(str(top_reason_row["row_kind"]), "diagnostic")
             self.assertEqual(str(top_reason_row["section"]), "diagnostic_reasons")
+            self.assertIn("priority_tier", diagnostics_df.columns)
+            self.assertIn("primary_collapse_stage", diagnostics_df.columns)
+            self.assertIn("recommended_action", diagnostics_df.columns)
+            self.assertIn("severity", diagnostics_df.columns)
 
             pct_rows = diagnostics_df[diagnostics_df["metric_type"] == "percentage"]
             self.assertTrue(((pct_rows["metric_value"].astype(float) >= 0.0) & (pct_rows["metric_value"].astype(float) <= 100.0)).all())
@@ -132,7 +136,7 @@ class SourceDiagnosticsTests(unittest.TestCase):
 
             self.assertEqual(stage_counts_df["source"].astype(str).tolist(), ["reddit"])
 
-    def test_build_source_stage_counts_rejects_non_monotonic_post_or_episode_funnels(self) -> None:
+    def test_build_source_stage_counts_repairs_source_fidelity_gaps_before_validating_monotonicity(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             self._write_source_configs(root, "reddit")
@@ -141,17 +145,20 @@ class SourceDiagnosticsTests(unittest.TestCase):
             write_parquet(pd.DataFrame({"episode_id": ["e1"], "labelability_status": ["labelable"]}), root / "data" / "labeled" / "labelability_audit.parquet")
             write_parquet(pd.DataFrame(), root / "data" / "prefilter" / "relevance_drop.parquet")
             write_parquet(pd.DataFrame(), root / "data" / "valid" / "invalid_candidates_with_prefilter.parquet")
-
-            with self.assertRaisesRegex(ValueError, "prefiltered_valid_post_count cannot exceed valid_post_count"):
-                build_source_stage_counts(
-                    root_dir=root,
-                    normalized_df=pd.DataFrame({"source": ["reddit"]}),
-                    valid_df=pd.DataFrame({"source": ["reddit"]}),
-                    episodes_df=pd.DataFrame({"episode_id": ["e1"], "source": ["reddit"]}),
-                    labeled_df=pd.DataFrame({"episode_id": ["e1"]}),
-                    persona_assignments_df=pd.DataFrame(),
-                    cluster_stats_df=pd.DataFrame(),
-                )
+            stage_counts_df = build_source_stage_counts(
+                root_dir=root,
+                normalized_df=pd.DataFrame({"source": ["reddit"]}),
+                valid_df=pd.DataFrame({"source": ["reddit"]}),
+                episodes_df=pd.DataFrame({"episode_id": ["e1"], "source": ["reddit"]}),
+                labeled_df=pd.DataFrame({"episode_id": ["e1"]}),
+                persona_assignments_df=pd.DataFrame(),
+                cluster_stats_df=pd.DataFrame(),
+            )
+            row = stage_counts_df.iloc[0]
+            self.assertEqual(int(row["prefiltered_valid_post_count"]), 2)
+            self.assertEqual(int(row["valid_post_count"]), 2)
+            self.assertEqual(int(row["normalized_post_count"]), 2)
+            self.assertEqual(int(row["raw_record_count"]), 2)
 
     def test_low_prefilter_retention_overrides_generic_source_reason_and_exposes_seed_intervention(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -195,6 +202,33 @@ class SourceDiagnosticsTests(unittest.TestCase):
             self.assertFalse(diagnostics_df["metric_value"].astype(str).eq("labeled_output_present").any())
             intervention_row = diagnostics_df[diagnostics_df["metric_name"] == "recommended_seed_intervention"].iloc[0]
             self.assertIn("finance dashboard", str(intervention_row["metric_value"]))
+
+    def test_recommended_seed_intervention_finds_discourse_seed_banks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            self._write_source_fixture(
+                root,
+                raw_counts={"google_developer_forums": 10},
+                prefiltered_sources=["google_developer_forums"],
+                labelability_rows=[{"episode_id": "e1", "labelability_status": "labelable"}],
+                relevance_drop_rows=[{"source": "google_developer_forums", "prefilter_reason": "google_developer_forums:generic"}],
+            )
+            seed_dir = root / "config" / "seeds" / "discourse"
+            seed_dir.mkdir(parents=True, exist_ok=True)
+            (seed_dir / "google_developer_forums.yaml").write_text(
+                "active_core_seeds:\n  - seed: scorecard total doesn't match\n  - seed: scheduled report failed\n",
+                encoding="utf-8",
+            )
+            stage_counts_df = build_source_stage_counts(
+                root_dir=root,
+                normalized_df=pd.DataFrame({"source": ["google_developer_forums"] * 10}),
+                valid_df=pd.DataFrame({"source": ["google_developer_forums"] * 10}),
+                episodes_df=pd.DataFrame({"episode_id": ["e1"], "source": ["google_developer_forums"]}),
+                labeled_df=pd.DataFrame({"episode_id": ["e1"]}),
+                persona_assignments_df=pd.DataFrame(),
+                cluster_stats_df=pd.DataFrame(),
+            )
+            self.assertIn("scorecard total doesn't match", str(stage_counts_df.iloc[0]["recommended_seed_set"]))
 
     def test_low_episode_yield_overrides_generic_source_reason(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -336,7 +370,49 @@ class SourceDiagnosticsTests(unittest.TestCase):
         self.assertEqual(str(dominant_row["policy_action"]), "diversify_other_sources_before_scaling_this_source")
         self.assertEqual(str(weak_row["collapse_stage"]), "relevance_prefilter")
         self.assertTrue(bool(weak_row["weak_source_cost_center"]))
-        self.assertEqual(str(weak_row["policy_action"]), "tune_source_seeds_and_prefilter_rules")
+        self.assertEqual(str(weak_row["policy_action"]), "review_source_specific_prefilter_terms")
+
+    def test_time_window_dominant_invalid_reason_maps_to_time_window_action(self) -> None:
+        stage_counts_df = pd.DataFrame(
+            [
+                {
+                    "source": "domo_community_forum",
+                    "raw_record_count": 900,
+                    "normalized_post_count": 900,
+                    "valid_post_count": 120,
+                    "prefiltered_valid_post_count": 100,
+                    "episode_count": 80,
+                    "labelable_episode_count": 80,
+                    "labeled_episode_count": 80,
+                    "promoted_persona_episode_count": 10,
+                    "grounded_promoted_persona_episode_count": 4,
+                    "dominant_invalid_reason": "outside_time_window",
+                    "dominant_prefilter_reason": "domo_reporting_or_etl_workflow",
+                    "valid_retention_reason": "low_valid_post_retention: outside_time_window",
+                    "valid_retention_level": "warning",
+                    "prefilter_retention_reason": "healthy_prefilter_retention",
+                    "prefilter_retention_level": "pass",
+                    "episode_yield_reason": "healthy_episode_yield",
+                    "episode_yield_level": "pass",
+                    "labelable_coverage_reason": "healthy_labelable_coverage",
+                    "labelable_coverage_level": "pass",
+                    "grounding_contribution_reason": "healthy_grounding_contribution",
+                    "grounding_contribution_level": "pass",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                    "concentration_risk_level": "pass",
+                    "diversity_contribution_reason": "strong_diversity_contribution",
+                    "diversity_contribution_level": "pass",
+                    "failure_reason_top": "low_valid_post_retention: outside_time_window",
+                    "failure_level": "warning",
+                    "recommended_seed_set": "",
+                }
+            ]
+        )
+
+        audit_df = build_source_balance_audit(stage_counts_df)
+        row = audit_df.iloc[0]
+        self.assertEqual(str(row["collapse_stage"]), "time_window")
+        self.assertEqual(str(row["policy_action"]), "review_time_window_policy")
 
     def test_source_diagnostics_surface_concentration_and_weak_diversity_reasons(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -390,6 +466,34 @@ class SourceDiagnosticsTests(unittest.TestCase):
             ].iloc[0]
             self.assertEqual(str(reddit_concentration["metric_value"]), "overconcentration_risk")
             self.assertEqual(str(reddit_concentration["diagnostic_level"]), "failure")
+
+    def test_source_diagnostics_adds_single_priority_action_layer_per_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            self._write_source_fixture(
+                root,
+                raw_counts={"reddit": 12},
+                prefiltered_sources=["reddit"],
+                labelability_rows=[{"episode_id": "r1", "labelability_status": "labelable"}],
+            )
+            stage_counts_df = build_source_stage_counts(
+                root_dir=root,
+                normalized_df=pd.DataFrame({"source": ["reddit"] * 12}),
+                valid_df=pd.DataFrame({"source": ["reddit"] * 12}),
+                episodes_df=pd.DataFrame({"episode_id": ["r1"], "source": ["reddit"]}),
+                labeled_df=pd.DataFrame({"episode_id": ["r1"]}),
+                persona_assignments_df=pd.DataFrame({"episode_id": ["r1"], "persona_id": ["persona_01"]}),
+                cluster_stats_df=pd.DataFrame({"persona_id": ["persona_01"], "promotion_status": ["promoted_persona"]}),
+            )
+            diagnostics_df = build_source_diagnostics(stage_counts_df)
+
+            for metric_name in ["priority_tier", "primary_collapse_stage", "recommended_action", "severity"]:
+                rows = diagnostics_df[diagnostics_df["metric_name"].astype(str).eq(metric_name)]
+                self.assertEqual(len(rows), 1)
+            self.assertEqual(
+                str(diagnostics_df.loc[diagnostics_df["metric_name"].astype(str).eq("recommended_action"), "row_kind"].iloc[0]),
+                "diagnostic",
+            )
 
     def test_validate_workbook_frames_rejects_mixed_grain_rate_names(self) -> None:
         frames = {

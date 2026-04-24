@@ -1,0 +1,30 @@
+source_id: google_developer_forums
+source_name: Google Developer Forums
+source_group: discourse
+collector_kind: discourse
+normalizer_kind: discourse
+enabled: true
+use_stub: false
+source_type: forum
+base_url: https://discuss.google.dev
+forum_name: Google Developer Forums
+product_or_tool: Google Analytics and BI
+max_fetch_workers: 6
+allow_listing_fallback: true
+min_raw_records_warn: 0
+sleep_seconds: 0.02
+timeout_seconds: 20
+query_mode: source_config
+seed_bank_path: config/seeds/discourse/google_developer_forums.yaml
+seed_source_token: google
+seed_query_style: discussion_forum
+allowed_category_slugs:
+  - looker-forum
+  - data-studio-qa
+  - cloud-data-analytics
+aliases:
+  - google developer forums
+  - google forums
+  - discuss.google.dev
+  - looker forum
+  - looker studio forum

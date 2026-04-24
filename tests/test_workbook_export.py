@@ -305,7 +305,7 @@ class WorkbookExportTests(unittest.TestCase):
                         "final_usable_persona_count",
                         "deck_ready_persona_count",
                     ],
-                    "value": ["exploratory_only", "final_persona_asset", True, 1, 1, 1, 1, 1],
+                    "value": ["exploratory_only", "final_persona_asset", True, 1, 1, 1, 1, 0],
                 }
             ),
             counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [12]}),
@@ -359,7 +359,7 @@ class WorkbookExportTests(unittest.TestCase):
                         "final_usable_persona_count",
                         "deck_ready_persona_count",
                     ],
-                    "value": ["exploratory_only", "FAIL", "hypothesis_material", False, "Hypothesis material only. Not a final persona asset.", 1, 1, 1, 1, 1],
+                    "value": ["exploratory_only", "FAIL", "hypothesis_material", False, "Hypothesis material only. Not a final persona asset.", 1, 1, 1, 1, 0],
                 }
             ),
             counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [12]}),
@@ -445,7 +445,7 @@ class WorkbookExportTests(unittest.TestCase):
                             "Exploratory workbook only.",
                             "overall_unknown_ratio<=0.30",
                             3,
-                            2,
+                            0,
                             2,
                             2,
                             0,

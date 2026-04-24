@@ -27,6 +27,7 @@ class DiscourseCollector(BaseCollector):
 
     def __init__(self, config: dict[str, Any], data_dir: Path, source_name: str | None = None) -> None:
         self.source_name = source_name or str(config.get("source_id", config.get("source", "discourse")))
+        self._allowed_category_ids_cache: set[int] | None = None
         super().__init__(config=config, data_dir=data_dir)
 
     def collect(self) -> list[RawRecord]:
@@ -115,12 +116,16 @@ class DiscourseCollector(BaseCollector):
         discovered: dict[int, dict[str, Any]] = {}
         for ref in self._latest_topic_refs():
             topic_id = int(ref.get("id", 0) or 0)
+            if not self._is_allowed_topic_ref(ref):
+                continue
             if topic_id:
                 discovered.setdefault(topic_id, ref)
             if max_topics is not None and len(discovered) >= max_topics:
                 return list(discovered.values())
         for ref in self._search_topic_refs():
             topic_id = int(ref.get("id", 0) or 0)
+            if not self._is_allowed_topic_ref(ref):
+                continue
             if topic_id:
                 discovered.setdefault(topic_id, ref)
             if max_topics is not None and len(discovered) >= max_topics:
@@ -322,6 +327,57 @@ class DiscourseCollector(BaseCollector):
         if not base_url:
             raise ValueError(f"{self.source_name} requires base_url in source config")
         return urljoin(base_url + "/", path.lstrip("/"))
+
+    def _is_allowed_topic_ref(self, ref: dict[str, Any]) -> bool:
+        """Return whether a discovered topic belongs to an allowed category."""
+        allowed_category_ids = self._allowed_category_ids()
+        if not allowed_category_ids:
+            return True
+        try:
+            category_id = int(ref.get("category_id", 0) or 0)
+        except (TypeError, ValueError):
+            return False
+        return category_id in allowed_category_ids
+
+    def _allowed_category_ids(self) -> set[int]:
+        """Resolve category ids from explicit ids and optional category slugs."""
+        if self._allowed_category_ids_cache is not None:
+            return self._allowed_category_ids_cache
+
+        allowed_ids: set[int] = set()
+        for value in self.config.get("allowed_category_ids", []) or []:
+            try:
+                allowed_ids.add(int(value))
+            except (TypeError, ValueError):
+                continue
+
+        allowed_slugs = {
+            str(value).strip().lower()
+            for value in self.config.get("allowed_category_slugs", []) or []
+            if str(value).strip()
+        }
+        if not allowed_slugs:
+            self._allowed_category_ids_cache = allowed_ids
+            return allowed_ids
+
+        payload = self._fetch_json(
+            self._api_url("/site.json"),
+            query_id="site",
+            query_text="site.json",
+            page_no=1,
+        )
+        for row in payload.get("categories", []) if isinstance(payload, dict) else []:
+            if not isinstance(row, dict):
+                continue
+            slug = str(row.get("slug", "") or "").strip().lower()
+            if slug not in allowed_slugs:
+                continue
+            try:
+                allowed_ids.add(int(row.get("id", 0) or 0))
+            except (TypeError, ValueError):
+                continue
+        self._allowed_category_ids_cache = allowed_ids
+        return allowed_ids
 
     def _public_topic_url(self, slug: str, topic_id: str) -> str:
         """Build a user-facing topic URL."""

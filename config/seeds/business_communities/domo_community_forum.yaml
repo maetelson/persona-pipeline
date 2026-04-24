@@ -1,0 +1,54 @@
+source_id: domo_community_forum
+source_group: business_communities
+max_query_count: 12
+source_notes: "Domo Community seeds focus on chart/card mismatch, ETL and dataset trust issues, connector sync failures, API append workflows, and business-user reporting friction."
+candidate_seed_pool:
+  - card total looks wrong
+  - dashboard filter acting weird
+  - beast mode result wrong
+  - connector sync changed schema
+  - append api replaced data
+  - data table metric missing
+  - hourly chart wrong
+  - filter card default selection issue
+active_core_seeds:
+  - seed: card doesn't match
+    reason: Native Domo phrasing for card-versus-table or card-versus-export trust issues.
+  - seed: dashboard filter confusion
+    reason: Captures dashboard interaction and filtering pain.
+  - seed: beast mode wrong
+    reason: Preserves Domo-specific calculation confusion language.
+  - seed: pivot table issue
+    reason: Targets charting and analyzer breakdown problems.
+  - seed: export differs from card
+    reason: Keeps card-versus-export trust conflict explicit.
+  - seed: magic etl error
+    reason: Strong ETL-native workflow failure phrasing.
+  - seed: join mismatch
+    reason: Captures ETL/data-model mismatch language.
+  - seed: rank and window issue
+    reason: Matches Magic ETL tile-specific friction.
+  - seed: workflow broken
+    reason: Broad workflow failure phrasing used by operators.
+  - seed: dataset view mismatch
+    reason: Captures dataset-level trust and shape discrepancies.
+  - seed: connector sync failed
+    reason: Targets recurring connector refresh and schema sync issues.
+  - seed: append api issue
+    reason: Covers Domo API append/update workflow pain.
+  - seed: data table extra metric
+    reason: Captures Analyzer/data-table output needs that do not fit the chart itself.
+  - seed: hourly chart wrong
+    reason: Targets graph-by and time-scale trust issues in Domo cards.
+  - seed: filter card default selection
+    reason: Preserves app/filter workflow friction in dashboard delivery.
+optional_templates: []
+negative_terms:
+  - react app
+  - css
+  - embed
+  - sso
+  - theme
+  - community idea
+  - javascript
+  - app studio

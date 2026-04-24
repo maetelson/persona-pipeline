@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from src.collectors.business_community_collector import BusinessCommunityCollector
+from src.collectors.business_community_collector import _paginate_listing_url
 from src.collectors.business_community_parser import (
     ThreadLink,
     canonicalize_business_url,
@@ -133,6 +134,19 @@ class BusinessCommunitySourceTests(unittest.TestCase):
         self.assertEqual(len(links), 1)
         self.assertEqual(links[0].url, "https://community.mixpanel.com/x/questions/abcd1234/funnel-numbers-different")
 
+    def test_sisense_sitemap_discovery_uses_topic_slug_not_numeric_id_for_title(self) -> None:
+        xml = """
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+          <url>
+            <loc>https://community.sisense.com/discussions/help_and_how_to/dashboard-filter-limits-the-list-selection/28962</loc>
+            <lastmod>2026-04-13T17:00:50.385Z</lastmod>
+          </url>
+        </urlset>
+        """
+        links = discover_sitemap_thread_links(xml, "https://community.sisense.com/sitemap_help_and_how_to.xml.gz", "sisense", "Help and How-To")
+        self.assertEqual(len(links), 1)
+        self.assertEqual(links[0].title, "dashboard filter limits the list selection")
+
     def test_qlik_thread_discovery_supports_td_p_urls(self) -> None:
         html = """
         <a href="/t5/Visualization-and-Usability/Wrong-total-in-chart/td-p/2546782">Wrong total in chart</a>
@@ -215,6 +229,72 @@ class BusinessCommunitySourceTests(unittest.TestCase):
         )
         self.assertEqual(parsed.parse_status, "ok")
         self.assertIn("ad group got disapproved", parsed.body_text)
+
+    def test_domo_thread_discovery_supports_main_discussion_urls(self) -> None:
+        html = """
+        <a href="/main/discussion/70942/too-many-filters-cards-on-the-app-enhance-ui-ux-experience-for-users">
+        Too many filters cards on the App
+        </a>
+        <a href="/main/categories/charting">Charting</a>
+        """
+        links = discover_thread_links(html, "https://community-forums.domo.com/main/categories/charting", "domo")
+        self.assertEqual(len(links), 1)
+        self.assertEqual(
+            links[0].url,
+            "https://community-forums.domo.com/main/discussion/70942/too-many-filters-cards-on-the-app-enhance-ui-ux-experience-for-users",
+        )
+
+    def test_adobe_thread_discovery_supports_insided_topic_urls(self) -> None:
+        html = """
+        <a href="/adobe-analytics-3/youtube-video-tracking-issue-249566">Youtube Video Tracking issue</a>
+        <a href="/adobe-analytics-3">Adobe Analytics</a>
+        """
+        links = discover_thread_links(html, "https://experienceleaguecommunities.adobe.com/adobe-analytics-3", "adobe_insided")
+        self.assertEqual(len(links), 1)
+        self.assertEqual(
+            links[0].url,
+            "https://experienceleaguecommunities.adobe.com/adobe-analytics-3/youtube-video-tracking-issue-249566",
+        )
+
+    def test_adobe_parser_prefers_meta_description_and_canonical(self) -> None:
+        html = """
+        <html><head>
+        <title>Youtube Video Tracking issue | Community</title>
+        <meta property="og:url" content="https://experienceleaguecommunities.adobe.com/adobe-analytics-3/youtube-video-tracking-issue-249566?postid=751140#post751140" />
+        <meta property="og:description" content="Tracking works inline, but breaks for modal popup playback." />
+        </head><body>
+        <a href="/adobe-analytics-3">Adobe Analytics</a>
+        <p>Tracking works inline, but breaks for modal popup playback.</p>
+        </body></html>
+        """
+        parsed = parse_thread_page(
+            html,
+            url="https://experienceleaguecommunities.adobe.com/adobe-analytics-3/youtube-video-tracking-issue-249566?postid=751140#post751140",
+            platform="adobe_insided",
+            fallback=ThreadLink(
+                url="https://experienceleaguecommunities.adobe.com/adobe-analytics-3/youtube-video-tracking-issue-249566",
+                title="Youtube Video Tracking issue",
+                board="Adobe Analytics",
+            ),
+            product_or_tool="Adobe Analytics",
+        )
+        self.assertEqual(parsed.canonical_url, "https://experienceleaguecommunities.adobe.com/adobe-analytics-3/youtube-video-tracking-issue-249566")
+        self.assertEqual(parsed.title, "Youtube Video Tracking issue")
+        self.assertIn("modal popup playback", parsed.body_text.lower())
+
+    def test_canonicalize_business_url_preserves_percent_encoded_adobe_slug(self) -> None:
+        url = canonicalize_business_url(
+            "/adobe-analytics-3/como-se-hace-un-an%C3%A1lisis-de-cohortes-250999",
+            "https://experienceleaguecommunities.adobe.com/adobe-analytics-3",
+            "adobe_insided",
+        )
+        self.assertIn("%C3%A1", url)
+
+    def test_domo_pagination_uses_path_suffix(self) -> None:
+        self.assertEqual(
+            _paginate_listing_url("https://community-forums.domo.com/main/categories/charting", "domo", 2),
+            "https://community-forums.domo.com/main/categories/charting/p2",
+        )
 
     def test_shopify_discovery_decision_distinguishes_excluded_and_seed_filtered(self) -> None:
         collector = BusinessCommunityCollector(
