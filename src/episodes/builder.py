@@ -204,14 +204,14 @@ def build_post_episodes(row: pd.Series, rules: dict[str, Any]) -> tuple[list[Epi
         candidate_units = [diagnostics["combined_text"]]
 
     segments = [_derive_segment_state(unit) for unit in candidate_units if len(clean_text(unit)) >= min_episode_len // 2]
-    segments = [segment for segment in segments if not _is_non_boundary_segment(segment.text, rules)]
+    segments = [segment for segment in segments if not _is_non_boundary_segment(segment.text, rules, source=source)]
     if not segments:
         fallback = _derive_segment_state(diagnostics["combined_text"])
         segments = [fallback] if len(fallback.text) >= min_episode_len else []
     if not segments:
         return [], _build_debug_record(row, diagnostics, episode_count=0, drop_reason=_derive_drop_reason(diagnostics))
 
-    grouped = _group_segments(segments, rules)
+    grouped = _group_segments(segments, rules, source=source)
     if not grouped:
         grouped = [_derive_segment_state(diagnostics["combined_text"])]
 
@@ -268,13 +268,34 @@ def _build_units_from_row(row: pd.Series, rules: dict[str, Any], diagnostics: di
         diagnostics = _build_episode_row_diagnostics(row, rules)
 
     combined_primary = diagnostics["combined_primary"]
-    if combined_primary:
+    source = str(row.get("source", "") or "")
+    body_has_multi_paragraphs = bool(re.search(r"\n\s*\n+", body))
+    source_split_units = _split_source_shift_units(body, source, rules)
+    use_title_only_primary = bool(source_split_units)
+
+    if source == "adobe_analytics_community" and body_has_multi_paragraphs and title:
+        units.append(title)
+    elif use_title_only_primary and title:
+        units.append(title)
+    elif combined_primary:
         units.append(combined_primary)
     elif title:
         units.append(title)
     if parent_context and parent_context not in units:
         units.append(parent_context)
-    units.extend(_split_body_into_units(body, rules))
+    if source == "adobe_analytics_community" and body_has_multi_paragraphs:
+        adobe_paragraphs = [clean_text(part) for part in re.split(r"\n\s*\n+", body) if clean_text(part)]
+        for paragraph in adobe_paragraphs:
+            split_units = _split_source_shift_units(paragraph, source, rules)
+            if split_units:
+                units.extend(split_units)
+            elif len(paragraph) >= int(rules.get("min_unit_len", 80)):
+                units.append(paragraph)
+    else:
+        if source_split_units:
+            units.extend(source_split_units)
+        else:
+            units.extend(_split_body_into_units(body, rules))
     units.extend(_comment_blocks(comments_text, rules))
     diagnostics["candidate_unit_count_raw"] = len([unit for unit in units if clean_text(unit)])
 
@@ -355,7 +376,7 @@ def _comment_blocks(comments_text: str, rules: dict[str, Any]) -> list[str]:
     return [clean_text(block) for block in blocks[:max_blocks] if clean_text(block)]
 
 
-def _group_segments(segments: list[SegmentState], rules: dict[str, Any]) -> list[SegmentState]:
+def _group_segments(segments: list[SegmentState], rules: dict[str, Any], source: str = "") -> list[SegmentState]:
     """Merge candidate units into conservative final episodes.
 
     Over-segmentation guard:
@@ -376,21 +397,32 @@ def _group_segments(segments: list[SegmentState], rules: dict[str, Any]) -> list
     min_boundary_segment_len = int(rules.get("min_boundary_segment_len", 180))
     similarity_threshold = float(rules.get("similarity_merge_threshold", 0.62))
     min_signature_change_count = int(rules.get("min_signature_change_count", 2))
+    if source == "adobe_analytics_community":
+        min_boundary_segment_len = max(140, min_boundary_segment_len - 100)
+        min_signature_change_count = max(2, min_signature_change_count - 1)
+    elif source == "domo_community_forum":
+        min_boundary_segment_len = max(100, min_boundary_segment_len - 160)
 
     grouped: list[SegmentState] = [segments[0]]
     for segment in segments[1:]:
         current = grouped[-1]
         signature_change_count = _signature_change_count(current, segment, rules)
+        adobe_domain_shift = source == "adobe_analytics_community" and _adobe_domain_shift(current.text, segment.text)
+        domo_domain_shift = source == "domo_community_forum" and _domo_domain_shift(current.text, segment.text)
+        if adobe_domain_shift:
+            signature_change_count = max(signature_change_count, min_signature_change_count)
+        if domo_domain_shift:
+            signature_change_count = max(signature_change_count, min_signature_change_count)
         similarity = _text_similarity(current.text, segment.text)
-        weak_new_signal = _is_non_boundary_segment(segment.text, rules)
+        weak_new_signal = _is_non_boundary_segment(segment.text, rules, source=source)
         explicit_shift = _has_explicit_shift_marker(segment.text)
-        strong_pair = _has_strong_boundary_pair(current, segment)
+        strong_pair = _has_strong_boundary_pair(current, segment, source=source)
         boundary_allowed = (
             signature_change_count >= min_signature_change_count
             and len(current.text) >= min_boundary_segment_len
             and len(segment.text) >= min_boundary_segment_len
             and similarity < similarity_threshold
-            and not weak_new_signal
+            and (not weak_new_signal or adobe_domain_shift or domo_domain_shift)
             and (explicit_shift or strong_pair)
         )
         would_be_too_long = len(current.text) + len(segment.text) > max_episode_len
@@ -1110,6 +1142,7 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
         "shopify_community",
         "hubspot_community",
         "klaviyo_community",
+        "adobe_analytics_community",
         "power_bi_community",
         "qlik_community",
         "sisense_community",
@@ -1512,14 +1545,23 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             for term in [
                 "adobe analytics",
                 "workspace",
+                "analysis workspace",
+                "freeform table",
                 "debugger",
                 "report suite",
+                "report builder",
+                "excel",
+                "pdf",
                 "segment",
                 "calculated metric",
                 "evar",
                 "prop",
                 "classification",
                 "attribution",
+                "pageurl",
+                "page view",
+                "expirydate",
+                "date range",
                 "direct traffic",
                 "seo",
                 "customers metric",
@@ -1541,6 +1583,20 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "updated after",
                 "impact ios",
                 "wrong channel",
+                "slow",
+                "very slow",
+                "loading issues",
+                "font is broken",
+                "broken in a pdf",
+                "broken in pdf",
+                "can't see the data",
+                "cannot see the data",
+                "unspecified pageurl",
+                "what could be the cause",
+                "dropping one of the dimensions",
+                "missing dimension",
+                "export missing",
+                "export is dropping",
             ]
         )
         analysis_context = any(
@@ -1555,17 +1611,59 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "traffic",
                 "ios",
                 "bookmarked",
+                "weekly review",
+                "team members",
+                "pdf format",
+                "freeform table",
+                "stakeholder workbook",
+                "sign-off",
             ]
         )
         explanation_burden = any(
             term in lowered
             for term in [
                 "is there a way",
+                "is it possible",
                 "currently validating",
                 "we have noticed",
                 "we investigated",
                 "could find",
                 "i want to set up",
+                "wondering anyone is experiencing",
+                "what could be the cause",
+                "i'd like to create a report",
+                "i've tried",
+                "what do i need to set",
+                "pull out all the segments",
+                "for a particular report suite",
+            ]
+        )
+        operational_question = any(
+            term in lowered
+            for term in [
+                "what causes",
+                "is there anything i need to set",
+                "is it possible to pull out",
+                "what could be the cause",
+                "wondering anyone is experiencing",
+                "i'd like to create a report",
+                "i've tried using",
+                "can i create",
+            ]
+        )
+        adobe_noise = any(
+            term in lowered
+            for term in [
+                "in previous posts",
+                "we covered migrating",
+                "we'll discuss",
+                "migration tutorial",
+                "complete web sdk migration tutorial",
+                "release notes",
+                "community member of the year",
+                "certification",
+                "exam",
+                "summit",
             ]
         )
         signal_count = sum(
@@ -1578,13 +1676,44 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 has_workflow_pain,
             ]
         )
+        if adobe_noise and not discrepancy_presence:
+            return QualityAssessment(score=0.0, bucket="fail", fail_reason="adobe_reference_or_training_content", rescue_reason="", passes=False)
         if signal_count >= 3 and (discrepancy_presence or analysis_context):
             return QualityAssessment(score=0.92, bucket="hard_pass", fail_reason="", rescue_reason="adobe_analytics_context_rescue", passes=True)
+        if metric_presence and (discrepancy_presence or explanation_burden or operational_question) and not adobe_noise:
+            return QualityAssessment(
+                score=0.78,
+                bucket="borderline",
+                fail_reason="weak_problem_phrasing",
+                rescue_reason="adobe_operational_question_rescue",
+                passes=True,
+            )
         if signal_count >= 2 and (metric_presence or analysis_context):
             return QualityAssessment(score=0.72, bucket="borderline", fail_reason="weak_problem_phrasing", rescue_reason="adobe_analytics_domain_rescue", passes=True)
         return QualityAssessment(score=0.0, bucket="fail", fail_reason="adobe_low_signal", rescue_reason="", passes=False)
 
     if source == "domo_community_forum":
+        filter_default_issue = any(
+            term in lowered
+            for term in [
+                "drop down filter",
+                "filter card",
+                "default selection",
+                "latest month selected",
+                "always keep",
+                "clear filter",
+            ]
+        )
+        summary_scope_issue = any(
+            term in lowered
+            for term in [
+                "beast mode",
+                "summary number",
+                "whole dataset",
+                "filtered rows",
+                "reporting total is wrong",
+            ]
+        )
         metric_presence = any(
             term in lowered
             for term in [
@@ -1608,6 +1737,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "hard to get",
                 "default selection",
                 "not allow user to clear filter",
+                "always keep the latest month selected",
+                "always have something selected",
+                "pre-select",
+                "pre selected",
                 "always have something selected",
                 "wrong",
                 "broken",
@@ -1635,12 +1768,16 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "i want",
                 "however, i want",
                 "recommend",
+                "how do you",
+                "any idea",
             ]
         )
         ideas_exchange_noise = "ideas exchange" in lowered and not (discrepancy_presence or analysis_context)
         app_framework_noise = any(term in lowered for term in ["custom app", "app framework", "react", "vue", "ddx"]) and not discrepancy_presence
         if ideas_exchange_noise or app_framework_noise:
             return QualityAssessment(score=0.0, bucket="fail", fail_reason="domo_platform_discussion_without_workflow_pain", rescue_reason="", passes=False)
+        if filter_default_issue or summary_scope_issue:
+            return QualityAssessment(score=0.88, bucket="hard_pass", fail_reason="", rescue_reason="domo_filter_summary_rescue", passes=True)
         signal_count = sum(
             int(flag)
             for flag in [
@@ -2667,15 +2804,18 @@ def _signature_change_count(left: SegmentState, right: SegmentState, rules: dict
     return changes
 
 
-def _is_non_boundary_segment(text: str, rules: dict[str, Any]) -> bool:
+def _is_non_boundary_segment(text: str, rules: dict[str, Any], source: str = "") -> bool:
     """Return True when a unit is mostly boilerplate, promo, or repetitive filler."""
     lowered = clean_text(text).lower()
     if not lowered:
         return True
+    min_unit_len = int(rules.get("min_unit_len", 80))
+    if source in {"adobe_analytics_community", "domo_community_forum"}:
+        min_unit_len = max(90, min_unit_len - 30)
     for pattern in rules.get("non_boundary_patterns", []):
         if str(pattern).lower() in lowered:
             return True
-    if len(lowered) < int(rules.get("min_unit_len", 80)):
+    if len(lowered) < min_unit_len:
         return True
     return False
 
@@ -2698,7 +2838,7 @@ def _has_explicit_shift_marker(text: str) -> bool:
     return any(marker in lowered for marker in markers)
 
 
-def _has_strong_boundary_pair(left: SegmentState, right: SegmentState) -> bool:
+def _has_strong_boundary_pair(left: SegmentState, right: SegmentState, source: str = "") -> bool:
     """Allow a split only when multiple non-generic families truly shift."""
     left_values = set(left.signature)
     right_values = set(right.signature)
@@ -2714,7 +2854,116 @@ def _has_strong_boundary_pair(left: SegmentState, right: SegmentState) -> bool:
         if right_value in {"unknown", "solo", "workflow_help", "general_friction", "unspecified", "unspecified_output"}:
             continue
         different_families += 1
-    return different_families >= 2
+    if different_families >= 2:
+        return True
+    if source == "adobe_analytics_community" and _adobe_domain_shift(left.text, right.text):
+        return True
+    if source == "domo_community_forum" and _domo_domain_shift(left.text, right.text):
+        return True
+    return False
+
+
+def _split_source_shift_units(text: str, source: str, rules: dict[str, Any]) -> list[str]:
+    """Split long source-specific bodies on real shift markers when workflow domains diverge."""
+    normalized = clean_text(text)
+    min_unit_len = int(rules.get("min_unit_len", 80))
+    source_min_unit_len = max(90, min_unit_len - 30)
+    if source not in {"adobe_analytics_community", "domo_community_forum"} or len(normalized) < max(220, source_min_unit_len * 2):
+        return []
+
+    raw_parts = [
+        clean_text(part)
+        for part in re.split(
+            r"(?i)(?=\b(?:separately|however|on the other hand|meanwhile|in addition|another issue)\b)",
+            normalized,
+        )
+        if clean_text(part)
+    ]
+    if len(raw_parts) < 2:
+        return []
+
+    merged_parts: list[str] = [raw_parts[0]]
+    for part in raw_parts[1:]:
+        left = merged_parts[-1]
+        if source == "adobe_analytics_community":
+            domain_shift = _adobe_domain_shift(left, part)
+        else:
+            domain_shift = _domo_domain_shift(left, part)
+        if domain_shift and len(left) >= source_min_unit_len and len(part) >= source_min_unit_len:
+            merged_parts.append(part)
+        else:
+            merged_parts[-1] = combine_text(left, part)
+
+    return merged_parts if len(merged_parts) >= 2 else []
+
+
+def _adobe_domain_shift(left_text: str, right_text: str) -> bool:
+    """Allow Adobe threads to split when adjacent units move across real workflow domains."""
+    left_domain = _adobe_problem_domain(left_text)
+    right_domain = _adobe_problem_domain(right_text)
+    if not left_domain or not right_domain or left_domain == right_domain:
+        return False
+    meaningful_pairs = {
+        ("workspace", "debugger"),
+        ("workspace", "cja"),
+        ("workspace", "report_builder"),
+        ("workspace", "segment_definition"),
+        ("workspace", "classification"),
+        ("workspace", "data_feed"),
+        ("debugger", "workspace"),
+        ("cja", "workspace"),
+        ("report_builder", "workspace"),
+        ("segment_definition", "workspace"),
+        ("classification", "workspace"),
+        ("data_feed", "workspace"),
+        ("metric_definition", "workspace"),
+        ("attribution", "workspace"),
+        ("workspace", "metric_definition"),
+        ("workspace", "attribution"),
+    }
+    return (left_domain, right_domain) in meaningful_pairs
+
+
+def _adobe_problem_domain(text: str) -> str:
+    """Map Adobe text into a coarse workflow/problem domain for split decisions."""
+    lowered = clean_text(text).lower()
+    domain_map = {
+        "debugger": ["debugger", "assurance"],
+        "workspace": ["workspace", "analysis workspace", "freeform table"],
+        "cja": ["cja", "customer journey analytics", "data view"],
+        "report_builder": ["report builder", "excel add-in"],
+        "classification": ["classification", "classification set", "classification rule"],
+        "segment_definition": ["segment", "segment builder", "segment container"],
+        "data_feed": ["data feed", "feed export", "warehouse", "sftp"],
+        "metric_definition": ["calculated metric", "metric", "evar", "prop"],
+        "attribution": ["attribution", "marketing channel", "channel"],
+    }
+    for domain, terms in domain_map.items():
+        if any(term in lowered for term in terms):
+            return domain
+    return ""
+
+
+def _domo_domain_shift(left_text: str, right_text: str) -> bool:
+    """Allow Domo threads to split when adjacent units move across real workflow domains."""
+    left_domain = _domo_problem_domain(left_text)
+    right_domain = _domo_problem_domain(right_text)
+    return bool(left_domain and right_domain and left_domain != right_domain)
+
+
+def _domo_problem_domain(text: str) -> str:
+    """Map Domo text into a coarse workflow/problem domain for split decisions."""
+    lowered = clean_text(text).lower()
+    domain_map = {
+        "filtering": ["filter card", "filter view", "drop down filter", "global filter", "selected"],
+        "calculation": ["beast mode", "calculated field", "formula", "lag", "period over period", "summary number"],
+        "charting": ["chart", "graph", "line chart", "bar chart", "table card", "heatmap", "gantt"],
+        "dataset_ops": ["dataset", "workbench", "magic etl", "recursive magic etl", "appdb", "pro-code editor", "connector", "update"],
+    }
+    for domain, terms in domain_map.items():
+        if any(term in lowered for term in terms):
+            return domain
+    return ""
 
 
 def _is_boilerplate(text: str, rules: dict[str, Any]) -> bool:

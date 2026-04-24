@@ -812,13 +812,24 @@ def _klaviyo_whitelist_hits(lowered: str) -> list[str]:
         "report", "reporting", "analytics", "benchmark", "export", "csv", "weekly reporting",
         "attributed revenue", "revenue", "attribution", "segment count", "list count", "profile count",
         "ga4", "google analytics", "overview dashboard", "campaigns breakdown by segment", "segment export",
+        "custom report", "conversion rate", "visualizations", "external app", "api", "form metrics",
+        "sign ups", "views by form", "average days between orders", "churn rate",
+        "custom reports page", "predictive metrics", "churn risk", "attribution window",
     ]
     trust_terms = [
         "source of truth", "not matching", "mismatch", "discrepancy", "reporting lag",
         "reconcile", "reconciliation", "what changed", "why did", "different", "compare",
-        "does not equal", "doesn't equal", "doesnt equal",
+        "does not equal", "doesn't equal", "doesnt equal", "limitation", "missing something",
+        "not able to", "can't", "cannot", "not working as expected", "can't seem to find",
+        "inflated", "full price", "discounted price", "at zero", "showing conversions are at zero",
+        "error loading", "not count as revenue", "more revenue than klaviyo", "cancelled orders",
     ]
-    ops_terms = ["export excel", "manual spreadsheet", "before sending", "weekly reporting", "google sheets", "power query"]
+    ops_terms = [
+        "export excel", "manual spreadsheet", "before sending", "weekly reporting", "google sheets", "power query",
+        "external app", "visualizations", "conversion rate via api", "pull form metrics via api", "custom report",
+        "dynamic one", "static value", "further data manipulation", "custom reports page", "predictive metrics",
+        "churn risk", "attribution window",
+    ]
     reporting_hit = any(_text_contains_term(lowered, term) for term in reporting_terms)
     trust_hit = any(_text_contains_term(lowered, term) for term in trust_terms)
     ops_hit = any(_text_contains_term(lowered, term) for term in ops_terms)
@@ -869,6 +880,36 @@ def _klaviyo_whitelist_hits(lowered: str) -> list[str]:
         hits.append("klaviyo_export_integrity")
     if any(_text_contains_term(lowered, term) for term in ["skipped report", "message was skipped", "skip reason"]) and reporting_hit:
         hits.append("klaviyo_skip_reason_reporting")
+    if reporting_hit and any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "external app",
+            "visualizations",
+            "conversion rate",
+            "form metrics",
+            "views by form",
+            "sign ups",
+            "custom report",
+            "average days between orders",
+            "churn rate",
+        ]
+    ) and trust_hit:
+        hits.append("klaviyo_analysis_workaround")
+    if reporting_hit and any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "cancelled orders",
+            "full price",
+            "discounted price",
+            "attribution window",
+            "conversions are at zero",
+            "custom reports page",
+            "error loading",
+            "predictive metrics",
+            "churn risk",
+        ]
+    ) and trust_hit:
+        hits.append("klaviyo_reporting_math")
     return hits
 
 
@@ -1681,6 +1722,16 @@ def _apply_klaviyo_rescue_signals(
             "bulk export",
             "ga4",
             "google analytics",
+            "campaign attribution",
+            "signup report",
+            "conversion report",
+            "stakeholder reporting",
+            "performance summary",
+            "report mismatch",
+            "custom reports page",
+            "predictive metrics",
+            "churn risk",
+            "attribution window",
         ]
     )
     trust_hit = any(
@@ -1703,6 +1754,19 @@ def _apply_klaviyo_rescue_signals(
             "does not equal",
             "doesn't equal",
             "doesnt equal",
+            "source of truth changed",
+            "numbers drifted",
+            "count changed",
+            "report is off",
+            "numbers do not line up",
+            "inflated",
+            "full price",
+            "discounted price",
+            "cancelled orders",
+            "showing conversions are at zero",
+            "error loading",
+            "not count as revenue",
+            "more revenue than klaviyo",
         ]
     )
     segment_hit = any(
@@ -1717,6 +1781,8 @@ def _apply_klaviyo_rescue_signals(
             "campaigns breakdown by segment",
             "compare segments",
             "segment performance",
+            "segment report discrepancy",
+            "segment mismatch",
         ]
     )
     attribution_hit = any(
@@ -1730,6 +1796,8 @@ def _apply_klaviyo_rescue_signals(
             "google analytics",
             "recharge",
             "revenue attribution skewed",
+            "campaign attribution",
+            "conversion attribution",
         ]
     )
     ops_hit = any(
@@ -1745,6 +1813,9 @@ def _apply_klaviyo_rescue_signals(
             "overview dashboard",
             "bulk export",
             "export all metric data",
+            "stakeholder reporting",
+            "performance summary",
+            "before sign-off",
         ]
     )
     export_integrity_hit = any(
@@ -1761,6 +1832,31 @@ def _apply_klaviyo_rescue_signals(
             "bulk export",
             "export all metric data",
             "overview dashboard",
+            "report mismatch",
+            "campaign attribution",
+            "conversion report",
+            "custom report",
+            "form metrics",
+            "conversion rate",
+            "views by form",
+            "sign ups",
+        ]
+    )
+    analysis_workaround_hit = any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "external app",
+            "visualizations",
+            "conversion rate via api",
+            "pull form metrics via api",
+            "custom report",
+            "average days between orders",
+            "churn rate",
+            "static value",
+            "dynamic one",
+            "further data manipulation",
+            "predictive metrics",
+            "churn risk",
         ]
     )
     skip_reason_hit = any(
@@ -1807,6 +1903,44 @@ def _apply_klaviyo_rescue_signals(
         scores["reporting_pain_score"] += 0.6
         bonus += 0.95
         labels.append("klaviyo_skip_reason_reporting")
+    if reporting_hit and any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "stakeholder reporting",
+            "performance summary",
+            "before sign-off",
+            "before sharing numbers",
+        ]
+    ):
+        scores["stakeholder_pressure_score"] += 0.8
+        scores["reporting_pain_score"] += 0.35
+        bonus += 0.55
+        labels.append("klaviyo_stakeholder_reporting")
+    if analysis_workaround_hit and reporting_hit and trust_hit:
+        scores["adhoc_analysis_score"] += 0.8
+        scores["excel_rework_score"] += 0.35
+        scores["reporting_pain_score"] += 0.35
+        bonus += 0.7
+        labels.append("klaviyo_analysis_workaround")
+    if reporting_hit and trust_hit and any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "cancelled orders",
+            "full price",
+            "discounted price",
+            "attribution window",
+            "showing conversions are at zero",
+            "error loading",
+            "custom reports page",
+            "more revenue than klaviyo",
+            "predictive metrics",
+            "churn risk",
+        ]
+    ):
+        scores["dashboard_trust_score"] += 0.9
+        scores["root_cause_score"] += 0.45
+        bonus += 0.7
+        labels.append("klaviyo_reporting_math")
     if labels:
         unique_labels = list(dict.fromkeys(labels))
         positive_hits.append(("klaviyo_source_whitelist_score", round(bonus, 2)))
@@ -1836,6 +1970,11 @@ def _apply_qlik_rescue_signals(
             "export",
             "export to excel",
             "export excel",
+            "pivot table",
+            "straight table",
+            "measure",
+            "measures",
+            "reload",
         ]
     )
     trust_hit = any(
@@ -1855,6 +1994,10 @@ def _apply_qlik_rescue_signals(
             "incorrect values",
             "correct in excel",
             "huge difference",
+            "reload result mismatch",
+            "measure inconsistency",
+            "number trust",
+            "dashboard number trust",
         ]
     )
     export_integrity_hit = any(
@@ -1870,6 +2013,9 @@ def _apply_qlik_rescue_signals(
             "shown as text",
             "same excel file",
             "one excel workbook",
+            "pivot export",
+            "straight table export",
+            "pixel perfect export",
         ]
     )
     reconcile_hit = any(
@@ -1882,6 +2028,9 @@ def _apply_qlik_rescue_signals(
             "comparison table",
             "summary and detail",
             "business users",
+            "reload",
+            "reload task",
+            "after reload",
         ]
     )
     generic_helper_only = any(
@@ -1917,6 +2066,20 @@ def _apply_qlik_rescue_signals(
         scores["biz_workflow_score"] += 0.4
         bonus += 0.55
         labels.append("qlik_reconciliation_context")
+    if reporting_hit and any(
+        _text_contains_term(lowered, term)
+        for term in [
+            "pivot table",
+            "straight table",
+            "measure inconsistency",
+            "dashboard number trust",
+            "reload result mismatch",
+        ]
+    ):
+        scores["metric_definition_score"] += 0.7
+        scores["dashboard_trust_score"] += 0.35
+        bonus += 0.55
+        labels.append("qlik_measure_trust")
     if labels:
         unique_labels = list(dict.fromkeys(labels))
         positive_hits.append(("qlik_source_whitelist_score", round(bonus, 2)))
@@ -2489,6 +2652,19 @@ def _apply_source_specific_floor_override(
                 "skewed",
                 "missing profiles",
                 "missing emails",
+                "limitation",
+                "missing something",
+                "not able to",
+                "can't seem to find",
+                "cannot seem to find",
+                "inflated",
+                "full price",
+                "discounted price",
+                "cancelled orders",
+                "conversions are at zero",
+                "error loading",
+                "not count as revenue",
+                "more revenue than klaviyo",
             ]
         )
         if has_reporting_context and has_operational_pain and final_score >= floor:
@@ -2511,9 +2687,33 @@ def _apply_source_specific_floor_override(
                 "overview dashboard",
                 "ga4",
                 "google analytics",
+                "custom reports page",
+                "predictive metrics",
+                "churn risk",
+                "attribution window",
             ]
         )
         if has_reporting_context and has_export_integrity_context and final_score >= max(floor - 1.2, 2.15):
+            return "borderline"
+        has_analysis_workaround_context = any(
+            _text_contains_term(lowered, term)
+            for term in [
+                "external app",
+                "visualizations",
+                "conversion rate via api",
+                "pull form metrics via api",
+                "form metrics",
+                "views by form",
+                "custom report",
+                "average days between orders",
+                "churn rate",
+                "static value",
+                "dynamic one",
+                "predictive metrics",
+                "churn risk",
+            ]
+        )
+        if has_reporting_context and has_analysis_workaround_context and final_score >= max(floor - 1.45, 2.0):
             return "borderline"
     if source == "google_developer_forums":
         floor = float(source_cfg.get("borderline_floor_with_reporting_context", 4.0))

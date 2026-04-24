@@ -95,3 +95,37 @@ source_rescue_rules:
       - migration
     oldest_allowed_text_year: 2023
     stale_version_pattern: "\\b(?:metabase\\s*)?v?0\\.[0-3][0-9]\\b"
+  domo_community_forum:
+    include_any_terms:
+      - beast mode
+      - analyzer
+      - magic etl
+      - filter card
+      - dataflow
+      - chart
+      - dashboard
+      - card
+      - export
+      - pivot
+      - dataset
+      - connector
+      - append api
+      - card doesn't match
+      - dashboard filter
+      - wrong totals
+      - not matching
+      - mtd
+      - yoy
+    exclude_any_terms:
+      - video tutorial
+      - release notes
+      - ideas exchange
+      - deprecated
+      - upgrade guide
+      - migration
+      - app framework
+      - react
+      - vue
+      - ddx
+    oldest_allowed_text_year: 2019
+    stale_version_pattern: "\\b20(?:1[5-8])\\b"

@@ -275,6 +275,83 @@ class RelevancePrefilterTests(unittest.TestCase):
         self.assertEqual(len(scored), 1)
         self.assertIn("klaviyo", scored.iloc[0]["source_specific_reason"])
 
+    def test_klaviyo_stakeholder_reporting_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-stakeholder",
+                    "title": "Campaign attribution report mismatch before stakeholder sign-off",
+                    "body": "Our campaign attribution and conversion report no longer line up with the performance summary, and we need a stakeholder reporting version we can trust before sharing numbers.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertEqual(len(scored), 1)
+        self.assertIn("klaviyo", str(scored.iloc[0]["source_specific_reason"]))
+
+    def test_klaviyo_external_analysis_reporting_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-external-analysis",
+                    "title": "Analyzing Klaviyo data externally",
+                    "body": "I am trying to use Klaviyo for reporting and analytics with a client, but I keep running into issues and want an external app for segments, reports, and visualizations that Klaviyo cannot support.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertEqual(len(scored), 1)
+        self.assertIn("klaviyo", str(scored.iloc[0]["source_specific_reason"]))
+
+    def test_klaviyo_form_metrics_api_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-form-metrics",
+                    "title": "is there a way to pull form metrics via API?",
+                    "body": "I am looking for a way to export sign ups and views by form so I can get a conversion rate via API for reporting.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertEqual(len(scored), 1)
+        self.assertIn("klaviyo", str(scored.iloc[0]["source_specific_reason"]))
+
+    def test_klaviyo_product_specific_flow_tips_stay_dropped(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-flow-tips",
+                    "title": "Advice on Creating Product-Specific Abandoned Cart Flows",
+                    "body": "Looking for advice on creating a product-specific abandoned cart flow and personalized message content for different products.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        _, _, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 1)
+
     def test_mixpanel_api_setup_post_is_dropped(self) -> None:
         frame = pd.DataFrame(
             [
@@ -309,6 +386,26 @@ class RelevancePrefilterTests(unittest.TestCase):
         keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
         self.assertEqual(len(drop_df), 0)
         self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_qlik_reload_result_mismatch_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "qlik_community",
+                    "raw_id": "qlik-reload",
+                    "title": "Straight table export is correct before reload but wrong after reload",
+                    "body": "After reload our straight table export and pivot table totals no longer match, and business users are asking which dashboard number to trust.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        scored = keep_df if not keep_df.empty else borderline_df
+        self.assertEqual(len(scored), 1)
+        self.assertIn("qlik", str(scored.iloc[0]["source_specific_reason"]))
 
     def test_google_developer_forums_metric_mismatch_row_is_rescued(self) -> None:
         frame = pd.DataFrame(
@@ -468,6 +565,60 @@ class RelevancePrefilterTests(unittest.TestCase):
                     "raw_id": "klaviyo-ga4-metric-compare",
                     "title": "How does your Klaviyo Active on Site Metric compare to Google Analytics Users Metric?",
                     "body": "Our weekly reporting keeps showing different numbers between Klaviyo active on site and Google Analytics users, and we need to reconcile the discrepancy before signoff.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_cancelled_orders_revenue_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-cancelled-orders",
+                    "title": "Magento - Cancelled orders revenue in reports",
+                    "body": "Our Klaviyo revenue reports are picking up cancelled orders and inflating the reporting totals, so the numbers no longer match what finance expects.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_attribution_window_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-attribution-window",
+                    "title": "Klaviyo Attributed Revenue for Campaign Emails - I Don't Understand",
+                    "body": "A customer opened the campaign and purchased within the attribution window, but Klaviyo does not count it as revenue and we need to understand the reporting logic before sharing results.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_custom_report_error_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-custom-report-error",
+                    "title": "Error loading custom reports",
+                    "body": "I keep getting an error loading the custom reports page, which blocks reporting and analytics review for the team.",
                     "comments_text": "",
                     "raw_text": "",
                     "source_meta": {"json": "{}"},

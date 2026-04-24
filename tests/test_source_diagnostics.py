@@ -108,6 +108,8 @@ class SourceDiagnosticsTests(unittest.TestCase):
             self.assertIn("priority_tier", diagnostics_df.columns)
             self.assertIn("primary_collapse_stage", diagnostics_df.columns)
             self.assertIn("recommended_action", diagnostics_df.columns)
+            self.assertIn("false_negative_hint", diagnostics_df.columns)
+            self.assertIn("source_specific_next_check", diagnostics_df.columns)
             self.assertIn("severity", diagnostics_df.columns)
 
             pct_rows = diagnostics_df[diagnostics_df["metric_type"] == "percentage"]
@@ -487,13 +489,61 @@ class SourceDiagnosticsTests(unittest.TestCase):
             )
             diagnostics_df = build_source_diagnostics(stage_counts_df)
 
-            for metric_name in ["priority_tier", "primary_collapse_stage", "recommended_action", "severity"]:
+            for metric_name in ["priority_tier", "primary_collapse_stage", "recommended_action", "false_negative_hint", "source_specific_next_check", "severity"]:
                 rows = diagnostics_df[diagnostics_df["metric_name"].astype(str).eq(metric_name)]
                 self.assertEqual(len(rows), 1)
             self.assertEqual(
                 str(diagnostics_df.loc[diagnostics_df["metric_name"].astype(str).eq("recommended_action"), "row_kind"].iloc[0]),
                 "diagnostic",
             )
+
+    def test_source_balance_audit_and_diagnostics_expose_source_specific_hints(self) -> None:
+        stage_counts_df = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "raw_record_count": 1200,
+                    "normalized_post_count": 1200,
+                    "valid_post_count": 400,
+                    "prefiltered_valid_post_count": 100,
+                    "episode_count": 80,
+                    "labelable_episode_count": 20,
+                    "labeled_episode_count": 80,
+                    "promoted_persona_episode_count": 10,
+                    "grounded_promoted_persona_episode_count": 4,
+                    "dominant_invalid_reason": "missing_pain_signal",
+                    "dominant_prefilter_reason": "google_developer_forums:generic",
+                    "valid_retention_reason": "low_valid_post_retention: missing_pain_signal",
+                    "valid_retention_level": "warning",
+                    "prefilter_retention_reason": "healthy_prefilter_retention",
+                    "prefilter_retention_level": "pass",
+                    "episode_yield_reason": "healthy_episode_yield",
+                    "episode_yield_level": "pass",
+                    "labelable_coverage_reason": "low_labelable_episode_ratio",
+                    "labelable_coverage_level": "warning",
+                    "grounding_contribution_reason": "healthy_grounding_contribution",
+                    "grounding_contribution_level": "pass",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                    "concentration_risk_level": "pass",
+                    "diversity_contribution_reason": "weak_diversity_contribution",
+                    "diversity_contribution_level": "warning",
+                    "failure_reason_top": "low_valid_post_retention: missing_pain_signal",
+                    "failure_level": "warning",
+                    "recommended_seed_set": "",
+                }
+            ]
+        )
+
+        audit_df = build_source_balance_audit(stage_counts_df)
+        row = audit_df.iloc[0]
+        self.assertIn("scheduled report", str(row["false_negative_hint"]).lower())
+        self.assertIn("invalid_candidates", str(row["source_specific_next_check"]).lower())
+
+        diagnostics_df = build_source_diagnostics(stage_counts_df)
+        hint_row = diagnostics_df[diagnostics_df["metric_name"].astype(str).eq("false_negative_hint")].iloc[0]
+        next_check_row = diagnostics_df[diagnostics_df["metric_name"].astype(str).eq("source_specific_next_check")].iloc[0]
+        self.assertIn("scheduled report", str(hint_row["metric_value"]).lower())
+        self.assertIn("invalid_candidates", str(next_check_row["metric_value"]).lower())
 
     def test_validate_workbook_frames_rejects_mixed_grain_rate_names(self) -> None:
         frames = {

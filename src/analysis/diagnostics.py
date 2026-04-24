@@ -163,6 +163,8 @@ def build_metric_glossary() -> pd.DataFrame:
         ("recommended_action", "source_diagnostic_reason", "Single workbook-facing next action for the source after combining failure reason, concentration risk, and weak-source policy."),
         ("priority_tier", "source_diagnostic_reason", "Workbook-facing action priority tier for the source: fix_now, tune_soon, or monitor."),
         ("severity", "source_diagnostic_reason", "Workbook-facing severity for the current top source issue."),
+        ("false_negative_hint", "source_diagnostic_reason", "Short source-specific hint describing the most likely false-negative or under-segmentation pattern behind the current failure."),
+        ("source_specific_next_check", "source_diagnostic_intervention", "Short next inspection target to open before the next source-scoped rerun."),
         ("source_balance_status", "source_diagnostic_reason", "Source-balance classification summarizing whether the source is healthy, overdominant, weak, or on a watchlist."),
         ("weak_source_cost_center_status", "source_diagnostic_reason", "Explicit flag showing whether the source is currently treated as a weak-source cost center."),
         ("dominant_invalid_reason", "source_diagnostic_reason", "Most frequent invalid_reason observed for the source in invalid_candidates_with_prefilter.parquet. This is diagnostic context, not a funnel metric."),
@@ -357,6 +359,15 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
         return pd.DataFrame(
             columns=[
                 "source",
+                "priority_tier",
+                "primary_collapse_stage",
+                "recommended_action",
+                "false_negative_hint",
+                "source_specific_next_check",
+                "severity",
+                "failure_reason_top",
+                "source_balance_status",
+                "weak_source_cost_center",
                 "section",
                 "row_kind",
                 "grain",
@@ -421,6 +432,17 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
                     "weak_source_cost_center": weak_source_cost_center,
                 }
             )
+        )
+        false_negative_hint = _source_false_negative_hint(
+            source=source,
+            failure_reason_top=failure_reason_top,
+            dominant_invalid_reason=str(source_row.get("dominant_invalid_reason", "") or ""),
+            dominant_prefilter_reason=str(source_row.get("dominant_prefilter_reason", "") or ""),
+        )
+        source_specific_next_check = _source_specific_next_check(
+            source=source,
+            recommended_action=recommended_action,
+            failure_reason_top=failure_reason_top,
         )
         priority_tier = _source_priority_tier(
             failure_level=failure_level,
@@ -564,6 +586,8 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
                     "priority_tier": priority_tier,
                     "primary_collapse_stage": collapse_stage,
                     "recommended_action": recommended_action,
+                    "false_negative_hint": false_negative_hint,
+                    "source_specific_next_check": source_specific_next_check,
                     "severity": failure_level or "pass",
                     "failure_reason_top": failure_reason_top,
                     "source_balance_status": source_balance_status,
@@ -589,6 +613,8 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
             ("diagnostic_reasons", "other", "priority_tier", priority_tier, "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
             ("diagnostic_reasons", "other", "primary_collapse_stage", collapse_stage, "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
             ("diagnostic_reasons", "other", "recommended_action", recommended_action, "diagnostic_intervention", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "false_negative_hint", false_negative_hint, "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "source_specific_next_check", source_specific_next_check, "diagnostic_intervention", "", "", "", "", False, failure_level or "pass"),
             ("diagnostic_reasons", "other", "source_balance_status", source_balance_status, "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
             ("diagnostic_reasons", "other", "weak_source_cost_center_status", "weak_source_cost_center" if weak_source_cost_center else "not_weak_source_cost_center", "diagnostic_reason", "", "", "", "", False, "warning" if weak_source_cost_center else "pass"),
             ("diagnostic_reasons", "post", "dominant_invalid_reason", str(source_row.get("dominant_invalid_reason", "reason_unavailable") or "reason_unavailable"), "diagnostic_reason", "", "", "", "", False, "pass"),
@@ -612,6 +638,8 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
                     "priority_tier": priority_tier,
                     "primary_collapse_stage": collapse_stage,
                     "recommended_action": recommended_action,
+                    "false_negative_hint": false_negative_hint,
+                    "source_specific_next_check": source_specific_next_check,
                     "severity": failure_level or "pass",
                     "failure_reason_top": failure_reason_top,
                     "source_balance_status": source_balance_status,
@@ -641,8 +669,10 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
             "priority_tier": 2,
             "primary_collapse_stage": 3,
             "recommended_action": 4,
-            "source_balance_status": 5,
-            "weak_source_cost_center_status": 6,
+            "false_negative_hint": 5,
+            "source_specific_next_check": 6,
+            "source_balance_status": 7,
+            "weak_source_cost_center_status": 8,
         }
         result["_row_order"] = result["row_kind"].astype(str).map(row_order).fillna(9)
         result["_section_order"] = result["section"].astype(str).map(section_order).fillna(9)
@@ -716,6 +746,23 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
     frame["weak_source_cost_center"] = frame.apply(_is_weak_source_cost_center_row, axis=1)
     frame["source_balance_status"] = frame.apply(_source_balance_status, axis=1)
     frame["policy_action"] = frame.apply(_source_balance_action, axis=1)
+    frame["false_negative_hint"] = frame.apply(
+        lambda row: _source_false_negative_hint(
+            source=str(row.get("source", "") or ""),
+            failure_reason_top=str(row.get("failure_reason_top", "") or ""),
+            dominant_invalid_reason=str(row.get("dominant_invalid_reason", "") or ""),
+            dominant_prefilter_reason=str(row.get("dominant_prefilter_reason", "") or ""),
+        ),
+        axis=1,
+    )
+    frame["source_specific_next_check"] = frame.apply(
+        lambda row: _source_specific_next_check(
+            source=str(row.get("source", "") or ""),
+            recommended_action=str(row.get("policy_action", "") or ""),
+            failure_reason_top=str(row.get("failure_reason_top", "") or ""),
+        ),
+        axis=1,
+    )
     frame["priority_tier"] = frame.apply(
         lambda row: _source_priority_tier(
             failure_level=str(row.get("failure_level", "") or ""),
@@ -750,6 +797,8 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
         "source_balance_status",
         "weak_source_cost_center",
         "policy_action",
+        "false_negative_hint",
+        "source_specific_next_check",
         "priority_tier",
     ]
     available = [column for column in preferred if column in frame.columns]
@@ -1346,6 +1395,62 @@ def _source_balance_action(row: pd.Series) -> str:
     if reason in {"no_raw_records", "raw_not_normalized"}:
         return "review_collect_depth"
     return "monitor_source"
+
+
+def _source_false_negative_hint(
+    source: str,
+    failure_reason_top: str,
+    dominant_invalid_reason: str,
+    dominant_prefilter_reason: str,
+) -> str:
+    """Return a short source-specific hint for the next false-negative audit pass."""
+    source_id = str(source or "")
+    reason = str(failure_reason_top or "")
+    invalid_reason = str(dominant_invalid_reason or "")
+    prefilter_reason = str(dominant_prefilter_reason or "")
+    if source_id == "google_developer_forums":
+        return "Check scheduled report, pivot export, scorecard mismatch, null/blend, and delivery threads that read like operational questions more than explicit pain."
+    if source_id == "adobe_analytics_community":
+        if reason == "low_episode_yield":
+            return "Check multi-part Workspace/CJA/report builder/classification threads where one post contains more than one analyst problem block."
+        return "Check Workspace/Debugger/CJA validation threads whose pain is implied by troubleshooting context rather than explicit mismatch wording."
+    if source_id == "klaviyo_community":
+        return "Check campaign attribution, segment/report discrepancy, stakeholder reporting, and export mismatch threads currently dropped as generic marketing help."
+    if source_id == "qlik_community":
+        return "Check pivot/export correctness, measure inconsistency, and reload-result mismatch rows that look like expression help at first glance."
+    if source_id == "domo_community_forum":
+        return "Check whether older Beast Mode, filter card, and Analyzer threads are evergreen enough to justify a targeted time-window rescue."
+    if invalid_reason == "outside_time_window":
+        return "Check timestamp distribution before changing source rules; the bottleneck may be freshness rather than semantic filtering."
+    if prefilter_reason.endswith(":generic"):
+        return "Check dropped rows for source-native reporting trust phrases that are being treated as generic product help."
+    return "Check the dominant dropped rows directly before changing source-specific rules."
+
+
+def _source_specific_next_check(source: str, recommended_action: str, failure_reason_top: str) -> str:
+    """Return the next concrete thing to inspect for one source."""
+    source_id = str(source or "")
+    action = str(recommended_action or "")
+    reason = str(failure_reason_top or "")
+    if source_id == "google_developer_forums":
+        return "Open invalid_candidates sample for Google and review missing_pain_signal rows with Looker Studio reporting language."
+    if source_id == "adobe_analytics_community":
+        return "Open episode_audit and sample Adobe threads with Workspace/CJA/report builder shifts to verify split opportunities."
+    if source_id == "klaviyo_community":
+        return "Open relevance_drop sample for Klaviyo generic rows and isolate reporting-trust vs lifecycle-marketing noise."
+    if source_id == "qlik_community":
+        return "Open relevance_drop sample for Qlik generic rows and separate export-integrity pain from expression-help noise."
+    if source_id == "domo_community_forum":
+        return "Open time_window_invalid sample and compare 2020-2021 Domo inventory against current rescue rules before widening further."
+    if action == "review_time_window_policy" or "outside_time_window" in reason:
+        return "Open time_window_invalid sample and review created_at distribution before changing filter thresholds."
+    if action == "tighten_episode_segmentation_for_source":
+        return "Open episode_audit and inspect long multi-part threads that still produce only one episode."
+    if action == "review_source_specific_prefilter_terms":
+        return "Open relevance_drop sample and trace the top generic-drop patterns for this source."
+    if action == "review_source_specific_valid_filtering":
+        return "Open invalid_candidates sample and trace the top missing_pain_signal or mixed-tail patterns for this source."
+    return "Open the dominant audit sample for this source before the next source-scoped rerun."
 
 
 def _triage_weak_source_row(row: pd.Series) -> dict[str, str]:

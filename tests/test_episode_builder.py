@@ -211,6 +211,102 @@ class EpisodeBuilderTests(unittest.TestCase):
         self.assertEqual(len(episodes_df), 1)
         self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
 
+    def test_adobe_multi_domain_thread_splits_into_multiple_episodes(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-2",
+                    "url": "https://example.com/thread/adobe-2",
+                    "source_type": "thread",
+                    "title": "Workspace mismatch and Report Builder export issue",
+                    "body": (
+                        "In Analysis Workspace we are validating revenue and visit numbers for the weekly review, "
+                        "but the Workspace freeform table is not matching what the team sees in Debugger and the analysts "
+                        "cannot explain which number should be trusted before the stakeholder update. This validation step "
+                        "is blocking sign-off because the metric mismatch keeps resurfacing during review.\n\n"
+                        "Separately, our Report Builder export to Excel is leaving out calculated metric columns after refresh, "
+                        "so the finance team still rebuilds the spreadsheet manually before distribution. The export issue feels "
+                        "different from the Workspace validation problem because it blocks the final deliverable rather than the metric investigation itself."
+                    ),
+                    "comments_text": "",
+                    "thread_title": "Workspace mismatch and Report Builder export issue",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(int(debug_df.iloc[0]["episode_count"]), 2)
+        self.assertEqual(len(episodes_df), 2)
+
+    def test_adobe_pageurl_unspecified_question_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-3",
+                    "url": "https://example.com/thread/adobe-3",
+                    "source_type": "thread",
+                    "title": "What causes page views with unspecified pageURL?",
+                    "body": "We expect each page view server call to carry a specified pageURL, but lately a significant amount is showing as unspecified pageURL and we need to understand the cause.",
+                    "comments_text": "",
+                    "thread_title": "What causes page views with unspecified pageURL?",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_adobe_report_builder_pdf_font_issue_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-4",
+                    "url": "https://example.com/thread/adobe-4",
+                    "source_type": "thread",
+                    "title": "Adobe Analytics Report Builder Font Setting",
+                    "body": "I use Report Builder to send an Excel report to team members in PDF format, but the font is broken in the PDF file and I need to know what to set in Excel or Report Builder.",
+                    "comments_text": "",
+                    "thread_title": "Adobe Analytics Report Builder Font Setting",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_adobe_migration_blog_stays_non_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-5",
+                    "url": "https://example.com/thread/adobe-5",
+                    "source_type": "thread",
+                    "title": "Edge Data Collection Concepts: Migrating Adobe Audience Manager",
+                    "body": "In previous posts, we covered migrating Adobe Analytics and Target to Edge Data Collection. We'll discuss important considerations and share the complete Web SDK migration tutorial here.",
+                    "comments_text": "",
+                    "thread_title": "Edge Data Collection Concepts: Migrating Adobe Audience Manager",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 0)
+        self.assertEqual(str(debug_df.iloc[0]["quality_bucket"]), "fail")
+
     def test_domo_hourly_chart_issue_forms_episode(self) -> None:
         rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
         df = pd.DataFrame(
@@ -232,6 +328,32 @@ class EpisodeBuilderTests(unittest.TestCase):
         episodes_df, debug_df, _ = build_episode_outputs(df, rules)
         self.assertEqual(len(episodes_df), 1)
         self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_adobe_single_paragraph_multi_domain_thread_splits_into_multiple_episodes(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-6",
+                    "url": "https://example.com/thread/adobe-6",
+                    "source_type": "thread",
+                    "title": "Workspace mismatch and CJA export issue",
+                    "body": (
+                        "In Analysis Workspace the freeform table revenue no longer matches what the team validates before the weekly review, "
+                        "so we cannot explain which number to trust for sign-off. However, in Customer Journey Analytics the data view export "
+                        "is also dropping one of the dimensions we need for the stakeholder workbook, which is blocking a different reporting step."
+                    ),
+                    "comments_text": "",
+                    "thread_title": "Workspace mismatch and CJA export issue",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(int(debug_df.iloc[0]["episode_count"]), 2)
+        self.assertEqual(len(episodes_df), 2)
 
     def test_mixpanel_api_setup_noise_does_not_form_episode(self) -> None:
         rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")

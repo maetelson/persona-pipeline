@@ -435,6 +435,24 @@ class InvalidFilterTests(unittest.TestCase):
         self.assertEqual(len(valid_df), 1)
         self.assertEqual(len(invalid_df), 0)
 
+    def test_google_scorecard_delivery_issue_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Looker Studio scorecard export is blank and scheduled delivery failed",
+                    "body": "Our scorecard total and chart export are blank in the scheduled email delivery, so we need to know which metric to trust before sharing the report.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 210,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
     def test_google_welcome_announcement_stays_invalid(self) -> None:
         frame = pd.DataFrame(
             [
@@ -445,6 +463,96 @@ class InvalidFilterTests(unittest.TestCase):
                     "comments_text": "",
                     "raw_text": "",
                     "text_len": 170,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 0)
+        self.assertEqual(len(invalid_df), 1)
+
+    def test_google_chart_export_resolution_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "High resolution for chart export",
+                    "body": "Our users export Looker Studio charts as png for customer presentations and the current chart export is too low resolution, so we need a workaround for reporting.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 210,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_google_blend_auto_date_range_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Blend not accepting Auto date range condition",
+                    "body": "In our Looker Studio blend the auto date range gets skipped to custom once we save, and the dashboard numbers do not match after that.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 210,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_google_table_save_failure_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Whenever I add a table to my report, it gives me the following screenshot",
+                    "body": "I am building a Looker Studio report from Google Sheets and everything goes well until I add a table. Once I add it, nothing will save after that even after reconnecting the data source.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 230,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_google_responsive_width_glitch_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Chart container width miscalculating in responsive grid mode / data view",
+                    "body": "In Looker Studio responsive layout mode our line chart containers miscalculate their width in data view, so the chart does not span correctly and the dashboard is not usable.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 220,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_google_sdk_announcement_stays_invalid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Conversational Analytics API Now Supports Multiple Language-Specific SDKs",
+                    "body": "Along with enhanced agent reasoning updates, the Conversational Analytics API now supports multiple language-specific SDKs and preferred development environments.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 180,
                     "language": "en",
                 }
             ]
@@ -582,6 +690,42 @@ class InvalidFilterTests(unittest.TestCase):
         valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
         self.assertEqual(len(valid_df), 1)
         self.assertEqual(len(invalid_df), 0)
+
+    def test_domo_mega_table_print_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "domo_community_forum",
+                    "title": "Printing mega table chart type",
+                    "body": "Users want to print a Mega Table card but printing only displays the columns within the current view, so the report export is incomplete.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 205,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_domo_domopalooza_reflection_stays_invalid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "domo_community_forum",
+                    "title": "Reflections from Domopalooza 2026 and my Case for Cards",
+                    "body": "I attended my first Domopalooza and wanted to share reflections about what I learned and why cards matter in Domo.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 180,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 0)
+        self.assertEqual(len(invalid_df), 1)
 
     def test_generic_persona_context_is_stabilized_by_bottleneck(self) -> None:
         context, job, output = _stabilize_generic_persona_context(

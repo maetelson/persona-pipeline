@@ -334,6 +334,8 @@ def _apply_source_signal_rescue(
             "dashboard",
             "scorecard",
             "pivot table",
+            "table chart",
+            "line chart",
             "bar chart",
             "blend data",
             "blended tables",
@@ -351,6 +353,29 @@ def _apply_source_signal_rescue(
             "summary row",
             "chart export",
             "histogram",
+            "scheduled delivery",
+            "email delivery",
+            "scorecard",
+            "extract data",
+            "export data",
+            "blended data",
+            "community visualization",
+            "png",
+            "datetimefilter",
+            "auto date range",
+            "custom date range",
+            "responsive layout",
+            "responsive grid mode",
+            "data view",
+            "records per page",
+            "pagination",
+            "conditional formatting",
+            "refresh data",
+            "first record",
+            "last record",
+            "field value",
+            "weight",
+            "gsc",
         ]
         google_pain_terms = [
             "disappeared",
@@ -381,6 +406,44 @@ def _apply_source_signal_rescue(
             "formula is invalid",
             "data isn't adding",
             "data are different",
+            "delivery failed",
+            "delivery issue",
+            "failed to send",
+            "not received",
+            "blank export",
+            "empty export",
+            "wrong total",
+            "totals do not match",
+            "widget does not match",
+            "not same as",
+            "over-counting",
+            "overcounting",
+            "skipped to custom",
+            "auto date range condition",
+            "won't compare",
+            "cannot compare",
+            "can't compare",
+            "difference between",
+            "too low resolution",
+            "nothing will save",
+            "will not save",
+            "won't save",
+            "same error",
+            "cannot explore",
+            "can't explore",
+            "miscalculating their width",
+            "miscalculate their width",
+            "does not span correctly",
+            "shows all records",
+            "show all records",
+            "does not display data beyond",
+            "still only able",
+            "not refreshed",
+            "doesn't refresh",
+            "does not refresh",
+            "cannot access",
+            "can't access",
+            "not working",
         ]
         google_question_trouble_terms = [
             "how can we achieve this",
@@ -395,6 +458,23 @@ def _apply_source_signal_rescue(
             "how to have",
             "trying to build",
             "trying to add a new data source",
+            "why are these numbers different",
+            "which number should i trust",
+            "which metric should i trust",
+            "is there a workaround",
+            "how do i explain this",
+            "can i do that in looker directly",
+            "can i do that in looker",
+            "why is this not accepted",
+            "how do i compare",
+            "is there a way to compare",
+            "everything goes well until",
+            "once i add it",
+            "i experience a glitch",
+            "is this expected behavior",
+            "i would expect",
+            "when i select the date range",
+            "i have seen where",
         ]
         google_learning_or_noise_terms = [
             "welcome to the looker studio community",
@@ -408,6 +488,10 @@ def _apply_source_signal_rescue(
             "[feature]",
             "one-of-a-kind opportunity",
             "preferred development environment",
+            "release notes",
+            "conversational analytics api",
+            "gemini in bigquery studio",
+            "would like to influence",
         ]
         has_google_metric_context = any(term in combined_text for term in google_metric_terms)
         if not rescued_business_hits and has_google_metric_context:
@@ -436,6 +520,19 @@ def _apply_source_signal_rescue(
             "hourly chart",
             "time scale",
             "filter view",
+            "mega table",
+            "flex table",
+            "pivot table",
+            "table card",
+            "line chart",
+            "bar chart",
+            "multi value card",
+            "scorecard",
+            "rank & window",
+            "magic etl",
+            "period over period",
+            "qualtrics connector",
+            "no data message",
         ]
         domo_pain_terms = [
             "forcing",
@@ -446,11 +543,53 @@ def _apply_source_signal_rescue(
             "wrong",
             "broken",
             "is it possible",
+            "incorrect total",
+            "not being shown",
+            "doesn't appear",
+            "does not appear",
+            "only displays",
+            "showing blank",
+            "standard deviation",
+            "won't appear",
+            "terminate on the last completed month",
+            "terminate at the end of the current month",
+            "over 100%",
+            "requires formatting",
+            "can't find any alternative",
+            "cannot find any alternative",
         ]
-        if not rescued_business_hits and any(term in combined_text for term in domo_metric_terms):
+        domo_question_trouble_terms = [
+            "can i add another",
+            "is there a way",
+            "how can i",
+            "do i have to",
+            "can we create",
+            "how would i",
+            "is this the only solution",
+            "why won't",
+            "why does",
+            "what is the only solution",
+            "how do i get",
+        ]
+        domo_learning_or_noise_terms = [
+            "domopalooza",
+            "release notes",
+            "new feature:",
+            "current release notes",
+            "i attended my first domopalooza",
+        ]
+        has_domo_metric_context = any(term in combined_text for term in domo_metric_terms)
+        if not rescued_business_hits and has_domo_metric_context:
             rescued_business_hits.append("domo_domain_context")
         if not rescued_pain_hits and any(term in combined_text for term in domo_pain_terms):
             rescued_pain_hits.append("domo_domain_pain")
+        elif (
+            not rescued_pain_hits
+            and has_domo_metric_context
+            and not any(term in combined_text for term in domo_learning_or_noise_terms)
+            and any(term in combined_text for term in domo_question_trouble_terms)
+        ):
+            rescued_pain_hits.append("domo_operational_question")
 
     return rescued_business_hits, rescued_pain_hits
 
