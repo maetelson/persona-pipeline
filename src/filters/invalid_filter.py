@@ -376,6 +376,10 @@ def _apply_source_signal_rescue(
             "field value",
             "weight",
             "gsc",
+            "render",
+            "save",
+            "viewer",
+            "email report",
         ]
         google_pain_terms = [
             "disappeared",
@@ -425,6 +429,8 @@ def _apply_source_signal_rescue(
             "can't compare",
             "difference between",
             "too low resolution",
+            "low resolution",
+            "customer presentations",
             "nothing will save",
             "will not save",
             "won't save",
@@ -438,6 +444,20 @@ def _apply_source_signal_rescue(
             "show all records",
             "does not display data beyond",
             "still only able",
+            "only showing the first",
+            "only shows the first",
+            "render incorrectly",
+            "renders incorrectly",
+            "fails to render",
+            "cannot render",
+            "can't render",
+            "truncates the chart",
+            "truncated chart",
+            "pagination is ignored",
+            "records per page is ignored",
+            "conditional formatting does not save",
+            "email report not received",
+            "email report failed",
             "not refreshed",
             "doesn't refresh",
             "does not refresh",
@@ -475,6 +495,12 @@ def _apply_source_signal_rescue(
             "i would expect",
             "when i select the date range",
             "i have seen where",
+            "how do i stop it from",
+            "why does it only show",
+            "why is pagination",
+            "why does conditional formatting",
+            "why are scheduled reports",
+            "why is the chart export",
         ]
         google_learning_or_noise_terms = [
             "welcome to the looker studio community",
@@ -492,6 +518,9 @@ def _apply_source_signal_rescue(
             "conversational analytics api",
             "gemini in bigquery studio",
             "would like to influence",
+            "feature] show content as",
+            "feature] ",
+            "plans to enable this permission",
         ]
         has_google_metric_context = any(term in combined_text for term in google_metric_terms)
         if not rescued_business_hits and has_google_metric_context:
@@ -533,6 +562,12 @@ def _apply_source_signal_rescue(
             "period over period",
             "qualtrics connector",
             "no data message",
+            "scheduled report",
+            "scheduled reports",
+            "predictive analytics",
+            "quartile",
+            "quartiles",
+            "aggregated report",
         ]
         domo_pain_terms = [
             "forcing",
@@ -557,6 +592,16 @@ def _apply_source_signal_rescue(
             "requires formatting",
             "can't find any alternative",
             "cannot find any alternative",
+            "aggregated",
+            "shows data individually",
+            "only the summary",
+            "rows with columns",
+            "columns with rows",
+            "swapping rows with columns",
+            "predictive analytics export",
+            "not exporting",
+            "can't export",
+            "cannot export",
         ]
         domo_question_trouble_terms = [
             "can i add another",
@@ -570,6 +615,9 @@ def _apply_source_signal_rescue(
             "why does",
             "what is the only solution",
             "how do i get",
+            "how do i export",
+            "why are scheduled reports",
+            "why is it aggregated",
         ]
         domo_learning_or_noise_terms = [
             "domopalooza",
@@ -577,6 +625,10 @@ def _apply_source_signal_rescue(
             "new feature:",
             "current release notes",
             "i attended my first domopalooza",
+            "app framework",
+            "react",
+            "vue",
+            "ddx",
         ]
         has_domo_metric_context = any(term in combined_text for term in domo_metric_terms)
         if not rescued_business_hits and has_domo_metric_context:

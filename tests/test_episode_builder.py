@@ -285,6 +285,28 @@ class EpisodeBuilderTests(unittest.TestCase):
         self.assertEqual(len(episodes_df), 1)
         self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
 
+    def test_adobe_email_report_unspecified_issue_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-7",
+                    "url": "https://example.com/thread/adobe-7",
+                    "source_type": "thread",
+                    "title": "Unspecified under unspecified hits in email report",
+                    "body": "Our Adobe Analytics email report is showing unspecified under unspecified hits and we need to understand what this means before distribution.",
+                    "comments_text": "",
+                    "thread_title": "Unspecified under unspecified hits in email report",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
     def test_adobe_migration_blog_stays_non_episode(self) -> None:
         rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
         df = pd.DataFrame(
@@ -320,6 +342,28 @@ class EpisodeBuilderTests(unittest.TestCase):
                     "body": "The Graph By is set to Day, but I am still being given an hourly chart and it is hard to get MTD excluding today.",
                     "comments_text": "",
                     "thread_title": "Why is Domo Forcing Daily Data onto Hourly Chart?",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "domo"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_domo_scheduled_report_aggregation_issue_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "domo_community_forum",
+                    "raw_id": "domo-2",
+                    "url": "https://example.com/thread/domo-2",
+                    "source_type": "thread",
+                    "title": "Scheduled reports are aggregated even when the card shows individual rows",
+                    "body": "Our scheduled report is aggregated and only shows the summary even though the Domo card shows data individually, so we cannot export the detailed rows for the weekly report.",
+                    "comments_text": "",
+                    "thread_title": "Scheduled reports are aggregated even when the card shows individual rows",
                     "parent_context": "",
                     "source_meta": serialize_source_meta({"platform": "domo"}),
                 }

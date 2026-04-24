@@ -788,6 +788,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             "analyzer",
             "beast mode",
             "dataset",
+            "scheduled report",
+            "pivot table",
+            "predictive analytics",
+            "quartile",
         ]
         metric_terms = [
             *metric_terms,
@@ -801,6 +805,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             "data table",
             "dataset",
             "month end date",
+            "scheduled report",
+            "predictive analytics",
+            "pivot table",
+            "quartile",
         ]
         required_terms = [
             *required_terms,
@@ -811,6 +819,11 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             "always have something selected",
             "is it possible",
             "why is",
+            "aggregated",
+            "rows with columns",
+            "columns with rows",
+            "can't export",
+            "cannot export",
         ]
     if source == "power_bi_community":
         # Power BI threads often describe interpretation and diagnosis pain with BI-native
@@ -1566,6 +1579,9 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "seo",
                 "customers metric",
                 "alert",
+                "email report",
+                "data warehouse",
+                "entry page",
             ]
         )
         discrepancy_presence = any(
@@ -1597,6 +1613,12 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "missing dimension",
                 "export missing",
                 "export is dropping",
+                "not available in email report",
+                "unspecified under unspecified",
+                "wrong calculation",
+                "greyed out",
+                "does not load",
+                "loading slowly",
             ]
         )
         analysis_context = any(
@@ -1617,6 +1639,9 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "freeform table",
                 "stakeholder workbook",
                 "sign-off",
+                "email report",
+                "scheduled delivery",
+                "distribution",
             ]
         )
         explanation_burden = any(
@@ -1636,6 +1661,9 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "what do i need to set",
                 "pull out all the segments",
                 "for a particular report suite",
+                "what does unspecified mean",
+                "why do i see",
+                "available in email report",
             ]
         )
         operational_question = any(
@@ -1649,6 +1677,9 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "i'd like to create a report",
                 "i've tried using",
                 "can i create",
+                "why do i see",
+                "what does unspecified mean",
+                "why is it unavailable",
             ]
         )
         adobe_noise = any(
@@ -1712,6 +1743,9 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "whole dataset",
                 "filtered rows",
                 "reporting total is wrong",
+                "scheduled reports are aggregated",
+                "shows data individually",
+                "only the summary",
             ]
         )
         metric_presence = any(
@@ -1728,6 +1762,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "data table",
                 "dataset",
                 "month end date",
+                "scheduled report",
+                "predictive analytics",
+                "pivot table",
+                "quartile",
             ]
         )
         discrepancy_presence = any(
@@ -1746,6 +1784,12 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "broken",
                 "not possible",
                 "is it possible",
+                "aggregated",
+                "rows with columns",
+                "columns with rows",
+                "not exporting",
+                "can't export",
+                "cannot export",
             ]
         )
         analysis_context = any(
@@ -1758,6 +1802,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "drop down filter",
                 "month end date",
                 "data table",
+                "scheduled report",
+                "pivot table",
+                "predictive analytics",
+                "quartile",
             ]
         )
         explanation_burden = any(
@@ -1770,6 +1818,8 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "recommend",
                 "how do you",
                 "any idea",
+                "why are scheduled reports",
+                "how do i export",
             ]
         )
         ideas_exchange_noise = "ideas exchange" in lowered and not (discrepancy_presence or analysis_context)
@@ -2834,6 +2884,10 @@ def _has_explicit_shift_marker(text: str) -> bool:
         "next problem",
         "also need",
         "in addition",
+        "at the same time",
+        "separate problem",
+        "different reporting step",
+        "another reporting issue",
     ]
     return any(marker in lowered for marker in markers)
 
@@ -2937,6 +2991,8 @@ def _adobe_problem_domain(text: str) -> str:
         "data_feed": ["data feed", "feed export", "warehouse", "sftp"],
         "metric_definition": ["calculated metric", "metric", "evar", "prop"],
         "attribution": ["attribution", "marketing channel", "channel"],
+        "email_report": ["email report", "scheduled report", "delivery"],
+        "page_url": ["pageurl", "page url", "entry page"],
     }
     for domain, terms in domain_map.items():
         if any(term in lowered for term in terms):
@@ -2956,9 +3012,11 @@ def _domo_problem_domain(text: str) -> str:
     lowered = clean_text(text).lower()
     domain_map = {
         "filtering": ["filter card", "filter view", "drop down filter", "global filter", "selected"],
-        "calculation": ["beast mode", "calculated field", "formula", "lag", "period over period", "summary number"],
-        "charting": ["chart", "graph", "line chart", "bar chart", "table card", "heatmap", "gantt"],
+        "calculation": ["beast mode", "calculated field", "formula", "lag", "period over period", "summary number", "quartile", "quartiles"],
+        "charting": ["chart", "graph", "line chart", "bar chart", "table card", "heatmap", "gantt", "predictive analytics"],
         "dataset_ops": ["dataset", "workbench", "magic etl", "recursive magic etl", "appdb", "pro-code editor", "connector", "update"],
+        "distribution": ["scheduled report", "scheduled reports", "email report", "export"],
+        "pivoting": ["pivot table", "swap rows", "swap columns", "rows with columns", "columns with rows"],
     }
     for domain, terms in domain_map.items():
         if any(term in lowered for term in terms):

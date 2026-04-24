@@ -814,6 +814,7 @@ def _klaviyo_whitelist_hits(lowered: str) -> list[str]:
         "ga4", "google analytics", "overview dashboard", "campaigns breakdown by segment", "segment export",
         "custom report", "conversion rate", "visualizations", "external app", "api", "form metrics",
         "sign ups", "views by form", "average days between orders", "churn rate",
+        "flow analytics", "open rate", "open rates", "click rate", "click rates", "bounce rate", "bounce rates",
         "custom reports page", "predictive metrics", "churn risk", "attribution window",
     ]
     trust_terms = [
@@ -823,12 +824,14 @@ def _klaviyo_whitelist_hits(lowered: str) -> list[str]:
         "not able to", "can't", "cannot", "not working as expected", "can't seem to find",
         "inflated", "full price", "discounted price", "at zero", "showing conversions are at zero",
         "error loading", "not count as revenue", "more revenue than klaviyo", "cancelled orders",
+        "inaccurate numbers", "odd and inaccurate numbers", "only pulling", "failing its own filters",
+        "open rates dropping", "open rate dropped", "dropped pretty significantly",
     ]
     ops_terms = [
         "export excel", "manual spreadsheet", "before sending", "weekly reporting", "google sheets", "power query",
         "external app", "visualizations", "conversion rate via api", "pull form metrics via api", "custom report",
         "dynamic one", "static value", "further data manipulation", "custom reports page", "predictive metrics",
-        "churn risk", "attribution window",
+        "churn risk", "attribution window", "flow analytics",
     ]
     reporting_hit = any(_text_contains_term(lowered, term) for term in reporting_terms)
     trust_hit = any(_text_contains_term(lowered, term) for term in trust_terms)
@@ -845,6 +848,7 @@ def _klaviyo_whitelist_hits(lowered: str) -> list[str]:
             "suppressed profiles",
             "total profile number",
             "compare segments",
+            "segment not working properly",
         ]
     )
     attribution_hit = any(
@@ -1732,6 +1736,13 @@ def _apply_klaviyo_rescue_signals(
             "predictive metrics",
             "churn risk",
             "attribution window",
+            "flow analytics",
+            "open rate",
+            "open rates",
+            "click rate",
+            "click rates",
+            "bounce rate",
+            "bounce rates",
         ]
     )
     trust_hit = any(
@@ -1767,6 +1778,13 @@ def _apply_klaviyo_rescue_signals(
             "error loading",
             "not count as revenue",
             "more revenue than klaviyo",
+            "odd and inaccurate numbers",
+            "inaccurate numbers",
+            "only pulling",
+            "failing its own filters",
+            "open rates dropping",
+            "open rate dropped",
+            "dropped pretty significantly",
         ]
     )
     segment_hit = any(
@@ -1783,6 +1801,7 @@ def _apply_klaviyo_rescue_signals(
             "segment performance",
             "segment report discrepancy",
             "segment mismatch",
+            "segment not working properly",
         ]
     )
     attribution_hit = any(
@@ -1816,6 +1835,7 @@ def _apply_klaviyo_rescue_signals(
             "stakeholder reporting",
             "performance summary",
             "before sign-off",
+            "flow analytics",
         ]
     )
     export_integrity_hit = any(
@@ -1840,6 +1860,13 @@ def _apply_klaviyo_rescue_signals(
             "conversion rate",
             "views by form",
             "sign ups",
+            "flow analytics",
+            "open rate",
+            "open rates",
+            "click rate",
+            "click rates",
+            "bounce rate",
+            "bounce rates",
         ]
     )
     analysis_workaround_hit = any(
@@ -1935,6 +1962,16 @@ def _apply_klaviyo_rescue_signals(
             "more revenue than klaviyo",
             "predictive metrics",
             "churn risk",
+            "flow analytics",
+            "open rate",
+            "open rates",
+            "click rate",
+            "click rates",
+            "bounce rate",
+            "bounce rates",
+            "failing its own filters",
+            "inaccurate numbers",
+            "only pulling",
         ]
     ):
         scores["dashboard_trust_score"] += 0.9
@@ -2629,6 +2666,13 @@ def _apply_source_specific_floor_override(
                 "segment export",
                 "ga4",
                 "google analytics",
+                "flow analytics",
+                "open rate",
+                "open rates",
+                "click rate",
+                "click rates",
+                "bounce rate",
+                "bounce rates",
             ]
         )
         has_operational_pain = any(
@@ -2665,6 +2709,13 @@ def _apply_source_specific_floor_override(
                 "error loading",
                 "not count as revenue",
                 "more revenue than klaviyo",
+                "odd and inaccurate numbers",
+                "inaccurate numbers",
+                "only pulling",
+                "failing its own filters",
+                "open rates dropping",
+                "open rate dropped",
+                "dropped pretty significantly",
             ]
         )
         if has_reporting_context and has_operational_pain and final_score >= floor:

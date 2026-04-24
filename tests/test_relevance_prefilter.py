@@ -629,6 +629,42 @@ class RelevancePrefilterTests(unittest.TestCase):
         self.assertEqual(len(drop_df), 0)
         self.assertEqual(len(keep_df) + len(borderline_df), 1)
 
+    def test_klaviyo_flow_analytics_anomaly_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-flow-analytics-anomaly",
+                    "title": "Error in welcome flow analytics?",
+                    "body": "I am getting odd and inaccurate numbers in Klaviyo flow analytics, and the reporting does not match whether the welcome email reached the inbox.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_open_rate_drop_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-open-rate-drop",
+                    "title": "Open rates dropping in July",
+                    "body": "Our open rate has dropped pretty significantly while click rates stay flat, and we need to understand the reporting change before the weekly review.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
     def test_mixpanel_export_discrepancy_row_is_rescued(self) -> None:
         frame = pd.DataFrame(
             [

@@ -12,7 +12,7 @@ from openpyxl import load_workbook
 from src.analysis.diagnostics import build_quality_failures, build_source_diagnostics, finalize_quality_checks
 from src.analysis.persona_service import _apply_persona_name_policy, _build_cluster_stats_df
 from src.analysis.quality_status import build_quality_metrics, evaluate_quality_status, flatten_quality_status_result
-from src.analysis.stage_service import _annotate_persona_readiness_frame, _build_final_overview_df
+from src.analysis.stage_service import _annotate_persona_readiness_frame, _apply_workbook_promotion_constraints, _build_final_overview_df
 from src.analysis.summary import build_quality_checks_df
 from src.analysis.workbook_bundle import assemble_workbook_frames, validate_workbook_frames
 from src.exporters.xlsx_exporter import export_workbook_from_frames
@@ -332,6 +332,58 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
         self.assertEqual(flattened["persona_asset_class"], "final_persona_asset")
         self.assertEqual(flattened["persona_readiness_gate_status"], "OK")
         self.assertTrue(flattened["persona_completion_claim_allowed"])
+
+    def test_promotion_constraint_keeps_strong_third_persona_when_not_weak_source_linked(self) -> None:
+        cluster_stats_df = pd.DataFrame(
+            {
+                "persona_id": ["persona_01", "persona_02", "persona_03"],
+                "promotion_status": ["promoted_persona", "promoted_persona", "promoted_persona"],
+                "share_of_core_labeled": [48.1, 27.1, 8.6],
+                "promotion_score": [0.79, 0.78, 0.70],
+                "cross_source_robustness_score": [0.84, 0.80, 0.81],
+                "selected_example_count": [6, 2, 1],
+                "bundle_episode_count": [120, 95, 20],
+                "persona_size": [4498, 2537, 803],
+                "structural_support_status": ["structurally_supported", "structurally_supported", "structurally_supported"],
+                "grounding_status": ["grounded_single", "grounded_single", "grounded_single"],
+            }
+        )
+        persona_summary_df = cluster_stats_df.copy()
+        persona_summary_df["promotion_grounding_status"] = "promoted_and_grounded"
+        persona_summary_df["final_usable_persona"] = True
+        persona_summary_df["deck_ready_persona"] = True
+        persona_summary_df["workbook_review_visible"] = True
+        persona_summary_df["promotion_action"] = "remain_promoted"
+        audit_df = persona_summary_df.copy()
+        outputs, summary = _apply_workbook_promotion_constraints(
+            persona_service_outputs={
+                "cluster_stats_df": cluster_stats_df,
+                "persona_summary_df": persona_summary_df,
+                "persona_promotion_grounding_audit_df": audit_df,
+                "persona_assignments_df": pd.DataFrame(
+                    {
+                        "episode_id": ["e1", "e2", "e3", "e4", "e5", "e6"],
+                        "persona_id": ["persona_01", "persona_01", "persona_02", "persona_02", "persona_03", "persona_03"],
+                    }
+                ),
+            },
+            clustering_episodes_df=pd.DataFrame(
+                {
+                    "episode_id": ["e1", "e2", "e3", "e4", "e5", "e6"],
+                    "source": ["reddit", "reddit", "reddit", "reddit", "power_bi_community", "metabase_discussions"],
+                }
+            ),
+            source_balance_audit_df=pd.DataFrame(
+                {
+                    "source": ["google_developer_forums", "klaviyo_community", "power_bi_community", "metabase_discussions"],
+                    "weak_source_cost_center": [True, True, False, False],
+                    "blended_influence_share_pct": [30.6, 12.0, 18.0, 16.0],
+                }
+            ),
+        )
+        result = outputs["cluster_stats_df"].set_index("persona_id")
+        self.assertIn(summary["promotion_constraint_status"], {"constrained", "constrained_no_borderline_match"})
+        self.assertEqual(str(result.loc["persona_03", "promotion_status"]), "promoted_persona")
 
     def test_persona_readiness_is_capped_below_deck_ready_when_quality_status_warns(self) -> None:
         evaluated = evaluate_quality_status(

@@ -129,6 +129,42 @@ class InvalidFilterTests(unittest.TestCase):
         self.assertEqual(len(valid_df), 1)
         self.assertEqual(len(invalid_df), 0)
 
+    def test_google_pagination_render_issue_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Pagination shows all records in Looker Studio table",
+                    "body": "Our records per page setting is ignored, pagination shows all records, and the dashboard table renders incorrectly before the stakeholder review.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 210,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_google_welcome_post_stays_invalid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Welcome to the Looker Studio Community",
+                    "body": "This forum is your resource for asking questions, influencing the roadmap, and joining our customer council.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 180,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 0)
+        self.assertEqual(len(invalid_df), 1)
+
     def test_adobe_cja_not_showing_row_is_rescued_into_valid(self) -> None:
         frame = pd.DataFrame(
             [

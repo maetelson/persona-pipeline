@@ -692,13 +692,22 @@ def _apply_workbook_promotion_constraints(
         | (pd.to_numeric(promoted.get("bundle_episode_count", pd.Series(dtype=int)), errors="coerce").fillna(0).astype(int) < 3)
     )
     promoted["weak_source_link"] = promoted["primary_source"].astype(str).isin(weak_sources)
+    promoted["protected_distinct_candidate"] = (
+        promoted.get("structural_support_status", pd.Series(dtype=str)).astype(str).eq("structurally_supported")
+        & promoted.get("grounding_status", pd.Series(dtype=str)).astype(str).isin({"grounded_single", "grounded_bundle"})
+        & pd.to_numeric(promoted.get("cross_source_robustness_score", pd.Series(dtype=float)), errors="coerce").fillna(0.0).ge(0.75)
+        & pd.to_numeric(promoted.get("share_of_core_labeled", pd.Series(dtype=float)), errors="coerce").fillna(0.0).ge(8.0)
+        & pd.to_numeric(promoted.get("selected_example_count", pd.Series(dtype=int)), errors="coerce").fillna(0).astype(int).ge(1)
+        & ~promoted["weak_source_link"]
+    )
     promoted["constraint_priority"] = (
         promoted["weak_source_link"].astype(int) * 100
         + (promoted["share_rank"] > 2).astype(int) * 10
         + promoted["borderline_candidate"].astype(int)
     )
     candidates = promoted[
-        promoted["borderline_candidate"] | promoted["weak_source_link"] | (promoted["share_rank"] > 2)
+        (promoted["borderline_candidate"] | promoted["weak_source_link"] | (promoted["share_rank"] > 2))
+        & ~promoted["protected_distinct_candidate"]
     ].sort_values(
         ["constraint_priority", "promotion_score", "persona_size"],
         ascending=[False, True, True],
