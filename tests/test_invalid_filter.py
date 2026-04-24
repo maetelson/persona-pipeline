@@ -165,6 +165,96 @@ class InvalidFilterTests(unittest.TestCase):
         self.assertEqual(len(valid_df), 0)
         self.assertEqual(len(invalid_df), 1)
 
+    def test_google_date_filter_independence_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Keep one chart independent from the date filter",
+                    "body": "In Looker Studio I want one chart to stay independent of the date filter because the current dashboard behavior breaks our monthly review.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 190,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_google_gauge_chart_feature_request_stays_invalid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Feature Request: Set specific colors for each range in Gauge Charts",
+                    "body": "Gauge charts are great for dashboards and I want a new feature to choose a custom color for each range.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 170,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 0)
+        self.assertEqual(len(invalid_df), 1)
+
+    def test_google_invalid_formula_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Invalid formula on every input",
+                    "body": "In Looker Studio every calculated field now throws invalid formula and I cannot create a calculated field for the report anymore.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 190,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_google_owner_credentials_embed_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Embed report under owner credentials",
+                    "body": "Our Looker Studio charts render correctly only under the owner credentials, and we need a way to embed the report without breaking dashboard review.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 210,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_google_previous_month_compare_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Looker Studio month over month compare does not work",
+                    "body": "I need to compare the current scorecard to the previous month, but the report will not compare to previous month and the dashboard review is blocked.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 205,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
     def test_adobe_cja_not_showing_row_is_rescued_into_valid(self) -> None:
         frame = pd.DataFrame(
             [

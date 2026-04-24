@@ -1,5 +1,32 @@
 # Runbook
 
+## Execution discipline
+
+- Treat downstream pipeline stages as dependency-sensitive by default.
+- Never launch dependent stages such as `03 -> 03.5 -> 04 -> 05 -> 06.1 -> 06 -> 07` through `multi_tool_use.parallel` or any other parallel wrapper.
+- Safe parallelism is limited to:
+  - read-only inspection
+  - unit tests
+  - source-specific raw collection that writes to disjoint `data/raw/{source}/` paths
+- Good example:
+
+```bash
+python run/pipeline/03_filter_valid.py
+python run/pipeline/03_5_prefilter_relevance.py
+python run/pipeline/04_build_episodes.py
+python run/pipeline/05_label_episodes.py
+python run/pipeline/06_1_discover_persona_axes.py
+python run/pipeline/06_cluster_and_score.py
+python run/cli/17_analysis_snapshot.py --compare-latest
+```
+
+- Bad example:
+
+```text
+do not launch 03_filter_valid.py and 03_5_prefilter_relevance.py together in a parallel wrapper
+do not launch 04_build_episodes.py, 05_label_episodes.py, and 06_cluster_and_score.py together in a parallel wrapper
+```
+
 ## 1. 설치
 
 ```bash

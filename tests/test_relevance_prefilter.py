@@ -665,6 +665,60 @@ class RelevancePrefilterTests(unittest.TestCase):
         self.assertEqual(len(drop_df), 0)
         self.assertEqual(len(keep_df) + len(borderline_df), 1)
 
+    def test_klaviyo_currency_conversion_report_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-currency-conversion",
+                    "title": "Custom reports are not converting revenue to a single currency",
+                    "body": "Our custom reports in analytics are not converting sales revenue to a single currency, so the numbers do not match the reporting we share with the client.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_subscriber_count_signoff_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-subscriber-signoff",
+                    "title": "Subscriber counts do not reconcile before signoff",
+                    "body": "Our subscriber count in custom reports does not reconcile with the segment export, and finance review cannot finish until the reporting numbers line up.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_ga4_zero_sales_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-ga4-zero-sales",
+                    "title": "GA4 shows zero sales from Klaviyo",
+                    "body": "GA4 is showing zero sales from Klaviyo while our engagement report and dashboard suggest otherwise, and we need to reconcile the discrepancy before monthly reporting.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
     def test_mixpanel_export_discrepancy_row_is_rescued(self) -> None:
         frame = pd.DataFrame(
             [

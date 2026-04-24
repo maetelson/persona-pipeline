@@ -334,9 +334,9 @@ promotion_scoring:
   enabled: true
   promote_score_min: 0.69
   candidate_score_min: 0.58
-  near_threshold_size_gap_max: 8
+  near_threshold_size_gap_max: 120
   near_threshold_promote_score_min: 0.69
-  near_threshold_structural_stability_min: 0.50
+  near_threshold_structural_stability_min: 0.48
   near_threshold_cross_source_robustness_min: 0.70
   minimum_actionability_score: 0.55
   minimum_distinctiveness_score: 0.18

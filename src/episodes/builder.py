@@ -730,8 +730,12 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             *workflow_terms,
             "adobe analytics",
             "workspace",
+            "analysis workspace",
             "debugger",
+            "customer journey analytics",
+            "cja",
             "report suite",
+            "report builder",
             "segment",
             "calculated metric",
             "evar",
@@ -739,6 +743,11 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             "classification",
             "attribution",
             "data feed",
+            "data warehouse",
+            "fallout",
+            "trend analysis",
+            "device type",
+            "tracking code",
             "alert",
             "anomaly alert",
             "direct traffic",
@@ -755,6 +764,18 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             "prop",
             "classification",
             "attribution",
+            "data warehouse",
+            "trend analysis",
+            "fallout report",
+            "device type",
+            "days since visit",
+            "tracking code",
+            "line item",
+            "timestamp",
+            "purchasetimestamp",
+            "visits",
+            "unique visitors",
+            "occurrence count",
             "direct traffic",
             "seo",
             "customers metric",
@@ -766,11 +787,20 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
             "does not appear",
             "doesn't appear",
             "visible in debugger",
+            "do not match",
+            "difference between two metrics",
+            "show much higher",
+            "show much lower",
+            "seems far to low",
+            "too low",
             "spike",
             "drop",
             "time delay",
             "way earlier",
             "sent after",
+            "unspecified",
+            "attributed as",
+            "how can i get this information out",
             "is there a way",
         ]
     if source == "domo_community_forum":
@@ -1151,6 +1181,25 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
     if not has_required_problem and structural_pain:
         has_required_problem = True
     usage_only = any(lowered.startswith(pattern) for pattern in usage_patterns) and not has_required_problem
+    if source == "adobe_analytics_community":
+        adobe_feature_request = any(
+            term in lowered
+            for term in [
+                "feature important to you",
+                "how would you like the feature to work",
+                "would be very nice if this could be configured",
+                "visualization style",
+                "current behaviour -",
+            ]
+        )
+        if adobe_feature_request:
+            return QualityAssessment(
+                score=0.0,
+                bucket="fail",
+                fail_reason="adobe_feature_request_without_operational_context",
+                rescue_reason="",
+                passes=False,
+            )
     if source not in {
         "shopify_community",
         "hubspot_community",
@@ -1582,6 +1631,15 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "email report",
                 "data warehouse",
                 "entry page",
+                "trend analysis",
+                "fall-out report",
+                "fallout report",
+                "device type",
+                "tracking code",
+                "affiliate marketing",
+                "download csv",
+                "days since visit",
+                "total time spent",
             ]
         )
         discrepancy_presence = any(
@@ -1615,6 +1673,17 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "export is dropping",
                 "not available in email report",
                 "unspecified under unspecified",
+                "do not match with numbers",
+                "show much higher",
+                "show much lower",
+                "difference between two metrics",
+                "seems far to low",
+                "data looks wrong",
+                "metric_not_supported_in_warehouse",
+                "incomplete data",
+                "differently sized csv files",
+                "lower than the one reported",
+                "not seeing windows 11",
                 "wrong calculation",
                 "greyed out",
                 "does not load",
@@ -1642,6 +1711,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "email report",
                 "scheduled delivery",
                 "distribution",
+                "marketing channel",
+                "tracking code",
+                "fallout rate",
+                "time on site",
             ]
         )
         explanation_burden = any(
@@ -1664,6 +1737,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "what does unspecified mean",
                 "why do i see",
                 "available in email report",
+                "what would explain",
+                "what is the difference between",
+                "how adobe recognize",
+                "what happens on january 1st",
             ]
         )
         operational_question = any(
@@ -1680,6 +1757,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "why do i see",
                 "what does unspecified mean",
                 "why is it unavailable",
+                "how can i get this information out",
+                "is this a problem with tracking codes",
+                "when will adobe parse out",
+                "data looks wrong",
             ]
         )
         adobe_noise = any(
@@ -1760,12 +1841,18 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "filter card",
                 "filter view",
                 "data table",
+                "table card",
+                "mega table",
+                "flex table",
+                "analyzer",
+                "beast mode",
                 "dataset",
                 "month end date",
                 "scheduled report",
                 "predictive analytics",
                 "pivot table",
                 "quartile",
+                "no data message",
             ]
         )
         discrepancy_presence = any(
@@ -1790,6 +1877,12 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "not exporting",
                 "can't export",
                 "cannot export",
+                "field aggregation",
+                "wrong aggregation",
+                "incorrect aggregation",
+                "no data message",
+                "only displays",
+                "table visual",
             ]
         )
         analysis_context = any(
@@ -1802,10 +1895,15 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "drop down filter",
                 "month end date",
                 "data table",
+                "table card",
+                "mega table",
+                "flex table",
+                "analyzer",
                 "scheduled report",
                 "pivot table",
                 "predictive analytics",
                 "quartile",
+                "field aggregation",
             ]
         )
         explanation_burden = any(
@@ -1820,6 +1918,9 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "any idea",
                 "why are scheduled reports",
                 "how do i export",
+                "why is the table",
+                "why is the card",
+                "how do i fix",
             ]
         )
         ideas_exchange_noise = "ideas exchange" in lowered and not (discrepancy_presence or analysis_context)

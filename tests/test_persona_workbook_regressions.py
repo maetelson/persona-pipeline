@@ -10,7 +10,8 @@ import pandas as pd
 from openpyxl import load_workbook
 
 from src.analysis.diagnostics import build_quality_failures, build_source_diagnostics, finalize_quality_checks
-from src.analysis.persona_service import _apply_persona_name_policy, _build_cluster_stats_df
+from src.analysis.persona_service import _apply_persona_name_policy, _build_cluster_stats_df, _eligible_near_threshold_promotion_candidate
+from src.utils.io import load_yaml
 from src.analysis.quality_status import build_quality_metrics, evaluate_quality_status, flatten_quality_status_result
 from src.analysis.stage_service import _annotate_persona_readiness_frame, _apply_workbook_promotion_constraints, _build_final_overview_df
 from src.analysis.summary import build_quality_checks_df
@@ -26,6 +27,24 @@ from src.utils.pipeline_schema import (
 
 class PersonaWorkbookRegressionTests(unittest.TestCase):
     """Verify workbook generator policy contracts do not regress."""
+
+    ROOT = Path(__file__).resolve().parents[1]
+
+    def test_near_threshold_candidate_can_pass_with_strong_scores(self) -> None:
+        config = load_yaml(self.ROOT / "config" / "bottleneck_clustering.yaml")["promotion_scoring"]
+        eligible = _eligible_near_threshold_promotion_candidate(
+            size=555,
+            min_cluster_size=636,
+            scorecard={
+                "pre_grounding_promotion_score": 0.768,
+                "structural_stability_score": 0.487,
+                "cross_source_robustness_score": 0.903,
+                "strategic_redundancy_status": "distinct_enough",
+            },
+            structurally_supported=True,
+            config=config,
+        )
+        self.assertTrue(eligible)
 
     def test_share_columns_match_stated_denominator(self) -> None:
         frames = assemble_workbook_frames(

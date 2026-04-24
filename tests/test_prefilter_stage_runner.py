@@ -20,6 +20,7 @@ _STAGE_SPEC.loader.exec_module(_STAGE_MODULE)
 
 _merge_source_rows = _STAGE_MODULE._merge_source_rows
 _build_invalid_with_prefilter = _STAGE_MODULE._build_invalid_with_prefilter
+_rebalance_merged_results = _STAGE_MODULE._rebalance_merged_results
 _slice_selected_sources = _STAGE_MODULE._slice_selected_sources
 
 
@@ -97,6 +98,42 @@ class PrefilterStageRunnerTests(unittest.TestCase):
         ]["raw_id"].astype(str).tolist()
         self.assertEqual(adobe_low_relevance, ["drop_new_a"])
         self.assertEqual(sisense_low_relevance, ["drop_old_s"])
+
+    def test_rebalance_merged_results_uses_full_merged_mix_for_source_cap(self) -> None:
+        merged_keep_df = pd.DataFrame(
+            [
+                {"source": "sisense_community", "raw_id": "s_keep", "relevance_decision": "keep", "final_relevance_score": 12.0},
+            ]
+        )
+        merged_borderline_df = pd.DataFrame(
+            [
+                {"source": "google_developer_forums", "raw_id": "g1", "relevance_decision": "borderline", "final_relevance_score": 6.0},
+                {"source": "google_developer_forums", "raw_id": "g2", "relevance_decision": "borderline", "final_relevance_score": 6.5},
+            ]
+        )
+        merged_drop_df = pd.DataFrame(
+            columns=["source", "raw_id", "relevance_decision", "final_relevance_score"]
+        )
+        rules = {
+            "source_balance": {
+                "enabled": True,
+                "max_retained_source_share": 0.80,
+                "min_total_retained_rows": 1,
+                "protect_keep_score_at_or_above": 12.0,
+                "protected_sources": [],
+            }
+        }
+
+        keep_df, borderline_df, drop_df = _rebalance_merged_results(
+            merged_keep_df=merged_keep_df,
+            merged_borderline_df=merged_borderline_df,
+            merged_drop_df=merged_drop_df,
+            rules=rules,
+        )
+
+        self.assertEqual(set(borderline_df["raw_id"].astype(str)), {"g1", "g2"})
+        self.assertEqual(set(keep_df["raw_id"].astype(str)), {"s_keep"})
+        self.assertTrue(drop_df.empty)
 
 
 if __name__ == "__main__":

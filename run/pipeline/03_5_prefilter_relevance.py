@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
 import pandas as pd
 
 from src.filters.relevance import (
+    _apply_source_balance_reduction,
     apply_relevance_prefilter,
     build_before_after_comparison,
     build_prefilter_summary,
@@ -36,7 +37,11 @@ def main() -> None:
     previous_invalid_df = read_parquet(ROOT / "data" / "valid" / "invalid_candidates.parquet")
     selected_sources = _normalize_selected_sources(args.source)
     selected_valid_df = _slice_selected_sources(valid_df, selected_sources)
-    keep_df, borderline_df, drop_df = apply_relevance_prefilter(selected_valid_df, rules)
+    keep_df, borderline_df, drop_df = apply_relevance_prefilter(
+        selected_valid_df,
+        rules,
+        apply_source_balance_reduction=not bool(selected_sources),
+    )
 
     merged_keep_df = _merge_source_rows(
         existing_df=read_parquet(ROOT / "data" / "prefilter" / "relevance_keep.parquet"),
@@ -52,6 +57,13 @@ def main() -> None:
         existing_df=read_parquet(ROOT / "data" / "prefilter" / "relevance_drop.parquet"),
         updated_df=drop_df,
         selected_sources=selected_sources,
+    )
+
+    merged_keep_df, merged_borderline_df, merged_drop_df = _rebalance_merged_results(
+        merged_keep_df=merged_keep_df,
+        merged_borderline_df=merged_borderline_df,
+        merged_drop_df=merged_drop_df,
+        rules=rules,
     )
 
     ensure_dir(ROOT / "data" / "prefilter")
@@ -156,6 +168,23 @@ def _merge_source_rows(existing_df: pd.DataFrame, updated_df: pd.DataFrame, sele
     if not existing_trimmed_df.empty and "source" in existing_trimmed_df.columns:
         existing_trimmed_df = existing_trimmed_df[~existing_trimmed_df["source"].astype(str).isin(selected_sources)].copy()
     return _concat_frames(existing_trimmed_df, updated_df).reset_index(drop=True)
+
+
+def _rebalance_merged_results(
+    merged_keep_df: pd.DataFrame,
+    merged_borderline_df: pd.DataFrame,
+    merged_drop_df: pd.DataFrame,
+    rules: dict[str, object],
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Reapply source-balance reduction on the full merged result set."""
+    result_df = _concat_frames(merged_keep_df, merged_borderline_df, merged_drop_df).reset_index(drop=True)
+    if result_df.empty:
+        return merged_keep_df.copy(), merged_borderline_df.copy(), merged_drop_df.copy()
+    rebalanced_df = _apply_source_balance_reduction(result_df, rules)
+    keep_df = rebalanced_df[rebalanced_df["relevance_decision"].astype(str) == "keep"].copy().reset_index(drop=True)
+    borderline_df = rebalanced_df[rebalanced_df["relevance_decision"].astype(str) == "borderline"].copy().reset_index(drop=True)
+    drop_df = rebalanced_df[rebalanced_df["relevance_decision"].astype(str) == "drop"].copy().reset_index(drop=True)
+    return keep_df, borderline_df, drop_df
 
 
 def _build_invalid_with_prefilter(

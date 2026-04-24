@@ -25,11 +25,18 @@ Expanded sequence used by `00_run_all.py`:
 
 - Treat stage execution as dependency-sensitive by default.
 - Do not run dependent stages in parallel.
+- Do not launch dependent pipeline stages via `multi_tool_use.parallel` or any other parallel wrapper.
 - If a stage reads artifacts written by an earlier stage, wait for the upstream stage to finish successfully before starting the downstream stage.
 - Safe parallelism is limited to:
   - read-only inspection
   - audits that do not rewrite shared stage outputs
   - source-specific collection tasks that write to disjoint raw directories
+- Good:
+  - `03_filter_valid.py -> 03_5_prefilter_relevance.py -> 04_build_episodes.py` as one strict sequence
+  - multiple source-specific `collect` runs only when they write to different raw folders
+- Bad:
+  - launching `03_filter_valid.py` and `03_5_prefilter_relevance.py` together
+  - launching `04_build_episodes.py`, `05_label_episodes.py`, and `06_cluster_and_score.py` in a parallel wrapper
 - Do not parallelize sequences such as:
   - `03_filter_valid.py -> 03_5_prefilter_relevance.py -> 04_build_episodes.py`
   - `04_build_episodes.py -> 05_label_episodes.py -> 06_cluster_and_score.py -> 07_export_xlsx.py`

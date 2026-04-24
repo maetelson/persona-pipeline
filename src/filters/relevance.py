@@ -63,6 +63,7 @@ def apply_relevance_prefilter(
     df: pd.DataFrame,
     rules: dict[str, Any],
     llm_hook: LlmHook | None = None,
+    apply_source_balance_reduction: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Split rows into keep, borderline, and drop with transparent scores."""
     if df.empty:
@@ -95,7 +96,8 @@ def apply_relevance_prefilter(
     result["rescue_reason"] = [item.rescue_reason for item in evaluations]
     result["dropped_reason"] = [item.dropped_reason for item in evaluations]
     result = _apply_optional_llm_hook(result, rules, llm_hook)
-    result = _apply_source_balance_reduction(result, rules)
+    if apply_source_balance_reduction:
+        result = _apply_source_balance_reduction(result, rules)
 
     keep_df = result[result["relevance_decision"] == "keep"].copy().reset_index(drop=True)
     borderline_df = result[result["relevance_decision"] == "borderline"].copy().reset_index(drop=True)
@@ -815,7 +817,8 @@ def _klaviyo_whitelist_hits(lowered: str) -> list[str]:
         "custom report", "conversion rate", "visualizations", "external app", "api", "form metrics",
         "sign ups", "views by form", "average days between orders", "churn rate",
         "flow analytics", "open rate", "open rates", "click rate", "click rates", "bounce rate", "bounce rates",
-        "custom reports page", "predictive metrics", "churn risk", "attribution window",
+        "custom reports page", "custom reports", "predictive metrics", "churn risk", "attribution window",
+        "ctr reporting", "engagement report", "sales performance", "monthly reporting",
     ]
     trust_terms = [
         "source of truth", "not matching", "mismatch", "discrepancy", "reporting lag",
@@ -826,12 +829,14 @@ def _klaviyo_whitelist_hits(lowered: str) -> list[str]:
         "error loading", "not count as revenue", "more revenue than klaviyo", "cancelled orders",
         "inaccurate numbers", "odd and inaccurate numbers", "only pulling", "failing its own filters",
         "open rates dropping", "open rate dropped", "dropped pretty significantly",
+        "not converting", "single currency", "zero sales", "not sync", "not synced",
+        "missing corresponding send record", "missing corresponding send records", "disappeared",
     ]
     ops_terms = [
         "export excel", "manual spreadsheet", "before sending", "weekly reporting", "google sheets", "power query",
         "external app", "visualizations", "conversion rate via api", "pull form metrics via api", "custom report",
         "dynamic one", "static value", "further data manipulation", "custom reports page", "predictive metrics",
-        "churn risk", "attribution window", "flow analytics",
+        "churn risk", "attribution window", "flow analytics", "monthly reporting",
     ]
     reporting_hit = any(_text_contains_term(lowered, term) for term in reporting_terms)
     trust_hit = any(_text_contains_term(lowered, term) for term in trust_terms)
@@ -844,6 +849,8 @@ def _klaviyo_whitelist_hits(lowered: str) -> list[str]:
             "profile count",
             "segmentation",
             "segment export",
+            "shopify subscriber",
+            "subscriber number",
             "campaigns breakdown by segment",
             "suppressed profiles",
             "total profile number",
@@ -1724,6 +1731,7 @@ def _apply_klaviyo_rescue_signals(
             "overview dashboard",
             "campaigns breakdown by segment",
             "bulk export",
+            "custom reports",
             "ga4",
             "google analytics",
             "campaign attribution",
@@ -1731,6 +1739,8 @@ def _apply_klaviyo_rescue_signals(
             "conversion report",
             "stakeholder reporting",
             "performance summary",
+            "ctr reporting",
+            "engagement report",
             "report mismatch",
             "custom reports page",
             "predictive metrics",
@@ -1743,6 +1753,17 @@ def _apply_klaviyo_rescue_signals(
             "click rates",
             "bounce rate",
             "bounce rates",
+            "currency conversion",
+            "single currency",
+            "revenue report",
+            "revenue reports",
+            "revenue dashboard",
+            "subscriber count",
+            "subscriber counts",
+            "flow report",
+            "campaign results",
+            "sign-off",
+            "signoff",
         ]
     )
     trust_hit = any(
@@ -1762,6 +1783,7 @@ def _apply_klaviyo_rescue_signals(
             "skewed",
             "inflated",
             "compare",
+            "disappeared",
             "does not equal",
             "doesn't equal",
             "doesnt equal",
@@ -1778,6 +1800,12 @@ def _apply_klaviyo_rescue_signals(
             "error loading",
             "not count as revenue",
             "more revenue than klaviyo",
+            "not converting",
+            "single currency",
+            "zero sales",
+            "not synced",
+            "not sync",
+            "missing corresponding send records",
             "odd and inaccurate numbers",
             "inaccurate numbers",
             "only pulling",
@@ -1785,6 +1813,13 @@ def _apply_klaviyo_rescue_signals(
             "open rates dropping",
             "open rate dropped",
             "dropped pretty significantly",
+            "subscriber count mismatch",
+            "revenue is off",
+            "does not reconcile",
+            "doesn't reconcile",
+            "doesnt reconcile",
+            "sign-off",
+            "signoff",
         ]
     )
     segment_hit = any(
@@ -1796,12 +1831,16 @@ def _apply_klaviyo_rescue_signals(
             "segmentation",
             "segment export",
             "missing profiles",
+            "shopify subscriber",
+            "subscriber number",
             "campaigns breakdown by segment",
             "compare segments",
             "segment performance",
             "segment report discrepancy",
             "segment mismatch",
             "segment not working properly",
+            "subscriber count",
+            "subscriber counts",
         ]
     )
     attribution_hit = any(
@@ -1831,11 +1870,16 @@ def _apply_klaviyo_rescue_signals(
             "custom report",
             "overview dashboard",
             "bulk export",
+            "custom reports",
             "export all metric data",
             "stakeholder reporting",
             "performance summary",
             "before sign-off",
             "flow analytics",
+            "monthly reporting",
+            "weekly review",
+            "monthly review",
+            "finance review",
         ]
     )
     export_integrity_hit = any(
@@ -1856,6 +1900,7 @@ def _apply_klaviyo_rescue_signals(
             "campaign attribution",
             "conversion report",
             "custom report",
+            "custom reports",
             "form metrics",
             "conversion rate",
             "views by form",
@@ -1867,6 +1912,10 @@ def _apply_klaviyo_rescue_signals(
             "click rates",
             "bounce rate",
             "bounce rates",
+            "currency conversion",
+            "single currency",
+            "subscriber count",
+            "subscriber counts",
         ]
     )
     analysis_workaround_hit = any(
@@ -1960,6 +2009,8 @@ def _apply_klaviyo_rescue_signals(
             "error loading",
             "custom reports page",
             "more revenue than klaviyo",
+            "ctr reporting",
+            "engagement report",
             "predictive metrics",
             "churn risk",
             "flow analytics",
@@ -1972,6 +2023,15 @@ def _apply_klaviyo_rescue_signals(
             "failing its own filters",
             "inaccurate numbers",
             "only pulling",
+            "not converting",
+            "single currency",
+            "zero sales",
+            "missing corresponding send records",
+            "subscriber count mismatch",
+            "revenue is off",
+            "does not reconcile",
+            "doesn't reconcile",
+            "doesnt reconcile",
         ]
     ):
         scores["dashboard_trust_score"] += 0.9

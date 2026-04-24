@@ -307,6 +307,115 @@ class EpisodeBuilderTests(unittest.TestCase):
         self.assertEqual(len(episodes_df), 1)
         self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
 
+    def test_adobe_custom_metrics_mismatch_trend_analysis_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-8",
+                    "url": "https://example.com/thread/adobe-8",
+                    "source_type": "thread",
+                    "title": "Custom metrics do not match trend analysis values",
+                    "body": (
+                        "Our custom metrics for visits and unique visitors show much higher values in a freeform "
+                        "table than they do in trend analysis, and we cannot explain why the numbers do not match."
+                    ),
+                    "comments_text": "",
+                    "thread_title": "Custom metrics do not match trend analysis values",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_adobe_data_warehouse_sequence_question_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-9",
+                    "url": "https://example.com/thread/adobe-9",
+                    "source_type": "thread",
+                    "title": "Sequential analysis on Adobe raw data",
+                    "body": (
+                        "We need to analyze a sequence of events from Adobe raw data in Data Warehouse and figure "
+                        "out how to get the occurrence count when banner impression is the immediate next hit after "
+                        "landing on a page."
+                    ),
+                    "comments_text": "",
+                    "thread_title": "Sequential analysis on Adobe raw data",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_adobe_feature_request_stays_non_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-10",
+                    "url": "https://example.com/thread/adobe-10",
+                    "source_type": "thread",
+                    "title": "Visualize fallout in a flow visualization style",
+                    "body": (
+                        "Description: the fallout visualization is useful, but feature important to you is better "
+                        "understanding of user flow. How would you like the feature to work: instead of the current "
+                        "vertical layout, show a horizontal flow diagram. Current Behaviour - vertical representation only."
+                    ),
+                    "comments_text": "",
+                    "thread_title": "Visualize fallout in a flow visualization style",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 0)
+        self.assertEqual(
+            str(debug_df.iloc[0]["quality_fail_reason"]),
+            "adobe_feature_request_without_operational_context",
+        )
+
+    def test_adobe_csv_export_incomplete_data_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-11",
+                    "url": "https://example.com/thread/adobe-11",
+                    "source_type": "thread",
+                    "title": "CSV export takes incomplete data",
+                    "body": (
+                        "I built a report and sometimes Project > Download CSV starts before the data is fully "
+                        "loaded, which results in differently sized CSV files and incomplete data in the export."
+                    ),
+                    "comments_text": "",
+                    "thread_title": "CSV export takes incomplete data",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
     def test_adobe_migration_blog_stays_non_episode(self) -> None:
         rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
         df = pd.DataFrame(
@@ -364,6 +473,28 @@ class EpisodeBuilderTests(unittest.TestCase):
                     "body": "Our scheduled report is aggregated and only shows the summary even though the Domo card shows data individually, so we cannot export the detailed rows for the weekly report.",
                     "comments_text": "",
                     "thread_title": "Scheduled reports are aggregated even when the card shows individual rows",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "domo"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_domo_table_aggregation_issue_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "domo_community_forum",
+                    "raw_id": "domo-3",
+                    "url": "https://example.com/thread/domo-3",
+                    "source_type": "thread",
+                    "title": "Field aggregation is wrong in Domo table visual",
+                    "body": "We are running into a field aggregation issue in a Domo table card and the table visual only displays the wrong summary for the weekly report.",
+                    "comments_text": "",
+                    "thread_title": "Field aggregation is wrong in Domo table visual",
                     "parent_context": "",
                     "source_meta": serialize_source_meta({"platform": "domo"}),
                 }

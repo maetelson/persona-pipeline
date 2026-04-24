@@ -112,6 +112,8 @@ python run/pipeline/07_export_xlsx.py
 python run/cli/16_persona_workbook_audit.py
 ```
 
+Dependent pipeline stages must not be launched through `multi_tool_use.parallel` or any other parallel wrapper. Safe parallelism is limited to read-only inspection, unit tests, and disjoint source collection work that does not rewrite shared downstream artifacts.
+
 Default developer validation path when you only need analysis-quality signals and not a final XLSX:
 
 ```bash
