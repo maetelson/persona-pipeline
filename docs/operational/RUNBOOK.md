@@ -67,6 +67,21 @@ python run/pipeline/06_cluster_and_score.py
 python run/pipeline/07_export_xlsx.py
 ```
 
+개발용 기본 검증 루프:
+
+```bash
+python run/pipeline/03_filter_valid.py
+python run/pipeline/03_5_prefilter_relevance.py
+python run/pipeline/04_build_episodes.py
+python run/pipeline/05_label_episodes.py
+python run/pipeline/06_1_discover_persona_axes.py
+python run/pipeline/06_cluster_and_score.py
+python run/cli/17_analysis_snapshot.py --compare-latest
+```
+
+- 이 경로는 `xlsx` 없이 canonical workbook bundle과 analysis artifacts만으로 품질 변화를 확인하는 개발용 표준 루프입니다.
+- `07_export_xlsx.py`는 최종 deliverable 확인, export-layer 변경, workbook-facing semantics 변경 때만 기본적으로 요구됩니다.
+
 Reddit collection policy diagnostics:
 
 ```bash
@@ -335,6 +350,19 @@ source별 finer slicing 지원:
 - `ThresholdAudit` 시트 포함
 - `RunMeta`에 `active_profile`, `exploratory_only`, `cluster_reliability` 포함
 - 출력: `data/output/persona_pipeline_output.xlsx`
+- 개발용 기본 검증에서는 생략 가능
+- bundle 기반 검증은 `run/cli/17_analysis_snapshot.py`로 대체 가능
+
+### `17_analysis_snapshot.py`
+
+- `xlsx` 없이 canonical workbook bundle과 analysis artifacts를 읽어 validation snapshot 생성
+- 출력:
+  - `data/analysis/validation_snapshot.json`
+  - `data/analysis/validation_snapshot.md`
+  - optional `data/analysis/validation_delta.json`
+- 목적:
+  - readiness / quality / weak source / usable persona / source delta를 machine-readable하게 확인
+  - 개발용 rerun에서 `07_export_xlsx.py`를 기본 단계로 강제하지 않음
 
 ## 5. Source별 raw 보존 구조
 

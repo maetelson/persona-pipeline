@@ -33,7 +33,8 @@ Expanded sequence used by `00_run_all.py`:
 - Do not parallelize sequences such as:
   - `03_filter_valid.py -> 03_5_prefilter_relevance.py -> 04_build_episodes.py`
   - `04_build_episodes.py -> 05_label_episodes.py -> 06_cluster_and_score.py -> 07_export_xlsx.py`
-- After changing any stage logic, rerun all downstream stages sequentially so the workbook is rebuilt from one consistent artifact state.
+- After changing any stage logic, rerun all downstream stages sequentially so downstream artifacts stay consistent.
+- For development validation, the canonical stopping point is the workbook bundle written by `06_cluster_and_score.py`; `07_export_xlsx.py` is only required when export-layer behavior or final workbook deliverables need verification.
 
 ## Stage boundaries
 
@@ -210,6 +211,9 @@ Expanded sequence used by `00_run_all.py`:
 
 - input: parquet artifacts from prior stages
 - output: `persona_pipeline_output.xlsx`
+- note:
+  - `07_export_xlsx.py` is a final deliverable verification step, not the default development validation step
+  - bundle-based validation can stop after `06_cluster_and_score.py` and use `run/cli/17_analysis_snapshot.py`
 
 ## Re-run behavior
 
@@ -219,8 +223,8 @@ Expanded sequence used by `00_run_all.py`:
 - after retiring a source, remove or archive stale `data/raw/{source}/` folders before future collection audits
 - workbook-facing source sheets now use enabled source configs plus downstream evidence; raw-only stale folders should not appear in export, but they can still confuse local audits if left around
 - practical rule:
-  - after config/code changes in `filters`, rerun `03 -> 03.5 -> 04 -> 05 -> 06.1 -> 06 -> 07`
-  - after changes in `episodes`, rerun `04 -> 05 -> 06.1 -> 06 -> 07`
-  - after changes in `labeling`, rerun `05 -> 06.1 -> 06 -> 07`
-  - after changes in `analysis`, rerun `06.1 -> 06 -> 07`
+  - after config/code changes in `filters`, rerun `03 -> 03.5 -> 04 -> 05 -> 06.1 -> 06 -> 17_snapshot` for default validation, and add `07 -> 16_audit` only when final workbook verification is required
+  - after changes in `episodes`, rerun `04 -> 05 -> 06.1 -> 06 -> 17_snapshot` for default validation
+  - after changes in `labeling`, rerun `05 -> 06.1 -> 06 -> 17_snapshot` for default validation
+  - after changes in `analysis`, rerun `06.1 -> 06 -> 17_snapshot` for default validation
   - after changes in `export`, rerun `07`

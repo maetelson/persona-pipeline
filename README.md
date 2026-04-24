@@ -99,7 +99,7 @@ python run/pipeline/06_cluster_and_score.py
 python run/pipeline/07_export_xlsx.py
 ```
 
-Common sequential rerun path after filter, relevance, episode, or labeling changes:
+Common sequential rerun path for final workbook verification after filter, relevance, episode, or labeling changes:
 
 ```bash
 python run/pipeline/03_filter_valid.py
@@ -112,13 +112,25 @@ python run/pipeline/07_export_xlsx.py
 python run/cli/16_persona_workbook_audit.py
 ```
 
+Default developer validation path when you only need analysis-quality signals and not a final XLSX:
+
+```bash
+python run/pipeline/03_filter_valid.py
+python run/pipeline/03_5_prefilter_relevance.py
+python run/pipeline/04_build_episodes.py
+python run/pipeline/05_label_episodes.py
+python run/pipeline/06_1_discover_persona_axes.py
+python run/pipeline/06_cluster_and_score.py
+python run/cli/17_analysis_snapshot.py --compare-latest
+```
+
 Smoke test:
 
 ```bash
 python run/pipeline/08_smoke_pipeline.py
 ```
 
-`run/pipeline/08_smoke_pipeline.py` is only for fast sanity checks. It is not the recommended refresh path after changing filters, episode logic, labeling, analysis, or export.
+`run/pipeline/08_smoke_pipeline.py` is only for fast sanity checks. It is not the recommended refresh path after changing filters, episode logic, labeling, analysis, or export, and it is not a substitute for full-corpus quality validation.
 
 ## Main CLIs
 
@@ -140,6 +152,7 @@ Other main CLIs:
 | `run/cli/14_persona_cli.py` | Persona naming, insight, and solution-linkage artifacts |
 | `run/cli/15_label_cli.py` | Label-quality audit, rerun, repair, and QA exports |
 | `run/cli/16_persona_workbook_audit.py` | Workbook metric provenance and denominator/grain audit |
+| `run/cli/17_analysis_snapshot.py` | No-XLSX validation snapshot and baseline delta for development loops |
 
 Diagnostics and experiments stay available, but are intentionally not the primary entrypoint surface:
 
