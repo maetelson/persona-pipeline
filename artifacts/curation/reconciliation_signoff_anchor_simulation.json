@@ -1,0 +1,990 @@
+{
+  "anchor_set_path": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\artifacts\\curation\\reconciliation_signoff_anchor_set.csv",
+  "baseline_persona_04_identity_profile": [
+    {
+      "profile_label": "baseline_production",
+      "persona_id": "persona_04",
+      "persona_size": 598,
+      "cluster_signature_examples": [
+        {
+          "value": "primary=metric_reconciliation||secondary=dashboard_mistrust|repeated_validation_before_sending",
+          "count": 430,
+          "share_pct": 71.9
+        },
+        {
+          "value": "primary=repeated_validation_before_sending||secondary=dashboard_mistrust|metric_reconciliation|tool_limitation_workaround",
+          "count": 45,
+          "share_pct": 7.5
+        },
+        {
+          "value": "primary=repeated_validation_before_sending||secondary=dashboard_mistrust|metric_reconciliation",
+          "count": 33,
+          "share_pct": 5.5
+        }
+      ],
+      "top_pain_codes": [
+        {
+          "value": "P_DATA_QUALITY",
+          "count": 494
+        },
+        {
+          "value": "P_TOOL_LIMITATION",
+          "count": 146
+        },
+        {
+          "value": "P_HANDOFF",
+          "count": 46
+        },
+        {
+          "value": "P_MANUAL_REPORTING",
+          "count": 35
+        }
+      ],
+      "top_question_codes": [
+        {
+          "value": "Q_VALIDATE_NUMBERS",
+          "count": 594
+        },
+        {
+          "value": "Q_DIAGNOSE_ISSUE",
+          "count": 72
+        },
+        {
+          "value": "Q_AUTOMATE_WORKFLOW",
+          "count": 28
+        },
+        {
+          "value": "Q_REPORT_SPEED",
+          "count": 2
+        }
+      ],
+      "top_output_codes": [
+        {
+          "value": "O_XLSX",
+          "count": 381
+        },
+        {
+          "value": "O_AUTOMATION_JOB",
+          "count": 294
+        },
+        {
+          "value": "O_DASHBOARD",
+          "count": 211
+        },
+        {
+          "value": "O_VALIDATED_DATASET",
+          "count": 88
+        }
+      ],
+      "workflow_stage_distribution": [
+        {
+          "value": "validation",
+          "count": 509,
+          "share_pct": 85.1
+        },
+        {
+          "value": "reporting",
+          "count": 41,
+          "share_pct": 6.9
+        },
+        {
+          "value": "triage",
+          "count": 26,
+          "share_pct": 4.3
+        },
+        {
+          "value": "automation",
+          "count": 22,
+          "share_pct": 3.7
+        }
+      ],
+      "analysis_goal_distribution": [
+        {
+          "value": "validate_numbers",
+          "count": 593,
+          "share_pct": 99.2
+        },
+        {
+          "value": "report_speed",
+          "count": 2,
+          "share_pct": 0.3
+        },
+        {
+          "value": "automate_workflow",
+          "count": 2,
+          "share_pct": 0.3
+        },
+        {
+          "value": "diagnose_change",
+          "count": 1,
+          "share_pct": 0.2
+        }
+      ],
+      "bottleneck_type_distribution": [
+        {
+          "value": "data_quality",
+          "count": 469,
+          "share_pct": 78.4
+        },
+        {
+          "value": "tool_limitation",
+          "count": 75,
+          "share_pct": 12.5
+        },
+        {
+          "value": "manual_reporting",
+          "count": 35,
+          "share_pct": 5.9
+        },
+        {
+          "value": "handoff_dependency",
+          "count": 19,
+          "share_pct": 3.2
+        }
+      ],
+      "trust_validation_need_distribution": [
+        {
+          "value": "high",
+          "count": 555,
+          "share_pct": 92.8
+        },
+        {
+          "value": "medium",
+          "count": 43,
+          "share_pct": 7.2
+        }
+      ],
+      "source_mix_top_5": [
+        {
+          "value": "github_discussions",
+          "count": 108,
+          "share_pct": 18.1
+        },
+        {
+          "value": "power_bi_community",
+          "count": 90,
+          "share_pct": 15.1
+        },
+        {
+          "value": "metabase_discussions",
+          "count": 84,
+          "share_pct": 14.0
+        },
+        {
+          "value": "stackoverflow",
+          "count": 83,
+          "share_pct": 13.9
+        },
+        {
+          "value": "shopify_community",
+          "count": 61,
+          "share_pct": 10.2
+        }
+      ],
+      "validation_share_pct": 87.6,
+      "trust_medium_or_high_share_pct": 100.0,
+      "manual_reporting_share_pct": 5.9,
+      "report_speed_share_pct": 0.3,
+      "promotion_status": "exploratory_bucket",
+      "share_rank": "",
+      "dominant_signature": "bottleneck_type=data_quality | analysis_goal=unassigned | workflow_stage=unassigned",
+      "selected_examples": [
+        {
+          "episode_id": "shopify_community::585477::01",
+          "source": "shopify_community",
+          "grounded_text": "Because of this, the challenge isn’t getting perfectly accurate data but it’s knowing how to read the data in a useful way. GA4 vs platform data mismatch Hi everyone, GA4 is often seen as the main “source of truth,” but in reality it rarely matches the numbers you see in platform dashboards.",
+          "why_selected": "Selected for non genericness, grounding fit, validation pressure, bottleneck specificity. Matches persona on bottleneck_type=data_quality, user_role=analyst, tool_dependency_mode=bi_dashboard_heavy"
+        },
+        {
+          "episode_id": "github_discussions::1014776720::01",
+          "source": "github_discussions",
+          "grounded_text": "Pivot table summary returning wrong results I am using Preset Cloud, so not sure which version is used, as far as I can see Pivot table summary generate only 1 SQL Query, I would expect that it generate two. one for the rows another for the summary see the results of the division which is wrong Actual/ Budget, I don't know how to tell superset to keep the same metric definition for the summary rows !image I am using",
+          "why_selected": "Selected for grounding fit, validation pressure, bottleneck specificity, metric definition. Matches persona on bottleneck_type=data_quality, user_role=analyst, tool_dependency_mode=bi_dashboard_heavy"
+        },
+        {
+          "episode_id": "reddit::1sivc52::01",
+          "source": "reddit",
+          "grounded_text": "I've already checked the settings in Drive, but the mismatch persists in the main dashboard. Has anyone encountered this or knows how to force a sync/refresh of the device identity?",
+          "why_selected": "Selected for grounding fit, non genericness, bottleneck specificity, dashboard trust. Matches persona on bottleneck_type=data_quality, user_role=analyst, tool_dependency_mode=bi_dashboard_heavy"
+        }
+      ],
+      "representative_examples": [
+        {
+          "episode_id": "stackoverflow::75374665::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "stackoverflow::72367463::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "stackoverflow::76605783::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "general_friction"
+        }
+      ]
+    }
+  ],
+  "baseline_reference": {
+    "variant_id": "H",
+    "description": "no-op baseline",
+    "positive_anchor_capture_rate": 100.0,
+    "hard_negative_anchor_false_positive_rate": 10.0,
+    "parent_anchor_retention_rate": 100.0,
+    "ambiguous_non_anchor_movement_rate": 5.0,
+    "positive_anchor_hits": 50,
+    "hard_negative_anchor_hits": 3,
+    "parent_anchor_hits": 30,
+    "ambiguous_non_anchor_hits": 1,
+    "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+    "persona_04_identity_overlap": 1.0,
+    "selected_example_overlap_pct": 100.0,
+    "persona_01_leakage_pct": 0.0,
+    "persona_05_drift_risk": false,
+    "identity_continuity_gate": {
+      "reference_only": true,
+      "eligible_for_future_implementation": false,
+      "target_change_type": "baseline_reference",
+      "checks": {
+        "baseline_target_matches_best_match": true,
+        "jaccard_overlap_high": true,
+        "selected_example_overlap_high": true,
+        "positive_recall_high_enough": true,
+        "hard_negative_fp_within_guarded_range": true,
+        "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+        "persona_01_leakage_below_ceiling": true,
+        "persona_05_promotion_drift_absent": true,
+        "target_change_is_not_semantic_drift": true
+      },
+      "fail_reasons": []
+    },
+    "top_3_cluster_share_simulation": 83.3,
+    "final_usable_persona_count_simulation": 3,
+    "persona_04_status_simulation": "blocked_by_concentration",
+    "persona_05_status_simulation": "still_likely_blocked",
+    "rows_moved_into_persona_04": 0,
+    "representative_moved_examples": [],
+    "representative_blocked_examples": []
+  },
+  "variant_results": [
+    {
+      "variant_id": "A",
+      "description": "persona_04 anchor-protected expansion",
+      "positive_anchor_capture_rate": 100.0,
+      "hard_negative_anchor_false_positive_rate": 10.0,
+      "parent_anchor_retention_rate": 100.0,
+      "ambiguous_non_anchor_movement_rate": 5.0,
+      "positive_anchor_hits": 50,
+      "hard_negative_anchor_hits": 3,
+      "parent_anchor_hits": 30,
+      "ambiguous_non_anchor_hits": 1,
+      "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+      "persona_04_identity_overlap": 1.0,
+      "selected_example_overlap_pct": 100.0,
+      "persona_01_leakage_pct": 0.0,
+      "persona_05_drift_risk": false,
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": true,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": []
+      },
+      "top_3_cluster_share_simulation": 83.3,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_status_simulation": "blocked_by_concentration",
+      "persona_05_status_simulation": "still_likely_blocked",
+      "rows_moved_into_persona_04": 0,
+      "representative_moved_examples": [],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "eligibility": {
+        "eligible_for_future_implementation": false,
+        "fail_reasons": [
+          "positive_anchor_capture_not_meaningfully_improved",
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "B",
+      "description": "persona_04 positive-anchor nearest-neighbor expansion",
+      "positive_anchor_capture_rate": 100.0,
+      "hard_negative_anchor_false_positive_rate": 10.0,
+      "parent_anchor_retention_rate": 100.0,
+      "ambiguous_non_anchor_movement_rate": 5.0,
+      "positive_anchor_hits": 50,
+      "hard_negative_anchor_hits": 3,
+      "parent_anchor_hits": 30,
+      "ambiguous_non_anchor_hits": 1,
+      "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+      "persona_04_identity_overlap": 0.9599,
+      "selected_example_overlap_pct": 100.0,
+      "persona_01_leakage_pct": 0.6,
+      "persona_05_drift_risk": false,
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": true,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": []
+      },
+      "top_3_cluster_share_simulation": 83.1,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_status_simulation": "blocked_by_concentration",
+      "persona_05_status_simulation": "still_likely_blocked",
+      "rows_moved_into_persona_04": 25,
+      "representative_moved_examples": [
+        {
+          "episode_id": "stackoverflow::77882909::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "github_discussions::2180737020::01",
+          "source": "github_discussions",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "power_bi_community::4903525::01",
+          "source": "power_bi_community",
+          "business_question": "How can we diagnose and resolve analytics issues faster?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "power_bi_community::4798382::01",
+          "source": "power_bi_community",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "reddit::1sjemyj::01",
+          "source": "reddit",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "data_quality"
+        }
+      ],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "eligibility": {
+        "eligible_for_future_implementation": false,
+        "fail_reasons": [
+          "positive_anchor_capture_not_meaningfully_improved",
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "C",
+      "description": "persona_04 pre-merge anchor guard",
+      "positive_anchor_capture_rate": 100.0,
+      "hard_negative_anchor_false_positive_rate": 10.0,
+      "parent_anchor_retention_rate": 100.0,
+      "ambiguous_non_anchor_movement_rate": 5.0,
+      "positive_anchor_hits": 50,
+      "hard_negative_anchor_hits": 3,
+      "parent_anchor_hits": 30,
+      "ambiguous_non_anchor_hits": 1,
+      "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+      "persona_04_identity_overlap": 0.9724,
+      "selected_example_overlap_pct": 100.0,
+      "persona_01_leakage_pct": 0.4,
+      "persona_05_drift_risk": false,
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": true,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": []
+      },
+      "top_3_cluster_share_simulation": 83.1,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_status_simulation": "blocked_by_concentration",
+      "persona_05_status_simulation": "still_likely_blocked",
+      "rows_moved_into_persona_04": 17,
+      "representative_moved_examples": [
+        {
+          "episode_id": "stackoverflow::77882909::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "power_bi_community::4903525::01",
+          "source": "power_bi_community",
+          "business_question": "How can we diagnose and resolve analytics issues faster?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "power_bi_community::4798382::01",
+          "source": "power_bi_community",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "reddit::1sjemyj::01",
+          "source": "reddit",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "reddit::1skda86::01",
+          "source": "reddit",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "manual_reporting"
+        }
+      ],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "eligibility": {
+        "eligible_for_future_implementation": false,
+        "fail_reasons": [
+          "positive_anchor_capture_not_meaningfully_improved",
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "D",
+      "description": "persona_04 expansion only for high-trust validation profile",
+      "positive_anchor_capture_rate": 100.0,
+      "hard_negative_anchor_false_positive_rate": 10.0,
+      "parent_anchor_retention_rate": 100.0,
+      "ambiguous_non_anchor_movement_rate": 5.0,
+      "positive_anchor_hits": 50,
+      "hard_negative_anchor_hits": 3,
+      "parent_anchor_hits": 30,
+      "ambiguous_non_anchor_hits": 1,
+      "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+      "persona_04_identity_overlap": 1.0,
+      "selected_example_overlap_pct": 100.0,
+      "persona_01_leakage_pct": 0.0,
+      "persona_05_drift_risk": false,
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": true,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": []
+      },
+      "top_3_cluster_share_simulation": 83.3,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_status_simulation": "blocked_by_concentration",
+      "persona_05_status_simulation": "still_likely_blocked",
+      "rows_moved_into_persona_04": 0,
+      "representative_moved_examples": [],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "eligibility": {
+        "eligible_for_future_implementation": false,
+        "fail_reasons": [
+          "positive_anchor_capture_not_meaningfully_improved",
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "E",
+      "description": "persona_04 expansion with hard-negative phrase block",
+      "positive_anchor_capture_rate": 100.0,
+      "hard_negative_anchor_false_positive_rate": 10.0,
+      "parent_anchor_retention_rate": 100.0,
+      "ambiguous_non_anchor_movement_rate": 5.0,
+      "positive_anchor_hits": 50,
+      "hard_negative_anchor_hits": 3,
+      "parent_anchor_hits": 30,
+      "ambiguous_non_anchor_hits": 1,
+      "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+      "persona_04_identity_overlap": 0.9692,
+      "selected_example_overlap_pct": 100.0,
+      "persona_01_leakage_pct": 0.4,
+      "persona_05_drift_risk": false,
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": true,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": []
+      },
+      "top_3_cluster_share_simulation": 83.1,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_status_simulation": "blocked_by_concentration",
+      "persona_05_status_simulation": "still_likely_blocked",
+      "rows_moved_into_persona_04": 19,
+      "representative_moved_examples": [
+        {
+          "episode_id": "stackoverflow::77882909::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "hubspot_community::813245::01",
+          "source": "hubspot_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "power_bi_community::4903525::01",
+          "source": "power_bi_community",
+          "business_question": "How can we diagnose and resolve analytics issues faster?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "power_bi_community::4798382::01",
+          "source": "power_bi_community",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "reddit::1sjemyj::01",
+          "source": "reddit",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "data_quality"
+        }
+      ],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "eligibility": {
+        "eligible_for_future_implementation": false,
+        "fail_reasons": [
+          "positive_anchor_capture_not_meaningfully_improved",
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "F",
+      "description": "persona_04 expansion with parent-reporting retention guard",
+      "positive_anchor_capture_rate": 100.0,
+      "hard_negative_anchor_false_positive_rate": 10.0,
+      "parent_anchor_retention_rate": 100.0,
+      "ambiguous_non_anchor_movement_rate": 5.0,
+      "positive_anchor_hits": 50,
+      "hard_negative_anchor_hits": 3,
+      "parent_anchor_hits": 30,
+      "ambiguous_non_anchor_hits": 1,
+      "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+      "persona_04_identity_overlap": 0.9522,
+      "selected_example_overlap_pct": 100.0,
+      "persona_01_leakage_pct": 0.7,
+      "persona_05_drift_risk": false,
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": true,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": []
+      },
+      "top_3_cluster_share_simulation": 83.0,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_status_simulation": "blocked_by_concentration",
+      "persona_05_status_simulation": "still_likely_blocked",
+      "rows_moved_into_persona_04": 30,
+      "representative_moved_examples": [
+        {
+          "episode_id": "stackoverflow::77882909::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "github_discussions::2180737020::01",
+          "source": "github_discussions",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "hubspot_community::813245::01",
+          "source": "hubspot_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "power_bi_community::4903525::01",
+          "source": "power_bi_community",
+          "business_question": "How can we diagnose and resolve analytics issues faster?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "power_bi_community::4798382::01",
+          "source": "power_bi_community",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "manual_reporting"
+        }
+      ],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "eligibility": {
+        "eligible_for_future_implementation": false,
+        "fail_reasons": [
+          "positive_anchor_capture_not_meaningfully_improved",
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "G",
+      "description": "combined conservative anchor variant",
+      "positive_anchor_capture_rate": 100.0,
+      "hard_negative_anchor_false_positive_rate": 10.0,
+      "parent_anchor_retention_rate": 100.0,
+      "ambiguous_non_anchor_movement_rate": 5.0,
+      "positive_anchor_hits": 50,
+      "hard_negative_anchor_hits": 3,
+      "parent_anchor_hits": 30,
+      "ambiguous_non_anchor_hits": 1,
+      "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+      "persona_04_identity_overlap": 1.0,
+      "selected_example_overlap_pct": 100.0,
+      "persona_01_leakage_pct": 0.0,
+      "persona_05_drift_risk": false,
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": true,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": []
+      },
+      "top_3_cluster_share_simulation": 83.3,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_status_simulation": "blocked_by_concentration",
+      "persona_05_status_simulation": "still_likely_blocked",
+      "rows_moved_into_persona_04": 0,
+      "representative_moved_examples": [],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "eligibility": {
+        "eligible_for_future_implementation": false,
+        "fail_reasons": [
+          "positive_anchor_capture_not_meaningfully_improved",
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    }
+  ],
+  "eligible_variants": [],
+  "recommendation": "No anchor-level variant is implementation-eligible yet; keep production unchanged and use the anchor set for future anchor-construction simulations."
+}
