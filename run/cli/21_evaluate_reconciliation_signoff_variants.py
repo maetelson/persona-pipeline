@@ -336,10 +336,10 @@ def _summarize_assignment(
     p1_variant: str,
 ) -> dict[str, Any]:
     """Attach subset metrics plus whole-population concentration metrics."""
-    if persona_column in curated_subset.columns:
-        subset = curated_subset.copy()
-    else:
-        subset = curated_subset.merge(frame[["episode_id", persona_column]], on="episode_id", how="left")
+    subset = curated_subset.copy()
+    if persona_column in subset.columns:
+        subset = subset.drop(columns=[persona_column])
+    subset = subset.merge(frame[["episode_id", persona_column]], on="episode_id", how="left")
     metrics = _evaluate_subset(subset, persona_column, p4_variant, p1_variant)
     top_3_share = _top_3_share(frame[persona_column].astype(str))
     metrics["top_3_cluster_share_simulation"] = top_3_share

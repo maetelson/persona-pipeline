@@ -1,0 +1,1497 @@
+{
+  "baseline_to_simulation_identity_map": [
+    {
+      "baseline_persona_id": "persona_01",
+      "baseline_profile": [
+        {
+          "profile_label": "baseline_production",
+          "persona_id": "persona_01",
+          "persona_size": 4490,
+          "cluster_signature_examples": [
+            {
+              "value": "primary=manual_reporting||secondary=recurring_export_work|spreadsheet_rework",
+              "count": 1615,
+              "share_pct": 36.0
+            },
+            {
+              "value": "primary=manual_reporting||secondary=presentation_ready_output_need|recurring_export_work|spreadsheet_rework",
+              "count": 720,
+              "share_pct": 16.0
+            },
+            {
+              "value": "primary=manual_reporting||secondary=recurring_export_work",
+              "count": 608,
+              "share_pct": 13.5
+            }
+          ],
+          "top_pain_codes": [
+            {
+              "value": "P_MANUAL_REPORTING",
+              "count": 2827
+            },
+            {
+              "value": "P_TOOL_LIMITATION",
+              "count": 1484
+            },
+            {
+              "value": "P_HANDOFF",
+              "count": 553
+            },
+            {
+              "value": "P_DATA_QUALITY",
+              "count": 339
+            }
+          ],
+          "top_question_codes": [
+            {
+              "value": "Q_REPORT_SPEED",
+              "count": 4164
+            },
+            {
+              "value": "Q_AUTOMATE_WORKFLOW",
+              "count": 337
+            },
+            {
+              "value": "Q_DIAGNOSE_ISSUE",
+              "count": 324
+            },
+            {
+              "value": "Q_VALIDATE_NUMBERS",
+              "count": 211
+            }
+          ],
+          "top_output_codes": [
+            {
+              "value": "O_XLSX",
+              "count": 4272
+            },
+            {
+              "value": "O_DASHBOARD",
+              "count": 1423
+            },
+            {
+              "value": "O_AUTOMATION_JOB",
+              "count": 1404
+            },
+            {
+              "value": "O_VALIDATED_DATASET",
+              "count": 206
+            }
+          ],
+          "workflow_stage_distribution": [
+            {
+              "value": "reporting",
+              "count": 4225,
+              "share_pct": 94.1
+            },
+            {
+              "value": "automation",
+              "count": 134,
+              "share_pct": 3.0
+            },
+            {
+              "value": "validation",
+              "count": 68,
+              "share_pct": 1.5
+            },
+            {
+              "value": "triage",
+              "count": 63,
+              "share_pct": 1.4
+            }
+          ],
+          "analysis_goal_distribution": [
+            {
+              "value": "report_speed",
+              "count": 4164,
+              "share_pct": 92.7
+            },
+            {
+              "value": "automate_workflow",
+              "count": 134,
+              "share_pct": 3.0
+            },
+            {
+              "value": "validate_numbers",
+              "count": 131,
+              "share_pct": 2.9
+            },
+            {
+              "value": "diagnose_change",
+              "count": 61,
+              "share_pct": 1.4
+            }
+          ],
+          "bottleneck_type_distribution": [
+            {
+              "value": "manual_reporting",
+              "count": 2827,
+              "share_pct": 63.0
+            },
+            {
+              "value": "tool_limitation",
+              "count": 1082,
+              "share_pct": 24.1
+            },
+            {
+              "value": "handoff_dependency",
+              "count": 347,
+              "share_pct": 7.7
+            },
+            {
+              "value": "data_quality",
+              "count": 234,
+              "share_pct": 5.2
+            }
+          ],
+          "trust_validation_need_distribution": [
+            {
+              "value": "medium",
+              "count": 243,
+              "share_pct": 5.4
+            },
+            {
+              "value": "low",
+              "count": 180,
+              "share_pct": 4.0
+            },
+            {
+              "value": "high",
+              "count": 174,
+              "share_pct": 3.9
+            }
+          ],
+          "source_mix_top_5": [
+            {
+              "value": "power_bi_community",
+              "count": 1360,
+              "share_pct": 30.3
+            },
+            {
+              "value": "stackoverflow",
+              "count": 635,
+              "share_pct": 14.1
+            },
+            {
+              "value": "hubspot_community",
+              "count": 632,
+              "share_pct": 14.1
+            },
+            {
+              "value": "metabase_discussions",
+              "count": 533,
+              "share_pct": 11.9
+            },
+            {
+              "value": "github_discussions",
+              "count": 453,
+              "share_pct": 10.1
+            }
+          ],
+          "validation_share_pct": 3.2,
+          "trust_medium_or_high_share_pct": 9.3,
+          "manual_reporting_share_pct": 63.0,
+          "report_speed_share_pct": 92.7,
+          "promotion_status": "promoted_persona",
+          "share_rank": "",
+          "dominant_signature": "bottleneck_type=manual_reporting | analysis_goal=unassigned | workflow_stage=unassigned",
+          "selected_examples": [
+            {
+              "episode_id": "reddit::1roasir::01",
+              "source": "reddit",
+              "grounded_text": "My take on the best automation tools for financial reporting In my opinion, if you’re still spending the first ten days of every month manually exporting CSVs, working with VLOOKUPs, and building out pivot tables, you’re shooting yourself in the foot. In my years in accounting and marketing operations, I’ve seen teams of four people drown in work that a single person could do if they just stopped treating Excel like",
+              "why_selected": "Selected for non genericness, grounding fit, explicit workflow pain, business context. Matches persona on bottleneck_type=manual_reporting, user_role=analyst, tool_dependency_mode=spreadsheet_heavy"
+            },
+            {
+              "episode_id": "shopify_community::42224::01",
+              "source": "shopify_community",
+              "grounded_text": "Why isn't tax breakdown appearing in my monthly reports? Hi, All of my products are inclusive of GST but when I download my reports at the end of every month the excel sheets show 0.00 in the tax columns which means I have to manually calculate my GST for each product sold and type it into my reports for my accounts.",
+              "why_selected": "Selected for explicit workflow pain, non genericness, grounding fit, reporting pain. Matches persona on bottleneck_type=manual_reporting, user_role=analyst, tool_dependency_mode=spreadsheet_heavy"
+            },
+            {
+              "episode_id": "adobe_analytics_community::92493::01",
+              "source": "adobe_analytics_community",
+              "grounded_text": "Problems with scheduling reports Hello, I am having problems with a scheduled report because the received Excel file contains no data (equal to 0) related to marketing channel metrics that are instead shown correctly in the Adobe dashboard. Has this ever happened to anyone?",
+              "why_selected": "Selected for non genericness, grounding fit, bottleneck specificity, business context. Matches persona on bottleneck_type=manual_reporting, user_role=analyst, tool_dependency_mode=spreadsheet_heavy"
+            }
+          ],
+          "representative_examples": [
+            {
+              "episode_id": "github_discussions::4050456517::01",
+              "source": "github_discussions",
+              "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+              "bottleneck_text": "general_friction"
+            },
+            {
+              "episode_id": "reddit::1rmiluz::01",
+              "source": "reddit",
+              "business_question": "How can we diagnose and resolve analytics issues faster?",
+              "bottleneck_text": "manual_reporting"
+            },
+            {
+              "episode_id": "reddit::1jmb45l::01",
+              "source": "reddit",
+              "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+              "bottleneck_text": "tool_limitation"
+            }
+          ]
+        }
+      ],
+      "top_variant_destinations": [
+        {
+          "variant_persona_id": "persona_01",
+          "count": 4282,
+          "share_pct": 95.4
+        },
+        {
+          "variant_persona_id": "persona_03",
+          "count": 191,
+          "share_pct": 4.3
+        },
+        {
+          "variant_persona_id": "persona_07",
+          "count": 5,
+          "share_pct": 0.1
+        },
+        {
+          "variant_persona_id": "persona_06",
+          "count": 5,
+          "share_pct": 0.1
+        },
+        {
+          "variant_persona_id": "persona_08",
+          "count": 5,
+          "share_pct": 0.1
+        }
+      ],
+      "best_match_variant_persona_id": "persona_01",
+      "best_match_overlap": {
+        "baseline_persona_id": "persona_01",
+        "variant_persona_id": "persona_01",
+        "intersection_count": 4282,
+        "baseline_size": 4490,
+        "variant_size": 4368,
+        "jaccard_overlap": 0.9358,
+        "baseline_retention_pct": 95.4
+      },
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 6,
+        "selected_example_overlap_pct": 100.0
+      },
+      "semantic_similarity_score": 98.5,
+      "baseline_dominant_signature": "bottleneck_type=manual_reporting | analysis_goal=unassigned | workflow_stage=unassigned",
+      "variant_dominant_signature": "bottleneck_type=manual_reporting | analysis_goal=unassigned | workflow_stage=unassigned",
+      "identity_judgement": "stable_identity"
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "baseline_profile": [
+        {
+          "profile_label": "baseline_production",
+          "persona_id": "persona_04",
+          "persona_size": 598,
+          "cluster_signature_examples": [
+            {
+              "value": "primary=metric_reconciliation||secondary=dashboard_mistrust|repeated_validation_before_sending",
+              "count": 430,
+              "share_pct": 71.9
+            },
+            {
+              "value": "primary=repeated_validation_before_sending||secondary=dashboard_mistrust|metric_reconciliation|tool_limitation_workaround",
+              "count": 45,
+              "share_pct": 7.5
+            },
+            {
+              "value": "primary=repeated_validation_before_sending||secondary=dashboard_mistrust|metric_reconciliation",
+              "count": 33,
+              "share_pct": 5.5
+            }
+          ],
+          "top_pain_codes": [
+            {
+              "value": "P_DATA_QUALITY",
+              "count": 494
+            },
+            {
+              "value": "P_TOOL_LIMITATION",
+              "count": 146
+            },
+            {
+              "value": "P_HANDOFF",
+              "count": 46
+            },
+            {
+              "value": "P_MANUAL_REPORTING",
+              "count": 35
+            }
+          ],
+          "top_question_codes": [
+            {
+              "value": "Q_VALIDATE_NUMBERS",
+              "count": 594
+            },
+            {
+              "value": "Q_DIAGNOSE_ISSUE",
+              "count": 72
+            },
+            {
+              "value": "Q_AUTOMATE_WORKFLOW",
+              "count": 28
+            },
+            {
+              "value": "Q_REPORT_SPEED",
+              "count": 2
+            }
+          ],
+          "top_output_codes": [
+            {
+              "value": "O_XLSX",
+              "count": 381
+            },
+            {
+              "value": "O_AUTOMATION_JOB",
+              "count": 294
+            },
+            {
+              "value": "O_DASHBOARD",
+              "count": 211
+            },
+            {
+              "value": "O_VALIDATED_DATASET",
+              "count": 88
+            }
+          ],
+          "workflow_stage_distribution": [
+            {
+              "value": "validation",
+              "count": 509,
+              "share_pct": 85.1
+            },
+            {
+              "value": "reporting",
+              "count": 41,
+              "share_pct": 6.9
+            },
+            {
+              "value": "triage",
+              "count": 26,
+              "share_pct": 4.3
+            },
+            {
+              "value": "automation",
+              "count": 22,
+              "share_pct": 3.7
+            }
+          ],
+          "analysis_goal_distribution": [
+            {
+              "value": "validate_numbers",
+              "count": 593,
+              "share_pct": 99.2
+            },
+            {
+              "value": "report_speed",
+              "count": 2,
+              "share_pct": 0.3
+            },
+            {
+              "value": "automate_workflow",
+              "count": 2,
+              "share_pct": 0.3
+            },
+            {
+              "value": "diagnose_change",
+              "count": 1,
+              "share_pct": 0.2
+            }
+          ],
+          "bottleneck_type_distribution": [
+            {
+              "value": "data_quality",
+              "count": 469,
+              "share_pct": 78.4
+            },
+            {
+              "value": "tool_limitation",
+              "count": 75,
+              "share_pct": 12.5
+            },
+            {
+              "value": "manual_reporting",
+              "count": 35,
+              "share_pct": 5.9
+            },
+            {
+              "value": "handoff_dependency",
+              "count": 19,
+              "share_pct": 3.2
+            }
+          ],
+          "trust_validation_need_distribution": [
+            {
+              "value": "high",
+              "count": 555,
+              "share_pct": 92.8
+            },
+            {
+              "value": "medium",
+              "count": 43,
+              "share_pct": 7.2
+            }
+          ],
+          "source_mix_top_5": [
+            {
+              "value": "github_discussions",
+              "count": 108,
+              "share_pct": 18.1
+            },
+            {
+              "value": "power_bi_community",
+              "count": 90,
+              "share_pct": 15.1
+            },
+            {
+              "value": "metabase_discussions",
+              "count": 84,
+              "share_pct": 14.0
+            },
+            {
+              "value": "stackoverflow",
+              "count": 83,
+              "share_pct": 13.9
+            },
+            {
+              "value": "shopify_community",
+              "count": 61,
+              "share_pct": 10.2
+            }
+          ],
+          "validation_share_pct": 87.6,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 5.9,
+          "report_speed_share_pct": 0.3,
+          "promotion_status": "exploratory_bucket",
+          "share_rank": "",
+          "dominant_signature": "bottleneck_type=data_quality | analysis_goal=unassigned | workflow_stage=unassigned",
+          "selected_examples": [
+            {
+              "episode_id": "shopify_community::585477::01",
+              "source": "shopify_community",
+              "grounded_text": "Because of this, the challenge isn’t getting perfectly accurate data but it’s knowing how to read the data in a useful way. GA4 vs platform data mismatch Hi everyone, GA4 is often seen as the main “source of truth,” but in reality it rarely matches the numbers you see in platform dashboards.",
+              "why_selected": "Selected for non genericness, grounding fit, validation pressure, bottleneck specificity. Matches persona on bottleneck_type=data_quality, user_role=analyst, tool_dependency_mode=bi_dashboard_heavy"
+            },
+            {
+              "episode_id": "github_discussions::1014776720::01",
+              "source": "github_discussions",
+              "grounded_text": "Pivot table summary returning wrong results I am using Preset Cloud, so not sure which version is used, as far as I can see Pivot table summary generate only 1 SQL Query, I would expect that it generate two. one for the rows another for the summary see the results of the division which is wrong Actual/ Budget, I don't know how to tell superset to keep the same metric definition for the summary rows !image I am using",
+              "why_selected": "Selected for grounding fit, validation pressure, bottleneck specificity, metric definition. Matches persona on bottleneck_type=data_quality, user_role=analyst, tool_dependency_mode=bi_dashboard_heavy"
+            },
+            {
+              "episode_id": "reddit::1sivc52::01",
+              "source": "reddit",
+              "grounded_text": "I've already checked the settings in Drive, but the mismatch persists in the main dashboard. Has anyone encountered this or knows how to force a sync/refresh of the device identity?",
+              "why_selected": "Selected for grounding fit, non genericness, bottleneck specificity, dashboard trust. Matches persona on bottleneck_type=data_quality, user_role=analyst, tool_dependency_mode=bi_dashboard_heavy"
+            }
+          ],
+          "representative_examples": [
+            {
+              "episode_id": "stackoverflow::75374665::01",
+              "source": "stackoverflow",
+              "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+              "bottleneck_text": "general_friction"
+            },
+            {
+              "episode_id": "stackoverflow::72367463::01",
+              "source": "stackoverflow",
+              "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+              "bottleneck_text": "general_friction"
+            },
+            {
+              "episode_id": "stackoverflow::76605783::01",
+              "source": "stackoverflow",
+              "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+              "bottleneck_text": "general_friction"
+            }
+          ]
+        }
+      ],
+      "top_variant_destinations": [
+        {
+          "variant_persona_id": "persona_03",
+          "count": 598,
+          "share_pct": 100.0
+        }
+      ],
+      "best_match_variant_persona_id": "persona_03",
+      "best_match_overlap": {
+        "baseline_persona_id": "persona_04",
+        "variant_persona_id": "persona_03",
+        "intersection_count": 598,
+        "baseline_size": 598,
+        "variant_size": 861,
+        "jaccard_overlap": 0.6945,
+        "baseline_retention_pct": 100.0
+      },
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "semantic_similarity_score": 90.7,
+      "baseline_dominant_signature": "bottleneck_type=data_quality | analysis_goal=unassigned | workflow_stage=unassigned",
+      "variant_dominant_signature": "bottleneck_type=tool_limitation | analysis_goal=unassigned | workflow_stage=unassigned",
+      "identity_judgement": "renumbered_or_shifted_identity"
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "baseline_profile": [
+        {
+          "profile_label": "baseline_production",
+          "persona_id": "persona_05",
+          "persona_size": 539,
+          "cluster_signature_examples": [
+            {
+              "value": "primary=manual_reporting||secondary=presentation_ready_output_need|reporting_deadline_pressure|tool_limitation_workaround",
+              "count": 413,
+              "share_pct": 76.6
+            },
+            {
+              "value": "primary=manual_reporting||secondary=tool_limitation_workaround",
+              "count": 100,
+              "share_pct": 18.6
+            },
+            {
+              "value": "primary=tool_limitation_workaround||secondary=presentation_ready_output_need",
+              "count": 6,
+              "share_pct": 1.1
+            }
+          ],
+          "top_pain_codes": [
+            {
+              "value": "P_TOOL_LIMITATION",
+              "count": 486
+            },
+            {
+              "value": "P_MANUAL_REPORTING",
+              "count": 61
+            },
+            {
+              "value": "P_HANDOFF",
+              "count": 9
+            }
+          ],
+          "top_question_codes": [
+            {
+              "value": "Q_REPORT_SPEED",
+              "count": 477
+            },
+            {
+              "value": "Q_AUTOMATE_WORKFLOW",
+              "count": 61
+            },
+            {
+              "value": "Q_DIAGNOSE_ISSUE",
+              "count": 9
+            }
+          ],
+          "top_output_codes": [
+            {
+              "value": "O_AUTOMATION_JOB",
+              "count": 526
+            },
+            {
+              "value": "O_DASHBOARD",
+              "count": 173
+            },
+            {
+              "value": "O_VALIDATED_DATASET",
+              "count": 11
+            },
+            {
+              "value": "O_XLSX",
+              "count": 2
+            }
+          ],
+          "workflow_stage_distribution": [
+            {
+              "value": "reporting",
+              "count": 479,
+              "share_pct": 88.9
+            },
+            {
+              "value": "automation",
+              "count": 37,
+              "share_pct": 6.9
+            },
+            {
+              "value": "triage",
+              "count": 22,
+              "share_pct": 4.1
+            },
+            {
+              "value": "validation",
+              "count": 1,
+              "share_pct": 0.2
+            }
+          ],
+          "analysis_goal_distribution": [
+            {
+              "value": "report_speed",
+              "count": 477,
+              "share_pct": 88.5
+            },
+            {
+              "value": "automate_workflow",
+              "count": 58,
+              "share_pct": 10.8
+            },
+            {
+              "value": "diagnose_change",
+              "count": 4,
+              "share_pct": 0.7
+            }
+          ],
+          "bottleneck_type_distribution": [
+            {
+              "value": "tool_limitation",
+              "count": 476,
+              "share_pct": 88.3
+            },
+            {
+              "value": "manual_reporting",
+              "count": 61,
+              "share_pct": 11.3
+            },
+            {
+              "value": "handoff_dependency",
+              "count": 2,
+              "share_pct": 0.4
+            }
+          ],
+          "trust_validation_need_distribution": [
+            {
+              "value": "low",
+              "count": 2,
+              "share_pct": 0.4
+            }
+          ],
+          "source_mix_top_5": [
+            {
+              "value": "power_bi_community",
+              "count": 244,
+              "share_pct": 45.3
+            },
+            {
+              "value": "metabase_discussions",
+              "count": 133,
+              "share_pct": 24.7
+            },
+            {
+              "value": "sisense_community",
+              "count": 66,
+              "share_pct": 12.2
+            },
+            {
+              "value": "github_discussions",
+              "count": 27,
+              "share_pct": 5.0
+            },
+            {
+              "value": "shopify_community",
+              "count": 23,
+              "share_pct": 4.3
+            }
+          ],
+          "validation_share_pct": 0.1,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 11.3,
+          "report_speed_share_pct": 88.5,
+          "promotion_status": "exploratory_bucket",
+          "share_rank": "",
+          "dominant_signature": "bottleneck_type=tool_limitation | analysis_goal=unassigned | workflow_stage=unassigned",
+          "selected_examples": [
+            {
+              "episode_id": "metabase_discussions::22296::01",
+              "source": "metabase_discussions",
+              "grounded_text": "Field to map to table I want to map the variable \"version\" to the a field as shown in the picture below,Field to map to the data \"Nothing AWS Athena(Test) Data Device Quality\",but since the data structure is sophisticated,the column \"version\" can't display,so I can't select it.Can I map the variable \"version\" to a SQL Query?Or ,is there any other way to solve this problem 飞书20221018 162304 1889×755 132 KB 飞书20221018",
+              "why_selected": "Selected for grounding fit, bottleneck specificity, persona fit, defining axis match. Matches persona on bottleneck_type=tool_limitation, user_role=analyst, tool_dependency_mode=bi_dashboard_heavy"
+            }
+          ],
+          "representative_examples": [
+            {
+              "episode_id": "domo_community_forum::18708::01",
+              "source": "domo_community_forum",
+              "business_question": "How can this workflow be made more reliable and repeatable?",
+              "bottleneck_text": "general_friction"
+            },
+            {
+              "episode_id": "domo_community_forum::48530::01",
+              "source": "domo_community_forum",
+              "business_question": "How can this workflow be made more reliable and repeatable?",
+              "bottleneck_text": "general_friction"
+            },
+            {
+              "episode_id": "domo_community_forum::19617::01",
+              "source": "domo_community_forum",
+              "business_question": "How can this workflow be made more reliable and repeatable?",
+              "bottleneck_text": "tool_limitation"
+            }
+          ]
+        }
+      ],
+      "top_variant_destinations": [
+        {
+          "variant_persona_id": "persona_05",
+          "count": 529,
+          "share_pct": 98.1
+        },
+        {
+          "variant_persona_id": "persona_12",
+          "count": 9,
+          "share_pct": 1.7
+        },
+        {
+          "variant_persona_id": "persona_11",
+          "count": 1,
+          "share_pct": 0.2
+        }
+      ],
+      "best_match_variant_persona_id": "persona_05",
+      "best_match_overlap": {
+        "baseline_persona_id": "persona_05",
+        "variant_persona_id": "persona_05",
+        "intersection_count": 529,
+        "baseline_size": 539,
+        "variant_size": 664,
+        "jaccard_overlap": 0.7849,
+        "baseline_retention_pct": 98.1
+      },
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 1,
+        "selected_example_overlap_pct": 100.0
+      },
+      "semantic_similarity_score": 98.9,
+      "baseline_dominant_signature": "bottleneck_type=tool_limitation | analysis_goal=unassigned | workflow_stage=unassigned",
+      "variant_dominant_signature": "bottleneck_type=tool_limitation | analysis_goal=unassigned | workflow_stage=unassigned",
+      "identity_judgement": "stable_identity"
+    }
+  ],
+  "baseline_to_simulation_overlap_matrix": [
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_01",
+      "intersection_count": 4282,
+      "baseline_size": 4490,
+      "variant_size": 4368,
+      "jaccard_overlap": 0.9358,
+      "baseline_retention_pct": 95.4
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_02",
+      "intersection_count": 0,
+      "baseline_size": 4490,
+      "variant_size": 2257,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_03",
+      "intersection_count": 191,
+      "baseline_size": 4490,
+      "variant_size": 861,
+      "jaccard_overlap": 0.037,
+      "baseline_retention_pct": 4.3
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_04",
+      "intersection_count": 0,
+      "baseline_size": 4490,
+      "variant_size": 697,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_05",
+      "intersection_count": 2,
+      "baseline_size": 4490,
+      "variant_size": 664,
+      "jaccard_overlap": 0.0004,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_06",
+      "intersection_count": 5,
+      "baseline_size": 4490,
+      "variant_size": 314,
+      "jaccard_overlap": 0.001,
+      "baseline_retention_pct": 0.1
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_07",
+      "intersection_count": 5,
+      "baseline_size": 4490,
+      "variant_size": 82,
+      "jaccard_overlap": 0.0011,
+      "baseline_retention_pct": 0.1
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_08",
+      "intersection_count": 5,
+      "baseline_size": 4490,
+      "variant_size": 65,
+      "jaccard_overlap": 0.0011,
+      "baseline_retention_pct": 0.1
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_10",
+      "intersection_count": 0,
+      "baseline_size": 4490,
+      "variant_size": 43,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_11",
+      "intersection_count": 0,
+      "baseline_size": 4490,
+      "variant_size": 32,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_12",
+      "intersection_count": 0,
+      "baseline_size": 4490,
+      "variant_size": 31,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_13",
+      "intersection_count": 0,
+      "baseline_size": 4490,
+      "variant_size": 15,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_01",
+      "variant_persona_id": "persona_14",
+      "intersection_count": 0,
+      "baseline_size": 4490,
+      "variant_size": 13,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_01",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 4368,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_02",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 2257,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_03",
+      "intersection_count": 598,
+      "baseline_size": 598,
+      "variant_size": 861,
+      "jaccard_overlap": 0.6945,
+      "baseline_retention_pct": 100.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_04",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 697,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_05",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 664,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_06",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 314,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_07",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 82,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_08",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 65,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_10",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 43,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_11",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 32,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_12",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 31,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_13",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 15,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_04",
+      "variant_persona_id": "persona_14",
+      "intersection_count": 0,
+      "baseline_size": 598,
+      "variant_size": 13,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_01",
+      "intersection_count": 0,
+      "baseline_size": 539,
+      "variant_size": 4368,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_02",
+      "intersection_count": 0,
+      "baseline_size": 539,
+      "variant_size": 2257,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_03",
+      "intersection_count": 0,
+      "baseline_size": 539,
+      "variant_size": 861,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_04",
+      "intersection_count": 0,
+      "baseline_size": 539,
+      "variant_size": 697,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_05",
+      "intersection_count": 529,
+      "baseline_size": 539,
+      "variant_size": 664,
+      "jaccard_overlap": 0.7849,
+      "baseline_retention_pct": 98.1
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_06",
+      "intersection_count": 0,
+      "baseline_size": 539,
+      "variant_size": 314,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_07",
+      "intersection_count": 0,
+      "baseline_size": 539,
+      "variant_size": 82,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_08",
+      "intersection_count": 0,
+      "baseline_size": 539,
+      "variant_size": 65,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_10",
+      "intersection_count": 0,
+      "baseline_size": 539,
+      "variant_size": 43,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_11",
+      "intersection_count": 1,
+      "baseline_size": 539,
+      "variant_size": 32,
+      "jaccard_overlap": 0.0018,
+      "baseline_retention_pct": 0.2
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_12",
+      "intersection_count": 9,
+      "baseline_size": 539,
+      "variant_size": 31,
+      "jaccard_overlap": 0.016,
+      "baseline_retention_pct": 1.7
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_13",
+      "intersection_count": 0,
+      "baseline_size": 539,
+      "variant_size": 15,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    },
+    {
+      "baseline_persona_id": "persona_05",
+      "variant_persona_id": "persona_14",
+      "intersection_count": 0,
+      "baseline_size": 539,
+      "variant_size": 13,
+      "jaccard_overlap": 0.0,
+      "baseline_retention_pct": 0.0
+    }
+  ],
+  "baseline_release_gate_selection": {
+    "selected_persona_id": "persona_04",
+    "selection_reason": "selected by semantic evidence: positive_recall=66.7, validation_share_pct=87.6, hard_negative_fp=11.1, parent_capture_rate=0.0",
+    "candidate_scores": [
+      {
+        "persona_id": "persona_04",
+        "selection_score": 197.7,
+        "positive_recall": 66.7,
+        "hard_negative_false_positive_rate": 11.1,
+        "ambiguous_movement_rate": 8.3,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 87.6,
+        "trust_medium_or_high_share_pct": 100.0,
+        "manual_reporting_share_pct": 5.9,
+        "report_speed_share_pct": 0.3,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=data_quality | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_11",
+        "selection_score": 84.65,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 38.5,
+        "trust_medium_or_high_share_pct": 100.0,
+        "manual_reporting_share_pct": 0.0,
+        "report_speed_share_pct": 0.0,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=handoff_dependency | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_08",
+        "selection_score": 74.1,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 34.6,
+        "trust_medium_or_high_share_pct": 88.9,
+        "manual_reporting_share_pct": 1.9,
+        "report_speed_share_pct": 11.1,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=data_quality | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_10",
+        "selection_score": 73.86,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 5.6,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 56.2,
+        "trust_medium_or_high_share_pct": 100.0,
+        "manual_reporting_share_pct": 100.0,
+        "report_speed_share_pct": 0.0,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=manual_reporting | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_09",
+        "selection_score": 0.72,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.8,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 0.0,
+        "report_speed_share_pct": 0.0,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=handoff_dependency | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_03",
+        "selection_score": -4.21,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.2,
+        "trust_medium_or_high_share_pct": 0.2,
+        "manual_reporting_share_pct": 1.0,
+        "report_speed_share_pct": 42.9,
+        "promotion_status": "promoted_persona",
+        "dominant_signature": "bottleneck_type=tool_limitation | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_07",
+        "selection_score": -9.84,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.0,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 0.0,
+        "report_speed_share_pct": 98.4,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=handoff_dependency | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_05",
+        "selection_score": -11.02,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.1,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 11.3,
+        "report_speed_share_pct": 88.5,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=tool_limitation | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_06",
+        "selection_score": -18.61,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.8,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 94.9,
+        "report_speed_share_pct": 3.5,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=manual_reporting | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_02",
+        "selection_score": -44.12,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 38.9,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 1.7,
+        "trust_medium_or_high_share_pct": 3.2,
+        "manual_reporting_share_pct": 1.8,
+        "report_speed_share_pct": 2.1,
+        "promotion_status": "promoted_persona",
+        "dominant_signature": "bottleneck_type=tool_limitation | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_01",
+        "selection_score": -131.01,
+        "positive_recall": 33.3,
+        "hard_negative_false_positive_rate": 44.4,
+        "ambiguous_movement_rate": 91.7,
+        "parent_capture_rate": 100.0,
+        "validation_share_pct": 3.2,
+        "trust_medium_or_high_share_pct": 9.3,
+        "manual_reporting_share_pct": 63.0,
+        "report_speed_share_pct": 92.7,
+        "promotion_status": "promoted_persona",
+        "dominant_signature": "bottleneck_type=manual_reporting | analysis_goal=unassigned | workflow_stage=unassigned"
+      }
+    ]
+  },
+  "simulation_variant_b_release_gate_selection": {
+    "selected_persona_id": "persona_03",
+    "selection_reason": "selected by semantic evidence: positive_recall=86.7, validation_share_pct=73.2, hard_negative_fp=16.7, parent_capture_rate=0.0",
+    "candidate_scores": [
+      {
+        "persona_id": "persona_03",
+        "selection_score": 189.09,
+        "positive_recall": 86.7,
+        "hard_negative_false_positive_rate": 16.7,
+        "ambiguous_movement_rate": 37.5,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 73.2,
+        "trust_medium_or_high_share_pct": 99.8,
+        "manual_reporting_share_pct": 14.9,
+        "report_speed_share_pct": 13.8,
+        "promotion_status": "promoted_persona",
+        "dominant_signature": "bottleneck_type=tool_limitation | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_13",
+        "selection_score": 79.97,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 33.3,
+        "trust_medium_or_high_share_pct": 100.0,
+        "manual_reporting_share_pct": 0.0,
+        "report_speed_share_pct": 0.0,
+        "promotion_status": "",
+        "dominant_signature": ""
+      },
+      {
+        "persona_id": "persona_07",
+        "selection_score": 77.2,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 38.2,
+        "trust_medium_or_high_share_pct": 86.6,
+        "manual_reporting_share_pct": 2.4,
+        "report_speed_share_pct": 0.0,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=handoff_dependency | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_11",
+        "selection_score": 27.17,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 33.3,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 6.2,
+        "report_speed_share_pct": 15.6,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=handoff_dependency | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_10",
+        "selection_score": 0.72,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.8,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 0.0,
+        "report_speed_share_pct": 0.0,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=manual_reporting | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_04",
+        "selection_score": -3.76,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.0,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 1.1,
+        "report_speed_share_pct": 35.4,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=data_quality | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_12",
+        "selection_score": -3.87,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.0,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 0.0,
+        "report_speed_share_pct": 38.7,
+        "promotion_status": "",
+        "dominant_signature": ""
+      },
+      {
+        "persona_id": "persona_14",
+        "selection_score": -8.46,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.0,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 0.0,
+        "report_speed_share_pct": 84.6,
+        "promotion_status": "",
+        "dominant_signature": ""
+      },
+      {
+        "persona_id": "persona_08",
+        "selection_score": -10.0,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.0,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 0.0,
+        "report_speed_share_pct": 100.0,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=data_quality | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_05",
+        "selection_score": -10.84,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.0,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 9.0,
+        "report_speed_share_pct": 90.4,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=tool_limitation | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_06",
+        "selection_score": -17.83,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.4,
+        "trust_medium_or_high_share_pct": 0.0,
+        "manual_reporting_share_pct": 90.8,
+        "report_speed_share_pct": 0.3,
+        "promotion_status": "exploratory_bucket",
+        "dominant_signature": "bottleneck_type=manual_reporting | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_02",
+        "selection_score": -46.41,
+        "positive_recall": 0.0,
+        "hard_negative_false_positive_rate": 38.9,
+        "ambiguous_movement_rate": 0.0,
+        "parent_capture_rate": 0.0,
+        "validation_share_pct": 0.1,
+        "trust_medium_or_high_share_pct": 0.4,
+        "manual_reporting_share_pct": 0.1,
+        "report_speed_share_pct": 0.0,
+        "promotion_status": "promoted_persona",
+        "dominant_signature": "bottleneck_type=tool_limitation | analysis_goal=unassigned | workflow_stage=unassigned"
+      },
+      {
+        "persona_id": "persona_01",
+        "selection_score": -148.96,
+        "positive_recall": 13.3,
+        "hard_negative_false_positive_rate": 44.4,
+        "ambiguous_movement_rate": 62.5,
+        "parent_capture_rate": 100.0,
+        "validation_share_pct": 1.5,
+        "trust_medium_or_high_share_pct": 5.1,
+        "manual_reporting_share_pct": 62.9,
+        "report_speed_share_pct": 92.9,
+        "promotion_status": "promoted_persona",
+        "dominant_signature": "bottleneck_type=manual_reporting | analysis_goal=unassigned | workflow_stage=unassigned"
+      }
+    ]
+  },
+  "baseline_variant_mapping_metadata": {
+    "persona_04_like_variant_id": "persona_03",
+    "persona_01_like_variant_id": "persona_01"
+  },
+  "promotion_drift_flags": {
+    "persona_04_still_exploratory": true,
+    "persona_05_promotion_drift": false,
+    "target_is_not_persona_04": true
+  },
+  "release_gate_target_selection_reason": {
+    "baseline": "selected by semantic evidence: positive_recall=66.7, validation_share_pct=87.6, hard_negative_fp=11.1, parent_capture_rate=0.0",
+    "simulation_variant_b": "selected by semantic evidence: positive_recall=86.7, validation_share_pct=73.2, hard_negative_fp=16.7, parent_capture_rate=0.0"
+  },
+  "patched_attempt_available": false,
+  "patched_attempt_artifact_path": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\artifacts\\curation\\reconciliation_signoff_release_gate_attempted_patch.json",
+  "patched_attempt_snapshot": null,
+  "persona_04_like_identity_stable_enough_for_implementation": false,
+  "stability_conclusion": "Not stable enough yet. Simulation variant B maps the reconciliation-like target to a semantically shifted cluster id, so another production attempt should wait until target identity is anchored semantically."
+}
