@@ -1,0 +1,956 @@
+{
+  "identity_anchor_set_path": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\artifacts\\curation\\reconciliation_signoff_anchor_set.csv",
+  "expansion_anchor_set_path": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\artifacts\\curation\\reconciliation_signoff_expansion_anchor_set.csv",
+  "baseline_two_layer_metrics": {
+    "variant_id": "A",
+    "description": "no-op baseline",
+    "identity_anchor_pass": true,
+    "expansion_anchor_pass": false,
+    "persona_04_identity_overlap": 1.0,
+    "selected_example_overlap": {
+      "selected_example_overlap_count": 5,
+      "selected_example_overlap_pct": 100.0
+    },
+    "identity_metrics": {
+      "positive_capture_rate": 100.0,
+      "hard_negative_false_positive_rate": 10.0,
+      "parent_retention_rate": 100.0,
+      "ambiguous_movement_rate": 5.0,
+      "positive_hits": 50,
+      "hard_negative_hits": 3,
+      "parent_hits": 30,
+      "ambiguous_hits": 1,
+      "parent_examples_wrongly_pulled_out_of_persona_01": 0
+    },
+    "expansion_metrics": {
+      "positive_capture_rate": 0.0,
+      "hard_negative_false_positive_rate": 0.0,
+      "parent_retention_rate": 100.0,
+      "ambiguous_movement_rate": 0.0,
+      "positive_hits": 0,
+      "hard_negative_hits": 0,
+      "parent_hits": 25,
+      "ambiguous_hits": 0,
+      "parent_examples_wrongly_pulled_out_of_persona_01": 0
+    },
+    "persona_01_leakage_pct": 0.0,
+    "persona_05_drift_risk": false,
+    "top_3_cluster_share": 83.3,
+    "final_usable_persona_count_simulation": 3,
+    "persona_04_would_become_unblocked": false,
+    "persona_05_remains_blocked": true,
+    "rows_moved_into_persona_04_like_target": 0,
+    "representative_moved_examples": [],
+    "representative_blocked_examples": [
+      {
+        "episode_id": "stackoverflow::66972497::01",
+        "source": "stackoverflow",
+        "business_question": "How can this workflow be made more reliable and repeatable?",
+        "bottleneck_text": "manual_reporting"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12611::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "handoff_friction"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12606::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "general_friction"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12616::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "general_friction"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12621::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "tool_limitation"
+      }
+    ],
+    "decision": {
+      "identity_anchor_pass": true,
+      "expansion_anchor_pass": false,
+      "future_production_patch_candidate": false,
+      "fail_reasons": [
+        "expansion_anchor_gate",
+        "top_3_share_not_materially_improved"
+      ]
+    }
+  },
+  "variant_results": [
+    {
+      "variant_id": "A",
+      "description": "no-op baseline",
+      "identity_anchor_pass": true,
+      "expansion_anchor_pass": false,
+      "persona_04_identity_overlap": 1.0,
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "identity_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 10.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 5.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 3,
+        "parent_hits": 30,
+        "ambiguous_hits": 1,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "expansion_metrics": {
+        "positive_capture_rate": 0.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 0.0,
+        "positive_hits": 0,
+        "hard_negative_hits": 0,
+        "parent_hits": 25,
+        "ambiguous_hits": 0,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "persona_01_leakage_pct": 0.0,
+      "persona_05_drift_risk": false,
+      "top_3_cluster_share": 83.3,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_would_become_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "rows_moved_into_persona_04_like_target": 0,
+      "representative_moved_examples": [],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "decision": {
+        "identity_anchor_pass": true,
+        "expansion_anchor_pass": false,
+        "future_production_patch_candidate": false,
+        "fail_reasons": [
+          "expansion_anchor_gate",
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "B",
+      "description": "persona_04 expansion using expansion-positive anchors only",
+      "identity_anchor_pass": true,
+      "expansion_anchor_pass": true,
+      "persona_04_identity_overlap": 0.9228,
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "identity_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 10.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 5.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 3,
+        "parent_hits": 30,
+        "ambiguous_hits": 1,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "expansion_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 0.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 0,
+        "parent_hits": 25,
+        "ambiguous_hits": 0,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "persona_01_leakage_pct": 0.9,
+      "persona_05_drift_risk": false,
+      "top_3_cluster_share": 82.8,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_would_become_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "rows_moved_into_persona_04_like_target": 50,
+      "representative_moved_examples": [
+        {
+          "episode_id": "adobe_analytics_community::88626::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90882::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::88623::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::91360::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90029::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        }
+      ],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "decision": {
+        "identity_anchor_pass": true,
+        "expansion_anchor_pass": true,
+        "future_production_patch_candidate": false,
+        "fail_reasons": [
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "C",
+      "description": "persona_04 expansion with identity-anchor protection",
+      "identity_anchor_pass": true,
+      "expansion_anchor_pass": true,
+      "persona_04_identity_overlap": 0.9228,
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "identity_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 10.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 5.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 3,
+        "parent_hits": 30,
+        "ambiguous_hits": 1,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "expansion_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 0.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 0,
+        "parent_hits": 25,
+        "ambiguous_hits": 0,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "persona_01_leakage_pct": 0.9,
+      "persona_05_drift_risk": false,
+      "top_3_cluster_share": 82.8,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_would_become_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "rows_moved_into_persona_04_like_target": 50,
+      "representative_moved_examples": [
+        {
+          "episode_id": "adobe_analytics_community::88626::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90882::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::88623::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::91360::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90029::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        }
+      ],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "decision": {
+        "identity_anchor_pass": true,
+        "expansion_anchor_pass": true,
+        "future_production_patch_candidate": false,
+        "fail_reasons": [
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "D",
+      "description": "persona_04 expansion with parent-retention guard",
+      "identity_anchor_pass": true,
+      "expansion_anchor_pass": true,
+      "persona_04_identity_overlap": 0.9228,
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "identity_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 10.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 5.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 3,
+        "parent_hits": 30,
+        "ambiguous_hits": 1,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "expansion_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 0.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 0,
+        "parent_hits": 25,
+        "ambiguous_hits": 0,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "persona_01_leakage_pct": 0.9,
+      "persona_05_drift_risk": false,
+      "top_3_cluster_share": 82.8,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_would_become_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "rows_moved_into_persona_04_like_target": 50,
+      "representative_moved_examples": [
+        {
+          "episode_id": "adobe_analytics_community::88626::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90882::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::88623::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::91360::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90029::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        }
+      ],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "decision": {
+        "identity_anchor_pass": true,
+        "expansion_anchor_pass": true,
+        "future_production_patch_candidate": false,
+        "fail_reasons": [
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "E",
+      "description": "persona_04 expansion with hard-negative block",
+      "identity_anchor_pass": true,
+      "expansion_anchor_pass": true,
+      "persona_04_identity_overlap": 0.9228,
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "identity_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 10.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 5.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 3,
+        "parent_hits": 30,
+        "ambiguous_hits": 1,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "expansion_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 0.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 0,
+        "parent_hits": 25,
+        "ambiguous_hits": 0,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "persona_01_leakage_pct": 0.9,
+      "persona_05_drift_risk": false,
+      "top_3_cluster_share": 82.8,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_would_become_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "rows_moved_into_persona_04_like_target": 50,
+      "representative_moved_examples": [
+        {
+          "episode_id": "adobe_analytics_community::88626::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90882::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::88623::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::91360::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90029::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        }
+      ],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "decision": {
+        "identity_anchor_pass": true,
+        "expansion_anchor_pass": true,
+        "future_production_patch_candidate": false,
+        "fail_reasons": [
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "F",
+      "description": "persona_04 expansion with ambiguous dampening",
+      "identity_anchor_pass": true,
+      "expansion_anchor_pass": true,
+      "persona_04_identity_overlap": 0.9228,
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "identity_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 10.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 5.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 3,
+        "parent_hits": 30,
+        "ambiguous_hits": 1,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "expansion_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 0.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 0,
+        "parent_hits": 25,
+        "ambiguous_hits": 0,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "persona_01_leakage_pct": 0.9,
+      "persona_05_drift_risk": false,
+      "top_3_cluster_share": 82.8,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_would_become_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "rows_moved_into_persona_04_like_target": 50,
+      "representative_moved_examples": [
+        {
+          "episode_id": "adobe_analytics_community::88626::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90882::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::88623::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::91360::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90029::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        }
+      ],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "decision": {
+        "identity_anchor_pass": true,
+        "expansion_anchor_pass": true,
+        "future_production_patch_candidate": false,
+        "fail_reasons": [
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "G",
+      "description": "combined conservative variant",
+      "identity_anchor_pass": true,
+      "expansion_anchor_pass": true,
+      "persona_04_identity_overlap": 0.9074,
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "identity_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 10.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 5.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 3,
+        "parent_hits": 30,
+        "ambiguous_hits": 1,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "expansion_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 0.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 0,
+        "parent_hits": 25,
+        "ambiguous_hits": 0,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "persona_01_leakage_pct": 1.2,
+      "persona_05_drift_risk": false,
+      "top_3_cluster_share": 82.7,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_would_become_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "rows_moved_into_persona_04_like_target": 61,
+      "representative_moved_examples": [
+        {
+          "episode_id": "stackoverflow::77882909::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::88626::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90882::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::88623::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::91360::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        }
+      ],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "decision": {
+        "identity_anchor_pass": true,
+        "expansion_anchor_pass": true,
+        "future_production_patch_candidate": false,
+        "fail_reasons": [
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    },
+    {
+      "variant_id": "H",
+      "description": "combined aggressive-but-guarded variant",
+      "identity_anchor_pass": true,
+      "expansion_anchor_pass": true,
+      "persona_04_identity_overlap": 0.858,
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "identity_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 10.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 5.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 3,
+        "parent_hits": 30,
+        "ambiguous_hits": 1,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "expansion_metrics": {
+        "positive_capture_rate": 100.0,
+        "hard_negative_false_positive_rate": 0.0,
+        "parent_retention_rate": 100.0,
+        "ambiguous_movement_rate": 0.0,
+        "positive_hits": 50,
+        "hard_negative_hits": 0,
+        "parent_hits": 25,
+        "ambiguous_hits": 0,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0
+      },
+      "persona_01_leakage_pct": 2.0,
+      "persona_05_drift_risk": false,
+      "top_3_cluster_share": 82.3,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_would_become_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "rows_moved_into_persona_04_like_target": 99,
+      "representative_moved_examples": [
+        {
+          "episode_id": "stackoverflow::77882909::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::88626::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::93685::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::90882::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        },
+        {
+          "episode_id": "adobe_analytics_community::88623::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "data_quality"
+        }
+      ],
+      "representative_blocked_examples": [
+        {
+          "episode_id": "stackoverflow::66972497::01",
+          "source": "stackoverflow",
+          "business_question": "How can this workflow be made more reliable and repeatable?",
+          "bottleneck_text": "manual_reporting"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12611::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "handoff_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12606::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12616::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "adobe_analytics_community::12621::01",
+          "source": "adobe_analytics_community",
+          "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+          "bottleneck_text": "tool_limitation"
+        }
+      ],
+      "decision": {
+        "identity_anchor_pass": true,
+        "expansion_anchor_pass": true,
+        "future_production_patch_candidate": false,
+        "fail_reasons": [
+          "top_3_share_not_materially_improved"
+        ]
+      }
+    }
+  ],
+  "future_production_patch_candidates": [],
+  "single_recommended_non_clustering_path": "workbook policy redesign"
+}
