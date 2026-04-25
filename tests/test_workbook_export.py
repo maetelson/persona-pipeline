@@ -71,6 +71,11 @@ class WorkbookExportTests(unittest.TestCase):
                 self.assertEqual(workbook["overview"].freeze_panes, "A2")
                 self.assertIsNotNone(workbook["overview"].auto_filter.ref)
                 self.assertEqual(str(workbook["readme"]["B4"].value).startswith("=INDEX("), True)
+                self.assertEqual(str(self._readme_value_by_label(workbook, "Core-Readiness Weak-Source Cost-Center Count")).startswith("=INDEX("), True)
+                self.assertIn(
+                    "Exploratory-Only Weak-Source Debt",
+                    str(self._readme_value_by_label(workbook, "Weak-source split")),
+                )
                 overview_headers = [cell.value for cell in next(workbook["overview"].iter_rows(min_row=1, max_row=1))]
                 self.assertEqual(overview_headers[:3], ["metric_key", "display_label", "metric_value"])
             finally:

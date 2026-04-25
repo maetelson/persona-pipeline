@@ -29,6 +29,9 @@ OVERVIEW_KEYS = [
     "quality_flag",
     "effective_balanced_source_count",
     "weak_source_cost_center_count",
+    "core_readiness_weak_source_cost_center_count",
+    "exploratory_only_weak_source_debt_count",
+    "exploratory_only_weak_source_sources",
     "weak_source_cost_centers",
     "final_usable_persona_count",
     "top_3_cluster_share_of_core_labeled",
@@ -151,12 +154,14 @@ def build_validation_snapshot(root_dir: Path) -> dict[str, Any]:
     workbook_dir = analysis_dir / "workbook_bundle"
 
     overview_df = read_parquet(workbook_dir / "overview.parquet")
+    quality_checks_df = read_parquet(workbook_dir / "quality_checks.parquet")
     source_diagnostics_df = read_parquet(workbook_dir / "source_diagnostics.parquet")
     source_balance_df = pd.read_csv(analysis_dir / "source_balance_audit.csv")
     persona_summary_df = pd.read_csv(analysis_dir / "persona_summary.csv")
     audit_snapshot = build_audit_snapshot(root_dir)
 
     overview = _metric_lookup(overview_df, "metric", "value")
+    quality_checks = _metric_lookup(quality_checks_df, "metric", "value")
     source_records = _frame_records(source_balance_df, SOURCE_COLUMNS, sort_by=["priority_tier", "source"])
     persona_records = _frame_records(persona_summary_df, PERSONA_COLUMNS, sort_by=["persona_id"])
 
@@ -186,7 +191,10 @@ def build_validation_snapshot(root_dir: Path) -> dict[str, Any]:
         "root_dir": str(root_dir),
         "uses_xlsx_export": False,
         "default_validation_tier": "tier_b_downstream_quality_snapshot",
-        "overview_metrics": {key: _normalize_scalar(overview.get(key, "")) for key in OVERVIEW_KEYS},
+        "overview_metrics": {
+            key: _normalize_scalar(overview.get(key, quality_checks.get(key, "")))
+            for key in OVERVIEW_KEYS
+        },
         "source_balance": source_records,
         "promoted_personas": promoted_personas,
         "final_usable_personas": final_usable_personas,
@@ -260,6 +268,9 @@ def render_snapshot_markdown(snapshot: dict[str, Any], delta: dict[str, Any] | N
         f"- overall status: `{overview.get('overall_status', '')}`",
         f"- quality flag: `{overview.get('quality_flag', '')}`",
         f"- weak source count: `{overview.get('weak_source_cost_center_count', '')}`",
+        f"- core-readiness weak source count: `{overview.get('core_readiness_weak_source_cost_center_count', '')}`",
+        f"- exploratory-only weak-source debt count: `{overview.get('exploratory_only_weak_source_debt_count', '')}`",
+        f"- exploratory-only weak-source debt sources: `{overview.get('exploratory_only_weak_source_sources', '')}`",
         f"- final usable persona count: `{overview.get('final_usable_persona_count', '')}`",
         f"- top-3 cluster share: `{overview.get('top_3_cluster_share_of_core_labeled', '')}`",
         f"- largest source influence share: `{overview.get('largest_source_influence_share_pct', '')}`",

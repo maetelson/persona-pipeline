@@ -122,6 +122,11 @@ OVERVIEW_METRIC_LABELS = {
     "largest_grounded_source_share_pct": "Largest grounded-persona source share (%)",
     "largest_source_influence_share_pct": "Largest blended source influence share (%)",
     "weak_source_cost_center_count": "Weak-source cost-center count",
+    "core_readiness_weak_source_cost_center_count": "Core-readiness weak-source cost-center count",
+    "exploratory_only_weak_source_debt_count": "Exploratory-only weak-source debt count",
+    "exploratory_only_weak_source_sources": "Exploratory-only weak-source debt source ids",
+    "weak_source_denominator_policy_applied": "Weak-source denominator policy applied",
+    "weak_source_denominator_policy_reason": "Weak-source denominator policy reason",
     "weak_source_cost_centers": "Weak-source cost-center source ids",
     "fix_now_source_count": "Fix-now source count",
     "tune_soon_source_count": "Tune-soon source count",
@@ -166,6 +171,11 @@ QUALITY_CHECK_METRIC_LABELS = {
     "grounded_promoted_persona_episode_rows": "Grounded promoted persona episode contribution rows",
     "largest_source_influence_share_pct": "Largest blended source influence share (%)",
     "weak_source_cost_center_count": "Weak-source cost-center count",
+    "core_readiness_weak_source_cost_center_count": "Core-readiness weak-source cost-center count",
+    "exploratory_only_weak_source_debt_count": "Exploratory-only weak-source debt count",
+    "exploratory_only_weak_source_sources": "Exploratory-only weak-source debt source ids",
+    "weak_source_denominator_policy_applied": "Weak-source denominator policy applied",
+    "weak_source_denominator_policy_reason": "Weak-source denominator policy reason",
     "largest_cluster_share_of_core_labeled": "Largest cluster share of persona-core labeled rows (%)",
     "top_3_cluster_share_of_core_labeled": "Top-3 cluster share of persona-core labeled rows",
     "micro_cluster_count": "Micro-cluster count",
@@ -596,6 +606,10 @@ def _write_readme_sheet(workbook) -> None:
         ["Usage Restriction", '=INDEX(overview!$C:$C,MATCH("persona_usage_restriction",overview!$A:$A,0))'],
         ["Readiness Summary", '=INDEX(overview!$C:$C,MATCH("persona_readiness_summary",overview!$A:$A,0))'],
         ["Readiness Blockers", '=INDEX(overview!$C:$C,MATCH("persona_readiness_blockers",overview!$A:$A,0))'],
+        ["Core-Readiness Weak-Source Cost-Center Count", '=INDEX(quality_checks!$C:$C,MATCH("core_readiness_weak_source_cost_center_count",quality_checks!$A:$A,0))'],
+        ["Exploratory-Only Weak-Source Debt Count", '=INDEX(quality_checks!$C:$C,MATCH("exploratory_only_weak_source_debt_count",quality_checks!$A:$A,0))'],
+        ["Exploratory-Only Weak-Source Debt Sources", '=INDEX(quality_checks!$C:$C,MATCH("exploratory_only_weak_source_sources",quality_checks!$A:$A,0))'],
+        ["Weak-Source Denominator Policy Reason", '=INDEX(quality_checks!$C:$C,MATCH("weak_source_denominator_policy_reason",quality_checks!$A:$A,0))'],
         ["", ""],
         ["Pipeline Stage Summary", "Formula-backed links to the canonical stage metrics in overview."],
         ["Raw Record Row Count (JSONL lines, not sources)", '=INDEX(overview!$C:$C,MATCH("raw_record_rows",overview!$A:$A,0))'],
@@ -629,6 +643,7 @@ def _write_readme_sheet(workbook) -> None:
         ["Review-ready personas", "Review-ready personas are strong candidates for analyst review, but are not included in final usable persona count."],
         ["Threshold discipline", "Review-ready status does not relax workbook policy or production-ready thresholds."],
         ["Human review requirement", "Review-ready personas need human review before deck-ready or production use."],
+        ["Weak-source split", "Weak-source Cost-Center Count remains the full visible diagnostic count. Core-Readiness Weak-Source Cost-Center Count is the subset still used for workbook hard-fail pressure. Exploratory-Only Weak-Source Debt stays visible but is separated from core reviewability pressure."],
         ["Grounding states", "See persona_summary and cluster_stats for base_promotion_status, structural_support_status, visibility_state, usability_state, deck_readiness_state, promotion_action, promotion_status, grounding_status, promotion_grounding_status, and reporting_readiness_status. Review-visible personas remain workbook-visible for audit but are not final usable or deck-ready personas."],
         ["Persona counts", "Use Headline Persona Count or Final Usable Persona Count for headline or downstream persona totals only when persona_readiness_state is deck_ready or higher. Production-Ready Persona Count mirrors final usable personas. Review-Ready Persona Count is reported separately and must not be added into final usable totals."],
         ["Rows versus sources", "Raw Record Row Count is a count of JSONL rows. Effective labeled-source count and source_distribution rows describe sources, not post or episode rows."],
@@ -649,7 +664,7 @@ def _write_readme_sheet(workbook) -> None:
         cell.fill = HEADER_FILL
     for cell in worksheet[13]:
         cell.fill = HEADER_FILL
-    for row_index in [33, 39]:
+    for row_index in [37, 43]:
         for cell in worksheet[row_index]:
             cell.font = HEADER_FONT
             cell.fill = SUBTLE_FILL

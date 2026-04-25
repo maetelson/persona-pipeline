@@ -33,6 +33,9 @@ class AnalysisSnapshotCliTests(unittest.TestCase):
             self.assertFalse(snapshot["uses_xlsx_export"])
             self.assertEqual(snapshot["overview_metrics"]["overall_status"], "WARN")
             self.assertEqual(snapshot["overview_metrics"]["final_usable_persona_count"], 3)
+            self.assertEqual(snapshot["overview_metrics"]["core_readiness_weak_source_cost_center_count"], 1)
+            self.assertEqual(snapshot["overview_metrics"]["exploratory_only_weak_source_debt_count"], 1)
+            self.assertEqual(snapshot["overview_metrics"]["exploratory_only_weak_source_sources"], "klaviyo_community")
             self.assertEqual(len(snapshot["source_balance"]), 2)
             self.assertEqual(snapshot["source_balance"][0]["source"], "adobe_analytics_community")
             self.assertIn("root_cause_category", snapshot["source_balance"][0])
@@ -147,6 +150,30 @@ class AnalysisSnapshotCliTests(unittest.TestCase):
                 "notes": ["", "", "", ""],
             }
         )
+        quality_checks_df = pd.concat(
+            [
+                quality_checks_df,
+                pd.DataFrame(
+                    {
+                        "metric": [
+                            "core_readiness_weak_source_cost_center_count",
+                            "exploratory_only_weak_source_debt_count",
+                            "exploratory_only_weak_source_sources",
+                        ],
+                        "value": ["1", "1", "klaviyo_community"],
+                        "denominator_type": ["", "", ""],
+                        "denominator_value": ["", "", ""],
+                        "threshold": ["warn>=2; fail>=4", "", ""],
+                        "status": ["warn", "pass", "pass"],
+                        "level": ["warning", "pass", "pass"],
+                        "notes": ["weak_source_cost_centers_present", "", ""],
+                    }
+                ),
+            ],
+            ignore_index=True,
+        )
+        quality_checks_df["value"] = quality_checks_df["value"].astype(str)
+        quality_checks_df["denominator_value"] = quality_checks_df["denominator_value"].astype(str)
         cluster_stats_df = pd.DataFrame(
             {
                 "persona_id": ["persona_01", "persona_02"],
