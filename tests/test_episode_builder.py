@@ -530,6 +530,97 @@ class EpisodeBuilderTests(unittest.TestCase):
         self.assertEqual(int(debug_df.iloc[0]["episode_count"]), 2)
         self.assertEqual(len(episodes_df), 2)
 
+    def test_adobe_single_question_operational_thread_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-operational-1",
+                    "url": "https://example.com/thread/adobe-operational-1",
+                    "source_type": "thread",
+                    "title": "Export CJA report to SFTP location",
+                    "body": "We need to export a CJA report to an SFTP location for a weekly stakeholder workbook, but I cannot tell whether this is supported natively or why the current export path drops required fields.",
+                    "comments_text": "",
+                    "thread_title": "Export CJA report to SFTP location",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_adobe_metrics_dimensions_missing_cja_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-12",
+                    "url": "https://example.com/thread/adobe-12",
+                    "source_type": "thread",
+                    "title": "Some Metrics & Dimensions Missing in Adobe CJA",
+                    "body": "Some metrics missing and dimensions missing in Adobe CJA are blocking our workbook review because the numbers no longer line up with the reporting we share.",
+                    "comments_text": "",
+                    "thread_title": "Some Metrics & Dimensions Missing in Adobe CJA",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_adobe_no_data_found_in_workspace_forms_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-13",
+                    "url": "https://example.com/thread/adobe-13",
+                    "source_type": "thread",
+                    "title": "Bulk Data Insertion API responded positive but no data found in Workspace",
+                    "body": "Bulk Data Insertion API responded positive, but no data found in Workspace means the reporting validation is blocked until we can explain the discrepancy.",
+                    "comments_text": "",
+                    "thread_title": "Bulk Data Insertion API responded positive but no data found in Workspace",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 1)
+        self.assertIn(str(debug_df.iloc[0]["quality_bucket"]), {"hard_pass", "borderline"})
+
+    def test_adobe_customer_care_tips_stays_non_episode(self) -> None:
+        rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
+        df = pd.DataFrame(
+            [
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_id": "adobe-14",
+                    "url": "https://example.com/thread/adobe-14",
+                    "source_type": "thread",
+                    "title": "Tuesday Tech Bytes - tips on working with customer care",
+                    "body": "Tips on working with customer care, training resources, and general best practices for Adobe support workflows.",
+                    "comments_text": "",
+                    "thread_title": "Tuesday Tech Bytes - tips on working with customer care",
+                    "parent_context": "",
+                    "source_meta": serialize_source_meta({"platform": "adobe"}),
+                }
+            ]
+        )
+
+        episodes_df, debug_df, _ = build_episode_outputs(df, rules)
+        self.assertEqual(len(episodes_df), 0)
+        self.assertEqual(str(debug_df.iloc[0]["quality_bucket"]), "fail")
+
     def test_mixpanel_api_setup_noise_does_not_form_episode(self) -> None:
         rules = load_yaml(ROOT / "config" / "segmentation_rules.yaml")
         df = pd.DataFrame(

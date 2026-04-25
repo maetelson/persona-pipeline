@@ -397,6 +397,11 @@ def _apply_source_signal_rescue(
             "owner credentials",
             "owner's credentials",
             "owners credentials",
+            "server call",
+            "ping type",
+            "gif request",
+            "previous page",
+            "row level",
         ]
         google_pain_terms = [
             "disappeared",
@@ -431,6 +436,9 @@ def _apply_source_signal_rescue(
             "delivery issue",
             "failed to send",
             "not received",
+            "no longer working",
+            "not connecting",
+            "does not connect",
             "blank export",
             "empty export",
             "wrong total",
@@ -505,6 +513,15 @@ def _apply_source_signal_rescue(
             "won't compare to previous month",
             "doesn't compare to previous month",
             "does not compare to previous month",
+            "export feature",
+            "high resolution",
+            "chart alerts no longer working",
+            "column order",
+            "not matching looker interface",
+            "results are consolidated",
+            "specific previous page",
+            "two dimensions together",
+            "without using breakdown",
         ]
         google_question_trouble_terms = [
             "how can we achieve this",
@@ -553,6 +570,10 @@ def _apply_source_signal_rescue(
             "how to filter looker report",
             "how can i create a calculated field",
             "how do i add a row level condition",
+            "what is the difference between ping",
+            "why do i see ping type server calls",
+            "how many visitors came from",
+            "is it possible to use two dimensions together",
         ]
         google_learning_or_noise_terms = [
             "welcome to the looker studio community",

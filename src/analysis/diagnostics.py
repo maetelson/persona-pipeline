@@ -34,6 +34,17 @@ from src.utils.pipeline_schema import (
     source_row_count,
 )
 
+SOURCE_REMEDIATION_COLUMNS = [
+    "root_cause_category",
+    "evidence_to_inspect",
+    "likely_false_negative_pattern",
+    "recommended_config_change",
+    "required_regression_check",
+    "owner_action_type",
+    "can_auto_tune",
+    "must_manual_review",
+]
+
 
 def count_raw_jsonl_by_source(root_dir: Path) -> pd.DataFrame:
     """Count raw records by source, preferring staged raw_audit counts when available."""
@@ -165,6 +176,14 @@ def build_metric_glossary() -> pd.DataFrame:
         ("severity", "source_diagnostic_reason", "Workbook-facing severity for the current top source issue."),
         ("false_negative_hint", "source_diagnostic_reason", "Short source-specific hint describing the most likely false-negative or under-segmentation pattern behind the current failure."),
         ("source_specific_next_check", "source_diagnostic_intervention", "Short next inspection target to open before the next source-scoped rerun."),
+        ("root_cause_category", "source_diagnostic_reason", "Normalized root-cause category derived from collapse stage, dominant invalid/prefilter reasons, and source-balance state."),
+        ("evidence_to_inspect", "source_diagnostic_intervention", "Canonical local artifact to inspect before changing rules for this source."),
+        ("likely_false_negative_pattern", "source_diagnostic_reason", "Source-aware explanation of the most likely false-negative or under-segmentation pattern behind the top failure."),
+        ("recommended_config_change", "source_diagnostic_intervention", "Concrete config or code path to change next if the evidence confirms the root-cause diagnosis."),
+        ("required_regression_check", "source_diagnostic_intervention", "Required source-specific regression test or rerun assertion after remediation."),
+        ("owner_action_type", "source_diagnostic_reason", "Owner-facing remediation class such as adjust_invalid_filter_terms or adjust_episode_builder."),
+        ("can_auto_tune", "source_diagnostic_reason", "Boolean flag showing whether source-aware tuning can be attempted without manual sample review first."),
+        ("must_manual_review", "source_diagnostic_reason", "Boolean flag showing whether sample inspection is required before any rule change."),
         ("source_balance_status", "source_diagnostic_reason", "Source-balance classification summarizing whether the source is healthy, overdominant, weak, or on a watchlist."),
         ("weak_source_cost_center_status", "source_diagnostic_reason", "Explicit flag showing whether the source is currently treated as a weak-source cost center."),
         ("dominant_invalid_reason", "source_diagnostic_reason", "Most frequent invalid_reason observed for the source in invalid_candidates_with_prefilter.parquet. This is diagnostic context, not a funnel metric."),
@@ -364,6 +383,7 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
                 "recommended_action",
                 "false_negative_hint",
                 "source_specific_next_check",
+                *SOURCE_REMEDIATION_COLUMNS,
                 "severity",
                 "failure_reason_top",
                 "source_balance_status",
@@ -417,33 +437,24 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
         )
         collapse_stage = _collapse_stage_for_reason(failure_reason_top)
         weak_source_cost_center = _is_weak_source_cost_center_row(diagnostic_policy_row)
-        source_balance_status = _source_balance_status(
-            pd.Series(
-                {
-                    **diagnostic_policy_row.to_dict(),
-                    "weak_source_cost_center": weak_source_cost_center,
-                }
-            )
+        remediation_row = pd.Series(
+            {
+                **diagnostic_policy_row.to_dict(),
+                "collapse_stage": collapse_stage,
+                "weak_source_cost_center": weak_source_cost_center,
+            }
         )
-        recommended_action = _source_balance_action(
-            pd.Series(
-                {
-                    **diagnostic_policy_row.to_dict(),
-                    "weak_source_cost_center": weak_source_cost_center,
-                }
-            )
+        source_balance_status = _source_balance_status(remediation_row)
+        remediation_row["source_balance_status"] = source_balance_status
+        priority_tier = _source_priority_tier(
+            failure_level=failure_level,
+            source_balance_status=source_balance_status,
+            weak_source_cost_center=weak_source_cost_center,
         )
-        false_negative_hint = _source_false_negative_hint(
-            source=source,
-            failure_reason_top=failure_reason_top,
-            dominant_invalid_reason=str(source_row.get("dominant_invalid_reason", "") or ""),
-            dominant_prefilter_reason=str(source_row.get("dominant_prefilter_reason", "") or ""),
-        )
-        source_specific_next_check = _source_specific_next_check(
-            source=source,
-            recommended_action=recommended_action,
-            failure_reason_top=failure_reason_top,
-        )
+        remediation = _build_source_remediation(remediation_row)
+        recommended_action = str(remediation["policy_action"] or "")
+        false_negative_hint = str(remediation["false_negative_hint"] or "")
+        source_specific_next_check = str(remediation["source_specific_next_check"] or "")
         priority_tier = _source_priority_tier(
             failure_level=failure_level,
             source_balance_status=source_balance_status,
@@ -588,6 +599,7 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
                     "recommended_action": recommended_action,
                     "false_negative_hint": false_negative_hint,
                     "source_specific_next_check": source_specific_next_check,
+                    **{column: remediation.get(column, "") for column in SOURCE_REMEDIATION_COLUMNS},
                     "severity": failure_level or "pass",
                     "failure_reason_top": failure_reason_top,
                     "source_balance_status": source_balance_status,
@@ -615,6 +627,14 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
             ("diagnostic_reasons", "other", "recommended_action", recommended_action, "diagnostic_intervention", "", "", "", "", False, failure_level or "pass"),
             ("diagnostic_reasons", "other", "false_negative_hint", false_negative_hint, "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
             ("diagnostic_reasons", "other", "source_specific_next_check", source_specific_next_check, "diagnostic_intervention", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "root_cause_category", str(remediation.get("root_cause_category", "") or ""), "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "evidence_to_inspect", str(remediation.get("evidence_to_inspect", "") or ""), "diagnostic_intervention", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "likely_false_negative_pattern", str(remediation.get("likely_false_negative_pattern", "") or ""), "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "recommended_config_change", str(remediation.get("recommended_config_change", "") or ""), "diagnostic_intervention", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "required_regression_check", str(remediation.get("required_regression_check", "") or ""), "diagnostic_intervention", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "owner_action_type", str(remediation.get("owner_action_type", "") or ""), "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "can_auto_tune", bool(remediation.get("can_auto_tune", False)), "boolean", "", "", "", "", False, failure_level or "pass"),
+            ("diagnostic_reasons", "other", "must_manual_review", bool(remediation.get("must_manual_review", False)), "boolean", "", "", "", "", False, failure_level or "pass"),
             ("diagnostic_reasons", "other", "source_balance_status", source_balance_status, "diagnostic_reason", "", "", "", "", False, failure_level or "pass"),
             ("diagnostic_reasons", "other", "weak_source_cost_center_status", "weak_source_cost_center" if weak_source_cost_center else "not_weak_source_cost_center", "diagnostic_reason", "", "", "", "", False, "warning" if weak_source_cost_center else "pass"),
             ("diagnostic_reasons", "post", "dominant_invalid_reason", str(source_row.get("dominant_invalid_reason", "reason_unavailable") or "reason_unavailable"), "diagnostic_reason", "", "", "", "", False, "pass"),
@@ -671,8 +691,16 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
             "recommended_action": 4,
             "false_negative_hint": 5,
             "source_specific_next_check": 6,
-            "source_balance_status": 7,
-            "weak_source_cost_center_status": 8,
+            "root_cause_category": 7,
+            "evidence_to_inspect": 8,
+            "likely_false_negative_pattern": 9,
+            "recommended_config_change": 10,
+            "required_regression_check": 11,
+            "owner_action_type": 12,
+            "can_auto_tune": 13,
+            "must_manual_review": 14,
+            "source_balance_status": 15,
+            "weak_source_cost_center_status": 16,
         }
         result["_row_order"] = result["row_kind"].astype(str).map(row_order).fillna(9)
         result["_section_order"] = result["section"].astype(str).map(section_order).fillna(9)
@@ -745,24 +773,6 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
     frame["collapse_stage"] = frame["failure_reason_top"].astype(str).map(_collapse_stage_for_reason)
     frame["weak_source_cost_center"] = frame.apply(_is_weak_source_cost_center_row, axis=1)
     frame["source_balance_status"] = frame.apply(_source_balance_status, axis=1)
-    frame["policy_action"] = frame.apply(_source_balance_action, axis=1)
-    frame["false_negative_hint"] = frame.apply(
-        lambda row: _source_false_negative_hint(
-            source=str(row.get("source", "") or ""),
-            failure_reason_top=str(row.get("failure_reason_top", "") or ""),
-            dominant_invalid_reason=str(row.get("dominant_invalid_reason", "") or ""),
-            dominant_prefilter_reason=str(row.get("dominant_prefilter_reason", "") or ""),
-        ),
-        axis=1,
-    )
-    frame["source_specific_next_check"] = frame.apply(
-        lambda row: _source_specific_next_check(
-            source=str(row.get("source", "") or ""),
-            recommended_action=str(row.get("policy_action", "") or ""),
-            failure_reason_top=str(row.get("failure_reason_top", "") or ""),
-        ),
-        axis=1,
-    )
     frame["priority_tier"] = frame.apply(
         lambda row: _source_priority_tier(
             failure_level=str(row.get("failure_level", "") or ""),
@@ -771,6 +781,12 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
         ),
         axis=1,
     )
+    remediation_df = frame.apply(_build_source_remediation, axis=1, result_type="expand")
+    for column in remediation_df.columns:
+        frame[column] = remediation_df[column]
+    frame["policy_action"] = frame["policy_action"].astype(str)
+    frame["false_negative_hint"] = frame["false_negative_hint"].astype(str)
+    frame["source_specific_next_check"] = frame["source_specific_next_check"].astype(str)
     preferred = [
         "source",
         "raw_record_count",
@@ -799,6 +815,7 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
         "policy_action",
         "false_negative_hint",
         "source_specific_next_check",
+        *SOURCE_REMEDIATION_COLUMNS,
         "priority_tier",
     ]
     available = [column for column in preferred if column in frame.columns]
@@ -821,6 +838,7 @@ def build_weak_source_triage(source_balance_audit_df: pd.DataFrame) -> pd.DataFr
                 "recommendation_confidence",
                 "triage_rationale",
                 "policy_action",
+                *SOURCE_REMEDIATION_COLUMNS,
             ]
         )
     frame = source_balance_audit_df.copy()
@@ -837,8 +855,9 @@ def build_weak_source_triage(source_balance_audit_df: pd.DataFrame) -> pd.DataFr
             "blended_influence_share_pct",
             "triage_recommendation",
             "recommendation_confidence",
-            "triage_rationale",
-            "policy_action",
+                "triage_rationale",
+                "policy_action",
+                *SOURCE_REMEDIATION_COLUMNS,
         ])
     triage = weak.apply(_triage_weak_source_row, axis=1, result_type="expand")
     for column in triage.columns:
@@ -855,6 +874,7 @@ def build_weak_source_triage(source_balance_audit_df: pd.DataFrame) -> pd.DataFr
         "recommendation_confidence",
         "triage_rationale",
         "policy_action",
+        *SOURCE_REMEDIATION_COLUMNS,
     ]
     available = [column for column in preferred if column in weak.columns]
     return weak[available].sort_values(["recommendation_confidence", "raw_record_count", "source"], ascending=[True, False, True]).reset_index(drop=True)
@@ -1372,85 +1392,300 @@ def _source_balance_status(row: pd.Series) -> str:
     return "watchlist"
 
 
-def _source_balance_action(row: pd.Series) -> str:
-    """Return the next source-balance action for a source under the current policy."""
-    if str(row.get("concentration_risk_reason", "") or "") == "overconcentration_risk":
-        return "diversify_other_sources_before_scaling_this_source"
+def _root_cause_category_for_row(row: pd.Series) -> str:
+    """Normalize symptom-level failures into reusable remediation categories."""
     reason = str(row.get("failure_reason_top", "") or "")
+    collapse_stage = str(row.get("collapse_stage", "") or "")
     dominant_invalid_reason = str(row.get("dominant_invalid_reason", "") or "")
-    if reason.startswith("low_prefilter_retention"):
-        return "review_source_specific_prefilter_terms"
-    if reason.startswith("low_valid_post_retention"):
-        if dominant_invalid_reason == "outside_time_window":
-            return "review_time_window_policy"
-        return "review_source_specific_valid_filtering"
-    if reason == "low_episode_yield":
-        return "tighten_episode_segmentation_for_source"
-    if reason in {"low_labelable_episode_ratio", "label_output_missing_after_episode_build"}:
-        return "tighten_labelability_and_source_scope"
-    if reason in {"grounding_contribution_absent", "grounded_persona_contribution_absent"}:
-        return "expand_grounded_persona_coverage_before_promotion"
+    dominant_prefilter_reason = str(row.get("dominant_prefilter_reason", "") or "")
+    source_balance_status = str(row.get("source_balance_status", "") or "")
+    if reason in {"", "healthy_source_contribution"} and source_balance_status == "balanced_or_healthy":
+        return "healthy_monitor_only"
+    if reason == "overconcentration_risk" or source_balance_status == "overdominant_source_risk":
+        return "overdominant_source_concentration"
     if reason == "weak_diversity_contribution":
+        return "weak_diversity_contribution"
+    if reason.startswith("low_valid_post_retention: outside_time_window") or dominant_invalid_reason == "outside_time_window":
+        return "time_window_freshness_policy"
+    if reason.startswith("low_valid_post_retention: missing_pain_signal"):
+        return "valid_filter_missing_pain_signal"
+    if reason.startswith("low_valid_post_retention: duplicate_candidate"):
+        return "valid_filter_duplicate_or_scope_policy"
+    if reason.startswith("low_valid_post_retention: low_relevance_prefilter"):
+        return "valid_filter_low_relevance_prefilter_proxy"
+    if reason.startswith("low_valid_post_retention"):
+        return "valid_filter_duplicate_or_scope_policy"
+    if reason.startswith("low_prefilter_retention:"):
+        if "rescue_candidate" in reason or "rescue_candidate" in dominant_prefilter_reason:
+            return "relevance_prefilter_rescue_candidate"
+        if ":generic" in reason or dominant_prefilter_reason.endswith(":generic"):
+            return "relevance_prefilter_generic_false_negative"
+        return "relevance_prefilter_generic_false_negative"
+    if reason == "low_episode_yield" or collapse_stage == "episode_yield":
+        return "episode_segmentation_under_split"
+    if reason in {"low_labelable_episode_ratio", "label_output_missing_after_episode_build"} or collapse_stage == "labelability":
+        return "labelability_quality_gate_too_strict"
+    if reason in {"grounding_contribution_absent", "grounded_persona_contribution_absent"}:
+        return "grounding_contribution_gap"
+    return "healthy_monitor_only" if str(row.get("failure_level", "") or "") == "pass" else "weak_diversity_contribution"
+
+
+def _policy_action_for_root_cause(root_cause_category: str) -> str:
+    """Map one normalized root cause into the stable workbook action label."""
+    if root_cause_category == "overdominant_source_concentration":
+        return "diversify_other_sources_before_scaling_this_source"
+    if root_cause_category in {"relevance_prefilter_generic_false_negative", "relevance_prefilter_rescue_candidate"}:
+        return "review_source_specific_prefilter_terms"
+    if root_cause_category in {
+        "valid_filter_missing_pain_signal",
+        "valid_filter_duplicate_or_scope_policy",
+        "valid_filter_low_relevance_prefilter_proxy",
+    }:
+        return "review_source_specific_valid_filtering"
+    if root_cause_category == "time_window_freshness_policy":
+        return "review_time_window_policy"
+    if root_cause_category == "episode_segmentation_under_split":
+        return "tighten_episode_segmentation_for_source"
+    if root_cause_category == "labelability_quality_gate_too_strict":
+        return "tighten_labelability_and_source_scope"
+    if root_cause_category == "grounding_contribution_gap":
+        return "expand_grounded_persona_coverage_before_promotion"
+    if root_cause_category == "weak_diversity_contribution":
         return "raise_targeted_collection_on_underrepresented_source"
-    if reason in {"no_raw_records", "raw_not_normalized"}:
+    if root_cause_category in {"no_raw_records", "raw_not_normalized"}:
         return "review_collect_depth"
     return "monitor_source"
 
 
-def _source_false_negative_hint(
-    source: str,
-    failure_reason_top: str,
-    dominant_invalid_reason: str,
-    dominant_prefilter_reason: str,
-) -> str:
-    """Return a short source-specific hint for the next false-negative audit pass."""
+def _likely_false_negative_pattern(source: str, root_cause_category: str) -> str:
+    """Return the likely source-specific false-negative or under-segmentation pattern."""
     source_id = str(source or "")
-    reason = str(failure_reason_top or "")
-    invalid_reason = str(dominant_invalid_reason or "")
-    prefilter_reason = str(dominant_prefilter_reason or "")
-    if source_id == "google_developer_forums":
-        return "Check scheduled report, pivot export, scorecard mismatch, null/blend, and delivery threads that read like operational questions more than explicit pain."
-    if source_id == "adobe_analytics_community":
-        if reason == "low_episode_yield":
-            return "Check multi-part Workspace/CJA/report builder/classification threads where one post contains more than one analyst problem block."
-        return "Check Workspace/Debugger/CJA validation threads whose pain is implied by troubleshooting context rather than explicit mismatch wording."
-    if source_id == "klaviyo_community":
-        return "Check campaign attribution, segment/report discrepancy, stakeholder reporting, and export mismatch threads currently dropped as generic marketing help."
-    if source_id == "qlik_community":
-        return "Check pivot/export correctness, measure inconsistency, and reload-result mismatch rows that look like expression help at first glance."
-    if source_id == "domo_community_forum":
-        return "Check whether older Beast Mode, filter card, and Analyzer threads are evergreen enough to justify a targeted time-window rescue."
-    if invalid_reason == "outside_time_window":
-        return "Check timestamp distribution before changing source rules; the bottleneck may be freshness rather than semantic filtering."
-    if prefilter_reason.endswith(":generic"):
-        return "Check dropped rows for source-native reporting trust phrases that are being treated as generic product help."
-    return "Check the dominant dropped rows directly before changing source-specific rules."
+    if root_cause_category == "valid_filter_missing_pain_signal":
+        if source_id == "google_developer_forums":
+            return "Looker Studio operational questions use implicit pain wording around dashboard behavior, scheduling, export correctness, and filter interaction."
+        if source_id in {"power_bi_community", "hubspot_community", "stackoverflow"}:
+            return "Source-native reporting trust phrasing is being treated as generic product help before pain is recognized."
+        return "Source-native reporting pain is phrased as troubleshooting context rather than explicit mismatch language."
+    if root_cause_category == "valid_filter_duplicate_or_scope_policy":
+        return "Scope or duplicate guards are likely catching real troubleshooting rows before source-aware rescue can apply."
+    if root_cause_category == "valid_filter_low_relevance_prefilter_proxy":
+        return "Support-style phrasing is being rejected upstream as low relevance before source-specific rescue can apply."
+    if root_cause_category == "relevance_prefilter_generic_false_negative":
+        if source_id == "klaviyo_community":
+            return "Lifecycle-marketing noise is mixed with campaign attribution, stakeholder reporting, and revenue math pain."
+        if source_id == "qlik_community":
+            return "Expression-help noise is mixed with export-integrity and measure-trust pain."
+        return "Reporting-trust rows are being treated as generic product help in relevance prefiltering."
+    if root_cause_category == "relevance_prefilter_rescue_candidate":
+        return "Existing rescue candidates are too coarse and still blend noise with reporting-trust rows."
+    if root_cause_category == "episode_segmentation_under_split":
+        if source_id == "adobe_analytics_community":
+            return "Adobe Workspace/CJA/report-builder threads may contain multiple analyst problems or borderline single-question operational posts."
+        if source_id == "domo_community_forum":
+            return "Parser/body fidelity may hide labelable card, Analyzer, or Beast Mode problem blocks inside longer threads."
+        return "Long multi-part troubleshooting threads are likely producing too few labelable episodes."
+    if root_cause_category == "labelability_quality_gate_too_strict":
+        return "Quality gates may be rejecting operational rows whose pain is implied by workflow context rather than explicit mismatch wording."
+    if root_cause_category == "time_window_freshness_policy":
+        return "Recent-enough source signal may be getting dropped by freshness policy rather than semantic filtering."
+    if root_cause_category == "grounding_contribution_gap":
+        return "The source survives labeling but does not yet contribute grounded promoted persona evidence."
+    if root_cause_category == "weak_diversity_contribution":
+        return "The source contributes labeled evidence but remains too small to materially improve balanced-source coverage."
+    return ""
 
 
-def _source_specific_next_check(source: str, recommended_action: str, failure_reason_top: str) -> str:
-    """Return the next concrete thing to inspect for one source."""
+def _evidence_to_inspect(source: str, root_cause_category: str) -> str:
+    """Return the canonical artifact(s) to inspect before changing rules."""
+    if root_cause_category in {
+        "valid_filter_missing_pain_signal",
+        "valid_filter_duplicate_or_scope_policy",
+        "valid_filter_low_relevance_prefilter_proxy",
+        "time_window_freshness_policy",
+    }:
+        return "data/valid/invalid_candidates_with_prefilter.parquet"
+    if root_cause_category in {"relevance_prefilter_generic_false_negative", "relevance_prefilter_rescue_candidate"}:
+        return "data/prefilter/relevance_drop.parquet"
+    if root_cause_category in {"episode_segmentation_under_split", "labelability_quality_gate_too_strict"}:
+        return "data/episodes/episode_debug.parquet | data/episodes/episode_audit.parquet"
+    if root_cause_category == "grounding_contribution_gap":
+        return "data/analysis/persona_grounding.csv | data/analysis/persona_promotion_grounding_audit.csv"
+    if root_cause_category == "overdominant_source_concentration":
+        return "data/analysis/source_balance_audit.csv | data/analysis/persona_summary.csv"
+    if root_cause_category == "weak_diversity_contribution":
+        return "data/analysis/source_balance_audit.csv"
+    return ""
+
+
+def _recommended_config_change(source: str, root_cause_category: str) -> str:
+    """Return the concrete config/code path to adjust next."""
     source_id = str(source or "")
-    action = str(recommended_action or "")
-    reason = str(failure_reason_top or "")
-    if source_id == "google_developer_forums":
-        return "Open invalid_candidates sample for Google and review missing_pain_signal rows with Looker Studio reporting language."
-    if source_id == "adobe_analytics_community":
-        return "Open episode_audit and sample Adobe threads with Workspace/CJA/report builder shifts to verify split opportunities."
-    if source_id == "klaviyo_community":
-        return "Open relevance_drop sample for Klaviyo generic rows and isolate reporting-trust vs lifecycle-marketing noise."
-    if source_id == "qlik_community":
-        return "Open relevance_drop sample for Qlik generic rows and separate export-integrity pain from expression-help noise."
-    if source_id == "domo_community_forum":
-        return "Open time_window_invalid sample and compare 2020-2021 Domo inventory against current rescue rules before widening further."
-    if action == "review_time_window_policy" or "outside_time_window" in reason:
-        return "Open time_window_invalid sample and review created_at distribution before changing filter thresholds."
-    if action == "tighten_episode_segmentation_for_source":
-        return "Open episode_audit and inspect long multi-part threads that still produce only one episode."
-    if action == "review_source_specific_prefilter_terms":
-        return "Open relevance_drop sample and trace the top generic-drop patterns for this source."
-    if action == "review_source_specific_valid_filtering":
-        return "Open invalid_candidates sample and trace the top missing_pain_signal or mixed-tail patterns for this source."
-    return "Open the dominant audit sample for this source before the next source-scoped rerun."
+    if root_cause_category == "valid_filter_missing_pain_signal":
+        return "Update source-aware rescue terms in src/filters/invalid_filter.py for reporting-trust, dashboard-behavior, export-correctness, and scheduling language."
+    if root_cause_category == "valid_filter_duplicate_or_scope_policy":
+        return "Refine duplicate/scope guards in src/filters/invalid_filter.py so real troubleshooting rows are not rejected before source-aware rescue runs."
+    if root_cause_category == "valid_filter_low_relevance_prefilter_proxy":
+        return "Refine src/filters/invalid_filter.py so low-relevance-like support phrasing is not rejected before source-specific rescue can apply."
+    if root_cause_category == "relevance_prefilter_generic_false_negative":
+        if source_id == "klaviyo_community":
+            return "Update source-aware rescue terms in src/filters/relevance.py for campaign attribution, segment discrepancy, stakeholder reporting, revenue math, and custom reports while preserving CRM/tutorial noise blocks."
+        if source_id == "qlik_community":
+            return "Update src/filters/relevance.py to separate expression-help noise from export-integrity and measure-trust patterns."
+        return "Update source-aware rescue terms in src/filters/relevance.py so reporting-trust rows are not treated as generic product help."
+    if root_cause_category == "relevance_prefilter_rescue_candidate":
+        return "Tighten rescue candidate handling in src/filters/relevance.py so source-specific reporting pain is separated from generic support noise."
+    if root_cause_category in {"episode_segmentation_under_split", "labelability_quality_gate_too_strict"}:
+        if source_id == "adobe_analytics_community":
+            return "Tune the Adobe source branch in src/episodes/builder.py, especially training-vs-operational quality gates, before widening split heuristics."
+        if source_id == "domo_community_forum":
+            return "Inspect parser/body fidelity first, then update Domo-specific logic in src/episodes/builder.py only if labelable issue blocks are being hidden."
+        return "Tune source-specific episode builder logic in src/episodes/builder.py to recover under-split operational threads."
+    if root_cause_category == "time_window_freshness_policy":
+        return "Adjust the source override in config/time_window.yaml only after verifying timestamp distribution in invalid candidates."
+    if root_cause_category == "grounding_contribution_gap":
+        return "Adjust grounding promotion policy inputs or representative-example selection so this source contributes grounded promoted personas before promotion expands."
+    if root_cause_category == "overdominant_source_concentration":
+        return "Do not loosen this source; diversify other sources before scaling its contribution further."
+    if root_cause_category == "weak_diversity_contribution":
+        return "Improve targeted source recovery before increasing collection breadth so this source contributes enough labeled evidence to matter."
+    return ""
+
+
+def _required_regression_check(source: str, root_cause_category: str, weak_source_cost_center: bool) -> str:
+    """Return the exact regression test or rerun gate expected after remediation."""
+    suffix = " Then rerun the source-scoped flow and verify the source no longer remains a weak_source_cost_center." if weak_source_cost_center else ""
+    source_id = str(source or "")
+    if root_cause_category in {
+        "valid_filter_missing_pain_signal",
+        "valid_filter_duplicate_or_scope_policy",
+        "valid_filter_low_relevance_prefilter_proxy",
+    }:
+        base = "Add source-specific positive and noise-negative invalid-filter regressions in tests/test_invalid_filter.py."
+        if source_id == "github_discussions" and root_cause_category == "valid_filter_low_relevance_prefilter_proxy":
+            base += " Also add a follow-up labelability regression if labelable ratio remains weak after the invalid-tail fix."
+        return base + suffix
+    if root_cause_category in {"relevance_prefilter_generic_false_negative", "relevance_prefilter_rescue_candidate"}:
+        return "Add source-specific positive and negative relevance-prefilter regressions in tests/test_relevance_prefilter.py." + suffix
+    if root_cause_category in {"episode_segmentation_under_split", "labelability_quality_gate_too_strict"}:
+        return "Add source-specific episode-builder regressions in tests/test_episode_builder.py, including an over-split guard." + suffix
+    if root_cause_category == "time_window_freshness_policy":
+        return "Add a time-window-specific assertion in tests/test_source_diagnostics.py and confirm the source no longer fails on outside_time_window after rerun."
+    if root_cause_category == "grounding_contribution_gap":
+        return "Add a grounding-contribution regression in tests/test_source_diagnostics.py so promoted but ungrounded contribution stays distinguishable from healthy sources."
+    if root_cause_category == "overdominant_source_concentration":
+        return "Verify no healthy source regresses while balanced-source metrics improve after diversification."
+    if root_cause_category == "weak_diversity_contribution":
+        return "Verify effective_balanced_source_count improves without creating a new weak-source regression elsewhere."
+    return ""
+
+
+def _owner_action_type(source: str, root_cause_category: str) -> str:
+    """Return the owner-facing remediation class for the source."""
+    source_id = str(source or "")
+    if root_cause_category in {
+        "valid_filter_missing_pain_signal",
+        "valid_filter_duplicate_or_scope_policy",
+        "valid_filter_low_relevance_prefilter_proxy",
+    }:
+        return "adjust_invalid_filter_terms"
+    if root_cause_category in {"relevance_prefilter_generic_false_negative", "relevance_prefilter_rescue_candidate"}:
+        return "adjust_relevance_prefilter_terms"
+    if root_cause_category in {"episode_segmentation_under_split", "labelability_quality_gate_too_strict"}:
+        if source_id == "domo_community_forum":
+            return "inspect_parser_and_episode_builder"
+        return "adjust_episode_builder"
+    if root_cause_category == "time_window_freshness_policy":
+        return "adjust_time_window_policy"
+    if root_cause_category == "grounding_contribution_gap":
+        return "adjust_grounding_policy"
+    if root_cause_category == "overdominant_source_concentration":
+        return "diversify_other_sources"
+    if root_cause_category == "weak_diversity_contribution":
+        return "target_source_recovery"
+    return "monitor_only"
+
+
+def _can_auto_tune(row: pd.Series, root_cause_category: str) -> bool:
+    """Return whether remediation can be attempted through source-aware tuning without manual evidence review first."""
+    source_id = str(row.get("source", "") or "")
+    dominant_prefilter_reason = str(row.get("dominant_prefilter_reason", "") or "")
+    failure_reason_top = str(row.get("failure_reason_top", "") or "")
+    dominant_invalid_reason = str(row.get("dominant_invalid_reason", "") or "")
+    if source_id == "klaviyo_community" and root_cause_category in {
+        "relevance_prefilter_generic_false_negative",
+        "relevance_prefilter_rescue_candidate",
+    }:
+        return (dominant_prefilter_reason.endswith(":generic") or "rescue_candidate" in failure_reason_top) and dominant_invalid_reason in {"", "reason_unavailable"}
+    if source_id == "qlik_community" and root_cause_category == "relevance_prefilter_rescue_candidate":
+        return True
+    return False
+
+
+def _must_manual_review(root_cause_category: str, can_auto_tune: bool) -> bool:
+    """Return whether manual sample inspection is required before changing rules."""
+    if root_cause_category == "healthy_monitor_only":
+        return False
+    return not can_auto_tune
+
+
+def _source_specific_next_check_from_remediation(source: str, root_cause_category: str, evidence_to_inspect: str) -> str:
+    """Return the next specific inspection step derived from remediation state."""
+    source_id = str(source or "")
+    if root_cause_category == "valid_filter_missing_pain_signal":
+        if source_id == "google_developer_forums":
+            return f"Inspect {evidence_to_inspect} for Looker Studio missing_pain_signal rows around dashboard behavior, scheduling, export, and filters."
+        return f"Inspect {evidence_to_inspect} for reporting-trust rows that were rejected as generic product help."
+    if root_cause_category == "valid_filter_duplicate_or_scope_policy":
+        return f"Inspect {evidence_to_inspect} for duplicate_candidate or scope-filtered rows before changing invalid-filter guards."
+    if root_cause_category == "valid_filter_low_relevance_prefilter_proxy":
+        return f"Inspect {evidence_to_inspect} for support-style rows rejected upstream as low relevance before source rescue."
+    if root_cause_category in {"relevance_prefilter_generic_false_negative", "relevance_prefilter_rescue_candidate"}:
+        return f"Inspect {evidence_to_inspect} and separate source-native reporting pain from generic product-help noise."
+    if root_cause_category in {"episode_segmentation_under_split", "labelability_quality_gate_too_strict"}:
+        return f"Inspect {evidence_to_inspect} and trace why multi-part or borderline operational threads are not becoming labelable episodes."
+    if root_cause_category == "time_window_freshness_policy":
+        return f"Inspect {evidence_to_inspect} and verify timestamp distribution before changing time-window overrides."
+    if root_cause_category == "grounding_contribution_gap":
+        return f"Inspect {evidence_to_inspect} and verify whether the source reaches promoted personas but fails grounded persona contribution."
+    if root_cause_category == "overdominant_source_concentration":
+        return f"Inspect {evidence_to_inspect} and confirm diversification targets before scaling this source further."
+    if root_cause_category == "weak_diversity_contribution":
+        return f"Inspect {evidence_to_inspect} and confirm whether recovery work should prioritize source yield or source scope."
+    return "Monitor the source and inspect canonical audit artifacts only if a regression appears."
+
+
+def _build_source_remediation(row: pd.Series) -> dict[str, Any]:
+    """Build one shared remediation object consumed by audit and diagnostics outputs."""
+    root_cause_category = _root_cause_category_for_row(row)
+    policy_action = _policy_action_for_root_cause(root_cause_category)
+    likely_false_negative_pattern = _likely_false_negative_pattern(str(row.get("source", "") or ""), root_cause_category)
+    evidence_to_inspect = _evidence_to_inspect(str(row.get("source", "") or ""), root_cause_category)
+    recommended_config_change = _recommended_config_change(str(row.get("source", "") or ""), root_cause_category)
+    can_auto_tune = _can_auto_tune(row, root_cause_category)
+    must_manual_review = _must_manual_review(root_cause_category, can_auto_tune)
+    required_regression_check = _required_regression_check(
+        str(row.get("source", "") or ""),
+        root_cause_category,
+        bool(row.get("weak_source_cost_center", False)),
+    )
+    owner_action_type = _owner_action_type(str(row.get("source", "") or ""), root_cause_category)
+    return {
+        "root_cause_category": root_cause_category,
+        "policy_action": policy_action,
+        "false_negative_hint": likely_false_negative_pattern,
+        "likely_false_negative_pattern": likely_false_negative_pattern,
+        "evidence_to_inspect": evidence_to_inspect,
+        "source_specific_next_check": _source_specific_next_check_from_remediation(
+            str(row.get("source", "") or ""),
+            root_cause_category,
+            evidence_to_inspect,
+        ),
+        "recommended_config_change": recommended_config_change,
+        "required_regression_check": required_regression_check,
+        "owner_action_type": owner_action_type,
+        "can_auto_tune": can_auto_tune,
+        "must_manual_review": must_manual_review,
+    }
 
 
 def _triage_weak_source_row(row: pd.Series) -> dict[str, str]:

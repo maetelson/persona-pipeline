@@ -1,0 +1,238 @@
+{
+  "curation_counts": {
+    "reconciliation_signoff_positive": 50,
+    "reporting_packager_parent": 50,
+    "ambiguous_boundary": 40,
+    "hard_negative": 30,
+    "noise": 30
+  },
+  "source_distribution": {
+    "adobe_analytics_community": 18,
+    "github_discussions": 17,
+    "hubspot_community": 17,
+    "metabase_discussions": 17,
+    "google_developer_forums": 16,
+    "klaviyo_community": 15,
+    "power_bi_community": 15,
+    "reddit": 14,
+    "shopify_community": 14,
+    "domo_community_forum": 13,
+    "stackoverflow": 13,
+    "mixpanel_community": 11,
+    "qlik_community": 10,
+    "sisense_community": 10
+  },
+  "baseline_vs_reconcile_boost_full": {
+    "positive_recall": {
+      "baseline": 74.0,
+      "reconcile_boost": 100.0
+    },
+    "hard_negative_false_positive_rate": {
+      "baseline": 10.0,
+      "reconcile_boost": 23.3
+    },
+    "ambiguous_movement_rate": {
+      "baseline": 0.0,
+      "reconcile_boost": 70.0
+    },
+    "parent_retention_rate": {
+      "baseline": 100.0,
+      "reconcile_boost": 100.0
+    },
+    "positives_in_persona_04_like": {
+      "baseline": 37,
+      "reconcile_boost": 50
+    },
+    "parent_examples_wrongly_pulled_out_of_persona_01": {
+      "baseline": 0,
+      "reconcile_boost": 0
+    }
+  },
+  "baseline_vs_reconcile_boost_dev": {
+    "positive_recall": {
+      "baseline": 83.3,
+      "reconcile_boost": 100.0
+    },
+    "hard_negative_false_positive_rate": {
+      "baseline": 11.1,
+      "reconcile_boost": 33.3
+    },
+    "ambiguous_movement_rate": {
+      "baseline": 0.0,
+      "reconcile_boost": 70.8
+    },
+    "parent_retention_rate": {
+      "baseline": 100.0,
+      "reconcile_boost": 100.0
+    },
+    "positives_in_persona_04_like": {
+      "baseline": 25,
+      "reconcile_boost": 30
+    },
+    "parent_examples_wrongly_pulled_out_of_persona_01": {
+      "baseline": 0,
+      "reconcile_boost": 0
+    }
+  },
+  "baseline_vs_reconcile_boost_eval_locked": {
+    "positive_recall": {
+      "baseline": 60.0,
+      "reconcile_boost": 100.0
+    },
+    "hard_negative_false_positive_rate": {
+      "baseline": 8.3,
+      "reconcile_boost": 8.3
+    },
+    "ambiguous_movement_rate": {
+      "baseline": 0.0,
+      "reconcile_boost": 68.8
+    },
+    "parent_retention_rate": {
+      "baseline": 100.0,
+      "reconcile_boost": 100.0
+    },
+    "positives_in_persona_04_like": {
+      "baseline": 12,
+      "reconcile_boost": 20
+    },
+    "parent_examples_wrongly_pulled_out_of_persona_01": {
+      "baseline": 0,
+      "reconcile_boost": 0
+    }
+  },
+  "split_counts": {
+    "dev": {
+      "reconciliation_signoff_positive": 30,
+      "reporting_packager_parent": 30,
+      "ambiguous_boundary": 24,
+      "hard_negative": 18,
+      "noise": 18
+    },
+    "eval_locked": {
+      "reconciliation_signoff_positive": 20,
+      "reporting_packager_parent": 20,
+      "ambiguous_boundary": 16,
+      "hard_negative": 12,
+      "noise": 12
+    }
+  },
+  "persona_04_like_variant_id": "persona_03",
+  "persona_01_like_variant_id": "persona_01",
+  "bucket_examples": {
+    "ambiguous_boundary": [
+      {
+        "episode_id": "adobe_analytics_community::12606::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "general_friction",
+        "reason": "mixed report_speed and validation cues create a boundary case between reporting-packager and reconciliation personas"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12621::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "tool_limitation",
+        "reason": "mixed report_speed and validation cues create a boundary case between reporting-packager and reconciliation personas"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12629::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "general_friction",
+        "reason": "mixed report_speed and validation cues create a boundary case between reporting-packager and reconciliation personas"
+      }
+    ],
+    "hard_negative": [
+      {
+        "episode_id": "adobe_analytics_community::12645::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we diagnose and resolve analytics issues faster?",
+        "bottleneck_text": "general_friction",
+        "reason": "metric/reporting words appear, but the real issue is setup/support/helpdesk-style rather than reconciliation/signoff pain"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12653::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+        "bottleneck_text": "data_quality",
+        "reason": "metric/reporting words appear, but the real issue is setup/support/helpdesk-style rather than reconciliation/signoff pain"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12661::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "general_friction",
+        "reason": "metric/reporting words appear, but the real issue is setup/support/helpdesk-style rather than reconciliation/signoff pain"
+      }
+    ],
+    "noise": [
+      {
+        "episode_id": "adobe_analytics_community::12605::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "handoff_friction",
+        "reason": "content is dominated by community/newsletter/vendor/docs-style material rather than persona evidence"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12610::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "manual_reporting",
+        "reason": "content is dominated by community/newsletter/vendor/docs-style material rather than persona evidence"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12712::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "tool_limitation",
+        "reason": "content is dominated by community/newsletter/vendor/docs-style material rather than persona evidence"
+      }
+    ],
+    "reconciliation_signoff_positive": [
+      {
+        "episode_id": "adobe_analytics_community::12642::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+        "bottleneck_text": "general_friction",
+        "reason": "validate_numbers + validation with data_quality and high indicates genuine reconciliation/signoff pain"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12692::02",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+        "bottleneck_text": "data_quality",
+        "reason": "validate_numbers + reporting with data_quality and high indicates genuine reconciliation/signoff pain"
+      },
+      {
+        "episode_id": "adobe_analytics_community::84770::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+        "bottleneck_text": "general_friction",
+        "reason": "validate_numbers + validation with tool_limitation and high indicates genuine reconciliation/signoff pain"
+      }
+    ],
+    "reporting_packager_parent": [
+      {
+        "episode_id": "adobe_analytics_community::12611::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "handoff_friction",
+        "reason": "report_speed + reporting with handoff_dependency reflects recurring reporting-packager work, not metric trust failure"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12616::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "general_friction",
+        "reason": "report_speed + reporting with manual_reporting reflects recurring reporting-packager work, not metric trust failure"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12620::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "tool_limitation",
+        "reason": "report_speed + reporting with manual_reporting reflects recurring reporting-packager work, not metric trust failure"
+      }
+    ]
+  }
+}

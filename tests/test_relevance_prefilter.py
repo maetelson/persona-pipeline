@@ -719,6 +719,42 @@ class RelevancePrefilterTests(unittest.TestCase):
         self.assertEqual(len(drop_df), 0)
         self.assertEqual(len(keep_df) + len(borderline_df), 1)
 
+    def test_klaviyo_revenue_vs_shopify_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-vs-shopify",
+                    "title": "Klaviyo revenue reporting vs Shopify revenue reporting",
+                    "body": "Our Klaviyo revenue reporting vs Shopify revenue reporting no longer matches, and we need to reconcile the discrepancy before stakeholder signoff.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
+    def test_klaviyo_order_revenue_not_showing_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-revenue-not-showing",
+                    "title": "Order revenue attribution not showing for campaign",
+                    "body": "Order revenue attribution is not showing for this campaign, and the team cannot complete the weekly performance reporting review.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
+
     def test_mixpanel_export_discrepancy_row_is_rescued(self) -> None:
         frame = pd.DataFrame(
             [
@@ -994,6 +1030,24 @@ class RelevancePrefilterTests(unittest.TestCase):
         rescored_df = pd.concat([keep_again, borderline_again, drop_again], ignore_index=True)
         self.assertEqual(len(rescored_df), len(scored_df))
         self.assertFalse(rescored_df.columns.duplicated().any())
+
+    def test_klaviyo_skipped_email_reporting_row_is_rescued(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_id": "klaviyo-skipped-reporting",
+                    "title": "Flow filters emails being skipped before weekly sign-off",
+                    "body": "Our flow filters are causing emails to be skipped, and the subscriber list count no longer reconciles with the weekly reporting we review before sign-off.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "source_meta": {"json": "{}"},
+                }
+            ]
+        )
+        keep_df, borderline_df, drop_df = apply_relevance_prefilter(frame, self.rules)
+        self.assertEqual(len(drop_df), 0)
+        self.assertEqual(len(keep_df) + len(borderline_df), 1)
 
 
 if __name__ == "__main__":

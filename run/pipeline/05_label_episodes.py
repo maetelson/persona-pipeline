@@ -29,7 +29,7 @@ from src.labeling.rule_labeler import prelabel_episodes
 from src.utils.io import load_yaml, read_parquet, write_parquet
 from src.utils.logging import get_logger
 from src.utils.run_helpers import load_dotenv
-from src.utils.pipeline_schema import LABEL_CODE_COLUMNS
+from src.utils.pipeline_schema import CORE_LABEL_COLUMNS, LABEL_CODE_COLUMNS, is_unknown_like
 
 LOGGER = get_logger("run.label_episodes")
 
@@ -84,6 +84,7 @@ def main() -> None:
     LOGGER.info("LLM runtime snapshot: %s", json.dumps(llm_runtime_snapshot(runtime), ensure_ascii=False, sort_keys=True))
     labeled_df, llm_audit_df = enrich_with_llm_labels(episodes_df, labeled_df, config=llm_config)
     labeled_df, repaired_df = apply_label_repairs(episodes_df, labeled_df, labelability_df, labeling_policy)
+    labeled_df = _restore_rescued_low_signal_core_eligibility(labeled_df, llm_audit_df)
     details_df = build_axis_label_details(episodes_df, labeled_df, labelability_df)
     audit_df = build_label_audit(labeled_df, llm_audit_df)
     labeling_audit_df = build_labeling_audit(labeled_df, llm_audit_df)
@@ -171,6 +172,53 @@ def _apply_low_signal_gate(labeled_df):
         result.loc[low_signal_mask, "label_reason"].fillna("").astype(str) + " | low_signal_input"
     ).str.strip(" |")
     result.loc[low_signal_mask, "persona_core_eligible"] = False
+    return result
+
+
+def _restore_rescued_low_signal_core_eligibility(labeled_df, llm_audit_df):
+    """Restore persona-core eligibility for narrowly rescued discrepancy rows."""
+    if (
+        labeled_df is None
+        or getattr(labeled_df, "empty", True)
+        or llm_audit_df is None
+        or getattr(llm_audit_df, "empty", True)
+        or "episode_id" not in labeled_df.columns
+        or "episode_id" not in llm_audit_df.columns
+        or "low_signal_discrepancy_rescued" not in llm_audit_df.columns
+    ):
+        return labeled_df
+
+    rescued_ids = set(
+        llm_audit_df.loc[llm_audit_df["low_signal_discrepancy_rescued"].fillna(False), "episode_id"]
+        .fillna("")
+        .astype(str)
+    )
+    if not rescued_ids:
+        return labeled_df
+
+    result = labeled_df.copy()
+    rescued_mask = result["episode_id"].fillna("").astype(str).isin(rescued_ids)
+    if "labelability_status" in result.columns:
+        rescued_mask &= result["labelability_status"].fillna("").astype(str).eq("low_signal")
+    if not rescued_mask.any():
+        return result
+
+    core_complete_mask = pd.Series(True, index=result.index)
+    for column in CORE_LABEL_COLUMNS:
+        if column not in result.columns:
+            core_complete_mask &= False
+            continue
+        core_complete_mask &= ~result[column].map(is_unknown_like)
+
+    restored_mask = rescued_mask & core_complete_mask
+    if not restored_mask.any():
+        return result
+
+    result.loc[restored_mask, "persona_core_eligible"] = True
+    if "label_reason" in result.columns:
+        result.loc[restored_mask, "label_reason"] = (
+            result.loc[restored_mask, "label_reason"].fillna("").astype(str) + " | low_signal_discrepancy_rescued"
+        ).str.strip(" |")
     return result
 
 

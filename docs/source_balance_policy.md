@@ -83,6 +83,57 @@ The source balance audit assigns one next action per source:
 
 These actions are diagnostic only. They are there to make reruns and source tuning explicit.
 
+## Symptom vs root cause vs remediation
+
+The audit should be read in three layers:
+
+1. symptom
+   - `collapse_stage`
+   - `failure_reason_top`
+   - `source_balance_status`
+2. root cause
+   - `root_cause_category`
+   - `likely_false_negative_pattern`
+3. remediation
+   - `recommended_config_change`
+   - `required_regression_check`
+   - `owner_action_type`
+   - `evidence_to_inspect`
+   - `can_auto_tune`
+   - `must_manual_review`
+
+The old failure mode was stopping at symptom-level TODO text such as “review source-specific filtering”.
+The new contract is: every `fix_now` source must point to either a concrete code/config path to change next or an explicit manual-review artifact that must be inspected before tuning.
+
+## Choosing the right remediation path
+
+Use `root_cause_category` before deciding what to edit:
+
+- `valid_filter_*`
+  - inspect `data/valid/invalid_candidates_with_prefilter.parquet`
+  - adjust source-aware rules in `src/filters/invalid_filter.py`
+- `relevance_prefilter_*`
+  - inspect `data/prefilter/relevance_drop.parquet`
+  - adjust source-aware rescue terms in `src/filters/relevance.py`
+- `episode_segmentation_under_split` or `labelability_quality_gate_too_strict`
+  - inspect `data/episodes/episode_debug.parquet` and `data/episodes/episode_audit.parquet`
+  - adjust source-specific logic in `src/episodes/builder.py`
+- `time_window_freshness_policy`
+  - inspect invalid candidates for timestamp distribution first
+  - only then consider changing `config/time_window.yaml`
+- `grounding_contribution_gap`
+  - inspect persona grounding artifacts before changing promotion or example selection logic
+
+Healthy or monitor-only sources should not receive fix-now remediation unless a later rerun introduces a regression.
+
+## What done means
+
+A source-scoped remediation is done only when:
+
+- the targeted source metric for the diagnosed root cause improves
+- no healthy source regresses into watchlist or weak-source status
+- the rerun audit output changes from generic review language to a concrete remediation state with the expected code/config path and regression target
+
 ## Workbook gates
 
 The centralized quality policy uses these source-balance thresholds:

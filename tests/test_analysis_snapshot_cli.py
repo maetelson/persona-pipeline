@@ -35,6 +35,8 @@ class AnalysisSnapshotCliTests(unittest.TestCase):
             self.assertEqual(snapshot["overview_metrics"]["final_usable_persona_count"], 3)
             self.assertEqual(len(snapshot["source_balance"]), 2)
             self.assertEqual(snapshot["source_balance"][0]["source"], "adobe_analytics_community")
+            self.assertIn("root_cause_category", snapshot["source_balance"][0])
+            self.assertIn("recommended_config_change", snapshot["source_balance"][0])
             self.assertEqual(len(snapshot["promoted_personas"]), 2)
 
     def test_build_validation_snapshot_requires_canonical_bundle(self) -> None:
@@ -201,6 +203,14 @@ class AnalysisSnapshotCliTests(unittest.TestCase):
                 "policy_action": ["tighten_episode_segmentation_for_source", "review_source_specific_prefilter_terms"],
                 "false_negative_hint": ["review adobe workspace multi-domain threads", "review reporting-trust false negatives"],
                 "source_specific_next_check": ["sample episode splits", "sample generic drops"],
+                "root_cause_category": ["episode_segmentation_under_split", "relevance_prefilter_generic_false_negative"],
+                "evidence_to_inspect": ["data/episodes/episode_debug.parquet | data/episodes/episode_audit.parquet", "data/prefilter/relevance_drop.parquet"],
+                "likely_false_negative_pattern": ["Adobe Workspace/CJA/report-builder threads may contain multiple analyst problems.", "Reporting-trust rows are being treated as generic product help in relevance prefiltering."],
+                "recommended_config_change": ["Tune the Adobe source branch in src/episodes/builder.py.", "Update source-aware rescue terms in src/filters/relevance.py."],
+                "required_regression_check": ["Add source-specific episode-builder regressions in tests/test_episode_builder.py.", "Add source-specific positive and negative relevance-prefilter regressions in tests/test_relevance_prefilter.py."],
+                "owner_action_type": ["adjust_episode_builder", "adjust_relevance_prefilter_terms"],
+                "can_auto_tune": [False, True],
+                "must_manual_review": [True, False],
             }
         ).to_csv(analysis_dir / "source_balance_audit.csv", index=False)
 

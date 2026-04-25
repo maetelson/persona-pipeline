@@ -636,6 +636,7 @@ def _apply_workbook_promotion_constraints(
     cluster_stats_df = outputs.get("cluster_stats_df", pd.DataFrame()).copy()
     persona_summary_df = outputs.get("persona_summary_df", pd.DataFrame()).copy()
     audit_df = outputs.get("persona_promotion_grounding_audit_df", pd.DataFrame()).copy()
+    promotion_path_debug_df = outputs.get("persona_promotion_path_debug_df", pd.DataFrame()).copy()
     if cluster_stats_df.empty or persona_summary_df.empty:
         return outputs, {
             "promotion_constraint_status": "not_applicable",
@@ -741,7 +742,7 @@ def _apply_workbook_promotion_constraints(
         if primary_source and primary_source in weak_sources:
             reason_parts.append(f"primary_source={primary_source}")
         reason = "; ".join(reason_parts)
-        for frame in [cluster_stats_df, persona_summary_df, audit_df]:
+        for frame in [cluster_stats_df, persona_summary_df, audit_df, promotion_path_debug_df]:
             if frame.empty or "persona_id" not in frame.columns:
                 continue
             mask = frame["persona_id"].astype(str).eq(persona_id)
@@ -770,6 +771,8 @@ def _apply_workbook_promotion_constraints(
             if "promotion_reason" in frame.columns:
                 existing = frame.loc[mask, "promotion_reason"].astype(str).str.strip()
                 frame.loc[mask, "promotion_reason"] = existing.map(lambda value: f"{value}; {reason}".strip("; "))
+            if "fail_reason" in frame.columns:
+                frame.loc[mask, "fail_reason"] = reason
             if "one_line_summary" in frame.columns:
                 existing = frame.loc[mask, "one_line_summary"].astype(str).str.strip()
                 frame.loc[mask, "one_line_summary"] = existing.map(lambda value: f"Exploratory bucket retained for caution: {value}" if value else "Exploratory bucket retained for caution.")
@@ -780,6 +783,7 @@ def _apply_workbook_promotion_constraints(
     outputs["cluster_stats_df"] = cluster_stats_df
     outputs["persona_summary_df"] = persona_summary_df
     outputs["persona_promotion_grounding_audit_df"] = audit_df
+    outputs["persona_promotion_path_debug_df"] = promotion_path_debug_df
     return outputs, {
         "promotion_constraint_status": "constrained",
         "promotion_constraint_summary": (

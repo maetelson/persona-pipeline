@@ -1640,6 +1640,17 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "download csv",
                 "days since visit",
                 "total time spent",
+                "customer journey analytics",
+                "cja",
+                "data view",
+                "sftp",
+                "server call",
+                "ping type",
+                "gif",
+                "lookup fields",
+                "line item",
+                "product string builder",
+                "tags",
             ]
         )
         discrepancy_presence = any(
@@ -1679,6 +1690,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "difference between two metrics",
                 "seems far to low",
                 "data looks wrong",
+                "attributed as direct traffic",
+                "metrics missing",
+                "dimensions missing",
+                "no data found in workspace",
                 "metric_not_supported_in_warehouse",
                 "incomplete data",
                 "differently sized csv files",
@@ -1688,6 +1703,15 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "greyed out",
                 "does not load",
                 "loading slowly",
+                "specific previous page",
+                "previous page",
+                "two dimensions together",
+                "without using breakdown",
+                "export cja report to sftp",
+                "sftp location",
+                "lookup fields difference",
+                "unspecified line item",
+                "tracking changes to tags",
             ]
         )
         analysis_context = any(
@@ -1715,6 +1739,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "tracking code",
                 "fallout rate",
                 "time on site",
+                "data view",
+                "sftp",
+                "lookup fields",
+                "tags",
             ]
         )
         explanation_burden = any(
@@ -1741,6 +1769,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "what is the difference between",
                 "how adobe recognize",
                 "what happens on january 1st",
+                "how many visitors came from",
+                "without using breakdown",
+                "tracking changes to tags",
+                "lookup fields difference",
             ]
         )
         operational_question = any(
@@ -1761,6 +1793,11 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "is this a problem with tracking codes",
                 "when will adobe parse out",
                 "data looks wrong",
+                "is it possible to use two dimensions together",
+                "how many visitors came from",
+                "export cja report to sftp",
+                "tracking changes to tags",
+                "lookup fields difference",
             ]
         )
         adobe_noise = any(
@@ -1776,6 +1813,7 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "certification",
                 "exam",
                 "summit",
+                "tips on working with customer care",
             ]
         )
         signal_count = sum(
@@ -1852,7 +1890,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "predictive analytics",
                 "pivot table",
                 "quartile",
+                "quartiles",
                 "no data message",
+                "predictive analytics",
+                "field aggregation issue",
             ]
         )
         discrepancy_presence = any(
@@ -1883,6 +1924,10 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "no data message",
                 "only displays",
                 "table visual",
+                "outputting the data",
+                "within each quartile",
+                "exporting the predictive analytics",
+                "field aggregation issue",
             ]
         )
         analysis_context = any(
@@ -1903,6 +1948,7 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "pivot table",
                 "predictive analytics",
                 "quartile",
+                "quartiles",
                 "field aggregation",
             ]
         )
@@ -1921,6 +1967,9 @@ def _assess_episode_quality(text: str, rules: dict[str, Any], source: str = "") 
                 "why is the table",
                 "why is the card",
                 "how do i fix",
+                "trying to break a dataset down into quartiles",
+                "i was using a stacked bar graph",
+                "have you ever seen this issue before",
             ]
         )
         ideas_exchange_noise = "ideas exchange" in lowered and not (discrepancy_presence or analysis_context)

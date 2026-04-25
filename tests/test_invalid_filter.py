@@ -853,6 +853,60 @@ class InvalidFilterTests(unittest.TestCase):
         self.assertEqual(len(valid_df), 0)
         self.assertEqual(len(invalid_df), 1)
 
+    def test_google_previous_page_operational_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "How many visitors came from one specific previous page in Looker Studio?",
+                    "body": "We need to see how many visitors came from a specific previous page, but the dashboard behavior does not compare the way we expect without using breakdown.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 220,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_google_chart_alerts_no_longer_working_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Chart alerts no longer working?",
+                    "body": "Our Looker Studio chart alerts no longer working means the team misses the scheduled dashboard check before reporting review.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 190,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_google_export_column_order_mismatch_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Column Order in Excel Export Not Matching Looker Interface",
+                    "body": "The exported Looker Studio Excel file has a column order not matching Looker interface, so our reporting handoff needs manual cleanup.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 205,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
     def test_generic_persona_context_is_stabilized_by_bottleneck(self) -> None:
         context, job, output = _stabilize_generic_persona_context(
             functional_context="analytics_workflow_execution",

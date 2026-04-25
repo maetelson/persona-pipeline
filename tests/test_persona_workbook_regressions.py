@@ -404,6 +404,87 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
         self.assertIn(summary["promotion_constraint_status"], {"constrained", "constrained_no_borderline_match"})
         self.assertEqual(str(result.loc["persona_03", "promotion_status"]), "promoted_persona")
 
+    def test_promotion_constraint_updates_promotion_path_debug_overlay(self) -> None:
+        cluster_stats_df = pd.DataFrame(
+            {
+                "persona_id": ["persona_01", "persona_02", "persona_04", "persona_05"],
+                "promotion_status": ["promoted_persona", "promoted_persona", "promoted_persona", "promoted_persona"],
+                "share_of_core_labeled": [48.0, 27.1, 6.3, 5.7],
+                "promotion_score": [0.90, 0.86, 0.75, 0.69],
+                "cross_source_robustness_score": [0.90, 0.86, 0.91, 0.77],
+                "selected_example_count": [6, 3, 5, 1],
+                "bundle_episode_count": [120, 95, 139, 139],
+                "persona_size": [4500, 2500, 598, 539],
+                "structural_support_status": ["structurally_supported"] * 4,
+                "grounding_status": ["grounded_single"] * 4,
+                "promotion_grounding_status": ["promoted_and_grounded"] * 4,
+                "final_usable_persona": [True] * 4,
+                "deck_ready_persona": [True] * 4,
+            }
+        )
+        persona_summary_df = cluster_stats_df.copy()
+        persona_summary_df["workbook_review_visible"] = True
+        persona_summary_df["promotion_action"] = "remain_promoted"
+        persona_summary_df["visibility_state"] = "promoted_candidate_persona"
+        persona_summary_df["usability_state"] = "final_usable_persona"
+        persona_summary_df["reporting_readiness_status"] = "deck_ready_persona"
+        persona_summary_df["deck_readiness_state"] = "deck_ready_persona"
+        persona_summary_df["promotion_reason"] = "meets floor"
+        audit_df = persona_summary_df.copy()
+        promotion_path_debug_df = pd.DataFrame(
+            {
+                "persona_id": ["persona_01", "persona_02", "persona_04", "persona_05"],
+                "base_promotion_status": ["promoted_candidate_persona"] * 4,
+                "structural_support_status": ["structurally_supported"] * 4,
+                "structural_support_fail_reason": [""] * 4,
+                "grounding_status": ["grounded_single"] * 4,
+                "promotion_grounding_status": ["promoted_and_grounded"] * 4,
+                "grounding_fail_reason": [""] * 4,
+                "grounding_penalty_counted_separately": [True] * 4,
+                "structural_grounding_overlap": ["no_structural_overlap"] * 4,
+                "promotion_status": ["promoted_persona"] * 4,
+                "final_usable_persona": [True] * 4,
+                "deck_ready_persona": [True] * 4,
+                "fail_reason": ["final_usable"] * 4,
+            }
+        )
+
+        outputs, summary = _apply_workbook_promotion_constraints(
+            persona_service_outputs={
+                "cluster_stats_df": cluster_stats_df,
+                "persona_summary_df": persona_summary_df,
+                "persona_promotion_grounding_audit_df": audit_df,
+                "persona_promotion_path_debug_df": promotion_path_debug_df,
+                "persona_assignments_df": pd.DataFrame(
+                    {
+                        "episode_id": ["e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8"],
+                        "persona_id": ["persona_01", "persona_01", "persona_02", "persona_02", "persona_04", "persona_04", "persona_05", "persona_05"],
+                    }
+                ),
+            },
+            clustering_episodes_df=pd.DataFrame(
+                {
+                    "episode_id": ["e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8"],
+                    "source": ["reddit", "reddit", "sisense_community", "sisense_community", "github_discussions", "google_developer_forums", "power_bi_community", "stackoverflow"],
+                }
+            ),
+            source_balance_audit_df=pd.DataFrame(
+                {
+                    "source": ["google_developer_forums", "klaviyo_community", "adobe_analytics_community", "domo_community_forum", "power_bi_community", "stackoverflow", "github_discussions"],
+                    "weak_source_cost_center": [True, True, True, True, False, False, False],
+                    "blended_influence_share_pct": [12.0, 8.0, 7.0, 6.0, 30.7, 10.0, 9.0],
+                }
+            ),
+        )
+
+        self.assertEqual(summary["promotion_constraint_status"], "constrained")
+        debug_df = outputs["persona_promotion_path_debug_df"].set_index("persona_id")
+        self.assertEqual(str(debug_df.loc["persona_04", "promotion_status"]), "promoted_persona")
+        self.assertEqual(str(debug_df.loc["persona_05", "promotion_status"]), "exploratory_bucket")
+        self.assertEqual(str(debug_df.loc["persona_05", "promotion_grounding_status"]), "promotion_constrained_by_workbook_policy")
+        self.assertFalse(bool(debug_df.loc["persona_05", "final_usable_persona"]))
+        self.assertIn("promotion constrained by workbook concentration and source-balance policy", str(debug_df.loc["persona_05", "fail_reason"]))
+
     def test_persona_readiness_is_capped_below_deck_ready_when_quality_status_warns(self) -> None:
         evaluated = evaluate_quality_status(
             {

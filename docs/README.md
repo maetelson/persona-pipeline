@@ -6,11 +6,13 @@ Use this folder for reference material after you already know which part of the 
 
 - Start with [README.md](../README.md) for entrypoints and the repo map.
 - Then use [`operational/`](./operational/) for execution and file-contract docs.
+- Use [`POLICY_INDEX.md`](./POLICY_INDEX.md) when you need to know which policy document is the current source of truth.
 - Use policy docs in this folder only when working on persona quality, readiness, source balance, or workbook semantics.
 
 ## What Lives Here
 
 - `operational/`: run order, contracts, runbook, QA, and maintenance docs
+- `POLICY_INDEX.md`: source-of-truth map for promotion, source balance, workbook readiness, diagnostics, and artifact lifecycle
 - policy docs:
   - `persona_*`
   - `source_*`

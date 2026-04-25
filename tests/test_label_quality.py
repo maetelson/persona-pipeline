@@ -27,6 +27,7 @@ if _LABEL_EPISODES_SPEC is None or _LABEL_EPISODES_SPEC.loader is None:
 _LABEL_EPISODES_MODULE = importlib.util.module_from_spec(_LABEL_EPISODES_SPEC)
 _LABEL_EPISODES_SPEC.loader.exec_module(_LABEL_EPISODES_MODULE)
 _write_before_after_quality_report = _LABEL_EPISODES_MODULE._write_before_after_quality_report
+_restore_rescued_low_signal_core_eligibility = _LABEL_EPISODES_MODULE._restore_rescued_low_signal_core_eligibility
 
 
 class LabelQualityTests(unittest.TestCase):
@@ -69,6 +70,64 @@ class LabelQualityTests(unittest.TestCase):
         )
         self.assertNotIn("guidance=", payload["prompt"])
         self.assertNotIn("choose=", payload["prompt"])
+
+    def test_rescued_low_signal_row_restores_persona_core_when_core_labels_are_complete(self) -> None:
+        labeled_df = pd.DataFrame(
+            [
+                {
+                    "episode_id": "rescue-1",
+                    "labelability_status": "low_signal",
+                    "role_codes": "R_ANALYST",
+                    "question_codes": "Q_RECONCILE",
+                    "pain_codes": "P_DATA_QUALITY",
+                    "output_codes": "O_EXPLANATION",
+                    "persona_core_eligible": False,
+                    "label_reason": "rule_only | low_signal_input",
+                }
+            ]
+        )
+        llm_audit_df = pd.DataFrame(
+            [
+                {
+                    "episode_id": "rescue-1",
+                    "low_signal_discrepancy_rescued": True,
+                }
+            ]
+        )
+
+        result = _restore_rescued_low_signal_core_eligibility(labeled_df, llm_audit_df)
+
+        self.assertTrue(bool(result.loc[0, "persona_core_eligible"]))
+        self.assertIn("low_signal_discrepancy_rescued", result.loc[0, "label_reason"])
+
+    def test_rescued_low_signal_row_stays_excluded_when_core_labels_remain_unknown(self) -> None:
+        labeled_df = pd.DataFrame(
+            [
+                {
+                    "episode_id": "rescue-2",
+                    "labelability_status": "low_signal",
+                    "role_codes": "R_ANALYST",
+                    "question_codes": "Q_RECONCILE",
+                    "pain_codes": "unknown",
+                    "output_codes": "O_EXPLANATION",
+                    "persona_core_eligible": False,
+                    "label_reason": "rule_only | low_signal_input",
+                }
+            ]
+        )
+        llm_audit_df = pd.DataFrame(
+            [
+                {
+                    "episode_id": "rescue-2",
+                    "low_signal_discrepancy_rescued": True,
+                }
+            ]
+        )
+
+        result = _restore_rescued_low_signal_core_eligibility(labeled_df, llm_audit_df)
+
+        self.assertFalse(bool(result.loc[0, "persona_core_eligible"]))
+        self.assertNotIn("low_signal_discrepancy_rescued", result.loc[0, "label_reason"])
 
     def test_compact_episode_payload_applies_smaller_limits_and_dedupes_evidence(self) -> None:
         payload = build_compact_episode_payload(

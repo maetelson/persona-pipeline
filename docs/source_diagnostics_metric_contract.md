@@ -40,6 +40,14 @@ These fields live in `source_stage_counts_df` and are the only source-of-truth i
 | `failure_reason_top` | `_diagnose_source_row` / `src/analysis/diagnostics.py` | source diagnostic | highest-ranked active issue | ranked reason order | categorical | Top actionable reason used for quick triage. |
 | `failure_level` | `_diagnose_source_row` / `src/analysis/diagnostics.py` | source diagnostic | severity for `failure_reason_top` | none | categorical | `failure`, `warning`, or `pass`. |
 | `recommended_seed_set` | `_diagnose_source_row` / `src/analysis/diagnostics.py` | source intervention | local seed list payload | none | categorical text | Only populated when top issue is `low_prefilter_retention:*` and a local seed file exists. |
+| `root_cause_category` | `_build_source_remediation` / `src/analysis/diagnostics.py` | source remediation | normalized remediation category | none | categorical | Root-cause normalization used to prevent repeated generic TODO output. |
+| `evidence_to_inspect` | `_build_source_remediation` / `src/analysis/diagnostics.py` | source intervention | canonical artifact path(s) | none | categorical text | Primary local artifact to inspect before changing rules. |
+| `likely_false_negative_pattern` | `_build_source_remediation` / `src/analysis/diagnostics.py` | source remediation | source-aware pattern summary | none | categorical text | Concrete hypothesis for what kind of rows are being dropped or under-segmented. |
+| `recommended_config_change` | `_build_source_remediation` / `src/analysis/diagnostics.py` | source intervention | next config/code path to edit | none | categorical text | Concrete remediation target, not just a review instruction. |
+| `required_regression_check` | `_build_source_remediation` / `src/analysis/diagnostics.py` | source intervention | test or rerun assertion | none | categorical text | Regression work required after changing the source-specific logic. |
+| `owner_action_type` | `_build_source_remediation` / `src/analysis/diagnostics.py` | source remediation | remediation ownership class | none | categorical | Groups work into invalid-filter, prefilter, episode-builder, time-window, or monitor-only actions. |
+| `can_auto_tune` | `_build_source_remediation` / `src/analysis/diagnostics.py` | source remediation | auto-tune eligibility | none | boolean | True only when source-aware tuning can be attempted without manual sample inspection first. |
+| `must_manual_review` | `_build_source_remediation` / `src/analysis/diagnostics.py` | source remediation | manual review requirement | none | boolean | True when sample inspection is required before any rule change. |
 
 ## Source distribution contract
 
@@ -97,6 +105,17 @@ These fields live in `source_stage_counts_df` and are the only source-of-truth i
 | `grounding_contribution_reason` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source diagnostic | diagnostic reason string | `labeled_episode_count` contribution context | categorical | Expresses whether grounding/persona contribution is absent. |
 | `concentration_risk_reason` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source diagnostic | diagnostic reason string | labeled/promoted share thresholds | categorical | Expresses whether overconcentration risk exists. |
 | `diversity_contribution_reason` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source diagnostic | diagnostic reason string | diversity contribution floor | categorical | Expresses whether the source is a weak diversity contributor. |
+| `recommended_action` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source intervention | short action label | none | categorical | Backward-compatible action label derived from the richer remediation model. |
+| `false_negative_hint` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source diagnostic | source-aware likely pattern | none | categorical | Short source-specific hint about the current false-negative or under-segmentation risk. |
+| `source_specific_next_check` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source intervention | next artifact/inspection target | none | categorical | Short next inspection step to perform before a source-scoped rerun. |
+| `root_cause_category` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source remediation | normalized remediation category | none | categorical | Distinguishes symptom-level failure from reusable remediation class. |
+| `evidence_to_inspect` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source intervention | canonical artifact path(s) | none | categorical text | Exact artifact to open before editing rules. |
+| `likely_false_negative_pattern` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source remediation | source-aware drop pattern | none | categorical text | Durable source-aware description of the likely false-negative pattern. |
+| `recommended_config_change` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source intervention | next config/code path | none | categorical text | Concrete file or rule family to modify next. |
+| `required_regression_check` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source intervention | required test/rerun gate | none | categorical text | Regression check required after remediation. |
+| `owner_action_type` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source remediation | remediation ownership class | none | categorical | Indicates whether the work belongs in invalid filtering, prefiltering, episode building, or monitoring. |
+| `can_auto_tune` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source remediation | auto-tune eligibility | none | boolean | True when source-aware tuning can be attempted directly. |
+| `must_manual_review` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source remediation | manual review requirement | none | boolean | True when sample inspection is required before tuning. |
 | `recommended_seed_intervention` | `build_source_diagnostics` / `src/analysis/diagnostics.py` | source intervention | local seed payload | none | categorical text | Only present when top issue is low prefilter retention and a real seed file exists. |
 
 ## Invariants
@@ -110,3 +129,5 @@ These fields live in `source_stage_counts_df` and are the only source-of-truth i
 - Mixed-grain bridge metrics must use `*_per_*` names and must not use `rate`, `share`, or `survival` naming.
 - `source_diagnostics` must contain explicit `diagnostic_reasons` rows with exactly one `top_failure_reason` per source.
 - Generic placeholders such as `labeled_output_present` are invalid and should fail workbook validation.
+- `fix_now` sources must expose either a non-empty `recommended_config_change` or an explicit manual review requirement with a non-empty `evidence_to_inspect`.
+- `can_auto_tune=true` is allowed only when the remediation model explicitly marks the source as safe for source-aware tuning without manual evidence review first.

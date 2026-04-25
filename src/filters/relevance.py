@@ -1764,6 +1764,12 @@ def _apply_klaviyo_rescue_signals(
             "campaign results",
             "sign-off",
             "signoff",
+            "placed order",
+            "email test",
+            "a/b test",
+            "ab test",
+            "subscriber list",
+            "flow filters",
         ]
     )
     trust_hit = any(
@@ -1818,8 +1824,23 @@ def _apply_klaviyo_rescue_signals(
             "does not reconcile",
             "doesn't reconcile",
             "doesnt reconcile",
+            "vs shopify",
+            "compared to shopify",
+            "compares to shopify",
+            "not showing",
+            "nothing is showing",
             "sign-off",
             "signoff",
+            "being skipped",
+            "emails being skipped",
+            "not sync into",
+            "don't appear",
+            "doesn't appear",
+            "dont appear",
+            "placed order don't appear",
+            "placed order doesn't appear",
+            "placed order does not appear",
+            "same flow email",
         ]
     )
     segment_hit = any(
@@ -1880,6 +1901,8 @@ def _apply_klaviyo_rescue_signals(
             "weekly review",
             "monthly review",
             "finance review",
+            "email test",
+            "flow filters",
         ]
     )
     export_integrity_hit = any(

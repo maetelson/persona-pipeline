@@ -17,6 +17,7 @@ from src.labeling.llm_labeler import (
     debug_openai_labeler_call,
     llm_runtime_snapshot,
     resolve_llm_runtime,
+    should_send_to_llm,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -268,6 +269,188 @@ class LlmLabelerRuntimeTests(unittest.TestCase):
         self.assertEqual(str(result_df.iloc[0]["env_codes"]), "E_SPREADSHEET")
         self.assertEqual(str(audit_df.iloc[0]["llm_status"]), "cache_hit")
         self.assertFalse(bool(audit_df.iloc[0]["was_llm_called"]))
+
+    def test_low_signal_generic_row_stays_excluded(self) -> None:
+        row = pd.Series(
+            {
+                "episode_id": "ep_generic",
+                "role_codes": "R_ANALYST",
+                "moment_codes": "unknown",
+                "question_codes": "Q_AUTOMATE_WORKFLOW",
+                "pain_codes": "unknown",
+                "env_codes": "unknown",
+                "workaround_codes": "unknown",
+                "output_codes": "O_AUTOMATION_JOB",
+                "fit_code": "F_REVIEW",
+                "label_confidence": 0.66,
+                "rule_hit_count": 1,
+                "rule_unknown_family_count": 4,
+                "labelability_status": "low_signal",
+            }
+        )
+        episode_row = pd.Series(
+            {
+                "normalized_episode": "Need ideas for creating a card in Domo for some orders and services.",
+                "business_question": "How should I build this card?",
+                "bottleneck_text": "",
+                "desired_output": "dashboard_update",
+                "tool_env": "domo",
+            }
+        )
+
+        should_target, reason = should_send_to_llm(row=row, threshold=0.72, episode_row=episode_row)
+        self.assertFalse(should_target)
+        self.assertEqual(reason, "low_signal_input")
+
+    def test_low_signal_setup_noise_stays_excluded(self) -> None:
+        row = pd.Series(
+            {
+                "episode_id": "ep_setup",
+                "role_codes": "unknown",
+                "moment_codes": "unknown",
+                "question_codes": "Q_AUTOMATE_WORKFLOW",
+                "pain_codes": "unknown",
+                "env_codes": "unknown",
+                "workaround_codes": "unknown",
+                "output_codes": "O_AUTOMATION_JOB",
+                "fit_code": "F_REVIEW",
+                "label_confidence": 0.61,
+                "rule_hit_count": 1,
+                "rule_unknown_family_count": 4,
+                "labelability_status": "low_signal",
+            }
+        )
+        episode_row = pd.Series(
+            {
+                "normalized_episode": "Training question about best practices tutorial for certification exam and how to implement reporting.",
+                "business_question": "How do I implement this correctly?",
+                "bottleneck_text": "",
+                "desired_output": "automation_job",
+                "tool_env": "adobe",
+            }
+        )
+
+        should_target, reason = should_send_to_llm(row=row, threshold=0.72, episode_row=episode_row)
+        self.assertFalse(should_target)
+        self.assertEqual(reason, "low_signal_input")
+
+    def test_low_signal_metric_discrepancy_row_is_rescued(self) -> None:
+        row = pd.Series(
+            {
+                "episode_id": "ep_rescue",
+                "role_codes": "unknown",
+                "moment_codes": "unknown",
+                "question_codes": "Q_AUTOMATE_WORKFLOW",
+                "pain_codes": "unknown",
+                "env_codes": "unknown",
+                "workaround_codes": "unknown",
+                "output_codes": "O_AUTOMATION_JOB",
+                "fit_code": "F_REVIEW",
+                "label_confidence": 0.61,
+                "rule_hit_count": 1,
+                "rule_unknown_family_count": 4,
+                "labelability_status": "low_signal",
+            }
+        )
+        episode_row = pd.Series(
+            {
+                "normalized_episode": "Dashboard totals do not match the exported numbers and the blocked review cannot finish until we explain the difference.",
+                "business_question": "Why did this change in the report?",
+                "bottleneck_text": "cannot reconcile inconsistent numbers",
+                "desired_output": "stakeholder_ready_export_or_packaged_report",
+                "tool_env": "looker_studio",
+            }
+        )
+
+        should_target, reason = should_send_to_llm(row=row, threshold=0.72, episode_row=episode_row)
+        self.assertTrue(should_target)
+        self.assertEqual(reason, "low_signal_discrepancy_rescue:totals_do_not_match")
+
+    def test_low_signal_discrepancy_rescue_is_tracked_in_audit(self) -> None:
+        episodes_df = pd.DataFrame(
+            [
+                {
+                    "episode_id": "ep_rescue",
+                    "source": "google_developer_forums",
+                    "raw_id": "g1",
+                    "normalized_episode": "Dashboard totals do not match the exported numbers and the blocked review cannot finish until we explain the difference.",
+                    "evidence_snippet": "dashboard totals do not match exported numbers",
+                    "role_clue": "analyst",
+                    "work_moment": "weekly review",
+                    "business_question": "Why did this change in the report?",
+                    "tool_env": "looker_studio",
+                    "bottleneck_text": "cannot reconcile inconsistent numbers",
+                    "workaround_text": "",
+                    "desired_output": "stakeholder_ready_export_or_packaged_report",
+                    "product_fit": "strong",
+                }
+            ]
+        )
+        labeled_df = pd.DataFrame(
+            [
+                {
+                    "episode_id": "ep_rescue",
+                    "role_codes": "unknown",
+                    "moment_codes": "unknown",
+                    "question_codes": "Q_AUTOMATE_WORKFLOW",
+                    "pain_codes": "unknown",
+                    "env_codes": "unknown",
+                    "workaround_codes": "unknown",
+                    "output_codes": "O_AUTOMATION_JOB",
+                    "fit_code": "F_REVIEW",
+                    "label_confidence": 0.61,
+                    "label_reason": "rule",
+                    "rule_hit_count": 1,
+                    "rule_core_known_count": 1,
+                    "rule_unknown_family_count": 4,
+                    "rule_coarse_match": "",
+                    "labelability_status": "low_signal",
+                    "labelability_score": 0.4,
+                    "labelability_reason": "thin",
+                    "persona_core_eligible": True,
+                }
+            ]
+        )
+        config = {
+            "enabled": True,
+            "dry_run": True,
+            "model_primary": "gpt-5.4-mini",
+            "backend": "http",
+            "target_unknown_only": True,
+            "codebook": {},
+            "policy": {},
+        }
+
+        with patch.dict(
+            os.environ,
+            {
+                "ENABLE_LLM_LABELER": "true",
+                "LLM_DRY_RUN": "true",
+                "OPENAI_API_KEY": "sk-proj-1234567890abcdefghijklmnop9012",
+            },
+            clear=False,
+        ):
+            _, audit_df = enrich_with_llm_labels(episodes_df, labeled_df, config=config)
+
+        self.assertEqual(len(audit_df), 1)
+        self.assertTrue(bool(audit_df.iloc[0]["was_llm_targeted"]))
+        self.assertTrue(bool(audit_df.iloc[0]["low_signal_discrepancy_rescued"]))
+        self.assertEqual(str(audit_df.iloc[0]["discrepancy_rescue_reason"]), "totals_do_not_match")
+        self.assertEqual(str(audit_df.iloc[0]["original_label_targeting_reason"]), "low_signal_input")
+        self.assertIn("low_signal_discrepancy_rescue", str(audit_df.iloc[0]["llm_target_reason"]))
+
+    def test_default_targeting_threshold_is_unchanged(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "ENABLE_LLM_LABELER": "true",
+                "OPENAI_API_KEY": "sk-proj-1234567890abcdefghijklmnop9012",
+            },
+            clear=False,
+        ):
+            runtime = resolve_llm_runtime({"enabled": True, "model_primary": "gpt-5.4-mini", "backend": "http"})
+
+        self.assertEqual(float(runtime["threshold"]), 0.72)
 
 
 if __name__ == "__main__":

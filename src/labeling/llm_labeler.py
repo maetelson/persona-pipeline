@@ -54,6 +54,62 @@ GENERIC_SINGLE_CODES = {
     "output_codes": {"O_XLSX", "O_DASHBOARD", "O_VALIDATED_DATASET", "O_AUTOMATION_JOB"},
 }
 
+LOW_SIGNAL_DISCREPANCY_PHRASES = (
+    "discrepancy",
+    "mismatch",
+    "not matching",
+    "totals do not match",
+    "wrong total",
+    "missing data",
+    "no data",
+    "report does not match",
+    "dashboard does not match",
+    "cannot reconcile",
+    "inconsistent numbers",
+    "blocked review",
+    "explain the difference",
+    "why did this change",
+)
+
+LOW_SIGNAL_DISCREPANCY_CONTEXT_TERMS = (
+    "metric",
+    "metrics",
+    "number",
+    "numbers",
+    "total",
+    "totals",
+    "report",
+    "reporting",
+    "dashboard",
+    "scorecard",
+    "workspace",
+    "table",
+    "export",
+    "data view",
+    "revenue",
+    "conversion",
+)
+
+LOW_SIGNAL_DISCREPANCY_NOISE_TERMS = (
+    "how to implement",
+    "best practices",
+    "tutorial",
+    "training",
+    "certificate",
+    "certification",
+    "exam",
+    "job",
+    "hiring",
+    "career",
+    "support ticket",
+    "contact support",
+    "customer care",
+    "partner program",
+    "roadmap",
+    "feature request",
+    "release note",
+)
+
 _COMPACT_CODEBOOK_JSON_CACHE: dict[tuple[int, tuple[str, ...]], str] = {}
 
 
@@ -245,6 +301,10 @@ def enrich_with_llm_labels(
             str(target_meta.get("normalized_reason", "")) if target_meta else _normalize_target_reason(target_reason)
         )
         audit_row["repairable_skip"] = str(target_reason).startswith("repairable_core_gap:")
+        if str(target_reason).startswith("low_signal_discrepancy_rescue:"):
+            audit_row["low_signal_discrepancy_rescued"] = True
+            audit_row["discrepancy_rescue_reason"] = str(target_reason).partition(":")[2]
+            audit_row["original_label_targeting_reason"] = "low_signal_input"
 
         if not target_meta:
             audit_row["llm_status"] = "not_targeted"
@@ -528,6 +588,9 @@ def should_send_to_llm(row: pd.Series, threshold: float, episode_row: pd.Series 
     """Return whether a row should reach the LLM and a readable reason string."""
     labelability_status = str(row.get("labelability_status", "") or "")
     if labelability_status == "low_signal":
+        rescue_reason = _low_signal_discrepancy_rescue_reason(row=row, episode_row=episode_row)
+        if rescue_reason:
+            return True, f"low_signal_discrepancy_rescue:{rescue_reason}"
         return False, "low_signal_input"
     reasons: list[str] = []
     unknown_columns = [column for column in LABEL_COLUMNS if schema_is_unknown_like(row.get(column, "unknown"))]
@@ -747,6 +810,10 @@ def _prepare_batch_mode(
             str(target_meta.get("normalized_reason", "")) if target_meta else _normalize_target_reason(target_reason)
         )
         audit_row["repairable_skip"] = str(target_reason).startswith("repairable_core_gap:")
+        if str(target_reason).startswith("low_signal_discrepancy_rescue:"):
+            audit_row["low_signal_discrepancy_rescued"] = True
+            audit_row["discrepancy_rescue_reason"] = str(target_reason).partition(":")[2]
+            audit_row["original_label_targeting_reason"] = "low_signal_input"
         if target_meta:
             if episode_id in cached_keys:
                 audit_row["llm_status"] = "cache_hit"
@@ -1160,6 +1227,35 @@ def _target_reason_counts(df: pd.DataFrame, threshold: float) -> dict[str, int]:
     return counts
 
 
+def _low_signal_discrepancy_rescue_reason(row: pd.Series, episode_row: pd.Series | None) -> str:
+    """Return a narrow rescue reason for low-signal discrepancy rows, or blank."""
+    if episode_row is None:
+        return ""
+    if not schema_is_unknown_like(row.get("pain_codes", "unknown")):
+        return ""
+
+    text_parts = [
+        str(episode_row.get("normalized_episode", "") or ""),
+        str(episode_row.get("business_question", "") or ""),
+        str(episode_row.get("bottleneck_text", "") or ""),
+        str(episode_row.get("desired_output", "") or ""),
+        str(episode_row.get("tool_env", "") or ""),
+    ]
+    combined_text = " ".join(part for part in text_parts if part).lower()
+    if not combined_text:
+        return ""
+    if any(term in combined_text for term in LOW_SIGNAL_DISCREPANCY_NOISE_TERMS):
+        return ""
+
+    phrase_hits = [phrase for phrase in LOW_SIGNAL_DISCREPANCY_PHRASES if phrase in combined_text]
+    if not phrase_hits:
+        return ""
+    if not any(term in combined_text for term in LOW_SIGNAL_DISCREPANCY_CONTEXT_TERMS):
+        return ""
+
+    return phrase_hits[0].replace(" ", "_")
+
+
 def _log_llm_event(event: str, payload: dict[str, Any], level: str = "info") -> None:
     """Emit a structured JSON log entry for labeler LLM diagnostics."""
     safe_payload = {key: _json_safe_log_value(value) for key, value in payload.items()}
@@ -1249,6 +1345,8 @@ def _normalize_target_reason(reason: str) -> str:
         "repairable_core_gap:pain_codes",
     }:
         return reason
+    if str(reason).startswith("low_signal_discrepancy_rescue:"):
+        return str(reason)
 
     flags: list[str] = []
     unknown_codes: set[str] = set()
@@ -1356,6 +1454,9 @@ def _audit_columns() -> list[str]:
         "llm_status",
         "skip_category",
         "repairable_skip",
+        "low_signal_discrepancy_rescued",
+        "discrepancy_rescue_reason",
+        "original_label_targeting_reason",
         "model_used",
         "endpoint_used",
         "api_base_url",
@@ -1412,6 +1513,9 @@ def _base_audit_row(
         "llm_status": "",
         "skip_category": "",
         "repairable_skip": False,
+        "low_signal_discrepancy_rescued": False,
+        "discrepancy_rescue_reason": "",
+        "original_label_targeting_reason": llm_target_reason,
         "model_used": model_used,
         "endpoint_used": "",
         "api_base_url": "",

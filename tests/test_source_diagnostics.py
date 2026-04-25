@@ -536,14 +536,297 @@ class SourceDiagnosticsTests(unittest.TestCase):
 
         audit_df = build_source_balance_audit(stage_counts_df)
         row = audit_df.iloc[0]
-        self.assertIn("scheduled report", str(row["false_negative_hint"]).lower())
+        self.assertIn("looker studio", str(row["false_negative_hint"]).lower())
         self.assertIn("invalid_candidates", str(row["source_specific_next_check"]).lower())
+        self.assertEqual(str(row["root_cause_category"]), "valid_filter_missing_pain_signal")
+        self.assertEqual(str(row["owner_action_type"]), "adjust_invalid_filter_terms")
 
         diagnostics_df = build_source_diagnostics(stage_counts_df)
         hint_row = diagnostics_df[diagnostics_df["metric_name"].astype(str).eq("false_negative_hint")].iloc[0]
         next_check_row = diagnostics_df[diagnostics_df["metric_name"].astype(str).eq("source_specific_next_check")].iloc[0]
-        self.assertIn("scheduled report", str(hint_row["metric_value"]).lower())
+        root_cause_row = diagnostics_df[diagnostics_df["metric_name"].astype(str).eq("root_cause_category")].iloc[0]
+        self.assertIn("looker studio", str(hint_row["metric_value"]).lower())
         self.assertIn("invalid_candidates", str(next_check_row["metric_value"]).lower())
+        self.assertEqual(str(root_cause_row["metric_value"]), "valid_filter_missing_pain_signal")
+
+    def test_root_cause_remediation_differs_for_weak_source_and_watchlist(self) -> None:
+        stage_counts_df = pd.DataFrame(
+            [
+                {
+                    "source": "metabase_discussions",
+                    "raw_record_count": 600,
+                    "normalized_post_count": 600,
+                    "valid_post_count": 500,
+                    "prefiltered_valid_post_count": 420,
+                    "episode_count": 250,
+                    "labelable_episode_count": 220,
+                    "labeled_episode_count": 250,
+                    "promoted_persona_episode_count": 80,
+                    "grounded_promoted_persona_episode_count": 40,
+                    "dominant_invalid_reason": "reason_unavailable",
+                    "dominant_prefilter_reason": "reason_unavailable",
+                    "failure_reason_top": "healthy_source_contribution",
+                    "failure_level": "pass",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                },
+                {
+                    "source": "klaviyo_community",
+                    "raw_record_count": 400,
+                    "normalized_post_count": 400,
+                    "valid_post_count": 300,
+                    "prefiltered_valid_post_count": 12,
+                    "episode_count": 3,
+                    "labelable_episode_count": 1,
+                    "labeled_episode_count": 2,
+                    "promoted_persona_episode_count": 0,
+                    "grounded_promoted_persona_episode_count": 0,
+                    "dominant_invalid_reason": "reason_unavailable",
+                    "dominant_prefilter_reason": "klaviyo_community:generic",
+                    "failure_reason_top": "low_prefilter_retention: klaviyo_community:generic",
+                    "failure_level": "warning",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                },
+                {
+                    "source": "qlik_community",
+                    "raw_record_count": 80,
+                    "normalized_post_count": 80,
+                    "valid_post_count": 70,
+                    "prefiltered_valid_post_count": 20,
+                    "episode_count": 18,
+                    "labelable_episode_count": 12,
+                    "labeled_episode_count": 18,
+                    "promoted_persona_episode_count": 2,
+                    "grounded_promoted_persona_episode_count": 1,
+                    "dominant_invalid_reason": "reason_unavailable",
+                    "dominant_prefilter_reason": "qlik_community:generic",
+                    "failure_reason_top": "low_prefilter_retention: qlik_community:generic",
+                    "failure_level": "warning",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                },
+            ]
+        )
+
+        audit_df = build_source_balance_audit(stage_counts_df)
+        klaviyo_row = audit_df.loc[audit_df["source"] == "klaviyo_community"].iloc[0]
+        qlik_row = audit_df.loc[audit_df["source"] == "qlik_community"].iloc[0]
+        self.assertTrue(bool(klaviyo_row["weak_source_cost_center"]))
+        self.assertFalse(bool(qlik_row["weak_source_cost_center"]))
+        self.assertIn("weak_source_cost_center", str(klaviyo_row["required_regression_check"]))
+        self.assertNotEqual(str(klaviyo_row["must_manual_review"]), str(qlik_row["must_manual_review"]))
+
+    def test_valid_and_prefilter_failures_get_different_root_cause_remediation(self) -> None:
+        stage_counts_df = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "raw_record_count": 200,
+                    "normalized_post_count": 200,
+                    "valid_post_count": 60,
+                    "prefiltered_valid_post_count": 20,
+                    "episode_count": 10,
+                    "labelable_episode_count": 5,
+                    "labeled_episode_count": 10,
+                    "promoted_persona_episode_count": 1,
+                    "grounded_promoted_persona_episode_count": 0,
+                    "dominant_invalid_reason": "missing_pain_signal",
+                    "dominant_prefilter_reason": "google_developer_forums:generic",
+                    "failure_reason_top": "low_valid_post_retention: missing_pain_signal",
+                    "failure_level": "warning",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                },
+                {
+                    "source": "klaviyo_community",
+                    "raw_record_count": 220,
+                    "normalized_post_count": 220,
+                    "valid_post_count": 200,
+                    "prefiltered_valid_post_count": 20,
+                    "episode_count": 15,
+                    "labelable_episode_count": 10,
+                    "labeled_episode_count": 15,
+                    "promoted_persona_episode_count": 1,
+                    "grounded_promoted_persona_episode_count": 0,
+                    "dominant_invalid_reason": "reason_unavailable",
+                    "dominant_prefilter_reason": "klaviyo_community:generic",
+                    "failure_reason_top": "low_prefilter_retention: klaviyo_community:generic",
+                    "failure_level": "warning",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                },
+            ]
+        )
+
+        audit_df = build_source_balance_audit(stage_counts_df)
+        google_row = audit_df.loc[audit_df["source"] == "google_developer_forums"].iloc[0]
+        klaviyo_row = audit_df.loc[audit_df["source"] == "klaviyo_community"].iloc[0]
+        self.assertNotEqual(str(google_row["root_cause_category"]), str(klaviyo_row["root_cause_category"]))
+        self.assertNotEqual(str(google_row["recommended_config_change"]), str(klaviyo_row["recommended_config_change"]))
+        self.assertNotEqual(str(google_row["owner_action_type"]), str(klaviyo_row["owner_action_type"]))
+
+    def test_healthy_sources_remain_monitor_only(self) -> None:
+        stage_counts_df = pd.DataFrame(
+            [
+                {
+                    "source": "sisense_community",
+                    "raw_record_count": 120,
+                    "normalized_post_count": 120,
+                    "valid_post_count": 100,
+                    "prefiltered_valid_post_count": 80,
+                    "episode_count": 90,
+                    "labelable_episode_count": 70,
+                    "labeled_episode_count": 90,
+                    "promoted_persona_episode_count": 20,
+                    "grounded_promoted_persona_episode_count": 10,
+                    "dominant_invalid_reason": "reason_unavailable",
+                    "dominant_prefilter_reason": "reason_unavailable",
+                    "failure_reason_top": "healthy_source_contribution",
+                    "failure_level": "pass",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                    "diversity_contribution_reason": "strong_diversity_contribution",
+                }
+            ]
+        )
+
+        audit_df = build_source_balance_audit(stage_counts_df)
+        row = audit_df.iloc[0]
+        self.assertEqual(str(row["priority_tier"]), "monitor")
+        self.assertEqual(str(row["root_cause_category"]), "healthy_monitor_only")
+        self.assertEqual(str(row["owner_action_type"]), "monitor_only")
+        self.assertFalse(bool(row["must_manual_review"]))
+        self.assertEqual(str(row["recommended_config_change"]), "")
+
+    def test_fix_now_rows_require_concrete_remediation_or_manual_review(self) -> None:
+        stage_counts_df = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "raw_record_count": 1200,
+                    "normalized_post_count": 1200,
+                    "valid_post_count": 400,
+                    "prefiltered_valid_post_count": 100,
+                    "episode_count": 80,
+                    "labelable_episode_count": 20,
+                    "labeled_episode_count": 80,
+                    "promoted_persona_episode_count": 10,
+                    "grounded_promoted_persona_episode_count": 4,
+                    "dominant_invalid_reason": "missing_pain_signal",
+                    "dominant_prefilter_reason": "google_developer_forums:generic",
+                    "failure_reason_top": "low_valid_post_retention: missing_pain_signal",
+                    "failure_level": "failure",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                }
+            ]
+        )
+
+        audit_df = build_source_balance_audit(stage_counts_df)
+        fix_now_rows = audit_df[audit_df["priority_tier"].astype(str) == "fix_now"]
+        self.assertFalse(fix_now_rows.empty)
+        for _, row in fix_now_rows.iterrows():
+            self.assertTrue(
+                str(row.get("recommended_config_change", "") or "").strip()
+                or (
+                    bool(row.get("must_manual_review", False))
+                    and str(row.get("evidence_to_inspect", "") or "").strip()
+                )
+            )
+
+    def test_source_aware_remediation_distinguishes_qlik_adobe_and_domo(self) -> None:
+        stage_counts_df = pd.DataFrame(
+            [
+                {
+                    "source": "qlik_community",
+                    "raw_record_count": 220,
+                    "normalized_post_count": 220,
+                    "valid_post_count": 180,
+                    "prefiltered_valid_post_count": 18,
+                    "episode_count": 12,
+                    "labelable_episode_count": 10,
+                    "labeled_episode_count": 12,
+                    "promoted_persona_episode_count": 0,
+                    "grounded_promoted_persona_episode_count": 0,
+                    "dominant_invalid_reason": "reason_unavailable",
+                    "dominant_prefilter_reason": "qlik_rescue_candidate:measure_trust",
+                    "failure_reason_top": "low_prefilter_retention: qlik_rescue_candidate:measure_trust",
+                    "failure_level": "warning",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                },
+                {
+                    "source": "adobe_analytics_community",
+                    "raw_record_count": 220,
+                    "normalized_post_count": 220,
+                    "valid_post_count": 180,
+                    "prefiltered_valid_post_count": 120,
+                    "episode_count": 30,
+                    "labelable_episode_count": 10,
+                    "labeled_episode_count": 30,
+                    "promoted_persona_episode_count": 4,
+                    "grounded_promoted_persona_episode_count": 2,
+                    "dominant_invalid_reason": "reason_unavailable",
+                    "dominant_prefilter_reason": "reason_unavailable",
+                    "failure_reason_top": "low_episode_yield",
+                    "failure_level": "warning",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                },
+                {
+                    "source": "domo_community_forum",
+                    "raw_record_count": 220,
+                    "normalized_post_count": 220,
+                    "valid_post_count": 180,
+                    "prefiltered_valid_post_count": 120,
+                    "episode_count": 30,
+                    "labelable_episode_count": 10,
+                    "labeled_episode_count": 30,
+                    "promoted_persona_episode_count": 4,
+                    "grounded_promoted_persona_episode_count": 2,
+                    "dominant_invalid_reason": "reason_unavailable",
+                    "dominant_prefilter_reason": "reason_unavailable",
+                    "failure_reason_top": "low_episode_yield",
+                    "failure_level": "warning",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                },
+            ]
+        )
+
+        audit_df = build_source_balance_audit(stage_counts_df)
+        qlik_row = audit_df.loc[audit_df["source"] == "qlik_community"].iloc[0]
+        adobe_row = audit_df.loc[audit_df["source"] == "adobe_analytics_community"].iloc[0]
+        domo_row = audit_df.loc[audit_df["source"] == "domo_community_forum"].iloc[0]
+        self.assertEqual(str(qlik_row["root_cause_category"]), "relevance_prefilter_rescue_candidate")
+        self.assertNotEqual(str(qlik_row["owner_action_type"]), "adjust_invalid_filter_terms")
+        self.assertNotEqual(str(adobe_row["recommended_config_change"]), str(domo_row["recommended_config_change"]))
+
+    def test_source_balance_audit_and_diagnostics_keep_remediation_values_in_sync(self) -> None:
+        stage_counts_df = pd.DataFrame(
+            [
+                {
+                    "source": "klaviyo_community",
+                    "raw_record_count": 300,
+                    "normalized_post_count": 300,
+                    "valid_post_count": 260,
+                    "prefiltered_valid_post_count": 20,
+                    "episode_count": 15,
+                    "labelable_episode_count": 12,
+                    "labeled_episode_count": 15,
+                    "promoted_persona_episode_count": 0,
+                    "grounded_promoted_persona_episode_count": 0,
+                    "dominant_invalid_reason": "reason_unavailable",
+                    "dominant_prefilter_reason": "klaviyo_community:generic",
+                    "failure_reason_top": "low_prefilter_retention: klaviyo_community:generic",
+                    "failure_level": "warning",
+                    "concentration_risk_reason": "concentration_risk_clear",
+                }
+            ]
+        )
+
+        audit_df = build_source_balance_audit(stage_counts_df)
+        diagnostics_df = build_source_diagnostics(stage_counts_df)
+        audit_row = audit_df.iloc[0]
+        diagnostic_rows = diagnostics_df[diagnostics_df["source"].astype(str) == "klaviyo_community"]
+        metric_lookup = {
+            str(row["metric_name"]): row["metric_value"]
+            for _, row in diagnostic_rows[diagnostic_rows["row_kind"].astype(str) == "diagnostic"].iterrows()
+        }
+        self.assertEqual(str(metric_lookup["root_cause_category"]), str(audit_row["root_cause_category"]))
+        self.assertEqual(str(metric_lookup["recommended_config_change"]), str(audit_row["recommended_config_change"]))
+        self.assertEqual(str(metric_lookup["owner_action_type"]), str(audit_row["owner_action_type"]))
 
     def test_validate_workbook_frames_rejects_mixed_grain_rate_names(self) -> None:
         frames = {

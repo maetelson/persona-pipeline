@@ -51,6 +51,14 @@ SOURCE_COLUMNS = [
     "policy_action",
     "false_negative_hint",
     "source_specific_next_check",
+    "root_cause_category",
+    "evidence_to_inspect",
+    "likely_false_negative_pattern",
+    "recommended_config_change",
+    "required_regression_check",
+    "owner_action_type",
+    "can_auto_tune",
+    "must_manual_review",
 ]
 
 PERSONA_COLUMNS = [
