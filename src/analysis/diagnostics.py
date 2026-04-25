@@ -135,6 +135,12 @@ def build_metric_glossary() -> pd.DataFrame:
         ("largest_source_influence_share_pct", "source_count", "Largest blended downstream influence share after averaging raw labeled share with persona-normalized promoted and grounded contribution shares per source. Promoted and grounded influence contributions are capped at the workbook source-influence ceiling within each persona before cross-persona aggregation."),
         ("weak_source_cost_center_count", "source_count", "Count of high-input sources that still collapse before they become meaningful downstream contributors under the source-balance policy."),
         ("weak_source_cost_centers", "source_count", "Pipe-delimited source ids classified as weak-source cost centers under the source-balance policy."),
+        ("core_readiness_weak_source_cost_center_count", "source_count", "Count of weak-source cost centers that still apply hard-fail pressure to core workbook readiness after separating exploratory-only source debt."),
+        ("core_readiness_weak_source_cost_centers", "source_count", "Pipe-delimited source ids that still count toward the core workbook weak-source hard-fail metric."),
+        ("exploratory_only_weak_source_debt_count", "source_count", "Count of weak sources that remain visible in diagnostics but are treated as exploratory-only debt instead of core workbook hard-fail pressure."),
+        ("exploratory_only_weak_source_sources", "source_count", "Pipe-delimited source ids treated as exploratory-only weak-source debt under the denominator policy."),
+        ("weak_source_denominator_policy_applied", "explicit_metric_value", "Boolean flag showing whether exploratory-only weak-source debt separation was applied to the current workbook readiness calculation."),
+        ("weak_source_denominator_policy_reason", "explicit_metric_value", "Reviewer-facing explanation for why specific weak sources remain visible in diagnostics but do not count toward the core workbook weak-source hard-fail metric."),
         ("promoted_persona_example_coverage_pct", "promoted_persona_rows", "Percentage of promoted personas that have any accepted grounding state, including weakly grounded personas."),
         ("promoted_persona_grounded_count", "promoted_persona_rows", "Count of promoted personas with at least one grounded representative example. This is a grounding metric, not a final-usability metric, so structurally weak grounded personas can contribute here without counting as final usable personas."),
         ("promoted_persona_weakly_grounded_count", "promoted_persona_rows", "Count of promoted personas whose evidence only meets weak fallback policy, not normal grounded selection."),
@@ -186,6 +192,10 @@ def build_metric_glossary() -> pd.DataFrame:
         ("must_manual_review", "source_diagnostic_reason", "Boolean flag showing whether sample inspection is required before any rule change."),
         ("source_balance_status", "source_diagnostic_reason", "Source-balance classification summarizing whether the source is healthy, overdominant, weak, or on a watchlist."),
         ("weak_source_cost_center_status", "source_diagnostic_reason", "Explicit flag showing whether the source is currently treated as a weak-source cost center."),
+        ("core_readiness_weak_source_cost_center", "source_diagnostic_reason", "Boolean flag showing whether a weak source still counts toward the core workbook weak-source hard-fail metric after exploratory-only debt separation."),
+        ("exploratory_only_weak_source_debt", "source_diagnostic_reason", "Boolean flag showing whether a weak source remains visible only as exploratory-only source debt instead of core workbook hard-fail pressure."),
+        ("weak_source_denominator_policy_action", "source_diagnostic_reason", "Workbook-facing weak-source denominator action: downgrade_to_exploratory_only or keep_in_core_readiness."),
+        ("weak_source_denominator_policy_reason", "source_diagnostic_reason", "Reviewer-facing explanation for why a weak source is or is not separated from core workbook hard-fail pressure."),
         ("dominant_invalid_reason", "source_diagnostic_reason", "Most frequent invalid_reason observed for the source in invalid_candidates_with_prefilter.parquet. This is diagnostic context, not a funnel metric."),
         ("dominant_prefilter_reason", "source_diagnostic_reason", "Most frequent prefilter_reason observed for the source in relevance_drop.parquet. This is diagnostic context, not a funnel metric."),
         ("valid_retention_reason", "source_diagnostic_reason", "Post-funnel diagnosis for normalized_post_count to valid_post_count retention. Uses low_valid_post_retention with the dominant invalid reason when the stage is weak, otherwise a healthy_* status."),
@@ -784,6 +794,16 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
     remediation_df = frame.apply(_build_source_remediation, axis=1, result_type="expand")
     for column in remediation_df.columns:
         frame[column] = remediation_df[column]
+    frame["weak_source_denominator_policy_action"] = frame.apply(_weak_source_denominator_policy_action, axis=1)
+    frame["exploratory_only_weak_source_debt"] = (
+        frame["weak_source_cost_center"].fillna(False).astype(bool)
+        & frame["weak_source_denominator_policy_action"].astype(str).eq("downgrade_to_exploratory_only")
+    )
+    frame["core_readiness_weak_source_cost_center"] = (
+        frame["weak_source_cost_center"].fillna(False).astype(bool)
+        & ~frame["exploratory_only_weak_source_debt"].fillna(False).astype(bool)
+    )
+    frame["weak_source_denominator_policy_reason"] = frame.apply(_weak_source_denominator_policy_reason, axis=1)
     frame["policy_action"] = frame["policy_action"].astype(str)
     frame["false_negative_hint"] = frame["false_negative_hint"].astype(str)
     frame["source_specific_next_check"] = frame["source_specific_next_check"].astype(str)
@@ -812,6 +832,10 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
         "failure_level",
         "source_balance_status",
         "weak_source_cost_center",
+        "core_readiness_weak_source_cost_center",
+        "exploratory_only_weak_source_debt",
+        "weak_source_denominator_policy_action",
+        "weak_source_denominator_policy_reason",
         "policy_action",
         "false_negative_hint",
         "source_specific_next_check",
@@ -1379,6 +1403,47 @@ def _is_weak_source_cost_center_row(row: pd.Series) -> bool:
     if raw_count < 100 or labeled_share_pct >= 10.0:
         return False
     return prefilter_pct < 10.0 or episode_yield < 0.5 or labelable_pct < 50.0 or grounded_count <= 0
+
+
+def _meaningful_promoted_persona_evidence(row: pd.Series) -> bool:
+    """Return whether a weak source still carries enough downstream persona evidence to stay in core readiness debt."""
+    grounded_count = int(row.get("grounded_promoted_persona_episode_count", 0) or 0)
+    blended_influence = float(row.get("blended_influence_share_pct", 0.0) or 0.0)
+    return grounded_count >= 75 or blended_influence >= 2.0
+
+
+def _weak_source_denominator_policy_action(row: pd.Series) -> str:
+    """Return the narrow denominator-policy action for one weak source."""
+    if not bool(row.get("weak_source_cost_center", False)):
+        return "not_applicable"
+    blended_influence = float(row.get("blended_influence_share_pct", 0.0) or 0.0)
+    collapse_stage = str(row.get("collapse_stage", "") or "")
+    root_cause_category = str(row.get("root_cause_category", "") or "")
+    if (
+        blended_influence < 1.5
+        and not _meaningful_promoted_persona_evidence(row)
+        and collapse_stage == "relevance_prefilter"
+        and root_cause_category == "relevance_prefilter_generic_false_negative"
+    ):
+        return "downgrade_to_exploratory_only"
+    return "keep_in_core_readiness"
+
+
+def _weak_source_denominator_policy_reason(row: pd.Series) -> str:
+    """Explain whether a weak source remains core debt or exploratory-only debt."""
+    action = str(row.get("weak_source_denominator_policy_action", "") or "")
+    source = str(row.get("source", "") or "")
+    if action == "downgrade_to_exploratory_only":
+        return (
+            f"{source} remains visible as weak-source diagnostics, but its blended influence is very low and it lacks meaningful "
+            "promoted-persona evidence, so it counts only as exploratory-only weak-source debt."
+        )
+    if action == "keep_in_core_readiness":
+        return (
+            f"{source} remains a core-readiness weak source because it still carries meaningful downstream evidence or needs direct remediation, "
+            "so it must continue to count toward workbook hard-fail pressure."
+        )
+    return ""
 
 
 def _source_balance_status(row: pd.Series) -> str:

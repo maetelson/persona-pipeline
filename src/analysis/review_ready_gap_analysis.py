@@ -112,6 +112,10 @@ def _policy_thresholds() -> dict[str, dict[str, Any]]:
             "reviewable_threshold": "<4",
             "deck_ready_threshold": "<2",
         },
+        "core_readiness_weak_source_cost_center_count": {
+            "reviewable_threshold": "<4",
+            "deck_ready_threshold": "<2",
+        },
         "effective_balanced_source_count": {
             "reviewable_threshold": f">={QUALITY_STATUS_POLICY['effective_source_diversity']['fail_threshold']}",
             "deck_ready_threshold": f">={QUALITY_STATUS_POLICY['effective_source_diversity']['warn_threshold']}",
@@ -146,6 +150,8 @@ def _gap_for_metric(metric_name: str, current_value: Any) -> tuple[Any, Any]:
     current_float = _to_float(current_value)
     if metric_name == "weak_source_cost_center_count":
         return max(0.0, current_float - 3.0), max(0.0, current_float - 1.0)
+    if metric_name == "core_readiness_weak_source_cost_center_count":
+        return max(0.0, current_float - 3.0), max(0.0, current_float - 1.0)
     if metric_name == "effective_balanced_source_count":
         reviewable = float(QUALITY_STATUS_POLICY["effective_source_diversity"]["fail_threshold"])
         deck_ready = float(QUALITY_STATUS_POLICY["effective_source_diversity"]["warn_threshold"])
@@ -161,6 +167,12 @@ def _owner_mapping() -> dict[str, dict[str, str]]:
     """Map blocker metrics to direct owner modules and remediation hints."""
     return {
         "weak_source_cost_center_count": {
+            "direct_owner_module": "src/analysis/diagnostics.py + src/analysis/quality_status.py",
+            "likely_remediation_path": "diagnostic-only total weak-source visibility",
+            "estimated_implementation_risk": "low",
+            "improvable_by": "data remediation",
+        },
+        "core_readiness_weak_source_cost_center_count": {
             "direct_owner_module": "src/analysis/quality_status.py",
             "likely_remediation_path": "weak-source denominator policy cleanup or source-specific remediation",
             "estimated_implementation_risk": "medium",
@@ -213,6 +225,7 @@ def _blocker_rows(baseline: dict[str, Any], quality_rows: dict[str, dict[str, An
     rows: list[dict[str, Any]] = []
     metric_order = [
         "weak_source_cost_center_count",
+        "core_readiness_weak_source_cost_center_count",
         "effective_balanced_source_count",
         "persona_core_coverage_of_all_labeled_pct",
         "weak_source_yield_status",
@@ -229,6 +242,8 @@ def _blocker_rows(baseline: dict[str, Any], quality_rows: dict[str, dict[str, An
         group_status = ""
         if metric_name == "weak_source_cost_center_count":
             group_status = str(baseline.get("source_diversity_status", ""))
+        elif metric_name == "core_readiness_weak_source_cost_center_count":
+            group_status = str(baseline.get("source_diversity_status", ""))
         elif metric_name == "effective_balanced_source_count":
             group_status = str(baseline.get("source_diversity_status", ""))
         elif metric_name == "persona_core_coverage_of_all_labeled_pct":
@@ -239,7 +254,7 @@ def _blocker_rows(baseline: dict[str, Any], quality_rows: dict[str, dict[str, An
             group_status = str(baseline.get("persona_readiness_state", ""))
         currently_blocking = False
         if current_overall_fail:
-            if metric_name in {"weak_source_cost_center_count", "weak_source_yield_status", "source_diversity_status", "overall_status", "persona_readiness_gate_status"}:
+            if metric_name in {"core_readiness_weak_source_cost_center_count", "weak_source_yield_status", "source_diversity_status", "overall_status", "persona_readiness_gate_status"}:
                 currently_blocking = True
         if metric_name == "effective_balanced_source_count" and str(baseline.get("source_diversity_status", "")) == "FAIL":
             currently_blocking = True
@@ -436,6 +451,8 @@ def _scenario_result(
         "scenario_id": scenario_id,
         "description": description,
         "weak_source_cost_center_count": _to_int(flattened.get("weak_source_cost_center_count", 0)),
+        "core_readiness_weak_source_cost_center_count": _to_int(flattened.get("core_readiness_weak_source_cost_center_count", flattened.get("weak_source_cost_center_count", 0))),
+        "exploratory_only_weak_source_debt_count": _to_int(flattened.get("exploratory_only_weak_source_debt_count", 0)),
         "effective_balanced_source_count": round(_to_float(flattened.get("effective_balanced_source_count", 0.0)), 2),
         "persona_core_coverage_of_all_labeled_pct": round(_to_float(flattened.get("persona_core_coverage_of_all_labeled_pct", 0.0)), 1),
         "overall_status": str(flattened.get("overall_status", "")),
@@ -474,7 +491,7 @@ def _scenario_simulation(
     persona_core_rows = _to_int(coverage_gap["current_persona_core_rows"])
     denominator_without_klaviyo = max(1, labeled_rows - klaviyo_labeled_rows)
     coverage_without_klaviyo = round((persona_core_rows / denominator_without_klaviyo) * 100.0, 1)
-    weak_minus_one = max(0, _to_int(baseline_metrics.get("weak_source_cost_center_count", 0)) - 1)
+    weak_minus_one = max(0, _to_int(baseline_metrics.get("core_readiness_weak_source_cost_center_count", baseline_metrics.get("weak_source_cost_center_count", 0)) - 1))
 
     return [
         _scenario_result("A_current_baseline", "Current baseline.", baseline_metrics, {}),
@@ -482,14 +499,14 @@ def _scenario_simulation(
             "B_downgrade_weakest_non_contributing_source_from_core_readiness",
             "Treat the lowest-influence weak source as exploratory-only debt for weak-source counting only.",
             baseline_metrics,
-            {"weak_source_cost_center_count": weak_minus_one},
+            {"core_readiness_weak_source_cost_center_count": weak_minus_one},
         ),
         _scenario_result(
             "C_exclude_true_cost_center_source_from_core_readiness_denominator",
             "Exclude klaviyo_community from core-readiness denominator and weak-source debt in simulation only.",
             baseline_metrics,
             {
-                "weak_source_cost_center_count": weak_minus_one,
+                "core_readiness_weak_source_cost_center_count": weak_minus_one,
                 "persona_core_coverage_of_all_labeled_pct": coverage_without_klaviyo,
                 "labeled_episode_rows": denominator_without_klaviyo,
             },
@@ -498,20 +515,25 @@ def _scenario_simulation(
             "D_fix_one_high_roi_weak_source",
             "Simulate google_developer_forums no longer being a weak source cost center.",
             baseline_metrics,
-            {"weak_source_cost_center_count": weak_minus_one},
+            {"core_readiness_weak_source_cost_center_count": weak_minus_one},
         ),
         _scenario_result(
             "E_strict_source_balance_with_exploratory_only_source_debt_separated",
             "Keep source-balance strict but separate exploratory-only weak-source debt from the weak-source fail axis.",
             baseline_metrics,
-            {"weak_source_cost_center_count": weak_minus_one},
+            {"core_readiness_weak_source_cost_center_count": weak_minus_one},
         ),
         _scenario_result("F_no_op_baseline", "Duplicate baseline for sanity comparison.", baseline_metrics, {}),
     ]
 
 
-def _recommended_path(scenarios: list[dict[str, Any]]) -> tuple[str, bool]:
+def _recommended_path(baseline: dict[str, Any], scenarios: list[dict[str, Any]]) -> tuple[str, bool]:
     """Choose the single next path and whether reviewable looks achievable by cleanup."""
+    if (
+        str(baseline.get("overall_status", "")) == "WARN"
+        and str(baseline.get("persona_readiness_state", "")) == "reviewable_but_not_deck_ready"
+    ):
+        return "no implementation, only review/handoff positioning", True
     for scenario in scenarios:
         if scenario["scenario_id"] == "E_strict_source_balance_with_exploratory_only_source_debt_separated":
             if scenario["reviewable_achievable_without_weakening"]:
@@ -534,7 +556,7 @@ def _render_gap_plan(report: dict[str, Any]) -> str:
         "## Summary",
         "",
         f"- Current workbook readiness: `{report['baseline']['persona_readiness_state']}` / `{report['baseline']['quality_flag']}`",
-        f"- Primary source-side blocker: `weak_source_cost_center_count={report['baseline']['weak_source_cost_center_count']}`",
+        f"- Primary source-side blocker: `core_readiness_weak_source_cost_center_count={report['baseline']['core_readiness_weak_source_cost_center_count']}`",
         f"- Recommended next path: `{recommendation}`",
         f"- Reviewable without weakening persona standards: `{achievable}`",
         "- Deck-ready remains out of scope for this pass.",
@@ -557,7 +579,7 @@ def _render_gap_plan(report: dict[str, Any]) -> str:
     for row in scenarios:
         lines.append(
             f"- `{row['scenario_id']}`: overall `{row['overall_status']}`, readiness `{row['persona_readiness_state']}`, "
-            f"weak sources `{row['weak_source_cost_center_count']}`, core coverage `{row['persona_core_coverage_of_all_labeled_pct']}`"
+            f"core weak sources `{row['core_readiness_weak_source_cost_center_count']}`, total weak sources `{row['weak_source_cost_center_count']}`, core coverage `{row['persona_core_coverage_of_all_labeled_pct']}`"
         )
     return "\n".join(lines) + "\n"
 
@@ -570,20 +592,23 @@ def build_review_ready_gap_analysis(root_dir: Path) -> dict[str, Any]:
     weak_sources = set(weak_source_decision_df["source"].astype(str).tolist())
     coverage_gap = _core_coverage_gap_analysis(root_dir, baseline_metrics, weak_sources)
     scenarios = _scenario_simulation(baseline_metrics, source_balance_df, coverage_gap)
-    recommendation, achievable = _recommended_path(scenarios)
-
     baseline_summary = {
         "overall_status": str(baseline_metrics.get("overall_status", "")),
         "quality_flag": str(baseline_metrics.get("quality_flag", "")),
         "persona_readiness_state": str(baseline_metrics.get("persona_readiness_state", "")),
         "persona_readiness_gate_status": str(baseline_metrics.get("persona_readiness_gate_status", "")),
         "weak_source_cost_center_count": _to_int(baseline_metrics.get("weak_source_cost_center_count", 0)),
+        "core_readiness_weak_source_cost_center_count": _to_int(
+            baseline_metrics.get("core_readiness_weak_source_cost_center_count", baseline_metrics.get("weak_source_cost_center_count", 0))
+        ),
+        "exploratory_only_weak_source_debt_count": _to_int(baseline_metrics.get("exploratory_only_weak_source_debt_count", 0)),
         "effective_balanced_source_count": round(_to_float(baseline_metrics.get("effective_balanced_source_count", 0.0)), 2),
         "persona_core_coverage_of_all_labeled_pct": round(_to_float(baseline_metrics.get("persona_core_coverage_of_all_labeled_pct", 0.0)), 1),
         "production_ready_persona_count": _to_int(baseline_metrics.get("production_ready_persona_count", 0)),
         "review_ready_persona_count": _to_int(baseline_metrics.get("review_ready_persona_count", 0)),
         "final_usable_persona_count": _to_int(baseline_metrics.get("final_usable_persona_count", 0)),
     }
+    recommendation, achievable = _recommended_path(baseline_summary, scenarios)
     report = {
         "baseline": baseline_summary,
         "readiness_blockers": _blocker_rows(baseline_metrics, quality_rows),

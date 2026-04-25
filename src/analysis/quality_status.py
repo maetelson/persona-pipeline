@@ -79,7 +79,7 @@ QUALITY_STATUS_POLICY: dict[str, dict[str, object]] = {
         "display_threshold": "warn>=35.0; fail>=45.0",
     },
     "weak_source_yield": {
-        "metric": "weak_source_cost_center_count",
+        "metric": "core_readiness_weak_source_cost_center_count",
         "warn_threshold": 2.0,
         "fail_threshold": 4.0,
         "high_is_bad": True,
@@ -231,6 +231,7 @@ def build_quality_metrics(
     persona_examples_df: pd.DataFrame,
     cluster_profiles: list[dict[str, object]] | None = None,
     cluster_robustness_summary_df: pd.DataFrame | None = None,
+    source_balance_audit_df: pd.DataFrame | None = None,
 ) -> dict[str, object]:
     """Compute raw quality metrics only, without applying status policy."""
     cluster_profiles = cluster_profiles or []
@@ -250,6 +251,37 @@ def build_quality_metrics(
     largest_grounded_source_share = _largest_source_share(source_stage_counts_df, "grounded_promoted_persona_episode_count")
     largest_source_influence_share = _largest_source_influence_share(source_stage_counts_df)
     weak_source_cost_centers = _weak_source_cost_centers(source_stage_counts_df)
+    source_balance_audit_df = source_balance_audit_df if source_balance_audit_df is not None else pd.DataFrame()
+    if not source_balance_audit_df.empty:
+        all_weak_sources = sorted(
+            source_balance_audit_df.loc[
+                source_balance_audit_df.get("weak_source_cost_center", pd.Series(dtype=bool)).fillna(False).astype(bool),
+                "source",
+            ].astype(str).tolist()
+        )
+        core_readiness_weak_sources = sorted(
+            source_balance_audit_df.loc[
+                source_balance_audit_df.get("core_readiness_weak_source_cost_center", pd.Series(dtype=bool)).fillna(False).astype(bool),
+                "source",
+            ].astype(str).tolist()
+        )
+        exploratory_only_weak_sources = sorted(
+            source_balance_audit_df.loc[
+                source_balance_audit_df.get("exploratory_only_weak_source_debt", pd.Series(dtype=bool)).fillna(False).astype(bool),
+                "source",
+            ].astype(str).tolist()
+        )
+    else:
+        all_weak_sources = list(weak_source_cost_centers)
+        core_readiness_weak_sources = list(weak_source_cost_centers)
+        exploratory_only_weak_sources = []
+    weak_source_denominator_policy_applied = bool(exploratory_only_weak_sources)
+    weak_source_denominator_policy_reason = (
+        "Exploratory-only weak-source debt remains visible in diagnostics but is separated from core workbook hard-fail pressure: "
+        + " | ".join(exploratory_only_weak_sources)
+        if exploratory_only_weak_sources
+        else ""
+    )
     promoted_persona_count, promoted_with_examples, promoted_missing_examples, grounding_counts = _promoted_persona_example_counts(cluster_stats_df, persona_examples_df)
     promotion_semantics = _persona_promotion_semantics(cluster_stats_df)
     visible_micro_cluster_count = _visible_micro_cluster_count(cluster_stats_df)
@@ -299,8 +331,14 @@ def build_quality_metrics(
         "largest_promoted_source_share_pct": largest_promoted_source_share,
         "largest_grounded_source_share_pct": largest_grounded_source_share,
         "largest_source_influence_share_pct": largest_source_influence_share,
-        "weak_source_cost_center_count": len(weak_source_cost_centers),
-        "weak_source_cost_centers": " | ".join(weak_source_cost_centers),
+        "weak_source_cost_center_count": len(all_weak_sources),
+        "weak_source_cost_centers": " | ".join(all_weak_sources),
+        "core_readiness_weak_source_cost_center_count": len(core_readiness_weak_sources),
+        "core_readiness_weak_source_cost_centers": " | ".join(core_readiness_weak_sources),
+        "exploratory_only_weak_source_debt_count": len(exploratory_only_weak_sources),
+        "exploratory_only_weak_source_sources": " | ".join(exploratory_only_weak_sources),
+        "weak_source_denominator_policy_applied": weak_source_denominator_policy_applied,
+        "weak_source_denominator_policy_reason": weak_source_denominator_policy_reason,
         "single_cluster_dominance": largest_cluster_share > CLUSTER_DOMINANCE_SHARE_PCT,
         "small_promoted_persona_count": _small_promoted_count(cluster_stats_df, min_cluster_size),
         "selected_example_grounding_issue_count": selected_example_grounding_issue_count,
@@ -493,7 +531,7 @@ def quality_display_thresholds() -> dict[str, str]:
         "effective_balanced_source_count": str(QUALITY_STATUS_POLICY["effective_source_diversity"]["display_threshold"]),
         "largest_labeled_source_share_pct": str(QUALITY_STATUS_POLICY["source_concentration"]["display_threshold"]),
         "largest_source_influence_share_pct": str(QUALITY_STATUS_POLICY["source_influence_concentration"]["display_threshold"]),
-        "weak_source_cost_center_count": str(QUALITY_STATUS_POLICY["weak_source_yield"]["display_threshold"]),
+        "core_readiness_weak_source_cost_center_count": str(QUALITY_STATUS_POLICY["weak_source_yield"]["display_threshold"]),
         "largest_cluster_share_of_core_labeled": str(QUALITY_STATUS_POLICY["largest_cluster_dominance"]["display_threshold"]),
         "top_3_cluster_share_of_core_labeled": str(QUALITY_STATUS_POLICY["cluster_concentration_tail"]["display_threshold"]),
         "fragile_tail_share_of_core_labeled": _readiness_threshold_display("fragile_tail_share_of_core_labeled"),

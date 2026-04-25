@@ -5,6 +5,8 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
+import pandas as pd
+
 from src.analysis.quality_status import QUALITY_STATUS_POLICY, READINESS_POLICY
 from src.analysis.review_ready_gap_analysis import build_review_ready_gap_analysis
 
@@ -19,11 +21,20 @@ class ReviewReadyGapAnalysisTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.report = build_review_ready_gap_analysis(ROOT_DIR)
 
+    def _as_bool(self, value: object) -> bool:
+        if isinstance(value, bool):
+            return value
+        return str(value).strip().lower() in {"true", "1", "yes"}
+
     def test_blocker_thresholds_come_from_current_policy(self) -> None:
         blockers = {row["metric_name"]: row for row in self.report["readiness_blockers"]}
         self.assertEqual(
             blockers["effective_balanced_source_count"]["reviewable_threshold"],
             f">={QUALITY_STATUS_POLICY['effective_source_diversity']['fail_threshold']}",
+        )
+        self.assertEqual(
+            blockers["core_readiness_weak_source_cost_center_count"]["reviewable_threshold"],
+            "<4",
         )
         self.assertEqual(
             blockers["persona_core_coverage_of_all_labeled_pct"]["reviewable_threshold"],
@@ -44,10 +55,13 @@ class ReviewReadyGapAnalysisTests(unittest.TestCase):
         self.assertEqual(decisions["adobe_analytics_community"], "parser_or_episode_fidelity_audit_needed")
         self.assertEqual(decisions["klaviyo_community"], "downgrade_to_exploratory_only")
 
-    def test_baseline_scenario_remains_exploratory(self) -> None:
-        baseline = next(row for row in self.report["scenario_simulation"] if row["scenario_id"] == "A_current_baseline")
-        self.assertEqual(baseline["overall_status"], "FAIL")
-        self.assertEqual(baseline["persona_readiness_state"], "exploratory_only")
+    def test_current_baseline_is_reviewable_after_policy_cleanup(self) -> None:
+        baseline = self.report["baseline"]
+        self.assertEqual(baseline["overall_status"], "WARN")
+        self.assertEqual(baseline["persona_readiness_state"], "reviewable_but_not_deck_ready")
+        self.assertEqual(baseline["final_usable_persona_count"], 3)
+        self.assertEqual(baseline["production_ready_persona_count"], 3)
+        self.assertEqual(baseline["review_ready_persona_count"], 1)
 
     def test_cleanup_scenario_only_helps_when_fail_drops_to_warn(self) -> None:
         improved = [
@@ -63,6 +77,32 @@ class ReviewReadyGapAnalysisTests(unittest.TestCase):
             self.assertEqual(row["final_usable_persona_count"], baseline["final_usable_persona_count"])
             self.assertEqual(row["production_ready_persona_count"], baseline["production_ready_persona_count"])
             self.assertEqual(row["review_ready_persona_count"], baseline["review_ready_persona_count"])
+
+    def test_source_balance_audit_flags_only_klaviyo_as_exploratory_only_debt(self) -> None:
+        df = pd.read_csv(ROOT_DIR / "data" / "analysis" / "source_balance_audit.csv")
+        row = df.loc[df["source"] == "klaviyo_community"].iloc[0]
+        self.assertTrue(self._as_bool(row["weak_source_cost_center"]))
+        self.assertFalse(self._as_bool(row["core_readiness_weak_source_cost_center"]))
+        self.assertTrue(self._as_bool(row["exploratory_only_weak_source_debt"]))
+
+    def test_google_adobe_and_domo_remain_core_readiness_weak_sources(self) -> None:
+        df = pd.read_csv(ROOT_DIR / "data" / "analysis" / "source_balance_audit.csv")
+        for source in ["google_developer_forums", "adobe_analytics_community", "domo_community_forum"]:
+            row = df.loc[df["source"] == source].iloc[0]
+            self.assertTrue(self._as_bool(row["weak_source_cost_center"]))
+            self.assertTrue(self._as_bool(row["core_readiness_weak_source_cost_center"]))
+            self.assertFalse(self._as_bool(row["exploratory_only_weak_source_debt"]))
+
+    def test_persona_tiers_remain_unchanged(self) -> None:
+        df = pd.read_csv(ROOT_DIR / "data" / "analysis" / "persona_summary.csv")
+        persona_04 = df.loc[df["persona_id"] == "persona_04"].iloc[0]
+        persona_05 = df.loc[df["persona_id"] == "persona_05"].iloc[0]
+        self.assertFalse(self._as_bool(persona_04["final_usable_persona"]))
+        self.assertTrue(self._as_bool(persona_04["review_ready_persona"]))
+        self.assertEqual(str(persona_04["readiness_tier"]), "review_ready_persona")
+        self.assertFalse(self._as_bool(persona_05["final_usable_persona"]))
+        self.assertFalse(self._as_bool(persona_05["review_ready_persona"]))
+        self.assertEqual(str(persona_05["readiness_tier"]), "blocked_or_constrained_candidate")
 
 
 if __name__ == "__main__":

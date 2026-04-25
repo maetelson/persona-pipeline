@@ -216,6 +216,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         stage_counts=stage_counts,
         labeled_df=labeled_df,
         source_stage_counts_df=source_stage_counts_df,
+        source_balance_audit_df=source_balance_audit_df,
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
         persona_examples_df=persona_service_outputs["persona_examples_df"],
         cluster_profiles=bottleneck_cluster_profiles,
