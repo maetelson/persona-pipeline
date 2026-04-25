@@ -1,0 +1,170 @@
+{
+  "source": "google_developer_forums",
+  "decision": "no_op",
+  "accepted": false,
+  "reverted": false,
+  "implementation_justified": false,
+  "baseline": {
+    "raw_rows": 10984,
+    "valid_rows": 4537,
+    "invalid_or_drop_rows": 6447,
+    "prefiltered_rows": 1583,
+    "episode_rows": 812,
+    "labeled_rows": 812,
+    "labelable_episode_ratio_pct": 27.6,
+    "grounded_promoted_persona_episode_count": 186,
+    "blended_influence_share_pct": 3.7,
+    "collapse_stage": "valid_filtering",
+    "failure_reason_top": "low_valid_post_retention: missing_pain_signal",
+    "core_readiness_weak_source_cost_center": true,
+    "overall_status": "WARN",
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "effective_balanced_source_count": 5.89,
+    "persona_core_coverage_of_all_labeled_pct": 74.5,
+    "final_usable_persona_count": 3,
+    "production_ready_persona_count": 3,
+    "review_ready_persona_count": 1,
+    "persona_contribution": {
+      "persona_01": 173,
+      "persona_02": 12,
+      "persona_03": 1,
+      "persona_04": 52,
+      "persona_05": 1
+    }
+  },
+  "sample_review": {
+    "reviewed_example_count": 40,
+    "invalid_or_dropped_count": 20,
+    "kept_valid_count": 10,
+    "borderline_count": 10,
+    "classification_summary": {
+      "true_negative": 14,
+      "false_negative_valid_filter": 0,
+      "false_negative_missing_pain_signal": 6,
+      "relevance_prefilter_issue": 5,
+      "parser_or_episode_issue": 0,
+      "valid_but_low_value": 11,
+      "ambiguous": 4
+    },
+    "review_notes": [
+      "Recoverable rows still exist around reporting mismatch, invalid formula, and dashboard validation pain, but that pocket is smaller than in the earlier Google pass.",
+      "The remaining residual pool is already mixed with substantial setup, admin, SQL, connector, and generic platform-support noise.",
+      "Several currently kept Google rows already look borderline or low-value for deck-ready claims, which raises false-positive risk for any additional rescue broadening."
+    ],
+    "representative_recoverable_examples": [
+      "Erro ao explorar os dados / cannot explore data before creating reports",
+      "COALESCE invalid formula in blended tables",
+      "Dashboard values not aligning across report surfaces",
+      "Date-range or public-share behavior breaking dashboard review"
+    ],
+    "representative_non_recoverable_examples": [
+      "Welcome / roadmap / customer council posts",
+      "Feature requests and release-note style announcements",
+      "SQL syntax and alias debugging",
+      "Dataproc / Terraform / generic cloud engineering troubleshooting",
+      "Credential, embedding, or permission setup questions"
+    ]
+  },
+  "diagnosis": {
+    "primary_root_cause": "mixed_residual_pool_after_prior_google_rescue",
+    "secondary_root_cause": "some_remaining_missing_pain_signal_false_negatives",
+    "why_no_fix": [
+      "The strongest repeated Google rescue themes are already covered by the current Google-specific invalid-filter rules.",
+      "The remaining false-negative pocket is too mixed with generic setup, access, SQL, API, and engineering noise to justify another safe broadening pass.",
+      "Some currently valid Google rows already look borderline or low-value, which means the safer pressure point is precision, not more recall.",
+      "A new rescue pass now would likely be cosmetic or would raise false positives more than it improves deck-ready blockers."
+    ]
+  },
+  "code_change": {
+    "implemented": false,
+    "files_changed_for_remediation": [],
+    "exact_fix": ""
+  },
+  "tests": {
+    "added": [],
+    "run": [],
+    "notes": "No rule change was accepted, so no new invalid-filter regression was added or rerun in this pass."
+  },
+  "before_after": {
+    "google_valid_rows": {
+      "before": 4537,
+      "after": 4537
+    },
+    "google_prefiltered_rows": {
+      "before": 1583,
+      "after": 1583
+    },
+    "google_episode_rows": {
+      "before": 812,
+      "after": 812
+    },
+    "google_labeled_rows": {
+      "before": 812,
+      "after": 812
+    },
+    "labelable_episode_ratio_pct": {
+      "before": 27.6,
+      "after": 27.6
+    },
+    "grounded_promoted_persona_episode_count": {
+      "before": 186,
+      "after": 186
+    },
+    "blended_influence_share_pct": {
+      "before": 3.7,
+      "after": 3.7
+    },
+    "google_core_weak_source_status": {
+      "before": true,
+      "after": true
+    },
+    "core_readiness_weak_source_cost_center_count": {
+      "before": 3,
+      "after": 3
+    },
+    "effective_balanced_source_count": {
+      "before": 5.89,
+      "after": 5.89
+    },
+    "persona_core_coverage_of_all_labeled_pct": {
+      "before": 74.5,
+      "after": 74.5
+    },
+    "overall_status": {
+      "before": "WARN",
+      "after": "WARN"
+    },
+    "persona_readiness_state": {
+      "before": "reviewable_but_not_deck_ready",
+      "after": "reviewable_but_not_deck_ready"
+    },
+    "final_usable_persona_count": {
+      "before": 3,
+      "after": 3
+    },
+    "production_ready_persona_count": {
+      "before": 3,
+      "after": 3
+    },
+    "review_ready_persona_count": {
+      "before": 1,
+      "after": 1
+    },
+    "persona_04_status": {
+      "before": "review_ready_persona",
+      "after": "review_ready_persona"
+    },
+    "persona_05_status": {
+      "before": "blocked_or_constrained_candidate",
+      "after": "blocked_or_constrained_candidate"
+    }
+  },
+  "deck_ready_progress": {
+    "became_closer": false,
+    "reason": "No safe, repeated Google-only rescue pocket remained that could be widened without materially increasing noise."
+  },
+  "next_recommendation": {
+    "path": "stop_google_recall_tuning_and_reassess_deck_ready_path",
+    "detail": "Do not widen Google invalid-filter rescue further. If deck-ready work continues, use the source representativeness and weak-source evidence to choose between deck-ready core policy treatment for supporting sources or a different still-representative source-quality pass."
+  }
+}

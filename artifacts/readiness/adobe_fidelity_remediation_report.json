@@ -1,0 +1,162 @@
+{
+  "source": "adobe_analytics_community",
+  "decision": "no_op",
+  "accepted": false,
+  "reverted": false,
+  "implementation_justified": false,
+  "baseline": {
+    "raw_rows": 4357,
+    "valid_rows": 2193,
+    "prefiltered_rows": 959,
+    "episode_rows": 645,
+    "labeled_rows": 645,
+    "labelable_episode_ratio_pct": 28.4,
+    "grounded_promoted_persona_episode_count": 172,
+    "blended_influence_share_pct": 3.2,
+    "collapse_stage": "episode_yield",
+    "failure_reason_top": "low_episode_yield",
+    "current_tier_recommendation": "supporting_validation_source",
+    "persona_contribution": {
+      "persona_01": 164,
+      "persona_02": 7,
+      "persona_03": 1,
+      "persona_04": 21
+    },
+    "core_readiness_weak_source_cost_center": true,
+    "overall_status": "WARN",
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "effective_balanced_source_count": 5.89,
+    "persona_core_coverage_of_all_labeled_pct": 74.5
+  },
+  "sample_review": {
+    "reviewed_example_count": 55,
+    "raw_or_normalized_count": 15,
+    "episode_debug_count": 30,
+    "labeled_example_count": 10,
+    "classification_summary": {
+      "parser_body_missing": 0,
+      "parser_boilerplate_noise": 14,
+      "parser_thread_context_loss": 0,
+      "episode_over_segmentation": 0,
+      "episode_under_segmentation": 3,
+      "episode_no_business_pain": 11,
+      "valid_but_low_value": 8,
+      "labelability_issue": 12,
+      "true_negative": 6,
+      "ambiguous": 1
+    },
+    "review_notes": [
+      "Zero-episode Adobe rows are dominated by feature requests and reference or training content, not body extraction loss.",
+      "Operational reporting pain is already surviving into labeled persona evidence when it is explicit enough.",
+      "A small under-segmentation tail exists in long Adobe articles, but the tail is mixed with low-value and training content and is not a safe narrow remediation target."
+    ]
+  },
+  "diagnosis": {
+    "primary_root_cause": "source_specific_support_noise_and_labelability_gap",
+    "secondary_root_cause": "minor_under_segmentation_tail",
+    "not_supported_by_evidence": [
+      "body_extraction_loss",
+      "parser_thread_context_loss",
+      "repeated_boilerplate_only_failure",
+      "over_segmentation"
+    ],
+    "why_no_fix": [
+      "The Adobe parser is preserving body text and thread context well enough for strong operational posts to reach persona evidence.",
+      "The dominant losses are feature-request, training/reference, and weak-problem-phrasings rather than a repeated parser fidelity defect.",
+      "The existing Adobe-specific episode builder path already rescues the clearer reporting and discrepancy cases.",
+      "Tuning the Adobe episode builder further without a cleaner recurring pattern is more likely to inflate junk episodes than to improve deck-ready blockers."
+    ]
+  },
+  "code_change": {
+    "implemented": false,
+    "files_changed_for_remediation": [],
+    "exact_fix": ""
+  },
+  "tests": {
+    "added": [],
+    "run": [],
+    "notes": "No remediation code was implemented, so no source-specific regression was added in this pass."
+  },
+  "before_after": {
+    "adobe_valid_rows": {
+      "before": 2193,
+      "after": 2193
+    },
+    "adobe_prefiltered_rows": {
+      "before": 959,
+      "after": 959
+    },
+    "adobe_episode_rows": {
+      "before": 645,
+      "after": 645
+    },
+    "adobe_labeled_rows": {
+      "before": 645,
+      "after": 645
+    },
+    "labelable_episode_ratio_pct": {
+      "before": 28.4,
+      "after": 28.4
+    },
+    "grounded_promoted_persona_episode_count": {
+      "before": 172,
+      "after": 172
+    },
+    "blended_influence_share_pct": {
+      "before": 3.2,
+      "after": 3.2
+    },
+    "adobe_core_weak_source_status": {
+      "before": true,
+      "after": true
+    },
+    "core_readiness_weak_source_cost_center_count": {
+      "before": 3,
+      "after": 3
+    },
+    "effective_balanced_source_count": {
+      "before": 5.89,
+      "after": 5.89
+    },
+    "persona_core_coverage_of_all_labeled_pct": {
+      "before": 74.5,
+      "after": 74.5
+    },
+    "overall_status": {
+      "before": "WARN",
+      "after": "WARN"
+    },
+    "persona_readiness_state": {
+      "before": "reviewable_but_not_deck_ready",
+      "after": "reviewable_but_not_deck_ready"
+    },
+    "final_usable_persona_count": {
+      "before": 3,
+      "after": 3
+    },
+    "production_ready_persona_count": {
+      "before": 3,
+      "after": 3
+    },
+    "review_ready_persona_count": {
+      "before": 1,
+      "after": 1
+    },
+    "persona_04_status": {
+      "before": "review_ready_persona",
+      "after": "review_ready_persona"
+    },
+    "persona_05_status": {
+      "before": "blocked_or_constrained_candidate",
+      "after": "blocked_or_constrained_candidate"
+    }
+  },
+  "deck_ready_progress": {
+    "became_closer": false,
+    "reason": "No safe Adobe-only fidelity remediation was supported strongly enough by the sample evidence."
+  },
+  "next_recommendation": {
+    "path": "google_or_adobe_supporting_source_quality_reassessment_before_new_code",
+    "detail": "Do not widen Adobe episode rules yet. If deck-ready work continues, prefer a narrower evidence pass on whether Adobe article-like content should be treated as supporting validation rather than parser rescue, or return to Google only if a new false-negative pocket appears."
+  }
+}
