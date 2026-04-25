@@ -255,6 +255,42 @@ class InvalidFilterTests(unittest.TestCase):
         self.assertEqual(len(valid_df), 1)
         self.assertEqual(len(invalid_df), 0)
 
+    def test_google_export_column_order_mismatch_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Column order in Excel export not matching Looker interface",
+                    "body": "When a Looker export goes to Excel, the column order does not align with the Looker interface and stakeholder reporting review gets blocked.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 210,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
+    def test_google_blended_formula_error_row_is_rescued_into_valid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "Blended data calculated field shows invalid formula",
+                    "body": "In Looker Studio the blended data calculated field now returns invalid formula, so the report cannot be reconciled before the weekly review.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 205,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 1)
+        self.assertEqual(len(invalid_df), 0)
+
     def test_adobe_cja_not_showing_row_is_rescued_into_valid(self) -> None:
         frame = pd.DataFrame(
             [
@@ -870,6 +906,60 @@ class InvalidFilterTests(unittest.TestCase):
         valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
         self.assertEqual(len(valid_df), 1)
         self.assertEqual(len(invalid_df), 0)
+
+    def test_google_auth_and_trial_noise_stays_invalid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "How to access Looker LookML free trial access for few days?",
+                    "body": "I need temporary Looker trial access to build a proof of concept dashboard and want to know how to get a short free trial.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 185,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 0)
+        self.assertEqual(len(invalid_df), 1)
+
+    def test_google_api_debugging_noise_stays_invalid(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "google_developer_forums",
+                    "title": "API to get elements of LookML Dashboard",
+                    "body": "I am trying to use the Python SDK API to retrieve element ids from a LookML dashboard and need help understanding the hash ids.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 190,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 0)
+        self.assertEqual(len(invalid_df), 1)
+
+    def test_google_specific_rescue_does_not_affect_non_google_sources(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "source": "github_discussions",
+                    "title": "Column order in Excel export not matching interface",
+                    "body": "The export column order does not align with the interface, but this row should not get rescued by Google-only invalid-filter terms.",
+                    "comments_text": "",
+                    "raw_text": "",
+                    "text_len": 180,
+                    "language": "en",
+                }
+            ]
+        )
+        valid_df, invalid_df = apply_invalid_filter(frame, self.rules)
+        self.assertEqual(len(valid_df), 0)
+        self.assertEqual(len(invalid_df), 1)
 
     def test_google_chart_alerts_no_longer_working_row_is_rescued_into_valid(self) -> None:
         frame = pd.DataFrame(

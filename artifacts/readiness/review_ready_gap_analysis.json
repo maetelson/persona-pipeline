@@ -152,7 +152,7 @@
       "episode_rows": 645,
       "labeled_rows": 645,
       "labelable_episode_ratio_pct": 28.4,
-      "grounded_promoted_persona_episode_count": 173,
+      "grounded_promoted_persona_episode_count": 172,
       "blended_influence_share_pct": 3.2,
       "collapse_stage": "episode_yield",
       "failure_reason_top": "low_episode_yield",
@@ -179,12 +179,12 @@
     {
       "source": "google_developer_forums",
       "raw_rows": 10984,
-      "valid_rows": 4523,
-      "prefiltered_rows": 1577,
-      "episode_rows": 807,
-      "labeled_rows": 807,
+      "valid_rows": 4537,
+      "prefiltered_rows": 1583,
+      "episode_rows": 812,
+      "labeled_rows": 812,
       "labelable_episode_ratio_pct": 27.6,
-      "grounded_promoted_persona_episode_count": 185,
+      "grounded_promoted_persona_episode_count": 186,
       "blended_influence_share_pct": 3.7,
       "collapse_stage": "valid_filtering",
       "failure_reason_top": "low_valid_post_retention: missing_pain_signal",
@@ -210,12 +210,12 @@
     }
   ],
   "core_coverage_gap_analysis": {
-    "current_labeled_rows": 12669,
-    "current_persona_core_rows": 9442,
+    "current_labeled_rows": 12674,
+    "current_persona_core_rows": 9444,
     "current_persona_core_coverage_pct": 74.5,
-    "rows_needed_to_reach_75_0": 60,
-    "rows_needed_to_reach_80_0": 694,
-    "non_core_labeled_rows": 3227,
+    "rows_needed_to_reach_75_0": 62,
+    "rows_needed_to_reach_80_0": 696,
+    "non_core_labeled_rows": 3230,
     "recoverable_non_core_rows_concentrated_in_weak_cost_centers_pct": 60.3,
     "top_non_core_sources": [
       {
@@ -228,7 +228,7 @@
       },
       {
         "source": "google_developer_forums",
-        "non_core_labeled_rows": 558
+        "non_core_labeled_rows": 561
       },
       {
         "source": "adobe_analytics_community",

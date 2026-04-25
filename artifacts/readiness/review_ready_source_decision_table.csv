@@ -1,5 +1,5 @@
 source,raw_rows,valid_rows,prefiltered_rows,episode_rows,labeled_rows,labelable_episode_ratio_pct,grounded_promoted_persona_episode_count,blended_influence_share_pct,collapse_stage,failure_reason_top,whether_meaningful_persona_evidence_exists,root_cause,recommended_action
-adobe_analytics_community,4357,2193,959,645,645,28.4,173,3.2,episode_yield,low_episode_yield,True,parser or episode-fidelity loss,parser_or_episode_fidelity_audit_needed
+adobe_analytics_community,4357,2193,959,645,645,28.4,172,3.2,episode_yield,low_episode_yield,True,parser or episode-fidelity loss,parser_or_episode_fidelity_audit_needed
 domo_community_forum,9354,4731,4002,1044,1044,8.9,93,3.5,episode_yield,low_episode_yield,True,parser or episode-fidelity loss,parser_or_episode_fidelity_audit_needed
-google_developer_forums,10984,4523,1577,807,807,27.6,185,3.7,valid_filtering,low_valid_post_retention: missing_pain_signal,True,valid-filter pain recognition gap,fix_now_with_evidence
+google_developer_forums,10984,4537,1583,812,812,27.6,186,3.7,valid_filtering,low_valid_post_retention: missing_pain_signal,True,valid-filter pain recognition gap,fix_now_with_evidence
 klaviyo_community,6686,6238,192,110,110,93.6,73,0.9,relevance_prefilter,low_prefilter_retention: klaviyo_community:generic,False,relevance-prefilter generic/noise bleed,downgrade_to_exploratory_only

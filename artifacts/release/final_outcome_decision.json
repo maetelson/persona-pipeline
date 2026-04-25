@@ -1,0 +1,50 @@
+{
+  "final_decision": "freeze_as_reviewable_but_not_deck_ready_release",
+  "current_state_summary": {
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "overall_status": "WARN",
+    "quality_flag": "EXPLORATORY",
+    "final_usable_persona_count": 3,
+    "production_ready_persona_count": 3,
+    "review_ready_persona_count": 1,
+    "weak_source_cost_center_count": 4,
+    "core_readiness_weak_source_cost_center_count": 3,
+    "effective_balanced_source_count": 5.89,
+    "persona_core_coverage_of_all_labeled_pct": 74.5,
+    "remaining_core_weak_sources": [
+      "google_developer_forums",
+      "adobe_analytics_community",
+      "domo_community_forum"
+    ],
+    "remaining_warnings": [
+      "effective_source_balance_low",
+      "core_coverage_low",
+      "weak_source_cost_centers_present"
+    ]
+  },
+  "decision_reason": "The workbook is stable, validation passes, and the remaining path to deck-ready requires multiple unresolved quality improvements rather than one low-risk bounded change.",
+  "why_not_continue": {
+    "deck_ready_requires_multiple_unresolved_remediations": true,
+    "no_single_low_risk_bounded_change_identified": true,
+    "artifacts_are_stable_and_tests_passed": true,
+    "marginal_metric_chasing_not_justified": true
+  },
+  "selected_next_action": "stop code changes and freeze as reviewable release",
+  "files_created": [
+    "docs/operational/FINAL_RELEASE_DECISION.md",
+    "artifacts/release/final_outcome_decision.json"
+  ],
+  "tests_run": [
+    "python run/cli/17_analysis_snapshot.py --compare-latest",
+    "python run/cli/33_review_ready_gap_analysis.py",
+    "python -m unittest tests.test_analysis_snapshot_cli tests.test_review_ready_gap_analysis tests.test_workbook_export"
+  ],
+  "remaining_risks": [
+    "effective_balanced_source_count remains below deck-ready floor",
+    "persona_core_coverage_of_all_labeled_pct remains below deck-ready floor",
+    "remaining core weak-source debt in Google, Adobe, and Domo",
+    "review-ready workbook is not a deck-ready final persona asset"
+  ],
+  "reviewable_release_remains_valid": true,
+  "continue_toward_deck_ready": false
+}

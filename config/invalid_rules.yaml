@@ -339,9 +339,12 @@ source_signal_overrides:
     pain_signal_keywords:
       - doesn't match
       - does not match
+      - not matching
       - mismatch
       - values are different
       - not the same
+      - doesn't align
+      - does not align
       - wrong
       - showstopper
       - not usable
@@ -351,6 +354,16 @@ source_signal_overrides:
       - issue
       - bug
       - workaround
+      - invalid formula
+      - formula error
+      - previous month
+      - month over month
+      - column order
+      - rows to columns
+      - row to column
+      - columns to rows
+      - can't explore
+      - cannot explore
   adobe_analytics_community:
     business_signal_keywords:
       - adobe analytics
@@ -1000,8 +1013,11 @@ source_invalid_reason_exemptions:
       when_any_terms:
         - doesn't match
         - does not match
+        - not matching
         - mismatch
         - values are different
+        - doesn't align
+        - does not align
         - wrong
         - showstopper
         - not usable
@@ -1009,6 +1025,16 @@ source_invalid_reason_exemptions:
         - confusion
         - issue
         - bug
+        - invalid formula
+        - formula error
+        - previous month
+        - month over month
+        - column order
+        - rows to columns
+        - row to column
+        - columns to rows
+        - can't explore
+        - cannot explore
       require_signal_match: false
   adobe_analytics_community:
     missing_business_signal:

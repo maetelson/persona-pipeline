@@ -1,0 +1,329 @@
+{
+  "baseline": {
+    "overall_status": "WARN",
+    "quality_flag": "EXPLORATORY",
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "final_usable_persona_count": 3,
+    "production_ready_persona_count": 3,
+    "review_ready_persona_count": 1,
+    "weak_source_cost_center_count": 4,
+    "core_readiness_weak_source_cost_center_count": 3,
+    "effective_balanced_source_count": 5.89,
+    "persona_core_coverage_of_all_labeled_pct": 74.5,
+    "largest_source_influence_share_pct": 30.7,
+    "top_3_cluster_share_of_core_labeled": 0.833,
+    "promoted_persona_example_coverage_pct": 100.0,
+    "overall_unknown_ratio": 0.13934
+  },
+  "review_ready_gap_reference": {
+    "overall_status": "WARN",
+    "quality_flag": "EXPLORATORY",
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "persona_readiness_gate_status": "WARN",
+    "weak_source_cost_center_count": 4,
+    "core_readiness_weak_source_cost_center_count": 3,
+    "exploratory_only_weak_source_debt_count": 1,
+    "effective_balanced_source_count": 5.89,
+    "persona_core_coverage_of_all_labeled_pct": 74.5,
+    "production_ready_persona_count": 3,
+    "review_ready_persona_count": 1,
+    "final_usable_persona_count": 3
+  },
+  "source_balance_gap_analysis": {
+    "current_effective_balanced_source_count": 5.89,
+    "deck_ready_floor": 6.0,
+    "gap_to_deck_ready_floor": 0.11,
+    "top_influence_sources": [
+      {
+        "source": "power_bi_community",
+        "blended_influence_share_pct": 30.7,
+        "grounded_promoted_persona_episode_count": 2661,
+        "weak_source_cost_center": false,
+        "core_readiness_weak_source_cost_center": false
+      },
+      {
+        "source": "metabase_discussions",
+        "blended_influence_share_pct": 20.0,
+        "grounded_promoted_persona_episode_count": 1724,
+        "weak_source_cost_center": false,
+        "core_readiness_weak_source_cost_center": false
+      },
+      {
+        "source": "github_discussions",
+        "blended_influence_share_pct": 11.0,
+        "grounded_promoted_persona_episode_count": 891,
+        "weak_source_cost_center": false,
+        "core_readiness_weak_source_cost_center": false
+      },
+      {
+        "source": "stackoverflow",
+        "blended_influence_share_pct": 10.2,
+        "grounded_promoted_persona_episode_count": 678,
+        "weak_source_cost_center": false,
+        "core_readiness_weak_source_cost_center": false
+      },
+      {
+        "source": "hubspot_community",
+        "blended_influence_share_pct": 8.2,
+        "grounded_promoted_persona_episode_count": 712,
+        "weak_source_cost_center": false,
+        "core_readiness_weak_source_cost_center": false
+      },
+      {
+        "source": "shopify_community",
+        "blended_influence_share_pct": 4.4,
+        "grounded_promoted_persona_episode_count": 328,
+        "weak_source_cost_center": false,
+        "core_readiness_weak_source_cost_center": false
+      },
+      {
+        "source": "google_developer_forums",
+        "blended_influence_share_pct": 3.7,
+        "grounded_promoted_persona_episode_count": 186,
+        "weak_source_cost_center": true,
+        "core_readiness_weak_source_cost_center": true
+      },
+      {
+        "source": "domo_community_forum",
+        "blended_influence_share_pct": 3.5,
+        "grounded_promoted_persona_episode_count": 93,
+        "weak_source_cost_center": true,
+        "core_readiness_weak_source_cost_center": true
+      }
+    ],
+    "largest_source": "power_bi_community",
+    "largest_source_influence_share_pct": 30.7,
+    "healthy_top_5_influence_share_pct": 80.1,
+    "weak_source_total_influence_share_pct": 11.3,
+    "imbalance_driver": "healthy_high_volume_sources",
+    "single_source_remediation_realistically_moves_score": false,
+    "source_volume_normalization_analysis": {
+      "largest_source_cap_needed_to_reach_6_0": 29.99,
+      "largest_source_shift_needed_pct_points": 0.71,
+      "normalized_effective_balanced_source_count": 6.0,
+      "would_hide_real_concentration_risk": false,
+      "interpretation": "Source-volume normalization could move effective source balance above 6.0 with a modest reduction in top-source weight, but it would not resolve weak-source debt or core-coverage warnings on its own."
+    },
+    "analysis_summary": "Current source-balance drag is driven more by concentration in healthy high-volume sources than by any single weak source. One source-specific remediation win is unlikely to move effective balance enough by itself."
+  },
+  "core_coverage_gap_analysis": {
+    "current_labeled_rows": 12674,
+    "current_persona_core_rows": 9444,
+    "current_persona_core_coverage_pct": 74.5,
+    "rows_needed_to_reach_75_0": 62,
+    "rows_needed_to_reach_80_0": 696,
+    "current_non_core_labeled_row_count": 3230,
+    "recoverable_non_core_rows_concentrated_in_weak_sources_pct": 60.3,
+    "recoverable_rows_quality_read": "mixed_signal_with_some_recoverable_rows",
+    "pushing_to_80_creates_junk_persona_risk": true,
+    "analysis_summary": "Crossing 75.0 only needs a small number of additional persona-core rows. Reaching 80.0 requires converting hundreds of currently non-core rows, and most of that pool is still low-signal."
+  },
+  "scenario_simulation": [
+    {
+      "scenario_id": "A_no_op_current_baseline",
+      "description": "Current baseline with no changes.",
+      "effective_balanced_source_count": 5.89,
+      "persona_core_coverage_of_all_labeled_pct": 74.5,
+      "weak_source_cost_center_count": 4,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "deck_ready_candidate": false,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "quality_standard_weakened": false,
+      "junk_risk_assessment": "none"
+    },
+    {
+      "scenario_id": "B_high_quality_recovery_of_60_persona_core_rows",
+      "description": "Recover 60 high-quality persona-core rows without changing source balance or weak-source debt.",
+      "effective_balanced_source_count": 5.89,
+      "persona_core_coverage_of_all_labeled_pct": 75.0,
+      "weak_source_cost_center_count": 4,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "deck_ready_candidate": false,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "quality_standard_weakened": false,
+      "junk_risk_assessment": "low"
+    },
+    {
+      "scenario_id": "C_high_quality_recovery_to_80_0",
+      "description": "Recover enough persona-core rows to reach 80.0 while keeping current source-balance and weak-source structure.",
+      "effective_balanced_source_count": 5.89,
+      "persona_core_coverage_of_all_labeled_pct": 80.0,
+      "weak_source_cost_center_count": 4,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "deck_ready_candidate": false,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "quality_standard_weakened": false,
+      "junk_risk_assessment": "high"
+    },
+    {
+      "scenario_id": "D_source_volume_normalization_only",
+      "description": "Apply source-volume normalization to the effective source-balance metric only.",
+      "effective_balanced_source_count": 6.0,
+      "persona_core_coverage_of_all_labeled_pct": 74.5,
+      "weak_source_cost_center_count": 4,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "deck_ready_candidate": false,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "quality_standard_weakened": false,
+      "junk_risk_assessment": "none"
+    },
+    {
+      "scenario_id": "E_remove_remaining_true_weak_source_debt_from_deck_ready_denominator",
+      "description": "Simulate removing remaining weak-source debt from deck-ready denominator pressure while keeping current evidence untouched.",
+      "effective_balanced_source_count": 5.89,
+      "persona_core_coverage_of_all_labeled_pct": 74.5,
+      "weak_source_cost_center_count": 4,
+      "core_readiness_weak_source_cost_center_count": 0,
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "deck_ready_candidate": false,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "quality_standard_weakened": true,
+      "junk_risk_assessment": "policy_only"
+    },
+    {
+      "scenario_id": "F_combined_realistic_one_source_win_plus_modest_balance_improvement",
+      "description": "One remaining weak source is remediated, source balance improves modestly, and 60 high-quality core rows are recovered.",
+      "effective_balanced_source_count": 6.0,
+      "persona_core_coverage_of_all_labeled_pct": 75.0,
+      "weak_source_cost_center_count": 3,
+      "core_readiness_weak_source_cost_center_count": 2,
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "deck_ready_candidate": false,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "quality_standard_weakened": false,
+      "junk_risk_assessment": "medium"
+    },
+    {
+      "scenario_id": "G_aggressive_hit_deck_ready_thresholds",
+      "description": "All remaining weak-source debt is resolved, effective source balance clears 6.0, and persona-core coverage reaches 80.0.",
+      "effective_balanced_source_count": 6.0,
+      "persona_core_coverage_of_all_labeled_pct": 80.0,
+      "weak_source_cost_center_count": 0,
+      "core_readiness_weak_source_cost_center_count": 0,
+      "overall_status": "OK",
+      "quality_flag": "OK",
+      "persona_readiness_state": "deck_ready",
+      "deck_ready_candidate": true,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "quality_standard_weakened": false,
+      "junk_risk_assessment": "high"
+    }
+  ],
+  "deck_ready_feasibility_decision": "deck_ready_feasible_but_requires_large_data_quality_work",
+  "recommended_next_path": "stop and freeze as reviewable release",
+  "continue_toward_deck_ready": false,
+  "freeze_at_reviewable_release": true,
+  "plan_markdown": "# Deck-Ready Feasibility Plan\n\n## Summary\n\n- Current workbook readiness: `reviewable_but_not_deck_ready` / `EXPLORATORY`\n- Effective source balance: `5.89`\n- Persona core coverage: `74.5`\n- Feasibility decision: `deck_ready_feasible_but_requires_large_data_quality_work`\n- Recommended next path: `stop and freeze as reviewable release`\n\n## Source Balance Gap\n\n- Gap to deck-ready source-balance floor: `0.11`\n- Main imbalance driver: `healthy_high_volume_sources`\n\n## Core Coverage Gap\n\n- Rows needed to reach 75.0: `62`\n- Rows needed to reach 80.0: `696`\n- Current non-core labeled rows: `3230`\n\n## Scenario Simulation\n\n- `A_no_op_current_baseline`: status `WARN`, readiness `reviewable_but_not_deck_ready`, deck-ready candidate `False`, source balance `5.89`, core coverage `74.5`, junk risk `none`\n- `B_high_quality_recovery_of_60_persona_core_rows`: status `WARN`, readiness `reviewable_but_not_deck_ready`, deck-ready candidate `False`, source balance `5.89`, core coverage `75.0`, junk risk `low`\n- `C_high_quality_recovery_to_80_0`: status `WARN`, readiness `reviewable_but_not_deck_ready`, deck-ready candidate `False`, source balance `5.89`, core coverage `80.0`, junk risk `high`\n- `D_source_volume_normalization_only`: status `WARN`, readiness `reviewable_but_not_deck_ready`, deck-ready candidate `False`, source balance `6.0`, core coverage `74.5`, junk risk `none`\n- `E_remove_remaining_true_weak_source_debt_from_deck_ready_denominator`: status `WARN`, readiness `reviewable_but_not_deck_ready`, deck-ready candidate `False`, source balance `5.89`, core coverage `74.5`, junk risk `policy_only`\n- `F_combined_realistic_one_source_win_plus_modest_balance_improvement`: status `WARN`, readiness `reviewable_but_not_deck_ready`, deck-ready candidate `False`, source balance `6.0`, core coverage `75.0`, junk risk `medium`\n- `G_aggressive_hit_deck_ready_thresholds`: status `OK`, readiness `deck_ready`, deck-ready candidate `True`, source balance `6.0`, core coverage `80.0`, junk risk `high`\n",
+  "gap_table": [
+    {
+      "source": "domo_community_forum",
+      "non_core_labeled_rows": 932,
+      "positive_hint_non_core_rows": 295,
+      "weak_source_cost_center": true,
+      "blended_influence_share_pct": 3.5,
+      "recoverable_quality_read": "mixed_recoverable"
+    },
+    {
+      "source": "stackoverflow",
+      "non_core_labeled_rows": 844,
+      "positive_hint_non_core_rows": 208,
+      "weak_source_cost_center": false,
+      "blended_influence_share_pct": 10.2,
+      "recoverable_quality_read": "mixed_recoverable"
+    },
+    {
+      "source": "google_developer_forums",
+      "non_core_labeled_rows": 561,
+      "positive_hint_non_core_rows": 440,
+      "weak_source_cost_center": true,
+      "blended_influence_share_pct": 3.7,
+      "recoverable_quality_read": "mixed_recoverable"
+    },
+    {
+      "source": "adobe_analytics_community",
+      "non_core_labeled_rows": 449,
+      "positive_hint_non_core_rows": 316,
+      "weak_source_cost_center": true,
+      "blended_influence_share_pct": 3.2,
+      "recoverable_quality_read": "mixed_recoverable"
+    },
+    {
+      "source": "github_discussions",
+      "non_core_labeled_rows": 217,
+      "positive_hint_non_core_rows": 214,
+      "weak_source_cost_center": false,
+      "blended_influence_share_pct": 11.0,
+      "recoverable_quality_read": "mixed_recoverable"
+    },
+    {
+      "source": "shopify_community",
+      "non_core_labeled_rows": 175,
+      "positive_hint_non_core_rows": 116,
+      "weak_source_cost_center": false,
+      "blended_influence_share_pct": 4.4,
+      "recoverable_quality_read": "mixed_recoverable"
+    },
+    {
+      "source": "reddit",
+      "non_core_labeled_rows": 17,
+      "positive_hint_non_core_rows": 16,
+      "weak_source_cost_center": false,
+      "blended_influence_share_pct": 2.0,
+      "recoverable_quality_read": "mostly_low_signal"
+    },
+    {
+      "source": "power_bi_community",
+      "non_core_labeled_rows": 15,
+      "positive_hint_non_core_rows": 15,
+      "weak_source_cost_center": false,
+      "blended_influence_share_pct": 30.7,
+      "recoverable_quality_read": "mostly_low_signal"
+    },
+    {
+      "source": "hubspot_community",
+      "non_core_labeled_rows": 13,
+      "positive_hint_non_core_rows": 12,
+      "weak_source_cost_center": false,
+      "blended_influence_share_pct": 8.2,
+      "recoverable_quality_read": "mostly_low_signal"
+    },
+    {
+      "source": "klaviyo_community",
+      "non_core_labeled_rows": 7,
+      "positive_hint_non_core_rows": 6,
+      "weak_source_cost_center": true,
+      "blended_influence_share_pct": 0.9,
+      "recoverable_quality_read": "mostly_low_signal"
+    }
+  ]
+}

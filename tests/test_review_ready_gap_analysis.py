@@ -43,10 +43,10 @@ class ReviewReadyGapAnalysisTests(unittest.TestCase):
 
     def test_core_coverage_gap_matches_current_artifacts(self) -> None:
         gap = self.report["core_coverage_gap_analysis"]
-        self.assertEqual(gap["current_labeled_rows"], 12669)
-        self.assertEqual(gap["current_persona_core_rows"], 9442)
-        self.assertEqual(gap["rows_needed_to_reach_75_0"], 60)
-        self.assertEqual(gap["rows_needed_to_reach_80_0"], 694)
+        self.assertEqual(gap["current_labeled_rows"], 12674)
+        self.assertEqual(gap["current_persona_core_rows"], 9444)
+        self.assertEqual(gap["rows_needed_to_reach_75_0"], 62)
+        self.assertEqual(gap["rows_needed_to_reach_80_0"], 696)
 
     def test_weak_source_decisions_follow_expected_defaults(self) -> None:
         decisions = {row["source"]: row["recommended_action"] for row in self.report["weak_source_decisions"]}

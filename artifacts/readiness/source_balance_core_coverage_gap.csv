@@ -1,0 +1,11 @@
+source,non_core_labeled_rows,positive_hint_non_core_rows,weak_source_cost_center,blended_influence_share_pct,recoverable_quality_read
+domo_community_forum,932,295,True,3.5,mixed_recoverable
+stackoverflow,844,208,False,10.2,mixed_recoverable
+google_developer_forums,561,440,True,3.7,mixed_recoverable
+adobe_analytics_community,449,316,True,3.2,mixed_recoverable
+github_discussions,217,214,False,11.0,mixed_recoverable
+shopify_community,175,116,False,4.4,mixed_recoverable
+reddit,17,16,False,2.0,mostly_low_signal
+power_bi_community,15,15,False,30.7,mostly_low_signal
+hubspot_community,13,12,False,8.2,mostly_low_signal
+klaviyo_community,7,6,True,0.9,mostly_low_signal
