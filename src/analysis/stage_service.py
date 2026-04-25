@@ -21,7 +21,7 @@ from src.analysis.persona import build_persona_candidates
 from src.analysis.persona_axes import build_persona_core_flags, discover_persona_axes, write_persona_axis_outputs
 from src.analysis.persona_gen import generate_personas
 from src.analysis.persona_messaging import build_persona_messaging_outputs, write_persona_messaging_outputs
-from src.analysis.persona_service import build_persona_outputs, write_persona_outputs
+from src.analysis.persona_service import _review_ready_fields, build_persona_outputs, write_persona_outputs
 from src.analysis.quality_status import build_quality_metrics, evaluate_quality_status
 from src.analysis.reddit_retention import analyze_reddit_retention
 from src.analysis.diagnostics import (
@@ -375,7 +375,12 @@ def persist_analysis_outputs(
         encoding="utf-8",
     )
 
-    for message in validate_workbook_frames(deterministic_outputs["workbook_frames"]):
+    for message in validate_workbook_frames(
+        deterministic_outputs["workbook_frames"],
+        context_frames={
+            "persona_promotion_path_debug": persona_service_outputs.get("persona_promotion_path_debug_df", pd.DataFrame()),
+        },
+    ):
         LOGGER.warning("Workbook bundle validation: %s", message)
     bundle_paths = write_workbook_bundle(root_dir, deterministic_outputs["workbook_frames"])
 
@@ -540,7 +545,12 @@ def _build_final_overview_df(
     promotion_grounding_status = cluster_stats_df.get("promotion_grounding_status", pd.Series(dtype=str)).astype(str) if not cluster_stats_df.empty else pd.Series(dtype=str)
     promotion_visibility_persona_count = int(quality_checks.get("promotion_visibility_persona_count", int(promoted_mask.sum()) if not cluster_stats_df.empty else 0) or 0)
     final_usable_persona_count = int(quality_checks.get("final_usable_persona_count", int(promotion_grounding_status.eq("promoted_and_grounded").sum()) if not cluster_stats_df.empty else 0) or 0)
-    exploratory_bucket_count = int((~promoted_mask).sum()) if not cluster_stats_df.empty else 0
+    production_ready_persona = cluster_stats_df.get("production_ready_persona", pd.Series(dtype=bool)).fillna(False).astype(bool) if not cluster_stats_df.empty else pd.Series(dtype=bool)
+    review_ready_persona = cluster_stats_df.get("review_ready_persona", pd.Series(dtype=bool)).fillna(False).astype(bool) if not cluster_stats_df.empty else pd.Series(dtype=bool)
+    readiness_tier = cluster_stats_df.get("readiness_tier", pd.Series(dtype=str)).astype(str) if not cluster_stats_df.empty else pd.Series(dtype=str)
+    production_ready_persona_count = int(production_ready_persona.sum()) if not production_ready_persona.empty else final_usable_persona_count
+    review_ready_persona_count = int(review_ready_persona.sum()) if not review_ready_persona.empty else 0
+    exploratory_bucket_count = int(readiness_tier.eq("exploratory_bucket").sum()) if not readiness_tier.empty else int((~promoted_mask).sum()) if not cluster_stats_df.empty else 0
     selected_axes = " | ".join(
         str(row.get("axis_name", "")).strip()
         for row in axis_names
@@ -610,6 +620,8 @@ def _build_final_overview_df(
         {"metric": "promoted_candidate_persona_count", "value": quality_checks.get("promoted_candidate_persona_count", promotion_visibility_persona_count)},
         {"metric": "promotion_visibility_persona_count", "value": promotion_visibility_persona_count},
         {"metric": "headline_persona_count", "value": quality_checks.get("headline_persona_count", final_usable_persona_count)},
+        {"metric": "production_ready_persona_count", "value": production_ready_persona_count},
+        {"metric": "review_ready_persona_count", "value": review_ready_persona_count},
         {"metric": "final_usable_persona_count", "value": final_usable_persona_count},
         {"metric": "deck_ready_persona_count", "value": quality_checks.get("deck_ready_persona_count", final_usable_persona_count)},
         {"metric": "promoted_persona_example_coverage_pct", "value": quality_checks.get("promoted_persona_example_coverage_pct", 0.0)},
@@ -619,6 +631,7 @@ def _build_final_overview_df(
         {"metric": "promoted_personas_weakly_grounded", "value": quality_checks.get("promoted_personas_weakly_grounded", "")},
         {"metric": "promoted_personas_missing_examples", "value": quality_checks.get("promoted_personas_missing_examples", "")},
         {"metric": "exploratory_bucket_count", "value": exploratory_bucket_count},
+        {"metric": "blocked_or_constrained_persona_count", "value": int(readiness_tier.eq("blocked_or_constrained_candidate").sum()) if not readiness_tier.empty else 0},
         {"metric": "min_cluster_size", "value": quality_checks.get("min_cluster_size", 0)},
         {"metric": "selected_axes", "value": selected_axes},
         {"metric": "clustering_mode", "value": "bottleneck_first_robust"},
@@ -780,6 +793,9 @@ def _apply_workbook_promotion_constraints(
                 existing = frame.loc[mask, "evidence_caution"].astype(str).str.strip()
                 frame.loc[mask, "evidence_caution"] = existing.map(lambda value: f"{value} Promotion is additionally constrained by concentration and source-balance risk.".strip())
 
+    cluster_stats_df = _refresh_review_ready_overlay(cluster_stats_df)
+    persona_summary_df = _refresh_review_ready_overlay(persona_summary_df)
+    promotion_path_debug_df = _refresh_review_ready_overlay(promotion_path_debug_df)
     outputs["cluster_stats_df"] = cluster_stats_df
     outputs["persona_summary_df"] = persona_summary_df
     outputs["persona_promotion_grounding_audit_df"] = audit_df
@@ -791,6 +807,26 @@ def _apply_workbook_promotion_constraints(
             + " | ".join(selected_ids)
         ),
     }
+
+
+def _refresh_review_ready_overlay(frame: pd.DataFrame) -> pd.DataFrame:
+    """Recompute review-ready output fields after workbook policy overlays mutate persona rows."""
+    if frame.empty or "persona_id" not in frame.columns:
+        return frame
+    refreshed = frame.copy()
+    rows: list[dict[str, Any]] = []
+    for _, row in refreshed.iterrows():
+        payload = row.to_dict()
+        review_fields = _review_ready_fields(
+            payload,
+            selected_example_count=int(row.get("selected_example_count", 0) or 0),
+            evidence_confidence_tier=str(row.get("evidence_confidence_tier", "") or ""),
+        )
+        rows.append(review_fields)
+    overlay = pd.DataFrame(rows, index=refreshed.index)
+    for column in overlay.columns:
+        refreshed[column] = overlay[column]
+    return refreshed
 
 
 def _source_action_priority_summary(source_balance_audit_df: pd.DataFrame) -> str:

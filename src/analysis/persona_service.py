@@ -322,6 +322,16 @@ def _build_persona_summary_df(
         selected_example_count = int(promotion.get("selected_example_count", 0) or 0)
         display_example_count = max(selected_example_count, len(representative_examples))
         limited_examples = display_example_count < 2
+        evidence_confidence_tier = _evidence_confidence_tier(
+            promotion=promotion,
+            limited_examples=limited_examples,
+            fallback_examples_used=fallback_examples_used,
+        )
+        review_ready_fields = _review_ready_fields(
+            promotion,
+            selected_example_count=selected_example_count,
+            evidence_confidence_tier=evidence_confidence_tier,
+        )
         rows.append(
             {
                 "persona_id": persona_id,
@@ -381,11 +391,7 @@ def _build_persona_summary_df(
                 "fallback_examples_used": fallback_examples_used,
                 "limited_examples": limited_examples,
                 "evidence_caution": _evidence_caution(promotion, limited_examples),
-                "evidence_confidence_tier": _evidence_confidence_tier(
-                    promotion=promotion,
-                    limited_examples=limited_examples,
-                    fallback_examples_used=fallback_examples_used,
-                ),
+                "evidence_confidence_tier": evidence_confidence_tier,
                 "cluster_stability_status": promotion.get("cluster_stability_status", ""),
                 "cluster_evidence_status": promotion.get("cluster_evidence_status", ""),
                 "cluster_concentration_status": promotion.get("cluster_concentration_status", ""),
@@ -413,6 +419,7 @@ def _build_persona_summary_df(
                 "representative_examples": " | ".join(representative_examples),
                 "why_this_persona_matters": _why_persona_matters(group, bottleneck, goal, output_mode),
                 "legacy_cluster_name": cluster_name,
+                **review_ready_fields,
                 **schema_fields,
             }
         )
@@ -594,6 +601,12 @@ def _build_cluster_stats_df(
             f"{axis}={top_non_unknown_value(group, axis)}"
             for axis in axis_names
         )
+        payload = cluster_policy["status_by_persona"].get(str(persona_id), {})
+        selected_example_count = int(payload.get("selected_example_count", 0) or 0)
+        review_ready_fields = _review_ready_fields(
+            payload,
+            selected_example_count=selected_example_count,
+        )
         rows.append(
             {
                 "persona_id": persona_id,
@@ -603,64 +616,65 @@ def _build_cluster_stats_df(
                 "denominator_type": DENOMINATOR_PERSONA_CORE_LABELED_ROWS,
                 "denominator_value": persona_core_labeled_records,
                 "min_cluster_size": int(cluster_policy["min_cluster_size"]),
-                "base_promotion_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("base_promotion_status", "exploratory_bucket"),
-                "structural_support_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("structural_support_status", "not_evaluated"),
-                "structural_support_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("structural_support_reason", ""),
-                "visibility_state": _visibility_state(cluster_policy["status_by_persona"].get(str(persona_id), {})),
-                "usability_state": _usability_state(cluster_policy["status_by_persona"].get(str(persona_id), {})),
-                "deck_readiness_state": _deck_readiness_state(cluster_policy["status_by_persona"].get(str(persona_id), {})),
-                "promotion_action": _promotion_action(cluster_policy["status_by_persona"].get(str(persona_id), {})),
-                "promoted_candidate_persona": _is_promoted_candidate_persona(cluster_policy["status_by_persona"].get(str(persona_id), {})),
-                "workbook_review_visible": _is_workbook_review_visible(cluster_policy["status_by_persona"].get(str(persona_id), {})),
-                "final_usable_persona": _is_final_usable_persona(cluster_policy["status_by_persona"].get(str(persona_id), {})),
-                "deck_ready_persona": _is_final_usable_persona(cluster_policy["status_by_persona"].get(str(persona_id), {})),
-                "reporting_readiness_status": _reporting_readiness_status(cluster_policy["status_by_persona"].get(str(persona_id), {})),
-                "promotion_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("status", "exploratory_bucket"),
-                "promotion_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("reason", ""),
-                "grounding_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("grounding_status", "not_applicable"),
-                "promotion_grounding_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("promotion_grounding_status", "exploratory_bucket"),
-                "grounding_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("grounding_reason", ""),
-                "grounded_candidate_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("grounded_candidate_count", 0) or 0),
-                "weak_candidate_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("weak_candidate_count", 0) or 0),
-                "structural_stability_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("structural_stability_score", 0.0) or 0.0),
-                "grounding_quality_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("grounding_quality_score", 0.0) or 0.0),
-                "distinctiveness_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("distinctiveness_score", 0.0) or 0.0),
-                "actionability_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("actionability_score", 0.0) or 0.0),
-                "output_consistency_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("output_consistency_score", 0.0) or 0.0),
-                "cross_source_robustness_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cross_source_robustness_score", 0.0) or 0.0),
-                "promotion_score": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("promotion_score", 0.0) or 0.0),
-                "product_value_proposition": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("product_value_proposition", ""),
-                "activation_moment": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("activation_moment", ""),
-                "ux_feature_need": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("ux_feature_need", ""),
-                "nearest_persona_id": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("nearest_persona_id", ""),
-                "strategic_redundancy_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("strategic_redundancy_status", ""),
-                "strategic_redundancy_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("strategic_redundancy_reason", ""),
-                "context_evidence_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("context_evidence_count", 0) or 0),
-                "workaround_evidence_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("workaround_evidence_count", 0) or 0),
-                "trust_validation_evidence_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("trust_validation_evidence_count", 0) or 0),
-                "bundle_episode_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("bundle_episode_count", 0) or 0),
-                "bundle_dimension_hits": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("bundle_dimension_hits", 0) or 0),
-                "total_bundle_strength": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("total_bundle_strength", 0) or 0),
-                "bundle_grounding_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("bundle_grounding_status", ""),
-                "bundle_grounding_reason": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("bundle_grounding_reason", ""),
-                "selected_example_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("selected_example_count", 0) or 0),
-                "fallback_selected_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("fallback_selected_count", 0) or 0),
-                "limited_examples": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("selected_example_count", 0) or 0) < 2,
+                "base_promotion_status": payload.get("base_promotion_status", "exploratory_bucket"),
+                "structural_support_status": payload.get("structural_support_status", "not_evaluated"),
+                "structural_support_reason": payload.get("structural_support_reason", ""),
+                "visibility_state": _visibility_state(payload),
+                "usability_state": _usability_state(payload),
+                "deck_readiness_state": _deck_readiness_state(payload),
+                "promotion_action": _promotion_action(payload),
+                "promoted_candidate_persona": _is_promoted_candidate_persona(payload),
+                "workbook_review_visible": _is_workbook_review_visible(payload),
+                "final_usable_persona": _is_final_usable_persona(payload),
+                "deck_ready_persona": _is_final_usable_persona(payload),
+                "reporting_readiness_status": _reporting_readiness_status(payload),
+                "promotion_status": payload.get("status", "exploratory_bucket"),
+                "promotion_reason": payload.get("reason", ""),
+                "grounding_status": payload.get("grounding_status", "not_applicable"),
+                "promotion_grounding_status": payload.get("promotion_grounding_status", "exploratory_bucket"),
+                "grounding_reason": payload.get("grounding_reason", ""),
+                "grounded_candidate_count": int(payload.get("grounded_candidate_count", 0) or 0),
+                "weak_candidate_count": int(payload.get("weak_candidate_count", 0) or 0),
+                "structural_stability_score": float(payload.get("structural_stability_score", 0.0) or 0.0),
+                "grounding_quality_score": float(payload.get("grounding_quality_score", 0.0) or 0.0),
+                "distinctiveness_score": float(payload.get("distinctiveness_score", 0.0) or 0.0),
+                "actionability_score": float(payload.get("actionability_score", 0.0) or 0.0),
+                "output_consistency_score": float(payload.get("output_consistency_score", 0.0) or 0.0),
+                "cross_source_robustness_score": float(payload.get("cross_source_robustness_score", 0.0) or 0.0),
+                "promotion_score": float(payload.get("promotion_score", 0.0) or 0.0),
+                "product_value_proposition": payload.get("product_value_proposition", ""),
+                "activation_moment": payload.get("activation_moment", ""),
+                "ux_feature_need": payload.get("ux_feature_need", ""),
+                "nearest_persona_id": payload.get("nearest_persona_id", ""),
+                "strategic_redundancy_status": payload.get("strategic_redundancy_status", ""),
+                "strategic_redundancy_reason": payload.get("strategic_redundancy_reason", ""),
+                "context_evidence_count": int(payload.get("context_evidence_count", 0) or 0),
+                "workaround_evidence_count": int(payload.get("workaround_evidence_count", 0) or 0),
+                "trust_validation_evidence_count": int(payload.get("trust_validation_evidence_count", 0) or 0),
+                "bundle_episode_count": int(payload.get("bundle_episode_count", 0) or 0),
+                "bundle_dimension_hits": int(payload.get("bundle_dimension_hits", 0) or 0),
+                "total_bundle_strength": int(payload.get("total_bundle_strength", 0) or 0),
+                "bundle_grounding_status": payload.get("bundle_grounding_status", ""),
+                "bundle_grounding_reason": payload.get("bundle_grounding_reason", ""),
+                "selected_example_count": selected_example_count,
+                "fallback_selected_count": int(payload.get("fallback_selected_count", 0) or 0),
+                "limited_examples": selected_example_count < 2,
                 "evidence_caution": _evidence_caution(
-                    cluster_policy["status_by_persona"].get(str(persona_id), {}),
-                    int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("selected_example_count", 0) or 0) < 2,
+                    payload,
+                    selected_example_count < 2,
                 ),
-                "cluster_stability_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_stability_status", ""),
-                "cluster_evidence_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_evidence_status", ""),
-                "cluster_concentration_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_concentration_status", ""),
-                "tail_fragility_status": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("tail_fragility_status", ""),
-                "cluster_separation": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("cluster_separation", 0.0) or 0.0),
-                "nearest_neighbor_similarity": float(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("nearest_neighbor_similarity", 0.0) or 0.0),
-                "pre_merge_anchor_count": int(cluster_policy["status_by_persona"].get(str(persona_id), {}).get("pre_merge_anchor_count", 0) or 0),
-                "robustness_action_summary": cluster_policy["status_by_persona"].get(str(persona_id), {}).get("robustness_action_summary", ""),
+                "cluster_stability_status": payload.get("cluster_stability_status", ""),
+                "cluster_evidence_status": payload.get("cluster_evidence_status", ""),
+                "cluster_concentration_status": payload.get("cluster_concentration_status", ""),
+                "tail_fragility_status": payload.get("tail_fragility_status", ""),
+                "cluster_separation": float(payload.get("cluster_separation", 0.0) or 0.0),
+                "nearest_neighbor_similarity": float(payload.get("nearest_neighbor_similarity", 0.0) or 0.0),
+                "pre_merge_anchor_count": int(payload.get("pre_merge_anchor_count", 0) or 0),
+                "robustness_action_summary": payload.get("robustness_action_summary", ""),
                 "dominant_signature": axis_signature,
                 "dominant_bottleneck": top_non_unknown_value(group, "bottleneck_type"),
                 "dominant_analysis_goal": top_non_unknown_value(group, "analysis_goal"),
+                **review_ready_fields,
             }
         )
     return pd.DataFrame(rows).sort_values(["persona_size", "persona_id"], ascending=[False, True]).reset_index(drop=True)
@@ -1430,6 +1444,145 @@ def _is_final_usable_persona(payload: dict[str, Any]) -> bool:
     return _has_structural_support(payload) and str(payload.get("promotion_grounding_status", "") or "") == "promoted_and_grounded"
 
 
+def _review_ready_fields(
+    payload: dict[str, Any],
+    *,
+    selected_example_count: int | None = None,
+    evidence_confidence_tier: str | None = None,
+) -> dict[str, Any]:
+    """Return review-ready workbook fields without changing strict final-usable semantics."""
+    production_ready_persona = _is_final_usable_persona(payload)
+    selected_count = int(payload.get("selected_example_count", 0) or 0) if selected_example_count is None else int(selected_example_count)
+    confidence_tier = str(evidence_confidence_tier or _review_ready_evidence_tier(payload, selected_count) or "")
+    structural_support = _has_structural_support(payload)
+    grounding_status = str(payload.get("grounding_status", "") or "")
+    grounded = grounding_status in {"grounded_single", "grounded_bundle", "grounded_quote", "grounded_candidate"}
+    cross_source_robustness = float(payload.get("cross_source_robustness_score", 0.0) or 0.0)
+    weak_source_dominated = cross_source_robustness < 0.8
+    strategic_redundancy_status = str(payload.get("strategic_redundancy_status", "") or "")
+    near_duplicate = strategic_redundancy_status == "strategically_redundant"
+    thin_evidence = confidence_tier == "thin" or selected_count < 2
+    workbook_policy_constraint = _workbook_policy_constraint(payload)
+    blocked_by_workbook_policy = bool(workbook_policy_constraint) and str(payload.get("promotion_grounding_status", "") or "") == "promotion_constrained_by_workbook_policy"
+    semantically_distinct = not near_duplicate and float(payload.get("distinctiveness_score", 0.0) or 0.0) >= 0.6
+    review_ready_persona = (
+        not production_ready_persona
+        and structural_support
+        and grounded
+        and not weak_source_dominated
+        and not near_duplicate
+        and not thin_evidence
+        and blocked_by_workbook_policy
+        and semantically_distinct
+    )
+    review_ready_reason = ""
+    if review_ready_persona:
+        review_ready_reason = (
+            "Locally grounded and structurally supported, but workbook-global concentration policy keeps this persona review-ready only."
+            + (f" Constraints: {workbook_policy_constraint}." if workbook_policy_constraint else "")
+        )
+    blocked_reason = _review_ready_blocked_reason(
+        payload=payload,
+        production_ready_persona=production_ready_persona,
+        review_ready_persona=review_ready_persona,
+        weak_source_dominated=weak_source_dominated,
+        near_duplicate=near_duplicate,
+        thin_evidence=thin_evidence,
+        workbook_policy_constraint=workbook_policy_constraint,
+    )
+    readiness_tier = "production_ready_persona"
+    if not production_ready_persona:
+        if review_ready_persona:
+            readiness_tier = "review_ready_persona"
+        elif _is_promoted_candidate_persona(payload) or blocked_by_workbook_policy:
+            readiness_tier = "blocked_or_constrained_candidate"
+        else:
+            readiness_tier = "exploratory_bucket"
+    review_visibility_status = "production_ready_visible"
+    if readiness_tier == "review_ready_persona":
+        review_visibility_status = "review_ready_visible"
+    elif readiness_tier == "blocked_or_constrained_candidate":
+        review_visibility_status = "blocked_not_review_ready"
+    elif readiness_tier == "exploratory_bucket":
+        review_visibility_status = "exploratory_only"
+    return {
+        "readiness_tier": readiness_tier,
+        "production_ready_persona": production_ready_persona,
+        "review_ready_persona": review_ready_persona,
+        "review_ready_reason": review_ready_reason,
+        "blocked_reason": blocked_reason,
+        "workbook_policy_constraint": workbook_policy_constraint,
+        "review_visibility_status": review_visibility_status,
+    }
+
+
+def _review_ready_evidence_tier(payload: dict[str, Any], selected_example_count: int) -> str:
+    """Return a compact evidence tier for review-ready screening when summary context is unavailable."""
+    fallback_selected_count = int(payload.get("fallback_selected_count", 0) or 0)
+    promotion_grounding_status = str(payload.get("promotion_grounding_status", "") or "")
+    grounding_status = str(payload.get("grounding_status", "") or "")
+    if selected_example_count < 2 or fallback_selected_count > 0:
+        return "thin"
+    if promotion_grounding_status in {"promoted_and_grounded", "grounded_single", "grounded_bundle"} or grounding_status in {"grounded_single", "grounded_bundle", "grounded_quote", "grounded_candidate"}:
+        return "grounded"
+    return "residual"
+
+
+def _workbook_policy_constraint(payload: dict[str, Any]) -> str:
+    """Return the explicit workbook-global constraint keys attached to a persona."""
+    fields = [
+        str(payload.get("reason", "") or ""),
+        str(payload.get("promotion_reason", "") or ""),
+        str(payload.get("fail_reason", "") or ""),
+        str(payload.get("grounding_reason", "") or ""),
+    ]
+    text = " ".join(field for field in fields if field).lower()
+    constraints: list[str] = []
+    if "top_3_cluster_share_of_core_labeled" in text:
+        constraints.append("top_3_cluster_share_of_core_labeled")
+    if "largest_source_influence_share_pct" in text:
+        constraints.append("largest_source_influence_share_pct")
+    if "weak_source_cost_centers_present" in text:
+        constraints.append("weak_source_cost_centers_present")
+    if not constraints and str(payload.get("promotion_grounding_status", "") or "") == "promotion_constrained_by_workbook_policy":
+        constraints.append("workbook_global_concentration_policy")
+    return " | ".join(constraints)
+
+
+def _review_ready_blocked_reason(
+    payload: dict[str, Any],
+    *,
+    production_ready_persona: bool,
+    review_ready_persona: bool,
+    weak_source_dominated: bool,
+    near_duplicate: bool,
+    thin_evidence: bool,
+    workbook_policy_constraint: str,
+) -> str:
+    """Return the blocking reason for personas that do not qualify as production-ready or review-ready."""
+    if production_ready_persona:
+        return ""
+    if review_ready_persona:
+        return "blocked from production-ready use by workbook-global concentration policy"
+    reasons: list[str] = []
+    if not _has_structural_support(payload):
+        reasons.append("missing local structural support")
+    if str(payload.get("grounding_status", "") or "") not in {"grounded_single", "grounded_bundle", "grounded_quote", "grounded_candidate"}:
+        reasons.append("missing acceptable grounding")
+    if weak_source_dominated:
+        reasons.append("weak-source dominated or insufficiently cross-source robust")
+    if near_duplicate:
+        reasons.append("near-duplicate candidate")
+    if thin_evidence:
+        reasons.append("thin evidence")
+    if workbook_policy_constraint:
+        reasons.append(f"workbook policy constraint: {workbook_policy_constraint}")
+    if not reasons:
+        reason = str(payload.get("fail_reason", "") or _promotion_fail_reason(payload))
+        return reason
+    return " | ".join(dict.fromkeys(reasons))
+
+
 def _visibility_state(payload: dict[str, Any]) -> str:
     """Return the explicit review visibility state for one persona."""
     if str(payload.get("status", "") or "") == "review_visible_persona":
@@ -1520,6 +1673,7 @@ def _build_persona_promotion_path_debug_df(cluster_policy: dict[str, Any]) -> pd
         promotion_status = str(payload.get("status", "") or "")
         if base_promotion_status not in {"promoted_candidate_persona", "promoted_persona"} and promotion_status not in {"promoted_persona", "review_visible_persona"}:
             continue
+        review_ready_fields = _review_ready_fields(payload)
         rows.append(
             {
                 "persona_id": str(persona_id),
@@ -1531,10 +1685,16 @@ def _build_persona_promotion_path_debug_df(cluster_policy: dict[str, Any]) -> pd
                 "grounding_fail_reason": _grounding_fail_reason(payload),
                 "grounding_penalty_counted_separately": bool(_grounding_penalty_counted_separately(payload)),
                 "structural_grounding_overlap": _structural_grounding_overlap(payload),
+                "selected_example_count": int(payload.get("selected_example_count", 0) or 0),
+                "fallback_selected_count": int(payload.get("fallback_selected_count", 0) or 0),
+                "cross_source_robustness_score": float(payload.get("cross_source_robustness_score", 0.0) or 0.0),
+                "distinctiveness_score": float(payload.get("distinctiveness_score", 0.0) or 0.0),
+                "strategic_redundancy_status": str(payload.get("strategic_redundancy_status", "") or ""),
                 "promotion_status": promotion_status,
                 "final_usable_persona": bool(_is_final_usable_persona(payload)),
                 "deck_ready_persona": bool(_is_final_usable_persona(payload)),
                 "fail_reason": _promotion_fail_reason(payload),
+                **review_ready_fields,
             }
         )
     return pd.DataFrame(rows).sort_values(["base_promotion_status", "persona_id"], ascending=[False, True]).reset_index(drop=True) if rows else pd.DataFrame(
@@ -1548,10 +1708,22 @@ def _build_persona_promotion_path_debug_df(cluster_policy: dict[str, Any]) -> pd
             "grounding_fail_reason",
             "grounding_penalty_counted_separately",
             "structural_grounding_overlap",
+            "selected_example_count",
+            "fallback_selected_count",
+            "cross_source_robustness_score",
+            "distinctiveness_score",
+            "strategic_redundancy_status",
             "promotion_status",
             "final_usable_persona",
+            "production_ready_persona",
             "deck_ready_persona",
             "fail_reason",
+            "readiness_tier",
+            "review_ready_persona",
+            "review_ready_reason",
+            "blocked_reason",
+            "workbook_policy_constraint",
+            "review_visibility_status",
         ]
     )
 

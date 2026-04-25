@@ -304,6 +304,133 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
         self.assertEqual(float(lookup["deck_ready_persona_count"]), 2.0)
         self.assertEqual(float(lookup["promoted_persona_ungrounded_count"]), 1.0)
 
+    def test_overview_separates_production_ready_and_review_ready_counts(self) -> None:
+        overview_df = _build_final_overview_df(
+            axis_names=[{"axis_name": "workflow_stage"}],
+            quality_checks={
+                "persona_readiness_state": "exploratory_only",
+                "final_usable_persona_count": 3,
+                "promotion_visibility_persona_count": 3,
+            },
+            stage_counts={"labeled_episode_rows": 5},
+            persona_core_labeled_rows=5,
+            cluster_stats_df=pd.DataFrame(
+                {
+                    "persona_id": ["persona_01", "persona_02", "persona_03", "persona_04", "persona_05"],
+                    "promotion_status": ["promoted_persona", "promoted_persona", "promoted_persona", "exploratory_bucket", "exploratory_bucket"],
+                    "workbook_review_visible": [True, True, True, False, False],
+                    "promotion_grounding_status": [
+                        "promoted_and_grounded",
+                        "promoted_and_grounded",
+                        "promoted_and_grounded",
+                        "promotion_constrained_by_workbook_policy",
+                        "promotion_constrained_by_workbook_policy",
+                    ],
+                    "final_usable_persona": [True, True, True, False, False],
+                    "production_ready_persona": [True, True, True, False, False],
+                    "review_ready_persona": [False, False, False, True, False],
+                    "readiness_tier": [
+                        "production_ready_persona",
+                        "production_ready_persona",
+                        "production_ready_persona",
+                        "review_ready_persona",
+                        "blocked_or_constrained_candidate",
+                    ],
+                }
+            ),
+        )
+        lookup = dict(zip(overview_df["metric"], overview_df["value"]))
+        self.assertEqual(float(lookup["production_ready_persona_count"]), 3.0)
+        self.assertEqual(float(lookup["review_ready_persona_count"]), 1.0)
+        self.assertEqual(float(lookup["final_usable_persona_count"]), 3.0)
+        self.assertEqual(float(lookup["exploratory_bucket_count"]), 0.0)
+        self.assertEqual(float(lookup["blocked_or_constrained_persona_count"]), 1.0)
+
+    def test_workbook_validation_checks_review_ready_contract_consistency(self) -> None:
+        overview_df = pd.DataFrame(
+            {
+                "metric": [
+                    "persona_readiness_state",
+                    "persona_asset_class",
+                    "persona_completion_claim_allowed",
+                    "persona_usage_restriction",
+                    "persona_readiness_gate_status",
+                    "promoted_candidate_persona_count",
+                    "promotion_visibility_persona_count",
+                    "headline_persona_count",
+                    "production_ready_persona_count",
+                    "review_ready_persona_count",
+                    "final_usable_persona_count",
+                    "exploratory_bucket_count",
+                    "deck_ready_persona_count",
+                ],
+                "value": [
+                    "exploratory_only",
+                    "hypothesis_material",
+                    False,
+                    "Hypothesis material only.",
+                    "FAIL",
+                    5,
+                    3,
+                    3,
+                    3,
+                    1,
+                    3,
+                    0,
+                    0,
+                ],
+            }
+        )
+        cluster_stats_df = pd.DataFrame(
+            {
+                "persona_id": ["persona_01", "persona_04", "persona_05"],
+                "promotion_status": ["promoted_persona", "exploratory_bucket", "exploratory_bucket"],
+                "base_promotion_status": ["promoted_candidate_persona"] * 3,
+                "workbook_review_visible": [True, False, False],
+                "final_usable_persona": [True, False, False],
+                "production_ready_persona": [True, False, False],
+                "review_ready_persona": [False, True, False],
+                "readiness_tier": ["production_ready_persona", "review_ready_persona", "blocked_or_constrained_candidate"],
+                "workbook_policy_constraint": ["", "top_3_cluster_share_of_core_labeled | weak_source_cost_centers_present", "top_3_cluster_share_of_core_labeled | weak_source_cost_centers_present"],
+                "review_visibility_status": ["production_ready_visible", "review_ready_visible", "blocked_not_review_ready"],
+                "promotion_grounding_status": ["promoted_and_grounded", "promotion_constrained_by_workbook_policy", "promotion_constrained_by_workbook_policy"],
+            }
+        )
+        persona_summary_df = cluster_stats_df.copy()
+        promotion_path_debug_df = cluster_stats_df[[
+            "persona_id",
+            "final_usable_persona",
+            "production_ready_persona",
+            "review_ready_persona",
+            "readiness_tier",
+            "workbook_policy_constraint",
+            "review_visibility_status",
+        ]].copy()
+        frames = assemble_workbook_frames(
+            overview_df=overview_df,
+            counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [1]}),
+            source_distribution_df=pd.DataFrame({"source": ["reddit"], "share_of_labeled": [100.0]}),
+            taxonomy_summary_df=pd.DataFrame({"axis_name": ["workflow_stage"]}),
+            cluster_stats_df=cluster_stats_df,
+            persona_summary_df=persona_summary_df,
+            persona_axes_df=pd.DataFrame(),
+            persona_needs_df=pd.DataFrame(),
+            persona_cooccurrence_df=pd.DataFrame(),
+            persona_examples_df=pd.DataFrame({"persona_id": ["persona_01"]}),
+            quality_checks_df=pd.DataFrame({"metric": ["quality_flag"], "value": ["OK"], "threshold": [""], "status": ["pass"], "level": ["pass"], "denominator_type": [""], "denominator_value": [""], "notes": [""]}),
+            source_diagnostics_df=pd.DataFrame(),
+            quality_failures_df=pd.DataFrame(),
+            metric_glossary_df=pd.DataFrame(),
+        )
+        messages = validate_workbook_frames(
+            frames,
+            context_frames={"persona_promotion_path_debug": promotion_path_debug_df},
+        )
+        self.assertFalse(any("production_ready_persona must equal final_usable_persona" in message for message in messages))
+        self.assertFalse(any("review_ready_persona cannot imply final_usable_persona" in message for message in messages))
+        self.assertFalse(any("persona_summary.readiness_tier disagrees with cluster_stats" in message for message in messages))
+        self.assertFalse(any("persona_promotion_path_debug" in message for message in messages))
+
     def test_persona_readiness_gate_marks_unstable_workbook_as_hypothesis_material(self) -> None:
         evaluated = evaluate_quality_status(
             {
@@ -780,17 +907,21 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
                             "promoted_candidate_persona_count",
                             "promotion_visibility_persona_count",
                             "headline_persona_count",
+                            "production_ready_persona_count",
+                            "review_ready_persona_count",
                             "final_usable_persona_count",
+                            "exploratory_bucket_count",
+                            "blocked_or_constrained_persona_count",
                             "deck_ready_persona_count",
                         ],
-                            "value": ["OK", 1, 1, 1, 1, 1],
+                            "value": ["OK", 1, 1, 1, 1, 0, 1, 0, 0, 1],
                     }
                 ),
                 counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [1], "denominator_type": [DENOMINATOR_RAW_RECORD_ROWS], "denominator_value": [1], "definition": ["rows"]}),
                 source_distribution_df=pd.DataFrame({"source": ["reddit"], "raw_count": [1], "normalized_count": [1], "valid_count": [1], "prefiltered_valid_count": [1], "episode_count": [1], "labeled_count": [1], "share_of_labeled": [100.0], "denominator_type": ["labeled_episode_rows"], "denominator_value": [1]}),
                 taxonomy_summary_df=pd.DataFrame({"axis_name": ["role"], "why_it_matters": ["x"], "allowed_values_or_logic": ["y"], "evidence_fields": ["z"]}),
-                cluster_stats_df=pd.DataFrame({"persona_id": ["persona_01"], "persona_size": [1], "share_of_core_labeled": [100.0], "share_of_all_labeled": [100.0], "denominator_type": [DENOMINATOR_PERSONA_CORE_LABELED_ROWS], "denominator_value": [1], "min_cluster_size": [1], "base_promotion_status": ["promoted_candidate_persona"], "promoted_candidate_persona": [True], "workbook_review_visible": [True], "final_usable_persona": [True], "deck_ready_persona": [True], "reporting_readiness_status": ["final_usable_persona"], "promotion_status": ["promoted_persona"], "grounding_status": ["grounded"], "promotion_grounding_status": ["promoted_and_grounded"], "promotion_reason": ["meets floor"], "grounding_reason": ["grounded example exists"], "grounded_candidate_count": [1], "weak_candidate_count": [0], "selected_example_count": [1], "fallback_selected_count": [0], "dominant_signature": ["role=analyst"], "dominant_bottleneck": ["manual_reporting"], "dominant_analysis_goal": ["report_speed"]}),
-                persona_summary_df=pd.DataFrame({"persona_id": ["persona_01"], "persona_name": ["Analyst"], "persona_size": [1], "share_of_core_labeled": [100.0], "share_of_all_labeled": [100.0], "denominator_type": [DENOMINATOR_PERSONA_CORE_LABELED_ROWS], "denominator_value": [1], "min_cluster_size": [1], "base_promotion_status": ["promoted_candidate_persona"], "promoted_candidate_persona": [True], "workbook_review_visible": [True], "final_usable_persona": [True], "deck_ready_persona": [True], "reporting_readiness_status": ["final_usable_persona"], "promotion_status": ["promoted_persona"], "grounding_status": ["grounded"], "promotion_grounding_status": ["promoted_and_grounded"], "promotion_reason": ["meets floor"], "grounding_reason": ["grounded example exists"], "grounded_candidate_count": [1], "weak_candidate_count": [0], "selected_example_count": [1], "fallback_selected_count": [0], "one_line_summary": ["summary"], "dominant_bottleneck": ["manual_reporting"], "main_workflow_context": ["reporting"], "analysis_behavior": ["report_speed"], "trust_explanation_need": ["high"], "current_tool_dependency": ["spreadsheet_heavy"], "primary_output_expectation": ["xlsx"], "top_pain_points": ["rework"], "representative_examples": ["example"], "why_this_persona_matters": ["matters"]}),
+                cluster_stats_df=pd.DataFrame({"persona_id": ["persona_01"], "persona_size": [1], "share_of_core_labeled": [100.0], "share_of_all_labeled": [100.0], "denominator_type": [DENOMINATOR_PERSONA_CORE_LABELED_ROWS], "denominator_value": [1], "min_cluster_size": [1], "base_promotion_status": ["promoted_candidate_persona"], "promoted_candidate_persona": [True], "workbook_review_visible": [True], "visibility_state": ["promoted_persona"], "final_usable_persona": [True], "production_ready_persona": [True], "review_ready_persona": [False], "readiness_tier": ["production_ready_persona"], "review_ready_reason": [""], "blocked_reason": [""], "workbook_policy_constraint": [""], "review_visibility_status": ["production_ready_visible"], "deck_ready_persona": [True], "reporting_readiness_status": ["final_usable_persona"], "promotion_status": ["promoted_persona"], "grounding_status": ["grounded"], "promotion_grounding_status": ["promoted_and_grounded"], "promotion_reason": ["meets floor"], "grounding_reason": ["grounded example exists"], "grounded_candidate_count": [1], "weak_candidate_count": [0], "selected_example_count": [1], "fallback_selected_count": [0], "dominant_signature": ["role=analyst"], "dominant_bottleneck": ["manual_reporting"], "dominant_analysis_goal": ["report_speed"]}),
+                persona_summary_df=pd.DataFrame({"persona_id": ["persona_01"], "persona_name": ["Analyst"], "persona_size": [1], "share_of_core_labeled": [100.0], "share_of_all_labeled": [100.0], "denominator_type": [DENOMINATOR_PERSONA_CORE_LABELED_ROWS], "denominator_value": [1], "min_cluster_size": [1], "base_promotion_status": ["promoted_candidate_persona"], "promoted_candidate_persona": [True], "workbook_review_visible": [True], "visibility_state": ["promoted_persona"], "final_usable_persona": [True], "production_ready_persona": [True], "review_ready_persona": [False], "readiness_tier": ["production_ready_persona"], "review_ready_reason": [""], "blocked_reason": [""], "workbook_policy_constraint": [""], "review_visibility_status": ["production_ready_visible"], "deck_ready_persona": [True], "reporting_readiness_status": ["final_usable_persona"], "promotion_status": ["promoted_persona"], "grounding_status": ["grounded"], "promotion_grounding_status": ["promoted_and_grounded"], "promotion_reason": ["meets floor"], "grounding_reason": ["grounded example exists"], "grounded_candidate_count": [1], "weak_candidate_count": [0], "selected_example_count": [1], "fallback_selected_count": [0], "one_line_summary": ["summary"], "dominant_bottleneck": ["manual_reporting"], "main_workflow_context": ["reporting"], "analysis_behavior": ["report_speed"], "trust_explanation_need": ["high"], "current_tool_dependency": ["spreadsheet_heavy"], "primary_output_expectation": ["xlsx"], "top_pain_points": ["rework"], "representative_examples": ["example"], "why_this_persona_matters": ["matters"]}),
                 persona_axes_df=pd.DataFrame({"persona_id": ["persona_01"], "axis_name": ["role"], "axis_value": ["analyst"], "count": [1], "pct_of_persona": [100.0]}),
                 persona_needs_df=pd.DataFrame({"persona_id": ["persona_01"], "pain_or_need": ["rework"], "count": [1], "pct_of_persona": [100.0], "rank": [1]}),
                 persona_cooccurrence_df=pd.DataFrame({"persona_id": ["persona_01"], "theme_a": ["a"], "theme_b": ["b"], "pair_count": [1], "pct_of_persona": [100.0], "rank": [1]}),

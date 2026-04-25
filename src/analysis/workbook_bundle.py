@@ -93,9 +93,13 @@ def workbook_bundle_exists(root_dir: Path) -> bool:
     return all((bundle_dir / f"{sheet_name}.parquet").exists() for sheet_name in WORKBOOK_SHEET_NAMES)
 
 
-def validate_workbook_frames(frames: dict[str, pd.DataFrame]) -> list[str]:
+def validate_workbook_frames(
+    frames: dict[str, pd.DataFrame],
+    context_frames: dict[str, pd.DataFrame] | None = None,
+) -> list[str]:
     """Validate required workbook frames and return warning/error messages."""
     messages: list[str] = []
+    context_frames = context_frames or {}
     for sheet_name in WORKBOOK_SHEET_NAMES:
         if sheet_name not in frames:
             messages.append(f"missing required sheet frame: {sheet_name}")
@@ -125,7 +129,7 @@ def validate_workbook_frames(frames: dict[str, pd.DataFrame]) -> list[str]:
         messages.extend(_validate_share_denominator_contract(sheet_name, frame))
         messages.extend(_validate_source_diagnostics_contract(sheet_name, frame))
     messages.extend(_validate_stage_metric_contract(frames))
-    messages.extend(_validate_persona_promotion_contract(frames))
+    messages.extend(_validate_persona_promotion_contract(frames, context_frames))
     return messages
 
 
@@ -249,9 +253,13 @@ def _normalize_stage_metric_value(value: object) -> object:
     return str(value)
 
 
-def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> list[str]:
+def _validate_persona_promotion_contract(
+    frames: dict[str, pd.DataFrame],
+    context_frames: dict[str, pd.DataFrame] | None = None,
+) -> list[str]:
     """Reject ambiguous persona headline metrics and require explicit usable-vs-visible counts."""
     messages: list[str] = []
+    context_frames = context_frames or {}
     for sheet_name in ["overview", "quality_checks", "metric_glossary"]:
         frame = frames.get(sheet_name, pd.DataFrame())
         if frame is None or frame.empty or "metric" not in frame.columns:
@@ -268,10 +276,16 @@ def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> lis
     base_status = cluster_stats_df.get("base_promotion_status", pd.Series(dtype=str)).astype(str)
     workbook_review_visible = cluster_stats_df.get("workbook_review_visible", pd.Series(dtype=bool))
     final_usable_series = cluster_stats_df.get("final_usable_persona", pd.Series(dtype=bool))
+    production_ready_series = cluster_stats_df.get("production_ready_persona", pd.Series(dtype=bool))
+    review_ready_series = cluster_stats_df.get("review_ready_persona", pd.Series(dtype=bool))
+    readiness_tier_series = cluster_stats_df.get("readiness_tier", pd.Series(dtype=str)).astype(str)
     if final_usable_series.empty:
         final_usable_count = int(cluster_stats_df.get("promotion_grounding_status", pd.Series(dtype=str)).astype(str).eq("promoted_and_grounded").sum())
     else:
         final_usable_count = int(final_usable_series.fillna(False).astype(bool).sum())
+    production_ready_count = int(production_ready_series.fillna(False).astype(bool).sum()) if not production_ready_series.empty else final_usable_count
+    review_ready_count = int(review_ready_series.fillna(False).astype(bool).sum()) if not review_ready_series.empty else 0
+    exploratory_count = int(readiness_tier_series.eq("exploratory_bucket").sum()) if not readiness_tier_series.empty else 0
     promoted_candidate_count = int(base_status.isin({"promoted_candidate_persona", "promoted_persona"}).sum()) if not base_status.empty else int(promotion_status.eq("promoted_persona").sum())
     if workbook_review_visible.empty:
         promotion_visibility_count = int(promotion_status.isin({"promoted_persona", "review_visible_persona"}).sum())
@@ -286,7 +300,10 @@ def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> lis
         "promoted_candidate_persona_count": promoted_candidate_count,
         "promotion_visibility_persona_count": promotion_visibility_count,
         "headline_persona_count": final_usable_count,
+        "production_ready_persona_count": production_ready_count,
+        "review_ready_persona_count": review_ready_count,
         "final_usable_persona_count": final_usable_count,
+        "exploratory_bucket_count": exploratory_count,
     }
     for metric, expected_value in expected.items():
         if metric not in overview_lookup:
@@ -334,6 +351,46 @@ def _validate_persona_promotion_contract(frames: dict[str, pd.DataFrame]) -> lis
             values = sorted(frame["workbook_usage_restriction"].astype(str).dropna().unique().tolist())
             if values != [expected_restriction]:
                 messages.append(f"persona readiness metric mismatch: {sheet_name}.workbook_usage_restriction must match overview.persona_usage_restriction")
+        if "production_ready_persona" in frame.columns and "final_usable_persona" in frame.columns:
+            production = frame["production_ready_persona"].fillna(False).astype(bool)
+            final_usable = frame["final_usable_persona"].fillna(False).astype(bool)
+            if not production.equals(final_usable):
+                messages.append(f"persona readiness metric mismatch: {sheet_name}.production_ready_persona must equal final_usable_persona")
+        if {"review_ready_persona", "final_usable_persona"}.issubset(frame.columns):
+            invalid = frame["review_ready_persona"].fillna(False).astype(bool) & frame["final_usable_persona"].fillna(False).astype(bool)
+            if invalid.any():
+                messages.append(f"persona readiness metric mismatch: {sheet_name}.review_ready_persona cannot imply final_usable_persona")
     if final_usable_count > promotion_visibility_count:
         messages.append("persona promotion metric mismatch: final_usable_persona_count cannot exceed promotion_visibility_persona_count")
+    persona_summary_df = frames.get("persona_summary", pd.DataFrame())
+    if not persona_summary_df.empty and not cluster_stats_df.empty:
+        shared = set(persona_summary_df.get("persona_id", pd.Series(dtype=str)).astype(str)).intersection(
+            set(cluster_stats_df.get("persona_id", pd.Series(dtype=str)).astype(str))
+        )
+        for column in ["readiness_tier", "review_ready_persona", "production_ready_persona", "workbook_policy_constraint", "review_visibility_status"]:
+            if column not in persona_summary_df.columns or column not in cluster_stats_df.columns:
+                continue
+            summary_lookup = persona_summary_df.set_index(persona_summary_df["persona_id"].astype(str))[column].to_dict()
+            stats_lookup = cluster_stats_df.set_index(cluster_stats_df["persona_id"].astype(str))[column].to_dict()
+            for persona_id in sorted(shared):
+                summary_value = str(summary_lookup.get(persona_id, "")) if column not in {"review_ready_persona", "production_ready_persona"} else bool(summary_lookup.get(persona_id, False))
+                stats_value = str(stats_lookup.get(persona_id, "")) if column not in {"review_ready_persona", "production_ready_persona"} else bool(stats_lookup.get(persona_id, False))
+                if summary_value != stats_value:
+                    messages.append(f"persona readiness metric mismatch: persona_summary.{column} disagrees with cluster_stats for {persona_id}")
+    promotion_path_debug_df = context_frames.get("persona_promotion_path_debug", pd.DataFrame())
+    if not persona_summary_df.empty and not promotion_path_debug_df.empty and "persona_id" in promotion_path_debug_df.columns:
+        summary_lookup = persona_summary_df.set_index(persona_summary_df["persona_id"].astype(str))
+        debug_lookup = promotion_path_debug_df.set_index(promotion_path_debug_df["persona_id"].astype(str))
+        shared = sorted(set(summary_lookup.index).intersection(set(debug_lookup.index)))
+        for column in ["review_ready_persona", "production_ready_persona", "readiness_tier", "workbook_policy_constraint", "review_visibility_status"]:
+            if column not in summary_lookup.columns or column not in debug_lookup.columns:
+                continue
+            for persona_id in shared:
+                summary_value = summary_lookup.at[persona_id, column]
+                debug_value = debug_lookup.at[persona_id, column]
+                if isinstance(summary_value, (bool, int)) or isinstance(debug_value, (bool, int)):
+                    if bool(summary_value) != bool(debug_value):
+                        messages.append(f"persona readiness metric mismatch: persona_summary.{column} disagrees with persona_promotion_path_debug for {persona_id}")
+                elif str(summary_value) != str(debug_value):
+                    messages.append(f"persona readiness metric mismatch: persona_summary.{column} disagrees with persona_promotion_path_debug for {persona_id}")
     return messages
