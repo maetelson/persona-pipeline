@@ -1,0 +1,754 @@
+{
+  "baseline_persona_04_identity_profile": [
+    {
+      "profile_label": "baseline_persona_04",
+      "persona_id": "persona_04",
+      "persona_size": 598,
+      "cluster_signature_examples": [
+        {
+          "value": "primary=metric_reconciliation||secondary=dashboard_mistrust|repeated_validation_before_sending",
+          "count": 430,
+          "share_pct": 71.9
+        },
+        {
+          "value": "primary=repeated_validation_before_sending||secondary=dashboard_mistrust|metric_reconciliation|tool_limitation_workaround",
+          "count": 45,
+          "share_pct": 7.5
+        },
+        {
+          "value": "primary=repeated_validation_before_sending||secondary=dashboard_mistrust|metric_reconciliation",
+          "count": 33,
+          "share_pct": 5.5
+        }
+      ],
+      "top_pain_codes": [
+        {
+          "value": "P_DATA_QUALITY",
+          "count": 494
+        },
+        {
+          "value": "P_TOOL_LIMITATION",
+          "count": 146
+        },
+        {
+          "value": "P_HANDOFF",
+          "count": 46
+        },
+        {
+          "value": "P_MANUAL_REPORTING",
+          "count": 35
+        }
+      ],
+      "top_question_codes": [
+        {
+          "value": "Q_VALIDATE_NUMBERS",
+          "count": 594
+        },
+        {
+          "value": "Q_DIAGNOSE_ISSUE",
+          "count": 72
+        },
+        {
+          "value": "Q_AUTOMATE_WORKFLOW",
+          "count": 28
+        },
+        {
+          "value": "Q_REPORT_SPEED",
+          "count": 2
+        }
+      ],
+      "top_output_codes": [
+        {
+          "value": "O_XLSX",
+          "count": 381
+        },
+        {
+          "value": "O_AUTOMATION_JOB",
+          "count": 294
+        },
+        {
+          "value": "O_DASHBOARD",
+          "count": 211
+        },
+        {
+          "value": "O_VALIDATED_DATASET",
+          "count": 88
+        }
+      ],
+      "workflow_stage_distribution": [
+        {
+          "value": "validation",
+          "count": 509,
+          "share_pct": 85.1
+        },
+        {
+          "value": "reporting",
+          "count": 41,
+          "share_pct": 6.9
+        },
+        {
+          "value": "triage",
+          "count": 26,
+          "share_pct": 4.3
+        },
+        {
+          "value": "automation",
+          "count": 22,
+          "share_pct": 3.7
+        }
+      ],
+      "analysis_goal_distribution": [
+        {
+          "value": "validate_numbers",
+          "count": 593,
+          "share_pct": 99.2
+        },
+        {
+          "value": "report_speed",
+          "count": 2,
+          "share_pct": 0.3
+        },
+        {
+          "value": "automate_workflow",
+          "count": 2,
+          "share_pct": 0.3
+        },
+        {
+          "value": "diagnose_change",
+          "count": 1,
+          "share_pct": 0.2
+        }
+      ],
+      "bottleneck_type_distribution": [
+        {
+          "value": "data_quality",
+          "count": 469,
+          "share_pct": 78.4
+        },
+        {
+          "value": "tool_limitation",
+          "count": 75,
+          "share_pct": 12.5
+        },
+        {
+          "value": "manual_reporting",
+          "count": 35,
+          "share_pct": 5.9
+        },
+        {
+          "value": "handoff_dependency",
+          "count": 19,
+          "share_pct": 3.2
+        }
+      ],
+      "trust_validation_need_distribution": [
+        {
+          "value": "high",
+          "count": 555,
+          "share_pct": 92.8
+        },
+        {
+          "value": "medium",
+          "count": 43,
+          "share_pct": 7.2
+        }
+      ],
+      "source_mix_top_5": [
+        {
+          "value": "github_discussions",
+          "count": 108,
+          "share_pct": 18.1
+        },
+        {
+          "value": "power_bi_community",
+          "count": 90,
+          "share_pct": 15.1
+        },
+        {
+          "value": "metabase_discussions",
+          "count": 84,
+          "share_pct": 14.0
+        },
+        {
+          "value": "stackoverflow",
+          "count": 83,
+          "share_pct": 13.9
+        },
+        {
+          "value": "shopify_community",
+          "count": 61,
+          "share_pct": 10.2
+        }
+      ],
+      "validation_share_pct": 87.6,
+      "trust_medium_or_high_share_pct": 100.0,
+      "manual_reporting_share_pct": 5.9,
+      "report_speed_share_pct": 0.3,
+      "promotion_status": "exploratory_bucket",
+      "share_rank": "",
+      "dominant_signature": "bottleneck_type=data_quality | analysis_goal=unassigned | workflow_stage=unassigned",
+      "selected_examples": [
+        {
+          "episode_id": "shopify_community::585477::01",
+          "source": "shopify_community",
+          "grounded_text": "Because of this, the challenge isn’t getting perfectly accurate data but it’s knowing how to read the data in a useful way. GA4 vs platform data mismatch Hi everyone, GA4 is often seen as the main “source of truth,” but in reality it rarely matches the numbers you see in platform dashboards.",
+          "why_selected": "Selected for non genericness, grounding fit, validation pressure, bottleneck specificity. Matches persona on bottleneck_type=data_quality, user_role=analyst, tool_dependency_mode=bi_dashboard_heavy"
+        },
+        {
+          "episode_id": "github_discussions::1014776720::01",
+          "source": "github_discussions",
+          "grounded_text": "Pivot table summary returning wrong results I am using Preset Cloud, so not sure which version is used, as far as I can see Pivot table summary generate only 1 SQL Query, I would expect that it generate two. one for the rows another for the summary see the results of the division which is wrong Actual/ Budget, I don't know how to tell superset to keep the same metric definition for the summary rows !image I am using",
+          "why_selected": "Selected for grounding fit, validation pressure, bottleneck specificity, metric definition. Matches persona on bottleneck_type=data_quality, user_role=analyst, tool_dependency_mode=bi_dashboard_heavy"
+        },
+        {
+          "episode_id": "reddit::1sivc52::01",
+          "source": "reddit",
+          "grounded_text": "I've already checked the settings in Drive, but the mismatch persists in the main dashboard. Has anyone encountered this or knows how to force a sync/refresh of the device identity?",
+          "why_selected": "Selected for grounding fit, non genericness, bottleneck specificity, dashboard trust. Matches persona on bottleneck_type=data_quality, user_role=analyst, tool_dependency_mode=bi_dashboard_heavy"
+        }
+      ],
+      "representative_examples": [
+        {
+          "episode_id": "stackoverflow::75374665::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "stackoverflow::72367463::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "general_friction"
+        },
+        {
+          "episode_id": "stackoverflow::76605783::01",
+          "source": "stackoverflow",
+          "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+          "bottleneck_text": "general_friction"
+        }
+      ]
+    }
+  ],
+  "simulation_family": [
+    {
+      "variant_id": "G",
+      "description": "no-op baseline reference"
+    },
+    {
+      "variant_id": "A",
+      "description": "pre-merge guard keeping persona_04 anchors stable"
+    },
+    {
+      "variant_id": "B",
+      "description": "persona_04 anchor-protection using selected examples / high-confidence validation rows"
+    },
+    {
+      "variant_id": "C",
+      "description": "identity-preserving split allowing persona_01 rows into persona_04 only on semantic profile match"
+    },
+    {
+      "variant_id": "D",
+      "description": "source-normalized persona_04 expansion"
+    },
+    {
+      "variant_id": "E",
+      "description": "stricter merge-conflict style guard against reporting/report-speed absorption"
+    },
+    {
+      "variant_id": "F",
+      "description": "conservative persona_04 expansion with hard-negative phrase penalty"
+    }
+  ],
+  "states": [
+    {
+      "variant_id": "G",
+      "description": "no-op baseline reference",
+      "variant_reconciliation_target_id": "persona_04",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=66.7, validation_share_pct=87.6, hard_negative_fp=11.1, parent_capture_rate=0.0",
+      "dev_metrics": {
+        "positive_recall": 66.7,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 11.1,
+        "ambiguous_movement_rate": 8.3,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 20
+      },
+      "eval_locked_metrics": {
+        "positive_recall": 60.0,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 8.3,
+        "ambiguous_movement_rate": 6.2,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 12
+      },
+      "persona_01_leakage_pct": 0.0,
+      "persona_04_identity_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_04",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 598,
+          "jaccard_overlap": 1.0,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_05_promotion_drift_risk": false,
+      "top_3_cluster_share": 83.3,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_becomes_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "identity_continuity_gate": {
+        "reference_only": true,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "baseline_reference",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": false,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": []
+      }
+    },
+    {
+      "variant_id": "A",
+      "description": "pre-merge guard keeping persona_04 anchors stable",
+      "variant_reconciliation_target_id": "persona_04",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=66.7, validation_share_pct=87.6, hard_negative_fp=11.1, parent_capture_rate=0.0",
+      "dev_metrics": {
+        "positive_recall": 66.7,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 11.1,
+        "ambiguous_movement_rate": 8.3,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 20
+      },
+      "eval_locked_metrics": {
+        "positive_recall": 60.0,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 8.3,
+        "ambiguous_movement_rate": 6.2,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 12
+      },
+      "persona_01_leakage_pct": 0.0,
+      "persona_04_identity_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_04",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 598,
+          "jaccard_overlap": 1.0,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_05_promotion_drift_risk": false,
+      "top_3_cluster_share": 83.3,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_becomes_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": false,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": [
+          "positive_recall_high_enough"
+        ]
+      }
+    },
+    {
+      "variant_id": "B",
+      "description": "persona_04 anchor-protection using selected examples / high-confidence validation rows",
+      "variant_reconciliation_target_id": "persona_04",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=66.7, validation_share_pct=86.8, hard_negative_fp=11.1, parent_capture_rate=0.0",
+      "dev_metrics": {
+        "positive_recall": 66.7,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 11.1,
+        "ambiguous_movement_rate": 12.5,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 20
+      },
+      "eval_locked_metrics": {
+        "positive_recall": 60.0,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 8.3,
+        "ambiguous_movement_rate": 6.2,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 12
+      },
+      "persona_01_leakage_pct": 0.4,
+      "persona_04_identity_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_04",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 614,
+          "jaccard_overlap": 0.9739,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_05_promotion_drift_risk": false,
+      "top_3_cluster_share": 83.1,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_becomes_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": false,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": [
+          "positive_recall_high_enough"
+        ]
+      }
+    },
+    {
+      "variant_id": "C",
+      "description": "identity-preserving split allowing persona_01 rows into persona_04 only on semantic profile match",
+      "variant_reconciliation_target_id": "persona_04",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=66.7, validation_share_pct=86.4, hard_negative_fp=11.1, parent_capture_rate=0.0",
+      "dev_metrics": {
+        "positive_recall": 66.7,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 11.1,
+        "ambiguous_movement_rate": 12.5,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 20
+      },
+      "eval_locked_metrics": {
+        "positive_recall": 60.0,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 8.3,
+        "ambiguous_movement_rate": 6.2,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 12
+      },
+      "persona_01_leakage_pct": 0.5,
+      "persona_04_identity_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_04",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 619,
+          "jaccard_overlap": 0.9661,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_05_promotion_drift_risk": false,
+      "top_3_cluster_share": 83.1,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_becomes_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": false,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": [
+          "positive_recall_high_enough"
+        ]
+      }
+    },
+    {
+      "variant_id": "D",
+      "description": "source-normalized persona_04 expansion",
+      "variant_reconciliation_target_id": "persona_04",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=66.7, validation_share_pct=87.0, hard_negative_fp=11.1, parent_capture_rate=0.0",
+      "dev_metrics": {
+        "positive_recall": 66.7,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 11.1,
+        "ambiguous_movement_rate": 8.3,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 20
+      },
+      "eval_locked_metrics": {
+        "positive_recall": 60.0,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 8.3,
+        "ambiguous_movement_rate": 6.2,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 12
+      },
+      "persona_01_leakage_pct": 0.2,
+      "persona_04_identity_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_04",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 608,
+          "jaccard_overlap": 0.9836,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_05_promotion_drift_risk": false,
+      "top_3_cluster_share": 83.2,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_becomes_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": false,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": [
+          "positive_recall_high_enough"
+        ]
+      }
+    },
+    {
+      "variant_id": "E",
+      "description": "stricter merge-conflict style guard against reporting/report-speed absorption",
+      "variant_reconciliation_target_id": "persona_04",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=66.7, validation_share_pct=86.4, hard_negative_fp=11.1, parent_capture_rate=0.0",
+      "dev_metrics": {
+        "positive_recall": 66.7,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 11.1,
+        "ambiguous_movement_rate": 12.5,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 20
+      },
+      "eval_locked_metrics": {
+        "positive_recall": 60.0,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 8.3,
+        "ambiguous_movement_rate": 6.2,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 12
+      },
+      "persona_01_leakage_pct": 0.5,
+      "persona_04_identity_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_04",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 619,
+          "jaccard_overlap": 0.9661,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_05_promotion_drift_risk": false,
+      "top_3_cluster_share": 83.1,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_becomes_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": false,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": [
+          "positive_recall_high_enough"
+        ]
+      }
+    },
+    {
+      "variant_id": "F",
+      "description": "conservative persona_04 expansion with hard-negative phrase penalty",
+      "variant_reconciliation_target_id": "persona_04",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=66.7, validation_share_pct=86.8, hard_negative_fp=11.1, parent_capture_rate=0.0",
+      "dev_metrics": {
+        "positive_recall": 66.7,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 11.1,
+        "ambiguous_movement_rate": 12.5,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 20
+      },
+      "eval_locked_metrics": {
+        "positive_recall": 60.0,
+        "parent_retention": 100.0,
+        "hard_negative_false_positive_rate": 8.3,
+        "ambiguous_movement_rate": 6.2,
+        "parent_examples_wrongly_pulled_out_of_persona_01": 0,
+        "positives_moved_to_persona_04_like": 12
+      },
+      "persona_01_leakage_pct": 0.3,
+      "persona_04_identity_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_04",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 613,
+          "jaccard_overlap": 0.9755,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_05_promotion_drift_risk": false,
+      "top_3_cluster_share": 83.2,
+      "final_usable_persona_count_simulation": 3,
+      "persona_04_becomes_unblocked": false,
+      "persona_05_remains_blocked": true,
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "stable_same_id",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": false,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": [
+          "positive_recall_high_enough"
+        ]
+      }
+    }
+  ],
+  "eligible_variants": [],
+  "recommendation": "No production patch should be attempted unless one of these persona_04 identity-preserving variants passes curation eval, release gate, and identity continuity together.",
+  "reference_identity_gate": {
+    "baseline_reconciliation_target_id": "persona_04",
+    "checks": [
+      "baseline_target_matches_best_match",
+      "jaccard_overlap_high",
+      "selected_example_overlap_high",
+      "positive_recall_high_enough",
+      "hard_negative_fp_within_guarded_range",
+      "ambiguous_movement_improves_vs_raw_reconcile_boost",
+      "persona_01_leakage_below_ceiling",
+      "persona_05_promotion_drift_absent",
+      "target_change_is_not_semantic_drift"
+    ],
+    "thresholds": {
+      "jaccard_overlap_min": 0.6,
+      "selected_example_overlap_pct_min": 80.0,
+      "positive_recall_min": 80.0,
+      "hard_negative_false_positive_rate_max": 16.7,
+      "persona_01_parent_leakage_pct_max": 5.0
+    }
+  }
+}
