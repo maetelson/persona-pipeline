@@ -1,0 +1,535 @@
+{
+  "policy_trace": {
+    "top_3_cluster_share_of_core_labeled": {
+      "calculated_in": "src/analysis/bottleneck_clustering.py::summarize_cluster_robustness_metrics",
+      "applied_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints"
+    },
+    "largest_source_influence_share_pct": {
+      "calculated_in": "src/analysis/quality_status.py::build_quality_metrics",
+      "applied_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints"
+    },
+    "weak_source_cost_centers_present": {
+      "calculated_in": "data/analysis/source_balance_audit.csv -> weak_source_cost_center",
+      "applied_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints"
+    },
+    "protected_distinct_candidate": {
+      "calculated_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints",
+      "applied_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints"
+    },
+    "borderline_candidate": {
+      "calculated_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints",
+      "applied_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints"
+    },
+    "share_rank": {
+      "calculated_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints",
+      "applied_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints"
+    },
+    "weak_source_link": {
+      "calculated_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints",
+      "applied_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints"
+    },
+    "final_usable_persona": {
+      "calculated_in": "src/analysis/persona_service.py::_is_final_usable_persona",
+      "applied_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints"
+    },
+    "promotion_constrained_by_workbook_policy": {
+      "calculated_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints",
+      "applied_in": "src/analysis/stage_service.py::_apply_workbook_promotion_constraints"
+    }
+  },
+  "current_policy_intent": [
+    {
+      "guard": "top_3_cluster_share_of_core_labeled",
+      "intent": "Prevent a workbook from claiming a broad persona set when three personas still absorb almost all core labeled evidence.",
+      "failure_mode_present_now": true,
+      "suppressed_personas": [
+        "persona_04",
+        "persona_05"
+      ],
+      "suppression_scope": "global_guard_with_candidate_specific_downgrade"
+    },
+    {
+      "guard": "largest_source_influence_share_pct",
+      "intent": "Prevent the workbook from looking production-ready when one source dominates promoted and grounded downstream influence.",
+      "failure_mode_present_now": false,
+      "suppressed_personas": [],
+      "suppression_scope": "global_guard_with_candidate_specific_downgrade"
+    },
+    {
+      "guard": "weak_source_cost_centers_present",
+      "intent": "Prevent stronger headline claims while important sources still fail upstream enough to bias the workbook toward easier sources.",
+      "failure_mode_present_now": true,
+      "suppressed_personas": [
+        "persona_04",
+        "persona_05"
+      ],
+      "suppression_scope": "global_guard_with_candidate_specific_downgrade"
+    },
+    {
+      "guard": "protected_distinct_candidate",
+      "intent": "Avoid downgrading the small number of semantically distinct, grounded, cross-source personas that should survive coarse workbook cleanup.",
+      "failure_mode_present_now": false,
+      "suppressed_personas": [],
+      "suppression_scope": "candidate_specific_protection"
+    },
+    {
+      "guard": "borderline_candidate",
+      "intent": "Prefer downgrading promoted personas that are near-threshold, thinly evidenced, or less robust when workbook-level guards fail.",
+      "failure_mode_present_now": true,
+      "suppressed_personas": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04",
+        "persona_05"
+      ],
+      "suppression_scope": "candidate_specific_priority"
+    },
+    {
+      "guard": "weak_source_link",
+      "intent": "Prefer downgrading personas whose primary source comes from a weak-source cost center.",
+      "failure_mode_present_now": false,
+      "suppressed_personas": [],
+      "suppression_scope": "candidate_specific_priority"
+    }
+  ],
+  "current_context": {
+    "overview": {
+      "persona_readiness_state": "exploratory_only",
+      "persona_readiness_label": "Hypothesis Material",
+      "persona_asset_class": "hypothesis_material",
+      "persona_readiness_gate_status": "FAIL",
+      "persona_completion_claim_allowed": "False",
+      "persona_usage_restriction": "Hypothesis material only. Not a final persona asset and not safe for review sign-off, deck-ready use, or production persona use.",
+      "persona_readiness_summary": "Exploratory workbook only. Treat the contents as hypothesis material, not final personas.",
+      "persona_readiness_blockers": "overall_status=FAIL keeps workbook below deck_ready | persona_core_coverage_of_all_labeled_pct>=80.0",
+      "persona_readiness_rule": "exploratory_only below reviewable thresholds; reviewable_but_not_deck_ready requires explicit floors for overall_unknown_ratio, persona_core_coverage_of_all_labeled_pct, promoted_persona_example_coverage_pct, final_usable_persona_count, largest_source_influence_share_pct, and fragile_tail_share_of_core_labeled; deck_ready is the first state allowed to claim a final persona asset; production_persona_ready requires the stricter production thresholds for those same metrics.",
+      "promotion_constraint_status": "constrained",
+      "promotion_constraint_summary": "Promotion set constrained by concentration/source-balance policy; downgraded 2 borderline promoted personas: persona_05 | persona_04",
+      "source_action_priority_summary": "power_bi_community:fix_now:valid_filtering:review_source_specific_valid_filtering | metabase_discussions:fix_now:time_window:review_time_window_policy | hubspot_community:fix_now:valid_filtering:review_source_specific_valid_filtering | google_developer_forums:fix_now:valid_filtering:review_source_specific_valid_filtering | domo_community_forum:fix_now:episode_yield:tighten_episode_segmentation_for_source",
+      "overall_status": "FAIL",
+      "quality_flag": "UNSTABLE",
+      "quality_flag_rule": "UNSTABLE if any axis status is FAIL; EXPLORATORY if no FAIL and any axis status is WARN; otherwise OK.",
+      "composite_reason_keys": "core_coverage_low | effective_source_balance_low | weak_source_cost_centers_excessive | weak_source_cost_centers_listed",
+      "core_clustering_status": "WARN",
+      "source_diversity_status": "FAIL",
+      "example_grounding_status": "OK",
+      "overall_unknown_status": "OK",
+      "core_unknown_status": "OK",
+      "core_coverage_status": "WARN",
+      "effective_source_diversity_status": "WARN",
+      "source_concentration_status": "OK",
+      "source_influence_concentration_status": "OK",
+      "weak_source_yield_status": "FAIL",
+      "largest_cluster_dominance_status": "OK",
+      "cluster_concentration_tail_status": "OK",
+      "cluster_fragility_status": "OK",
+      "cluster_evidence_status": "OK",
+      "cluster_separation_status": "OK",
+      "grounding_coverage_status": "OK",
+      "raw_record_rows": "132257",
+      "normalized_post_rows": "132257",
+      "valid_candidate_rows": "44150",
+      "prefiltered_valid_rows": "19046",
+      "episode_rows": "12669",
+      "labeled_episode_rows": "12669",
+      "persona_core_labeled_rows": "9442",
+      "persona_core_coverage_of_all_labeled_pct": "74.5",
+      "persona_core_unknown_ratio": "0.007626",
+      "overall_unknown_ratio": "0.139159",
+      "effective_labeled_source_count": "14.0",
+      "effective_balanced_source_count": "5.89",
+      "largest_cluster_share_of_core_labeled": "47.6",
+      "top_3_cluster_share_of_core_labeled": "0.8332",
+      "robust_cluster_count": "11",
+      "stable_cluster_count": "9",
+      "fragile_cluster_count": "2",
+      "micro_cluster_count": "0",
+      "thin_evidence_cluster_count": "0",
+      "structurally_supported_cluster_count": "9",
+      "weak_separation_cluster_count": "0",
+      "fragile_tail_cluster_count": "2",
+      "fragile_tail_share_of_core_labeled": "0.0031",
+      "avg_cluster_separation": "0.1734",
+      "min_cluster_separation": "0.125",
+      "largest_labeled_source_share_pct": "24.6",
+      "largest_promoted_source_share_pct": "33.8",
+      "largest_grounded_source_share_pct": "33.8",
+      "largest_source_influence_share_pct": "30.7",
+      "weak_source_cost_center_count": "4",
+      "weak_source_cost_centers": "adobe_analytics_community | domo_community_forum | google_developer_forums | klaviyo_community",
+      "fix_now_source_count": "7",
+      "tune_soon_source_count": "5",
+      "promoted_candidate_persona_count": "5",
+      "promotion_visibility_persona_count": "3",
+      "headline_persona_count": "3",
+      "final_usable_persona_count": "3",
+      "deck_ready_persona_count": "0",
+      "promoted_persona_example_coverage_pct": "100.0",
+      "promoted_persona_grounded_count": "3",
+      "promoted_persona_weakly_grounded_count": "0",
+      "promoted_persona_ungrounded_count": "0",
+      "promoted_personas_weakly_grounded": "",
+      "promoted_personas_missing_examples": "",
+      "exploratory_bucket_count": "8",
+      "min_cluster_size": "634",
+      "selected_axes": "bottleneck_type | analysis_goal | workflow_stage | output_expectation | user_role | tool_dependency_mode | trust_validation_need | analysis_maturity",
+      "clustering_mode": "bottleneck_first_robust"
+    },
+    "weak_sources": [
+      "adobe_analytics_community",
+      "domo_community_forum",
+      "google_developer_forums",
+      "klaviyo_community"
+    ],
+    "guard_failures": [
+      "top_3_cluster_share_of_core_labeled=83.3",
+      "weak_source_cost_centers_present"
+    ],
+    "top_3_share": 83.3,
+    "largest_source_influence_share_pct": 30.7
+  },
+  "candidate_level_audit": [
+    {
+      "persona_id": "persona_01",
+      "persona_size": 4490,
+      "share_rank": 1.0,
+      "promotion_score": 0.7945865680347863,
+      "structural_support_status": "structurally_supported",
+      "grounding_status": "grounded_single",
+      "source_mix_top_5": "power_bi_community:30.3% | stackoverflow:14.1% | hubspot_community:14.1% | metabase_discussions:11.9% | github_discussions:10.1%",
+      "candidate_source_concentration": 30.3,
+      "weak_source_link": false,
+      "protected_distinct_candidate": true,
+      "borderline_candidate": true,
+      "local_promotion_status": "promoted_candidate_persona",
+      "promotion_status": "promoted_persona",
+      "workbook_policy_blocker": "",
+      "final_usable_persona": true,
+      "semantic_review_candidate": false,
+      "thin_evidence_candidate": false,
+      "strategic_redundancy_status": "not_evaluated",
+      "workbook_review_visible": true,
+      "promotion_grounding_status": "promoted_and_grounded",
+      "reporting_readiness_status": "reviewable_but_not_deck_ready",
+      "exact_suppression_reason": "promotion score 0.831 clears promotion threshold 0.69 with structurally supported and product-actionable evidence",
+      "primary_source": "power_bi_community"
+    },
+    {
+      "persona_id": "persona_02",
+      "persona_size": 2570,
+      "share_rank": 2.0,
+      "promotion_score": 0.7855441908158854,
+      "structural_support_status": "structurally_supported",
+      "grounding_status": "grounded_single",
+      "source_mix_top_5": "power_bi_community:38.7% | metabase_discussions:35.3% | github_discussions:13.9% | shopify_community:5.0% | hubspot_community:2.1%",
+      "candidate_source_concentration": 38.7,
+      "weak_source_link": false,
+      "protected_distinct_candidate": true,
+      "borderline_candidate": true,
+      "local_promotion_status": "promoted_candidate_persona",
+      "promotion_status": "promoted_persona",
+      "workbook_policy_blocker": "",
+      "final_usable_persona": true,
+      "semantic_review_candidate": false,
+      "thin_evidence_candidate": false,
+      "strategic_redundancy_status": "not_evaluated",
+      "workbook_review_visible": true,
+      "promotion_grounding_status": "promoted_and_grounded",
+      "reporting_readiness_status": "reviewable_but_not_deck_ready",
+      "exact_suppression_reason": "promotion score 0.850 clears promotion threshold 0.69 with structurally supported and product-actionable evidence",
+      "primary_source": "power_bi_community"
+    },
+    {
+      "persona_id": "persona_03",
+      "persona_size": 807,
+      "share_rank": 3.0,
+      "promotion_score": 0.697971682671286,
+      "structural_support_status": "structurally_supported",
+      "grounding_status": "grounded_single",
+      "source_mix_top_5": "power_bi_community:38.0% | metabase_discussions:35.2% | sisense_community:10.4% | github_discussions:9.9% | hubspot_community:3.1%",
+      "candidate_source_concentration": 38.0,
+      "weak_source_link": false,
+      "protected_distinct_candidate": true,
+      "borderline_candidate": true,
+      "local_promotion_status": "promoted_candidate_persona",
+      "promotion_status": "promoted_persona",
+      "workbook_policy_blocker": "",
+      "final_usable_persona": true,
+      "semantic_review_candidate": false,
+      "thin_evidence_candidate": true,
+      "strategic_redundancy_status": "not_evaluated",
+      "workbook_review_visible": true,
+      "promotion_grounding_status": "promoted_and_grounded",
+      "reporting_readiness_status": "reviewable_but_not_deck_ready",
+      "exact_suppression_reason": "promotion score 0.769 clears promotion threshold 0.69 with structurally supported and product-actionable evidence",
+      "primary_source": "power_bi_community"
+    },
+    {
+      "persona_id": "persona_04",
+      "persona_size": 598,
+      "share_rank": 4.0,
+      "promotion_score": 0.7519588097053436,
+      "structural_support_status": "structurally_supported",
+      "grounding_status": "grounded_single",
+      "source_mix_top_5": "github_discussions:18.1% | power_bi_community:15.1% | metabase_discussions:14.0% | stackoverflow:13.9% | shopify_community:10.2%",
+      "candidate_source_concentration": 18.1,
+      "weak_source_link": false,
+      "protected_distinct_candidate": false,
+      "borderline_candidate": true,
+      "local_promotion_status": "promoted_candidate_persona",
+      "promotion_status": "exploratory_bucket",
+      "workbook_policy_blocker": "top_3_cluster_share_of_core_labeled=83.3 | weak_source_cost_centers_present",
+      "final_usable_persona": false,
+      "semantic_review_candidate": true,
+      "thin_evidence_candidate": false,
+      "strategic_redundancy_status": "not_evaluated",
+      "workbook_review_visible": false,
+      "promotion_grounding_status": "promotion_constrained_by_workbook_policy",
+      "reporting_readiness_status": "promotion_constrained_by_workbook_policy",
+      "exact_suppression_reason": "promotion constrained by workbook concentration/source-balance policy | top_3_cluster_share_of_core_labeled=83.3 | weak_source_cost_centers_present | borderline_candidate | share_rank>2",
+      "primary_source": "github_discussions"
+    },
+    {
+      "persona_id": "persona_05",
+      "persona_size": 539,
+      "share_rank": 5.0,
+      "promotion_score": 0.6909757338159966,
+      "structural_support_status": "structurally_supported",
+      "grounding_status": "grounded_single",
+      "source_mix_top_5": "power_bi_community:45.3% | metabase_discussions:24.7% | sisense_community:12.2% | github_discussions:5.0% | shopify_community:4.3%",
+      "candidate_source_concentration": 45.3,
+      "weak_source_link": false,
+      "protected_distinct_candidate": false,
+      "borderline_candidate": true,
+      "local_promotion_status": "promoted_candidate_persona",
+      "promotion_status": "exploratory_bucket",
+      "workbook_policy_blocker": "top_3_cluster_share_of_core_labeled=83.3 | weak_source_cost_centers_present",
+      "final_usable_persona": false,
+      "semantic_review_candidate": false,
+      "thin_evidence_candidate": true,
+      "strategic_redundancy_status": "not_evaluated",
+      "workbook_review_visible": false,
+      "promotion_grounding_status": "promotion_constrained_by_workbook_policy",
+      "reporting_readiness_status": "promotion_constrained_by_workbook_policy",
+      "exact_suppression_reason": "promotion constrained by workbook concentration/source-balance policy | top_3_cluster_share_of_core_labeled=83.3 | weak_source_cost_centers_present | borderline_candidate | share_rank>2",
+      "primary_source": "power_bi_community"
+    }
+  ],
+  "policy_variants": [
+    {
+      "variant_id": "A",
+      "description": "current policy baseline",
+      "final_usable_persona_count": 3,
+      "review_ready_persona_count": 0,
+      "persona_04_status": "blocked_or_exploratory",
+      "persona_05_status": "blocked_or_exploratory",
+      "top_3_cluster_share": 83.3,
+      "largest_source_influence_share_pct": 30.7,
+      "weak_source_dominated_candidate_passes": false,
+      "near_duplicate_candidate_passes": false,
+      "thin_evidence_candidate_passes": false,
+      "existing_thin_evidence_in_current_final_set": true,
+      "persona_04_semantic_evidence_basis": "threshold_relaxation_or_not_visible",
+      "risk_level": "baseline",
+      "accepted": true,
+      "passed_personas": [
+        "persona_01",
+        "persona_02",
+        "persona_03"
+      ],
+      "blocked_personas": [
+        "persona_04",
+        "persona_05"
+      ]
+    },
+    {
+      "variant_id": "B",
+      "description": "candidate-local concentration guard instead of workbook-global top-3 suppression",
+      "final_usable_persona_count": 4,
+      "review_ready_persona_count": 0,
+      "persona_04_status": "production_ready_persona",
+      "persona_05_status": "blocked_or_exploratory",
+      "top_3_cluster_share": 83.3,
+      "largest_source_influence_share_pct": 30.7,
+      "weak_source_dominated_candidate_passes": false,
+      "near_duplicate_candidate_passes": false,
+      "thin_evidence_candidate_passes": false,
+      "existing_thin_evidence_in_current_final_set": true,
+      "persona_04_semantic_evidence_basis": "real_semantic_evidence",
+      "risk_level": "high",
+      "accepted": false,
+      "passed_personas": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04"
+      ],
+      "blocked_personas": [
+        "persona_05"
+      ]
+    },
+    {
+      "variant_id": "C",
+      "description": "allow one protected distinct candidate beyond top 3 if identity, grounding, and source diversity pass",
+      "final_usable_persona_count": 4,
+      "review_ready_persona_count": 0,
+      "persona_04_status": "production_ready_persona",
+      "persona_05_status": "blocked_or_exploratory",
+      "top_3_cluster_share": 83.3,
+      "largest_source_influence_share_pct": 30.7,
+      "weak_source_dominated_candidate_passes": false,
+      "near_duplicate_candidate_passes": false,
+      "thin_evidence_candidate_passes": false,
+      "existing_thin_evidence_in_current_final_set": true,
+      "persona_04_semantic_evidence_basis": "real_semantic_evidence",
+      "risk_level": "high",
+      "accepted": false,
+      "passed_personas": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04"
+      ],
+      "blocked_personas": [
+        "persona_05"
+      ]
+    },
+    {
+      "variant_id": "D",
+      "description": "replace hard 80% top-3 cutoff with warning plus candidate-specific demotion only",
+      "final_usable_persona_count": 5,
+      "review_ready_persona_count": 0,
+      "persona_04_status": "production_ready_persona",
+      "persona_05_status": "production_ready_persona",
+      "top_3_cluster_share": 83.3,
+      "largest_source_influence_share_pct": 30.7,
+      "weak_source_dominated_candidate_passes": false,
+      "near_duplicate_candidate_passes": false,
+      "thin_evidence_candidate_passes": true,
+      "existing_thin_evidence_in_current_final_set": true,
+      "persona_04_semantic_evidence_basis": "real_semantic_evidence",
+      "risk_level": "high",
+      "accepted": false,
+      "passed_personas": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04",
+        "persona_05"
+      ],
+      "blocked_personas": []
+    },
+    {
+      "variant_id": "E",
+      "description": "separate source concentration risk from semantic cluster dominance risk",
+      "final_usable_persona_count": 4,
+      "review_ready_persona_count": 0,
+      "persona_04_status": "production_ready_persona",
+      "persona_05_status": "blocked_or_exploratory",
+      "top_3_cluster_share": 83.3,
+      "largest_source_influence_share_pct": 30.7,
+      "weak_source_dominated_candidate_passes": false,
+      "near_duplicate_candidate_passes": false,
+      "thin_evidence_candidate_passes": false,
+      "existing_thin_evidence_in_current_final_set": true,
+      "persona_04_semantic_evidence_basis": "real_semantic_evidence",
+      "risk_level": "high",
+      "accepted": false,
+      "passed_personas": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04"
+      ],
+      "blocked_personas": [
+        "persona_05"
+      ]
+    },
+    {
+      "variant_id": "F",
+      "description": "review-ready mode keeps production-ready strict but exposes extra reviewable personas",
+      "final_usable_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "persona_04_status": "review_ready_persona",
+      "persona_05_status": "blocked_or_exploratory",
+      "top_3_cluster_share": 83.3,
+      "largest_source_influence_share_pct": 30.7,
+      "weak_source_dominated_candidate_passes": false,
+      "near_duplicate_candidate_passes": false,
+      "thin_evidence_candidate_passes": false,
+      "existing_thin_evidence_in_current_final_set": true,
+      "persona_04_semantic_evidence_basis": "real_semantic_evidence",
+      "risk_level": "low",
+      "accepted": true,
+      "passed_personas": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04"
+      ],
+      "blocked_personas": [
+        "persona_05"
+      ]
+    },
+    {
+      "variant_id": "G",
+      "description": "two-tier output with production-ready personas and separate review-ready personas",
+      "final_usable_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "persona_04_status": "review_ready_persona",
+      "persona_05_status": "blocked_or_exploratory",
+      "top_3_cluster_share": 83.3,
+      "largest_source_influence_share_pct": 30.7,
+      "weak_source_dominated_candidate_passes": false,
+      "near_duplicate_candidate_passes": false,
+      "thin_evidence_candidate_passes": false,
+      "existing_thin_evidence_in_current_final_set": true,
+      "persona_04_semantic_evidence_basis": "real_semantic_evidence",
+      "risk_level": "low",
+      "accepted": true,
+      "passed_personas": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04"
+      ],
+      "blocked_personas": [
+        "persona_05"
+      ]
+    },
+    {
+      "variant_id": "H",
+      "description": "no-op baseline reference",
+      "final_usable_persona_count": 3,
+      "review_ready_persona_count": 0,
+      "persona_04_status": "blocked_or_exploratory",
+      "persona_05_status": "blocked_or_exploratory",
+      "top_3_cluster_share": 83.3,
+      "largest_source_influence_share_pct": 30.7,
+      "weak_source_dominated_candidate_passes": false,
+      "near_duplicate_candidate_passes": false,
+      "thin_evidence_candidate_passes": false,
+      "existing_thin_evidence_in_current_final_set": true,
+      "persona_04_semantic_evidence_basis": "threshold_relaxation_or_not_visible",
+      "risk_level": "baseline",
+      "accepted": true,
+      "passed_personas": [
+        "persona_01",
+        "persona_02",
+        "persona_03"
+      ],
+      "blocked_personas": [
+        "persona_04",
+        "persona_05"
+      ]
+    }
+  ],
+  "recommendation": {
+    "current_policy_judgment": "correctly_strict_for_production_but_too_coarse_for_review_visibility",
+    "persona_04_recommendation": "review_ready",
+    "persona_05_recommendation": "remain_blocked",
+    "recommended_policy_path": "two_tier_output_review_ready_positioning",
+    "recommended_reason": "No policy-only variant changes top_3_cluster_share enough to justify a production-ready fourth persona, but persona_04 has stronger semantic, grounding, and source-diversity support than persona_05 and is a good candidate for explicit review-ready visibility."
+  }
+}
