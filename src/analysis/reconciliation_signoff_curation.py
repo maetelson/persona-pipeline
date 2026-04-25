@@ -72,6 +72,14 @@ REQUIRED_COLUMNS = [
     "should_move_out_of_persona_01",
     "should_join_persona_04_like",
     "confidence",
+    "curation_source_pool",
+    "derived_from_current_persona_assignment",
+    "derived_from_reconcile_boost",
+    "derived_from_keyword_tail",
+    "manually_reviewed",
+    "review_status",
+    "relabel_reason",
+    "hard_negative_subtype",
 ]
 
 POSITIVE_TERMS = {
@@ -195,6 +203,17 @@ def validate_curation_df(curation_df: pd.DataFrame) -> list[str]:
     if invalid_labels:
         errors.append(f"invalid curated_label values: {', '.join(invalid_labels)}")
 
+    review_status_values = set(curation_df["review_status"].astype(str))
+    valid_review_statuses = {
+        "not_reviewed",
+        "reviewed_confirmed",
+        "reviewed_relabelled",
+        "reviewed_acceptable_ambiguous",
+    }
+    invalid_review_statuses = sorted(review_status_values - valid_review_statuses)
+    if invalid_review_statuses:
+        errors.append(f"invalid review_status values: {', '.join(invalid_review_statuses)}")
+
     counts = curation_df["curated_label"].astype(str).value_counts().to_dict()
     for label, minimum in BUCKET_TARGETS.items():
         if int(counts.get(label, 0)) < minimum:
@@ -213,6 +232,11 @@ def validate_curation_df(curation_df: pd.DataFrame) -> list[str]:
             errors.append(f"top source dominates curation set: {source_counts.index[0]} share {top_source_share:.2%}")
         if len(source_counts) < 8:
             errors.append(f"source diversity is too low: only {len(source_counts)} unique sources")
+
+    if "curation_source_pool" not in curation_df.columns:
+        errors.append("missing curation_source_pool column")
+    if "review_status" not in curation_df.columns:
+        errors.append("missing review_status column")
 
     return errors
 
@@ -255,6 +279,24 @@ def validate_curation_splits(split_frames: dict[str, pd.DataFrame]) -> list[str]
     overlap_ids = sorted(dev_ids & eval_ids)
     if overlap_ids:
         errors.append(f"duplicate episode_id across dev/eval_locked: {len(overlap_ids)}")
+
+    eval_hard_negatives = split_frames["eval_locked"][
+        split_frames["eval_locked"]["curated_label"].astype(str) == "hard_negative"
+    ].copy()
+    if eval_hard_negatives.empty:
+        errors.append("eval_locked: hard_negative bucket is empty")
+    else:
+        subtype_counts = (
+            eval_hard_negatives["hard_negative_subtype"]
+            .astype(str)
+            .replace("", pd.NA)
+            .dropna()
+            .value_counts()
+        )
+        if len(subtype_counts) < 4:
+            errors.append(
+                f"eval_locked: hard_negative subtype coverage too narrow: only {len(subtype_counts)} subtype(s)"
+            )
     return errors
 
 
@@ -668,6 +710,20 @@ def _build_curated_df(bundle: dict[str, Any]) -> pd.DataFrame:
     curated_df = pd.concat([positive_df, parent_df, ambiguous_df, noise_df, hard_negative_df], ignore_index=True)
     curated_df = curated_df.drop_duplicates(subset=["episode_id"]).reset_index(drop=True)
     curated_df["reason"] = curated_df.apply(_build_reason, axis=1)
+    curated_df["curation_source_pool"] = curated_df["pool_origin"].fillna("").astype(str)
+    curated_df["derived_from_current_persona_assignment"] = curated_df["pool_origin"].astype(str).isin(
+        ["persona_01_core", "persona_04_current"]
+    )
+    curated_df["derived_from_reconcile_boost"] = (
+        curated_df["pool_origin"].astype(str) == "reconcile_boost_moved_from_persona_01"
+    )
+    curated_df["derived_from_keyword_tail"] = curated_df["pool_origin"].astype(str).isin(
+        ["persona_01_loose_tail", "persona_01_strict_tail", "persona_01_two_groups_neg_tail"]
+    )
+    curated_df["manually_reviewed"] = False
+    curated_df["review_status"] = "not_reviewed"
+    curated_df["relabel_reason"] = ""
+    curated_df["hard_negative_subtype"] = ""
     curated_df = curated_df.sort_values(["curated_label", "source", "episode_id"]).reset_index(drop=True)
     return curated_df[REQUIRED_COLUMNS + ["pool_origin", "reconcile_boost_persona_id", "reconcile_boost_persona_04_like"]]
 

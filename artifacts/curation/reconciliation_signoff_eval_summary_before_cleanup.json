@@ -24,24 +24,24 @@
   },
   "baseline_vs_reconcile_boost_full": {
     "positive_recall": {
-      "baseline": 64.0,
-      "reconcile_boost": 96.0
+      "baseline": 74.0,
+      "reconcile_boost": 100.0
     },
     "hard_negative_false_positive_rate": {
       "baseline": 10.0,
       "reconcile_boost": 23.3
     },
     "ambiguous_movement_rate": {
-      "baseline": 7.5,
-      "reconcile_boost": 65.0
+      "baseline": 0.0,
+      "reconcile_boost": 70.0
     },
     "parent_retention_rate": {
       "baseline": 100.0,
       "reconcile_boost": 100.0
     },
     "positives_in_persona_04_like": {
-      "baseline": 32,
-      "reconcile_boost": 48
+      "baseline": 37,
+      "reconcile_boost": 50
     },
     "parent_examples_wrongly_pulled_out_of_persona_01": {
       "baseline": 0,
@@ -50,24 +50,24 @@
   },
   "baseline_vs_reconcile_boost_dev": {
     "positive_recall": {
-      "baseline": 66.7,
-      "reconcile_boost": 93.3
+      "baseline": 83.3,
+      "reconcile_boost": 100.0
     },
     "hard_negative_false_positive_rate": {
       "baseline": 11.1,
-      "reconcile_boost": 22.2
+      "reconcile_boost": 33.3
     },
     "ambiguous_movement_rate": {
-      "baseline": 8.3,
-      "reconcile_boost": 66.7
+      "baseline": 0.0,
+      "reconcile_boost": 70.8
     },
     "parent_retention_rate": {
       "baseline": 100.0,
       "reconcile_boost": 100.0
     },
     "positives_in_persona_04_like": {
-      "baseline": 20,
-      "reconcile_boost": 28
+      "baseline": 25,
+      "reconcile_boost": 30
     },
     "parent_examples_wrongly_pulled_out_of_persona_01": {
       "baseline": 0,
@@ -81,11 +81,11 @@
     },
     "hard_negative_false_positive_rate": {
       "baseline": 8.3,
-      "reconcile_boost": 25.0
+      "reconcile_boost": 8.3
     },
     "ambiguous_movement_rate": {
-      "baseline": 6.2,
-      "reconcile_boost": 62.5
+      "baseline": 0.0,
+      "reconcile_boost": 68.8
     },
     "parent_retention_rate": {
       "baseline": 100.0,
@@ -144,6 +144,13 @@
     ],
     "hard_negative": [
       {
+        "episode_id": "adobe_analytics_community::12645::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we diagnose and resolve analytics issues faster?",
+        "bottleneck_text": "general_friction",
+        "reason": "metric/reporting words appear, but the real issue is setup/support/helpdesk-style rather than reconciliation/signoff pain"
+      },
+      {
         "episode_id": "adobe_analytics_community::12653::01",
         "source": "adobe_analytics_community",
         "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
@@ -151,15 +158,8 @@
         "reason": "metric/reporting words appear, but the real issue is setup/support/helpdesk-style rather than reconciliation/signoff pain"
       },
       {
-        "episode_id": "domo_community_forum::53342::01",
-        "source": "domo_community_forum",
-        "business_question": "How can this workflow be made more reliable and repeatable?",
-        "bottleneck_text": "general_friction",
-        "reason": "metric/reporting words appear, but the real issue is setup/support/helpdesk-style rather than reconciliation/signoff pain"
-      },
-      {
-        "episode_id": "domo_community_forum::54549::01",
-        "source": "domo_community_forum",
+        "episode_id": "adobe_analytics_community::12661::01",
+        "source": "adobe_analytics_community",
         "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
         "bottleneck_text": "general_friction",
         "reason": "metric/reporting words appear, but the real issue is setup/support/helpdesk-style rather than reconciliation/signoff pain"
@@ -181,34 +181,34 @@
         "reason": "content is dominated by community/newsletter/vendor/docs-style material rather than persona evidence"
       },
       {
+        "episode_id": "adobe_analytics_community::12712::01",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
+        "bottleneck_text": "tool_limitation",
+        "reason": "content is dominated by community/newsletter/vendor/docs-style material rather than persona evidence"
+      }
+    ],
+    "reconciliation_signoff_positive": [
+      {
         "episode_id": "adobe_analytics_community::12642::01",
         "source": "adobe_analytics_community",
         "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
         "bottleneck_text": "general_friction",
-        "reason": "tutorial article about treemap visualization, not reconciliation/signoff persona evidence"
-      }
-    ],
-    "reconciliation_signoff_positive": [
+        "reason": "validate_numbers + validation with data_quality and high indicates genuine reconciliation/signoff pain"
+      },
+      {
+        "episode_id": "adobe_analytics_community::12692::02",
+        "source": "adobe_analytics_community",
+        "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
+        "bottleneck_text": "data_quality",
+        "reason": "validate_numbers + reporting with data_quality and high indicates genuine reconciliation/signoff pain"
+      },
       {
         "episode_id": "adobe_analytics_community::84770::01",
         "source": "adobe_analytics_community",
         "business_question": "How can we validate and reconcile reported numbers with less manual QA?",
         "bottleneck_text": "general_friction",
         "reason": "validate_numbers + validation with tool_limitation and high indicates genuine reconciliation/signoff pain"
-      },
-      {
-        "episode_id": "adobe_analytics_community::88623::01",
-        "source": "adobe_analytics_community",
-        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
-        "bottleneck_text": "data_quality",
-        "reason": "report_speed + reporting with data_quality and medium indicates genuine reconciliation/signoff pain"
-      },
-      {
-        "episode_id": "domo_community_forum::11853::01",
-        "source": "domo_community_forum",
-        "business_question": "How can we deliver recurring reporting output faster and with fewer manual steps?",
-        "bottleneck_text": "general_friction",
-        "reason": "report_speed + reporting with data_quality and medium indicates genuine reconciliation/signoff pain"
       }
     ],
     "reporting_packager_parent": [

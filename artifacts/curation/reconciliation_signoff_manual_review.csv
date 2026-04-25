@@ -1,0 +1,69 @@
+episode_id,curated_label_after,review_status,manually_reviewed,relabel_reason,hard_negative_subtype,curation_source_pool
+adobe_analytics_community::12605::01,noise,reviewed_confirmed,True,,,rejected_or_borderline_examples
+adobe_analytics_community::12610::01,noise,reviewed_confirmed,True,,,rejected_or_borderline_examples
+adobe_analytics_community::12642::01,noise,reviewed_relabelled,True,"tutorial article about treemap visualization, not reconciliation/signoff persona evidence",,persona_04_current
+adobe_analytics_community::12645::01,noise,reviewed_relabelled,True,community roundup/newsletter content rather than operational hard negative evidence,,nan
+adobe_analytics_community::12661::01,noise,reviewed_relabelled,True,community lens announcement content rather than operational hard negative evidence,,nan
+adobe_analytics_community::12692::02,noise,reviewed_relabelled,True,"best-practice documentation content, not a user episode blocked by reconciliation or signoff",,persona_04_current
+adobe_analytics_community::84770::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+adobe_analytics_community::88623::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,reconcile_boost_moved_from_persona_01
+domo_community_forum::11853::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,reconcile_boost_moved_from_persona_01
+domo_community_forum::29223::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,reconcile_boost_moved_from_persona_01
+domo_community_forum::41554::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+domo_community_forum::49771::01,ambiguous_boundary,reviewed_relabelled,True,"missing ETL data creates a validation problem, but remains a mixed troubleshooting/boundary case",,nan
+github_discussions::1004538278::01,hard_negative,reviewed_confirmed,True,,setup_configuration_support,nan
+github_discussions::1014776720::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+github_discussions::1014776720::02,reconciliation_signoff_positive,reviewed_confirmed,True,,,reconcile_boost_moved_from_persona_01
+github_discussions::1045976117::01,noise,reviewed_confirmed,True,,,nan
+github_discussions::1113091694::01,reconciliation_signoff_positive,reviewed_relabelled,True,explicit row-count mismatch between database and chart output creates real reconciliation pain,,persona_01_loose_tail
+google_developer_forums::103469::01,hard_negative,reviewed_confirmed,True,,setup_configuration_support,nan
+google_developer_forums::104469::01,ambiguous_boundary,reviewed_relabelled,True,"export null-value mismatch has trust implications, but remains mixed with platform troubleshooting",,nan
+google_developer_forums::107482::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,reconcile_boost_moved_from_persona_01
+google_developer_forums::114359::01,hard_negative,reviewed_relabelled,True,"formula/query-help request about filtered measures, not reconciliation/signoff pain",docs_tutorial_or_formula_help,persona_04_current
+google_developer_forums::114927::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+google_developer_forums::156324::01,noise,reviewed_confirmed,True,,,rejected_or_borderline_examples
+hubspot_community::1008444::01,hard_negative,reviewed_confirmed,True,,setup_configuration_support,nan
+hubspot_community::1012116::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,reconcile_boost_moved_from_persona_01
+hubspot_community::1014835::01,hard_negative,reviewed_relabelled,True,"tracking setup question for chat conversions, not reconciliation/signoff persona evidence",setup_configuration_support,persona_04_current
+hubspot_community::1029321::01,reconciliation_signoff_positive,reviewed_relabelled,True,suspiciously high CTA clicks versus views is a metric trust and explanation problem,,persona_01_loose_tail
+hubspot_community::1042123::01,hard_negative,reviewed_relabelled,True,iframe attribution tracking setup/support issue with metric language,setup_configuration_support,nan
+hubspot_community::1178241::01,noise,reviewed_confirmed,True,,,rejected_or_borderline_examples
+klaviyo_community::063ecf5d32cdb69f5d8d5f07037cc824c13f3d2e::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+klaviyo_community::12e75cf16e6fa701cf2c8aafa497fd8e4df49085::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+klaviyo_community::2f031d863be7609664ddcfe3be94836b0f578a80::01,reconciliation_signoff_positive,reviewed_relabelled,True,API versus dashboard open-rate mismatch is genuine reconciliation pain,,persona_01_loose_tail
+klaviyo_community::2f33d55940699dde42537c9852f5c9a03145dbb4::01,hard_negative,reviewed_relabelled,True,heat-map/feature-support request with campaign analytics language,product_helpdesk_or_feature_limitation,nan
+klaviyo_community::3302193df43555b38b71c8686070d328756c8326::01,hard_negative,reviewed_confirmed,True,,setup_configuration_support,nan
+klaviyo_community::3d429945bd4020399497c550770f64be64dc9223::01,noise,reviewed_relabelled,True,"thought-leadership / generic optimization content, not operational hard negative evidence",,nan
+klaviyo_community::60adec44e731915e46237a03622818e87002add0::01,reconciliation_signoff_positive,reviewed_relabelled,True,"send-time discrepancy is a trust/reconciliation issue, not generic reporting-packager work",,persona_01_loose_tail
+metabase_discussions::10082::02,hard_negative,reviewed_relabelled,True,dashboard filter feature-workaround/help request with reporting terms,product_helpdesk_or_feature_limitation,nan
+metabase_discussions::101040::02,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+metabase_discussions::10105::01,hard_negative,reviewed_confirmed,True,,setup_configuration_support,nan
+mixpanel_community::085491e68f26b95570b73780e85735b924e4b2b8::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+mixpanel_community::0f1aa11cd9b0b0b773be11767c238637e1806d74::01,ambiguous_boundary,reviewed_relabelled,True,timestamp/timezone mismatch has trust cues but remains mixed with product support,,nan
+mixpanel_community::dea0dc2c06e52e95d6e0cb01e2fb6161e6729dce::01,noise,reviewed_confirmed,True,,,nan
+power_bi_community::4634209::01,hard_negative,reviewed_confirmed,True,,setup_configuration_support,nan
+power_bi_community::4634366::01,hard_negative,reviewed_relabelled,True,"dataflow recovery/setup issue, not reconciliation/signoff persona evidence",setup_recovery_support,reconcile_boost_moved_from_persona_01
+power_bi_community::4635402::01,hard_negative,reviewed_relabelled,True,gateway refresh regression/helpdesk issue with reporting context,ui_bug_or_release_regression,nan
+power_bi_community::4637107::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+qlik_community::1165536::01,hard_negative,reviewed_confirmed,True,,docs_tutorial_or_formula_help,nan
+qlik_community::1185870::01,ambiguous_boundary,reviewed_relabelled,True,Excel export date-format discrepancy is a reporting/validation boundary case,,nan
+qlik_community::1601326::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+qlik_community::2011472::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+qlik_community::2509373::01,hard_negative,reviewed_relabelled,True,"product regression/helpdesk issue about table display, not persona evidence",ui_bug_or_release_regression,nan
+reddit::189li6z::01,hard_negative,reviewed_confirmed,True,,setup_configuration_support,nan
+reddit::1jmb45l::01,noise,reviewed_relabelled,True,"promotional/training-style reddit content, not persona evidence for reconciliation/signoff",,reconcile_boost_moved_from_persona_01
+reddit::1s11yy8::01,noise,reviewed_confirmed,True,,,rejected_or_borderline_examples
+reddit::1s28fg7::01,noise,reviewed_confirmed,True,,,rejected_or_borderline_examples
+shopify_community::100740::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+shopify_community::103572::01,reconciliation_signoff_positive,reviewed_relabelled,True,incorrect 1099K sales totals are explicit signoff and reconciliation pain,,nan
+shopify_community::110925::01,reconciliation_signoff_positive,reviewed_relabelled,True,tax calculation discrepancy between checkout and draft orders blocks trust in reported numbers,,persona_01_loose_tail
+shopify_community::127550::01,reconciliation_signoff_positive,reviewed_relabelled,True,payout report mismatch against sales report is genuine reconciliation/signoff pain,,persona_01_loose_tail
+shopify_community::138629::01,ambiguous_boundary,reviewed_relabelled,True,tax-calculation interpretation mixes validation need with configuration support,,nan
+shopify_community::288246::01,noise,reviewed_confirmed,True,,,nan
+sisense_community::20966::01,hard_negative,reviewed_relabelled,True,"widget script error/helpdesk issue, not reconciliation/signoff persona evidence",ui_bug_or_script_error,persona_04_current
+sisense_community::21719::01,hard_negative,reviewed_relabelled,True,"API/schema refresh setup question, not reconciliation/signoff persona evidence",setup_configuration_support,nan
+sisense_community::26323::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
+stackoverflow::66994316::01,ambiguous_boundary,reviewed_relabelled,True,duplicate-record troubleshooting has validation cues but remains close to generic query help,,nan
+stackoverflow::67108356::01,hard_negative,reviewed_confirmed,True,,setup_configuration_support,nan
+stackoverflow::67113734::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,reconcile_boost_moved_from_persona_01
+stackoverflow::67285513::01,reconciliation_signoff_positive,reviewed_confirmed,True,,,persona_04_current
