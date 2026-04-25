@@ -275,3 +275,76 @@ def build_promotion_drift_flags(
         "persona_05_promotion_drift": persona_05_status == "promoted_persona" and str(selected_persona_id) != "persona_05",
         "target_is_not_persona_04": str(selected_persona_id) != "persona_04",
     }
+
+
+def classify_target_change_type(
+    baseline_target_id: str,
+    variant_target_id: str,
+    baseline_target_best_match: str,
+    jaccard_overlap: float,
+    semantic_similarity_score: float,
+) -> str:
+    """Classify whether one target change is stable, renumbered, or semantic drift."""
+    if str(variant_target_id) == str(baseline_target_id) and jaccard_overlap >= 0.6:
+        return "stable_same_id"
+    if (
+        str(variant_target_id) == str(baseline_target_best_match)
+        and str(variant_target_id) != str(baseline_target_id)
+        and jaccard_overlap >= 0.6
+        and semantic_similarity_score >= 80.0
+    ):
+        return "renumbered_with_continuity"
+    return "semantic_drift"
+
+
+def evaluate_identity_continuity_gate(
+    *,
+    baseline_target_id: str,
+    variant_target_id: str,
+    baseline_target_best_match: str,
+    jaccard_overlap: float,
+    selected_example_overlap_pct: float,
+    positive_recall: float,
+    hard_negative_false_positive_rate: float,
+    ambiguous_movement_rate: float,
+    raw_reconcile_boost_ambiguous_movement_rate: float,
+    persona_01_parent_leakage_pct: float,
+    persona_05_promotion_drift_risk: bool,
+    semantic_similarity_score: float,
+    reference_only: bool = False,
+) -> dict[str, Any]:
+    """Evaluate whether one simulation variant preserves reconciliation target identity."""
+    target_change_type = classify_target_change_type(
+        baseline_target_id=baseline_target_id,
+        variant_target_id=variant_target_id,
+        baseline_target_best_match=baseline_target_best_match,
+        jaccard_overlap=jaccard_overlap,
+        semantic_similarity_score=semantic_similarity_score,
+    )
+    checks = {
+        "baseline_target_matches_best_match": str(variant_target_id) == str(baseline_target_best_match),
+        "jaccard_overlap_high": float(jaccard_overlap) >= 0.6,
+        "selected_example_overlap_high": float(selected_example_overlap_pct) >= 80.0,
+        "positive_recall_high_enough": float(positive_recall) >= 80.0,
+        "hard_negative_fp_within_guarded_range": float(hard_negative_false_positive_rate) <= 16.7,
+        "ambiguous_movement_improves_vs_raw_reconcile_boost": float(ambiguous_movement_rate) < float(raw_reconcile_boost_ambiguous_movement_rate),
+        "persona_01_leakage_below_ceiling": float(persona_01_parent_leakage_pct) <= 5.0,
+        "persona_05_promotion_drift_absent": not bool(persona_05_promotion_drift_risk),
+        "target_change_is_not_semantic_drift": target_change_type != "semantic_drift",
+    }
+    fail_reasons = [name for name, passed in checks.items() if not passed]
+    if reference_only:
+        return {
+            "reference_only": True,
+            "eligible_for_future_implementation": False,
+            "target_change_type": "baseline_reference",
+            "checks": checks,
+            "fail_reasons": [],
+        }
+    return {
+        "reference_only": False,
+        "eligible_for_future_implementation": len(fail_reasons) == 0,
+        "target_change_type": target_change_type,
+        "checks": checks,
+        "fail_reasons": fail_reasons,
+    }

@@ -8,6 +8,8 @@ import pandas as pd
 
 from src.analysis.reconciliation_signoff_identity import (
     build_promotion_drift_flags,
+    classify_target_change_type,
+    evaluate_identity_continuity_gate,
     select_reconciliation_like_persona,
 )
 
@@ -104,6 +106,66 @@ class ReconciliationSignoffReleaseGateTests(unittest.TestCase):
         self.assertTrue(flags["persona_04_still_exploratory"])
         self.assertTrue(flags["persona_05_promotion_drift"])
         self.assertTrue(flags["target_is_not_persona_04"])
+
+    def test_target_change_type_allows_high_overlap_renumbering(self) -> None:
+        change_type = classify_target_change_type(
+            baseline_target_id="persona_04",
+            variant_target_id="persona_03",
+            baseline_target_best_match="persona_03",
+            jaccard_overlap=0.71,
+            semantic_similarity_score=91.0,
+        )
+
+        self.assertEqual(change_type, "renumbered_with_continuity")
+
+    def test_target_change_type_flags_semantic_drift(self) -> None:
+        change_type = classify_target_change_type(
+            baseline_target_id="persona_04",
+            variant_target_id="persona_03",
+            baseline_target_best_match="persona_03",
+            jaccard_overlap=0.32,
+            semantic_similarity_score=58.0,
+        )
+
+        self.assertEqual(change_type, "semantic_drift")
+
+    def test_identity_continuity_gate_flags_persona_01_leakage(self) -> None:
+        result = evaluate_identity_continuity_gate(
+            baseline_target_id="persona_04",
+            variant_target_id="persona_03",
+            baseline_target_best_match="persona_03",
+            jaccard_overlap=0.7,
+            selected_example_overlap_pct=100.0,
+            positive_recall=85.0,
+            hard_negative_false_positive_rate=16.7,
+            ambiguous_movement_rate=25.0,
+            raw_reconcile_boost_ambiguous_movement_rate=62.5,
+            persona_01_parent_leakage_pct=6.1,
+            persona_05_promotion_drift_risk=False,
+            semantic_similarity_score=90.0,
+        )
+
+        self.assertFalse(result["eligible_for_future_implementation"])
+        self.assertIn("persona_01_leakage_below_ceiling", result["fail_reasons"])
+
+    def test_identity_continuity_gate_flags_persona_05_drift(self) -> None:
+        result = evaluate_identity_continuity_gate(
+            baseline_target_id="persona_04",
+            variant_target_id="persona_03",
+            baseline_target_best_match="persona_03",
+            jaccard_overlap=0.7,
+            selected_example_overlap_pct=100.0,
+            positive_recall=85.0,
+            hard_negative_false_positive_rate=16.7,
+            ambiguous_movement_rate=25.0,
+            raw_reconcile_boost_ambiguous_movement_rate=62.5,
+            persona_01_parent_leakage_pct=4.3,
+            persona_05_promotion_drift_risk=True,
+            semantic_similarity_score=90.0,
+        )
+
+        self.assertFalse(result["eligible_for_future_implementation"])
+        self.assertIn("persona_05_promotion_drift_absent", result["fail_reasons"])
 
 
 if __name__ == "__main__":

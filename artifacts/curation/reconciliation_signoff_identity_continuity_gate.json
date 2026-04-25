@@ -1,0 +1,2286 @@
+{
+  "identity_continuity_gate_definition": {
+    "baseline_reconciliation_target_id": "persona_04",
+    "checks": [
+      "baseline_target_matches_best_match",
+      "jaccard_overlap_high",
+      "selected_example_overlap_high",
+      "positive_recall_high_enough",
+      "hard_negative_fp_within_guarded_range",
+      "ambiguous_movement_improves_vs_raw_reconcile_boost",
+      "persona_01_leakage_below_ceiling",
+      "persona_05_promotion_drift_absent",
+      "target_change_is_not_semantic_drift"
+    ],
+    "thresholds": {
+      "jaccard_overlap_min": 0.6,
+      "selected_example_overlap_pct_min": 80.0,
+      "positive_recall_min": 80.0,
+      "hard_negative_false_positive_rate_max": 16.7,
+      "persona_01_parent_leakage_pct_max": 5.0
+    }
+  },
+  "states": [
+    {
+      "variant_name": "baseline",
+      "variant_reconciliation_target_id": "persona_04",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=66.7, validation_share_pct=87.6, hard_negative_fp=11.1, parent_capture_rate=0.0",
+      "baseline_target_to_variant_best_match": "persona_04",
+      "baseline_target_to_variant_target_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_04",
+          "jaccard_overlap": 1.0,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_01_parent_leakage_pct": 0.0,
+      "persona_05_promotion_drift_risk": false,
+      "semantic_similarity_score": 100.0,
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": false
+      },
+      "identity_continuity_gate": {
+        "reference_only": true,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "baseline_reference",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": false,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": true,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": []
+      }
+    },
+    {
+      "variant_name": "raw_reconcile_boost",
+      "variant_reconciliation_target_id": "persona_03",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=93.3, validation_share_pct=65.9, hard_negative_fp=22.2, parent_capture_rate=0.0",
+      "baseline_target_to_variant_best_match": "persona_03",
+      "baseline_target_to_variant_target_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 1064,
+          "jaccard_overlap": 0.562,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "baseline_target_best_match_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 1064,
+          "jaccard_overlap": 0.562,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_01_parent_leakage_pct": 8.6,
+      "persona_05_promotion_drift_risk": true,
+      "semantic_similarity_score": 85.5,
+      "candidate_scores": [
+        {
+          "persona_id": "persona_03",
+          "selection_score": 170.87,
+          "positive_recall": 93.3,
+          "hard_negative_false_positive_rate": 22.2,
+          "ambiguous_movement_rate": 66.7,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 65.9,
+          "trust_medium_or_high_share_pct": 99.3,
+          "manual_reporting_share_pct": 18.6,
+          "report_speed_share_pct": 23.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_13",
+          "selection_score": 79.97,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_07",
+          "selection_score": 77.2,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 38.2,
+          "trust_medium_or_high_share_pct": 86.6,
+          "manual_reporting_share_pct": 2.4,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_11",
+          "selection_score": 27.17,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 6.2,
+          "report_speed_share_pct": 15.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_10",
+          "selection_score": 0.72,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.8,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_04",
+          "selection_score": -3.76,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 1.1,
+          "report_speed_share_pct": 35.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_12",
+          "selection_score": -3.87,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 38.7,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_14",
+          "selection_score": -8.46,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 84.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_08",
+          "selection_score": -10.0,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 100.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_05",
+          "selection_score": -10.84,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 9.0,
+          "report_speed_share_pct": 90.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_06",
+          "selection_score": -17.83,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.4,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 90.8,
+          "report_speed_share_pct": 0.3,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_02",
+          "selection_score": -46.7,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.1,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_01",
+          "selection_score": -143.15,
+          "positive_recall": 6.7,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 33.3,
+          "parent_capture_rate": 100.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.8,
+          "manual_reporting_share_pct": 64.2,
+          "report_speed_share_pct": 94.2,
+          "promotion_status": "",
+          "dominant_signature": ""
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": true
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "semantic_drift",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": false,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": false,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": false,
+          "persona_01_leakage_below_ceiling": false,
+          "persona_05_promotion_drift_absent": false,
+          "target_change_is_not_semantic_drift": false
+        },
+        "fail_reasons": [
+          "jaccard_overlap_high",
+          "hard_negative_fp_within_guarded_range",
+          "ambiguous_movement_improves_vs_raw_reconcile_boost",
+          "persona_01_leakage_below_ceiling",
+          "persona_05_promotion_drift_absent",
+          "target_change_is_not_semantic_drift"
+        ]
+      }
+    },
+    {
+      "variant_name": "variant_A",
+      "variant_reconciliation_target_id": "persona_03",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=93.3, validation_share_pct=66.3, hard_negative_fp=22.2, parent_capture_rate=0.0",
+      "baseline_target_to_variant_best_match": "persona_03",
+      "baseline_target_to_variant_target_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 1057,
+          "jaccard_overlap": 0.5658,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "baseline_target_best_match_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 1057,
+          "jaccard_overlap": 0.5658,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_01_parent_leakage_pct": 8.4,
+      "persona_05_promotion_drift_risk": true,
+      "semantic_similarity_score": 85.8,
+      "candidate_scores": [
+        {
+          "persona_id": "persona_03",
+          "selection_score": 171.61,
+          "positive_recall": 93.3,
+          "hard_negative_false_positive_rate": 22.2,
+          "ambiguous_movement_rate": 66.7,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 66.3,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 18.7,
+          "report_speed_share_pct": 22.9,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_13",
+          "selection_score": 79.97,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_07",
+          "selection_score": 77.2,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 38.2,
+          "trust_medium_or_high_share_pct": 86.6,
+          "manual_reporting_share_pct": 2.4,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_11",
+          "selection_score": 27.17,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 6.2,
+          "report_speed_share_pct": 15.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_10",
+          "selection_score": 0.72,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.8,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_04",
+          "selection_score": -3.76,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 1.1,
+          "report_speed_share_pct": 35.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_12",
+          "selection_score": -3.87,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 38.7,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_14",
+          "selection_score": -8.46,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 84.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_08",
+          "selection_score": -10.0,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 100.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_05",
+          "selection_score": -10.84,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 9.0,
+          "report_speed_share_pct": 90.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_06",
+          "selection_score": -17.83,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.4,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 90.8,
+          "report_speed_share_pct": 0.3,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_02",
+          "selection_score": -46.7,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.1,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_01",
+          "selection_score": -143.11,
+          "positive_recall": 6.7,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 33.3,
+          "parent_capture_rate": 100.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.8,
+          "manual_reporting_share_pct": 64.0,
+          "report_speed_share_pct": 94.2,
+          "promotion_status": "",
+          "dominant_signature": ""
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": true
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "semantic_drift",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": false,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": false,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": false,
+          "persona_01_leakage_below_ceiling": false,
+          "persona_05_promotion_drift_absent": false,
+          "target_change_is_not_semantic_drift": false
+        },
+        "fail_reasons": [
+          "jaccard_overlap_high",
+          "hard_negative_fp_within_guarded_range",
+          "ambiguous_movement_improves_vs_raw_reconcile_boost",
+          "persona_01_leakage_below_ceiling",
+          "persona_05_promotion_drift_absent",
+          "target_change_is_not_semantic_drift"
+        ]
+      }
+    },
+    {
+      "variant_name": "variant_B",
+      "variant_reconciliation_target_id": "persona_03",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=86.7, validation_share_pct=73.2, hard_negative_fp=16.7, parent_capture_rate=0.0",
+      "baseline_target_to_variant_best_match": "persona_03",
+      "baseline_target_to_variant_target_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 861,
+          "jaccard_overlap": 0.6945,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "baseline_target_best_match_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 861,
+          "jaccard_overlap": 0.6945,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_01_parent_leakage_pct": 4.3,
+      "persona_05_promotion_drift_risk": true,
+      "semantic_similarity_score": 90.7,
+      "candidate_scores": [
+        {
+          "persona_id": "persona_03",
+          "selection_score": 189.09,
+          "positive_recall": 86.7,
+          "hard_negative_false_positive_rate": 16.7,
+          "ambiguous_movement_rate": 37.5,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 73.2,
+          "trust_medium_or_high_share_pct": 99.8,
+          "manual_reporting_share_pct": 14.9,
+          "report_speed_share_pct": 13.8,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_13",
+          "selection_score": 79.97,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_07",
+          "selection_score": 77.2,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 38.2,
+          "trust_medium_or_high_share_pct": 86.6,
+          "manual_reporting_share_pct": 2.4,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_11",
+          "selection_score": 27.17,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 6.2,
+          "report_speed_share_pct": 15.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_10",
+          "selection_score": 0.72,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.8,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_04",
+          "selection_score": -3.76,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 1.1,
+          "report_speed_share_pct": 35.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_12",
+          "selection_score": -3.87,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 38.7,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_14",
+          "selection_score": -8.46,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 84.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_08",
+          "selection_score": -10.0,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 100.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_05",
+          "selection_score": -10.84,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 9.0,
+          "report_speed_share_pct": 90.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_06",
+          "selection_score": -17.83,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.4,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 90.8,
+          "report_speed_share_pct": 0.3,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_02",
+          "selection_score": -46.41,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.1,
+          "trust_medium_or_high_share_pct": 0.4,
+          "manual_reporting_share_pct": 0.1,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_01",
+          "selection_score": -148.96,
+          "positive_recall": 13.3,
+          "hard_negative_false_positive_rate": 44.4,
+          "ambiguous_movement_rate": 62.5,
+          "parent_capture_rate": 100.0,
+          "validation_share_pct": 1.5,
+          "trust_medium_or_high_share_pct": 5.1,
+          "manual_reporting_share_pct": 62.9,
+          "report_speed_share_pct": 92.9,
+          "promotion_status": "",
+          "dominant_signature": ""
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": true
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "renumbered_with_continuity",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": false,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": [
+          "persona_05_promotion_drift_absent"
+        ]
+      }
+    },
+    {
+      "variant_name": "variant_C",
+      "variant_reconciliation_target_id": "persona_03",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=93.3, validation_share_pct=66.0, hard_negative_fp=22.2, parent_capture_rate=0.0",
+      "baseline_target_to_variant_best_match": "persona_03",
+      "baseline_target_to_variant_target_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 1061,
+          "jaccard_overlap": 0.5636,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "baseline_target_best_match_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 1061,
+          "jaccard_overlap": 0.5636,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_01_parent_leakage_pct": 8.5,
+      "persona_05_promotion_drift_risk": true,
+      "semantic_similarity_score": 85.6,
+      "candidate_scores": [
+        {
+          "persona_id": "persona_03",
+          "selection_score": 171.11,
+          "positive_recall": 93.3,
+          "hard_negative_false_positive_rate": 22.2,
+          "ambiguous_movement_rate": 66.7,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 66.0,
+          "trust_medium_or_high_share_pct": 99.6,
+          "manual_reporting_share_pct": 18.7,
+          "report_speed_share_pct": 23.2,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_13",
+          "selection_score": 79.97,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_07",
+          "selection_score": 77.2,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 38.2,
+          "trust_medium_or_high_share_pct": 86.6,
+          "manual_reporting_share_pct": 2.4,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_11",
+          "selection_score": 27.17,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 6.2,
+          "report_speed_share_pct": 15.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_10",
+          "selection_score": 0.72,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.8,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_04",
+          "selection_score": -3.76,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 1.1,
+          "report_speed_share_pct": 35.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_12",
+          "selection_score": -3.87,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 38.7,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_14",
+          "selection_score": -8.46,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 84.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_08",
+          "selection_score": -10.0,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 100.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_05",
+          "selection_score": -10.84,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 9.0,
+          "report_speed_share_pct": 90.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_06",
+          "selection_score": -17.83,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.4,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 90.8,
+          "report_speed_share_pct": 0.3,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_02",
+          "selection_score": -46.7,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.1,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_01",
+          "selection_score": -143.13,
+          "positive_recall": 6.7,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 33.3,
+          "parent_capture_rate": 100.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.8,
+          "manual_reporting_share_pct": 64.1,
+          "report_speed_share_pct": 94.2,
+          "promotion_status": "",
+          "dominant_signature": ""
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": true
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "semantic_drift",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": false,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": false,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": false,
+          "persona_01_leakage_below_ceiling": false,
+          "persona_05_promotion_drift_absent": false,
+          "target_change_is_not_semantic_drift": false
+        },
+        "fail_reasons": [
+          "jaccard_overlap_high",
+          "hard_negative_fp_within_guarded_range",
+          "ambiguous_movement_improves_vs_raw_reconcile_boost",
+          "persona_01_leakage_below_ceiling",
+          "persona_05_promotion_drift_absent",
+          "target_change_is_not_semantic_drift"
+        ]
+      }
+    },
+    {
+      "variant_name": "variant_D",
+      "variant_reconciliation_target_id": "persona_03",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=93.3, validation_share_pct=66.3, hard_negative_fp=22.2, parent_capture_rate=0.0",
+      "baseline_target_to_variant_best_match": "persona_03",
+      "baseline_target_to_variant_target_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 1057,
+          "jaccard_overlap": 0.5658,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "baseline_target_best_match_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 1057,
+          "jaccard_overlap": 0.5658,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_01_parent_leakage_pct": 8.4,
+      "persona_05_promotion_drift_risk": true,
+      "semantic_similarity_score": 85.8,
+      "candidate_scores": [
+        {
+          "persona_id": "persona_03",
+          "selection_score": 171.61,
+          "positive_recall": 93.3,
+          "hard_negative_false_positive_rate": 22.2,
+          "ambiguous_movement_rate": 66.7,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 66.3,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 18.7,
+          "report_speed_share_pct": 22.9,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_13",
+          "selection_score": 79.97,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_07",
+          "selection_score": 77.2,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 38.2,
+          "trust_medium_or_high_share_pct": 86.6,
+          "manual_reporting_share_pct": 2.4,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_11",
+          "selection_score": 27.17,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 6.2,
+          "report_speed_share_pct": 15.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_10",
+          "selection_score": 0.72,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.8,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_04",
+          "selection_score": -3.76,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 1.1,
+          "report_speed_share_pct": 35.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_12",
+          "selection_score": -3.87,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 38.7,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_14",
+          "selection_score": -8.46,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 84.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_08",
+          "selection_score": -10.0,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 100.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_05",
+          "selection_score": -10.84,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 9.0,
+          "report_speed_share_pct": 90.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_06",
+          "selection_score": -17.83,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.4,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 90.8,
+          "report_speed_share_pct": 0.3,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_02",
+          "selection_score": -46.7,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.1,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_01",
+          "selection_score": -143.11,
+          "positive_recall": 6.7,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 33.3,
+          "parent_capture_rate": 100.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.8,
+          "manual_reporting_share_pct": 64.0,
+          "report_speed_share_pct": 94.2,
+          "promotion_status": "",
+          "dominant_signature": ""
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": true
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "semantic_drift",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": false,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": false,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": false,
+          "persona_01_leakage_below_ceiling": false,
+          "persona_05_promotion_drift_absent": false,
+          "target_change_is_not_semantic_drift": false
+        },
+        "fail_reasons": [
+          "jaccard_overlap_high",
+          "hard_negative_fp_within_guarded_range",
+          "ambiguous_movement_improves_vs_raw_reconcile_boost",
+          "persona_01_leakage_below_ceiling",
+          "persona_05_promotion_drift_absent",
+          "target_change_is_not_semantic_drift"
+        ]
+      }
+    },
+    {
+      "variant_name": "variant_E",
+      "variant_reconciliation_target_id": "persona_03",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=86.7, validation_share_pct=71.2, hard_negative_fp=22.2, parent_capture_rate=0.0",
+      "baseline_target_to_variant_best_match": "persona_03",
+      "baseline_target_to_variant_target_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 917,
+          "jaccard_overlap": 0.6521,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "baseline_target_best_match_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 917,
+          "jaccard_overlap": 0.6521,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_01_parent_leakage_pct": 5.5,
+      "persona_05_promotion_drift_risk": true,
+      "semantic_similarity_score": 89.2,
+      "candidate_scores": [
+        {
+          "persona_id": "persona_03",
+          "selection_score": 175.01,
+          "positive_recall": 86.7,
+          "hard_negative_false_positive_rate": 22.2,
+          "ambiguous_movement_rate": 50.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 71.2,
+          "trust_medium_or_high_share_pct": 99.9,
+          "manual_reporting_share_pct": 18.2,
+          "report_speed_share_pct": 14.5,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_13",
+          "selection_score": 79.97,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_07",
+          "selection_score": 77.2,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 38.2,
+          "trust_medium_or_high_share_pct": 86.6,
+          "manual_reporting_share_pct": 2.4,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_11",
+          "selection_score": 27.17,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 6.2,
+          "report_speed_share_pct": 15.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_10",
+          "selection_score": 0.72,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.8,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_04",
+          "selection_score": -3.76,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 1.1,
+          "report_speed_share_pct": 35.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_12",
+          "selection_score": -3.87,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 38.7,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_14",
+          "selection_score": -8.46,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 84.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_08",
+          "selection_score": -10.0,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 100.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_05",
+          "selection_score": -10.84,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 9.0,
+          "report_speed_share_pct": 90.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_06",
+          "selection_score": -17.83,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.4,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 90.8,
+          "report_speed_share_pct": 0.3,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_02",
+          "selection_score": -46.32,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.2,
+          "trust_medium_or_high_share_pct": 0.4,
+          "manual_reporting_share_pct": 0.1,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_01",
+          "selection_score": -138.53,
+          "positive_recall": 13.3,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 50.0,
+          "parent_capture_rate": 100.0,
+          "validation_share_pct": 1.0,
+          "trust_medium_or_high_share_pct": 3.8,
+          "manual_reporting_share_pct": 62.8,
+          "report_speed_share_pct": 93.8,
+          "promotion_status": "",
+          "dominant_signature": ""
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": true
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "renumbered_with_continuity",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": false,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": false,
+          "persona_05_promotion_drift_absent": false,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": [
+          "hard_negative_fp_within_guarded_range",
+          "persona_01_leakage_below_ceiling",
+          "persona_05_promotion_drift_absent"
+        ]
+      }
+    },
+    {
+      "variant_name": "variant_F",
+      "variant_reconciliation_target_id": "persona_03",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=93.3, validation_share_pct=65.9, hard_negative_fp=22.2, parent_capture_rate=0.0",
+      "baseline_target_to_variant_best_match": "persona_03",
+      "baseline_target_to_variant_target_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 1063,
+          "jaccard_overlap": 0.5626,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "baseline_target_best_match_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 1063,
+          "jaccard_overlap": 0.5626,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_01_parent_leakage_pct": 8.6,
+      "persona_05_promotion_drift_risk": true,
+      "semantic_similarity_score": 85.5,
+      "candidate_scores": [
+        {
+          "persona_id": "persona_03",
+          "selection_score": 170.93,
+          "positive_recall": 93.3,
+          "hard_negative_false_positive_rate": 22.2,
+          "ambiguous_movement_rate": 66.7,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 65.9,
+          "trust_medium_or_high_share_pct": 99.4,
+          "manual_reporting_share_pct": 18.6,
+          "report_speed_share_pct": 23.3,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_13",
+          "selection_score": 79.97,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_07",
+          "selection_score": 77.2,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 38.2,
+          "trust_medium_or_high_share_pct": 86.6,
+          "manual_reporting_share_pct": 2.4,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_11",
+          "selection_score": 27.17,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 6.2,
+          "report_speed_share_pct": 15.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_10",
+          "selection_score": 0.72,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.8,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_04",
+          "selection_score": -3.76,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 1.1,
+          "report_speed_share_pct": 35.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_12",
+          "selection_score": -3.87,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 38.7,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_14",
+          "selection_score": -8.46,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 84.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_08",
+          "selection_score": -10.0,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 100.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_05",
+          "selection_score": -10.84,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 9.0,
+          "report_speed_share_pct": 90.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_06",
+          "selection_score": -17.83,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.4,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 90.8,
+          "report_speed_share_pct": 0.3,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_02",
+          "selection_score": -46.7,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.1,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_01",
+          "selection_score": -143.13,
+          "positive_recall": 6.7,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 33.3,
+          "parent_capture_rate": 100.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.8,
+          "manual_reporting_share_pct": 64.1,
+          "report_speed_share_pct": 94.2,
+          "promotion_status": "",
+          "dominant_signature": ""
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": true
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "semantic_drift",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": false,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": false,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": false,
+          "persona_01_leakage_below_ceiling": false,
+          "persona_05_promotion_drift_absent": false,
+          "target_change_is_not_semantic_drift": false
+        },
+        "fail_reasons": [
+          "jaccard_overlap_high",
+          "hard_negative_fp_within_guarded_range",
+          "ambiguous_movement_improves_vs_raw_reconcile_boost",
+          "persona_01_leakage_below_ceiling",
+          "persona_05_promotion_drift_absent",
+          "target_change_is_not_semantic_drift"
+        ]
+      }
+    },
+    {
+      "variant_name": "variant_G",
+      "variant_reconciliation_target_id": "persona_03",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=93.3, validation_share_pct=70.1, hard_negative_fp=22.2, parent_capture_rate=0.0",
+      "baseline_target_to_variant_best_match": "persona_03",
+      "baseline_target_to_variant_target_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 949,
+          "jaccard_overlap": 0.6301,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "baseline_target_best_match_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 949,
+          "jaccard_overlap": 0.6301,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_01_parent_leakage_pct": 6.0,
+      "persona_05_promotion_drift_risk": true,
+      "semantic_similarity_score": 88.6,
+      "candidate_scores": [
+        {
+          "persona_id": "persona_03",
+          "selection_score": 180.95,
+          "positive_recall": 93.3,
+          "hard_negative_false_positive_rate": 22.2,
+          "ambiguous_movement_rate": 54.2,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 70.1,
+          "trust_medium_or_high_share_pct": 99.9,
+          "manual_reporting_share_pct": 16.5,
+          "report_speed_share_pct": 17.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_13",
+          "selection_score": 79.97,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_07",
+          "selection_score": 77.2,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 38.2,
+          "trust_medium_or_high_share_pct": 86.6,
+          "manual_reporting_share_pct": 2.4,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_11",
+          "selection_score": 27.17,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 6.2,
+          "report_speed_share_pct": 15.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_10",
+          "selection_score": 0.72,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.8,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_04",
+          "selection_score": -3.76,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 1.1,
+          "report_speed_share_pct": 35.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_12",
+          "selection_score": -3.87,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 38.7,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_14",
+          "selection_score": -8.46,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 84.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_08",
+          "selection_score": -10.0,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 100.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_05",
+          "selection_score": -10.84,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 9.0,
+          "report_speed_share_pct": 90.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_06",
+          "selection_score": -17.83,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.4,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 90.8,
+          "report_speed_share_pct": 0.3,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_02",
+          "selection_score": -46.7,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.1,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_01",
+          "selection_score": -145.95,
+          "positive_recall": 6.7,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 45.8,
+          "parent_capture_rate": 100.0,
+          "validation_share_pct": 0.8,
+          "trust_medium_or_high_share_pct": 3.3,
+          "manual_reporting_share_pct": 63.4,
+          "report_speed_share_pct": 93.5,
+          "promotion_status": "",
+          "dominant_signature": ""
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": true
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "renumbered_with_continuity",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": false,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": false,
+          "persona_05_promotion_drift_absent": false,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": [
+          "hard_negative_fp_within_guarded_range",
+          "persona_01_leakage_below_ceiling",
+          "persona_05_promotion_drift_absent"
+        ]
+      }
+    },
+    {
+      "variant_name": "variant_H",
+      "variant_reconciliation_target_id": "persona_03",
+      "release_gate_target_selection_reason": "selected by semantic evidence: positive_recall=86.7, validation_share_pct=73.6, hard_negative_fp=16.7, parent_capture_rate=0.0",
+      "baseline_target_to_variant_best_match": "persona_03",
+      "baseline_target_to_variant_target_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 850,
+          "jaccard_overlap": 0.7035,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "baseline_target_best_match_overlap": [
+        {
+          "baseline_persona_id": "persona_04",
+          "variant_persona_id": "persona_03",
+          "intersection_count": 598,
+          "baseline_size": 598,
+          "variant_size": 850,
+          "jaccard_overlap": 0.7035,
+          "baseline_retention_pct": 100.0
+        }
+      ],
+      "selected_example_overlap": {
+        "selected_example_overlap_count": 5,
+        "selected_example_overlap_pct": 100.0
+      },
+      "persona_01_parent_leakage_pct": 4.0,
+      "persona_05_promotion_drift_risk": true,
+      "semantic_similarity_score": 91.1,
+      "candidate_scores": [
+        {
+          "persona_id": "persona_03",
+          "selection_score": 189.59,
+          "positive_recall": 86.7,
+          "hard_negative_false_positive_rate": 16.7,
+          "ambiguous_movement_rate": 37.5,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 73.6,
+          "trust_medium_or_high_share_pct": 99.8,
+          "manual_reporting_share_pct": 14.5,
+          "report_speed_share_pct": 13.2,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_13",
+          "selection_score": 79.97,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 100.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_07",
+          "selection_score": 77.2,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 38.2,
+          "trust_medium_or_high_share_pct": 86.6,
+          "manual_reporting_share_pct": 2.4,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_11",
+          "selection_score": 27.17,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 33.3,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 6.2,
+          "report_speed_share_pct": 15.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_10",
+          "selection_score": 0.72,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.8,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_04",
+          "selection_score": -3.76,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 1.1,
+          "report_speed_share_pct": 35.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_12",
+          "selection_score": -3.87,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 38.7,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_14",
+          "selection_score": -8.46,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 84.6,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_08",
+          "selection_score": -10.0,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 0.0,
+          "report_speed_share_pct": 100.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_05",
+          "selection_score": -10.84,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.0,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 9.0,
+          "report_speed_share_pct": 90.4,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_06",
+          "selection_score": -17.83,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 0.0,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.4,
+          "trust_medium_or_high_share_pct": 0.0,
+          "manual_reporting_share_pct": 90.8,
+          "report_speed_share_pct": 0.3,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_02",
+          "selection_score": -46.41,
+          "positive_recall": 0.0,
+          "hard_negative_false_positive_rate": 38.9,
+          "ambiguous_movement_rate": 0.0,
+          "parent_capture_rate": 0.0,
+          "validation_share_pct": 0.1,
+          "trust_medium_or_high_share_pct": 0.4,
+          "manual_reporting_share_pct": 0.1,
+          "report_speed_share_pct": 0.0,
+          "promotion_status": "",
+          "dominant_signature": ""
+        },
+        {
+          "persona_id": "persona_01",
+          "selection_score": -148.74,
+          "positive_recall": 13.3,
+          "hard_negative_false_positive_rate": 44.4,
+          "ambiguous_movement_rate": 62.5,
+          "parent_capture_rate": 100.0,
+          "validation_share_pct": 1.6,
+          "trust_medium_or_high_share_pct": 5.3,
+          "manual_reporting_share_pct": 62.8,
+          "report_speed_share_pct": 92.8,
+          "promotion_status": "",
+          "dominant_signature": ""
+        }
+      ],
+      "promotion_drift_flags": {
+        "persona_04_still_exploratory": true,
+        "persona_05_promotion_drift": false,
+        "target_is_not_persona_04": true
+      },
+      "identity_continuity_gate": {
+        "reference_only": false,
+        "eligible_for_future_implementation": false,
+        "target_change_type": "renumbered_with_continuity",
+        "checks": {
+          "baseline_target_matches_best_match": true,
+          "jaccard_overlap_high": true,
+          "selected_example_overlap_high": true,
+          "positive_recall_high_enough": true,
+          "hard_negative_fp_within_guarded_range": true,
+          "ambiguous_movement_improves_vs_raw_reconcile_boost": true,
+          "persona_01_leakage_below_ceiling": true,
+          "persona_05_promotion_drift_absent": false,
+          "target_change_is_not_semantic_drift": true
+        },
+        "fail_reasons": [
+          "persona_05_promotion_drift_absent"
+        ]
+      }
+    }
+  ],
+  "eligible_variants": [],
+  "recommendation": "No production patch should be attempted until a variant passes this identity-continuity gate. If none pass, the next structural move should happen before production patching."
+}
