@@ -1,0 +1,352 @@
+{
+  "baseline": {
+    "overall_status": "FAIL",
+    "quality_flag": "UNSTABLE",
+    "persona_readiness_state": "exploratory_only",
+    "persona_readiness_gate_status": "FAIL",
+    "weak_source_cost_center_count": 4,
+    "effective_balanced_source_count": 5.89,
+    "persona_core_coverage_of_all_labeled_pct": 74.5,
+    "production_ready_persona_count": 3,
+    "review_ready_persona_count": 1,
+    "final_usable_persona_count": 3
+  },
+  "readiness_blockers": [
+    {
+      "metric_name": "weak_source_cost_center_count",
+      "current_value": 4,
+      "reviewable_threshold": "<4",
+      "deck_ready_threshold": "<2",
+      "gap_to_reviewable": 1.0,
+      "gap_to_deck_ready": 3.0,
+      "blocker_type": "hard_fail",
+      "axis_status": "FAIL",
+      "group_status": "FAIL",
+      "direct_owner_module": "src/analysis/quality_status.py",
+      "likely_remediation_path": "weak-source denominator policy cleanup or source-specific remediation",
+      "estimated_implementation_risk": "medium",
+      "improvable_by": "data remediation or policy simulation",
+      "currently_blocking_reviewable": true
+    },
+    {
+      "metric_name": "effective_balanced_source_count",
+      "current_value": 5.89,
+      "reviewable_threshold": ">=5.0",
+      "deck_ready_threshold": ">=6.0",
+      "gap_to_reviewable": 0.0,
+      "gap_to_deck_ready": 0.11,
+      "blocker_type": "warning",
+      "axis_status": "WARN",
+      "group_status": "FAIL",
+      "direct_owner_module": "src/analysis/quality_status.py",
+      "likely_remediation_path": "source-volume normalization simulation or source debt separation",
+      "estimated_implementation_risk": "medium",
+      "improvable_by": "policy simulation",
+      "currently_blocking_reviewable": true
+    },
+    {
+      "metric_name": "persona_core_coverage_of_all_labeled_pct",
+      "current_value": 74.5,
+      "reviewable_threshold": "70.0",
+      "deck_ready_threshold": "80.0",
+      "gap_to_reviewable": 0.0,
+      "gap_to_deck_ready": 5.5,
+      "blocker_type": "warning",
+      "axis_status": "WARN",
+      "group_status": "WARN",
+      "direct_owner_module": "src/analysis/quality_status.py",
+      "likely_remediation_path": "source-specific recovery or denominator treatment",
+      "estimated_implementation_risk": "medium",
+      "improvable_by": "data remediation or policy simulation",
+      "currently_blocking_reviewable": false
+    },
+    {
+      "metric_name": "weak_source_yield_status",
+      "current_value": "FAIL",
+      "reviewable_threshold": "WARN_or_OK",
+      "deck_ready_threshold": "OK",
+      "gap_to_reviewable": "needs_FAIL_to_WARN",
+      "gap_to_deck_ready": "needs_WARN_to_OK",
+      "blocker_type": "hard_fail",
+      "axis_status": "FAIL",
+      "group_status": "FAIL",
+      "direct_owner_module": "src/analysis/quality_status.py",
+      "likely_remediation_path": "reduce weak-source cost-center debt below fail threshold",
+      "estimated_implementation_risk": "low",
+      "improvable_by": "data remediation or policy simulation",
+      "currently_blocking_reviewable": true
+    },
+    {
+      "metric_name": "source_diversity_status",
+      "current_value": "FAIL",
+      "reviewable_threshold": "WARN_or_OK",
+      "deck_ready_threshold": "OK",
+      "gap_to_reviewable": "needs_FAIL_to_WARN",
+      "gap_to_deck_ready": "needs_WARN_to_OK",
+      "blocker_type": "hard_fail",
+      "axis_status": "FAIL",
+      "group_status": "FAIL",
+      "direct_owner_module": "src/analysis/quality_status.py",
+      "likely_remediation_path": "resolve weak-source fail while keeping source-balance warnings visible",
+      "estimated_implementation_risk": "low",
+      "improvable_by": "policy simulation",
+      "currently_blocking_reviewable": true
+    },
+    {
+      "metric_name": "overall_status",
+      "current_value": "FAIL",
+      "reviewable_threshold": "WARN_or_OK",
+      "deck_ready_threshold": "OK",
+      "gap_to_reviewable": "needs_FAIL_to_WARN",
+      "gap_to_deck_ready": "needs_WARN_to_OK",
+      "blocker_type": "hard_fail",
+      "axis_status": "FAIL",
+      "group_status": "",
+      "direct_owner_module": "src/analysis/quality_status.py",
+      "likely_remediation_path": "remove source-diversity FAIL without changing persona standards",
+      "estimated_implementation_risk": "low",
+      "improvable_by": "policy simulation",
+      "currently_blocking_reviewable": true
+    },
+    {
+      "metric_name": "persona_readiness_gate_status",
+      "current_value": "FAIL",
+      "reviewable_threshold": "WARN",
+      "deck_ready_threshold": "OK",
+      "gap_to_reviewable": "needs_FAIL_to_WARN",
+      "gap_to_deck_ready": "needs_WARN_to_OK",
+      "blocker_type": "hard_fail",
+      "axis_status": "FAIL",
+      "group_status": "exploratory_only",
+      "direct_owner_module": "src/analysis/quality_status.py",
+      "likely_remediation_path": "allow readiness cap to lift after overall status drops to WARN",
+      "estimated_implementation_risk": "low",
+      "improvable_by": "policy simulation",
+      "currently_blocking_reviewable": true
+    }
+  ],
+  "weak_source_decisions": [
+    {
+      "source": "adobe_analytics_community",
+      "raw_rows": 4357,
+      "valid_rows": 2193,
+      "prefiltered_rows": 959,
+      "episode_rows": 645,
+      "labeled_rows": 645,
+      "labelable_episode_ratio_pct": 28.4,
+      "grounded_promoted_persona_episode_count": 173,
+      "blended_influence_share_pct": 3.2,
+      "collapse_stage": "episode_yield",
+      "failure_reason_top": "low_episode_yield",
+      "whether_meaningful_persona_evidence_exists": true,
+      "root_cause": "parser or episode-fidelity loss",
+      "recommended_action": "parser_or_episode_fidelity_audit_needed"
+    },
+    {
+      "source": "domo_community_forum",
+      "raw_rows": 9354,
+      "valid_rows": 4731,
+      "prefiltered_rows": 4002,
+      "episode_rows": 1044,
+      "labeled_rows": 1044,
+      "labelable_episode_ratio_pct": 8.9,
+      "grounded_promoted_persona_episode_count": 93,
+      "blended_influence_share_pct": 3.5,
+      "collapse_stage": "episode_yield",
+      "failure_reason_top": "low_episode_yield",
+      "whether_meaningful_persona_evidence_exists": true,
+      "root_cause": "parser or episode-fidelity loss",
+      "recommended_action": "parser_or_episode_fidelity_audit_needed"
+    },
+    {
+      "source": "google_developer_forums",
+      "raw_rows": 10984,
+      "valid_rows": 4523,
+      "prefiltered_rows": 1577,
+      "episode_rows": 807,
+      "labeled_rows": 807,
+      "labelable_episode_ratio_pct": 27.6,
+      "grounded_promoted_persona_episode_count": 185,
+      "blended_influence_share_pct": 3.7,
+      "collapse_stage": "valid_filtering",
+      "failure_reason_top": "low_valid_post_retention: missing_pain_signal",
+      "whether_meaningful_persona_evidence_exists": true,
+      "root_cause": "valid-filter pain recognition gap",
+      "recommended_action": "fix_now_with_evidence"
+    },
+    {
+      "source": "klaviyo_community",
+      "raw_rows": 6686,
+      "valid_rows": 6238,
+      "prefiltered_rows": 192,
+      "episode_rows": 110,
+      "labeled_rows": 110,
+      "labelable_episode_ratio_pct": 93.6,
+      "grounded_promoted_persona_episode_count": 73,
+      "blended_influence_share_pct": 0.9,
+      "collapse_stage": "relevance_prefilter",
+      "failure_reason_top": "low_prefilter_retention: klaviyo_community:generic",
+      "whether_meaningful_persona_evidence_exists": false,
+      "root_cause": "relevance-prefilter generic/noise bleed",
+      "recommended_action": "downgrade_to_exploratory_only"
+    }
+  ],
+  "core_coverage_gap_analysis": {
+    "current_labeled_rows": 12669,
+    "current_persona_core_rows": 9442,
+    "current_persona_core_coverage_pct": 74.5,
+    "rows_needed_to_reach_75_0": 60,
+    "rows_needed_to_reach_80_0": 694,
+    "non_core_labeled_rows": 3227,
+    "recoverable_non_core_rows_concentrated_in_weak_cost_centers_pct": 60.3,
+    "top_non_core_sources": [
+      {
+        "source": "domo_community_forum",
+        "non_core_labeled_rows": 932
+      },
+      {
+        "source": "stackoverflow",
+        "non_core_labeled_rows": 844
+      },
+      {
+        "source": "google_developer_forums",
+        "non_core_labeled_rows": 558
+      },
+      {
+        "source": "adobe_analytics_community",
+        "non_core_labeled_rows": 449
+      },
+      {
+        "source": "github_discussions",
+        "non_core_labeled_rows": 217
+      },
+      {
+        "source": "shopify_community",
+        "non_core_labeled_rows": 175
+      },
+      {
+        "source": "reddit",
+        "non_core_labeled_rows": 17
+      },
+      {
+        "source": "power_bi_community",
+        "non_core_labeled_rows": 15
+      },
+      {
+        "source": "hubspot_community",
+        "non_core_labeled_rows": 13
+      },
+      {
+        "source": "klaviyo_community",
+        "non_core_labeled_rows": 7
+      }
+    ],
+    "path_classification_to_75_0": "existing_source_fix_likely",
+    "path_classification_to_80_0": "junk_risk_if_forced",
+    "interpretation": "Reaching 75.0 looks plausibly attainable with targeted recovery or denominator treatment.",
+    "target_80_interpretation": "Reaching 80.0 is materially harder and should not be the immediate target."
+  },
+  "scenario_simulation": [
+    {
+      "scenario_id": "A_current_baseline",
+      "description": "Current baseline.",
+      "weak_source_cost_center_count": 4,
+      "effective_balanced_source_count": 5.89,
+      "persona_core_coverage_of_all_labeled_pct": 74.5,
+      "overall_status": "FAIL",
+      "quality_flag": "UNSTABLE",
+      "persona_readiness_state": "exploratory_only",
+      "persona_readiness_gate_status": "FAIL",
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "final_usable_persona_count": 3,
+      "quality_standard_weakened": false,
+      "reviewable_achievable_without_weakening": false
+    },
+    {
+      "scenario_id": "B_downgrade_weakest_non_contributing_source_from_core_readiness",
+      "description": "Treat the lowest-influence weak source as exploratory-only debt for weak-source counting only.",
+      "weak_source_cost_center_count": 3,
+      "effective_balanced_source_count": 5.89,
+      "persona_core_coverage_of_all_labeled_pct": 74.5,
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "persona_readiness_gate_status": "WARN",
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "final_usable_persona_count": 3,
+      "quality_standard_weakened": false,
+      "reviewable_achievable_without_weakening": true
+    },
+    {
+      "scenario_id": "C_exclude_true_cost_center_source_from_core_readiness_denominator",
+      "description": "Exclude klaviyo_community from core-readiness denominator and weak-source debt in simulation only.",
+      "weak_source_cost_center_count": 3,
+      "effective_balanced_source_count": 5.89,
+      "persona_core_coverage_of_all_labeled_pct": 75.2,
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "persona_readiness_gate_status": "WARN",
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "final_usable_persona_count": 3,
+      "quality_standard_weakened": false,
+      "reviewable_achievable_without_weakening": true
+    },
+    {
+      "scenario_id": "D_fix_one_high_roi_weak_source",
+      "description": "Simulate google_developer_forums no longer being a weak source cost center.",
+      "weak_source_cost_center_count": 3,
+      "effective_balanced_source_count": 5.89,
+      "persona_core_coverage_of_all_labeled_pct": 74.5,
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "persona_readiness_gate_status": "WARN",
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "final_usable_persona_count": 3,
+      "quality_standard_weakened": false,
+      "reviewable_achievable_without_weakening": true
+    },
+    {
+      "scenario_id": "E_strict_source_balance_with_exploratory_only_source_debt_separated",
+      "description": "Keep source-balance strict but separate exploratory-only weak-source debt from the weak-source fail axis.",
+      "weak_source_cost_center_count": 3,
+      "effective_balanced_source_count": 5.89,
+      "persona_core_coverage_of_all_labeled_pct": 74.5,
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "persona_readiness_gate_status": "WARN",
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "final_usable_persona_count": 3,
+      "quality_standard_weakened": false,
+      "reviewable_achievable_without_weakening": true
+    },
+    {
+      "scenario_id": "F_no_op_baseline",
+      "description": "Duplicate baseline for sanity comparison.",
+      "weak_source_cost_center_count": 4,
+      "effective_balanced_source_count": 5.89,
+      "persona_core_coverage_of_all_labeled_pct": 74.5,
+      "overall_status": "FAIL",
+      "quality_flag": "UNSTABLE",
+      "persona_readiness_state": "exploratory_only",
+      "persona_readiness_gate_status": "FAIL",
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "final_usable_persona_count": 3,
+      "quality_standard_weakened": false,
+      "reviewable_achievable_without_weakening": false
+    }
+  ],
+  "recommended_next_implementation_path": "weak-source denominator policy cleanup",
+  "reviewable_achievable_without_weakening_persona_standards": true,
+  "deck_ready_out_of_scope": true,
+  "proposed_path_weakens_persona_standards": false,
+  "plan_markdown": "# Review-Ready Gap Plan\n\n## Summary\n\n- Current workbook readiness: `exploratory_only` / `UNSTABLE`\n- Primary source-side blocker: `weak_source_cost_center_count=4`\n- Recommended next path: `weak-source denominator policy cleanup`\n- Reviewable without weakening persona standards: `True`\n- Deck-ready remains out of scope for this pass.\n\n## Readiness Blockers\n\n- `weak_source_cost_center_count`: current `4`, reviewable threshold `<4`, deck-ready threshold `<2`, blocker type `hard_fail`\n- `effective_balanced_source_count`: current `5.89`, reviewable threshold `>=5.0`, deck-ready threshold `>=6.0`, blocker type `warning`\n- `persona_core_coverage_of_all_labeled_pct`: current `74.5`, reviewable threshold `70.0`, deck-ready threshold `80.0`, blocker type `warning`\n- `weak_source_yield_status`: current `FAIL`, reviewable threshold `WARN_or_OK`, deck-ready threshold `OK`, blocker type `hard_fail`\n- `source_diversity_status`: current `FAIL`, reviewable threshold `WARN_or_OK`, deck-ready threshold `OK`, blocker type `hard_fail`\n- `overall_status`: current `FAIL`, reviewable threshold `WARN_or_OK`, deck-ready threshold `OK`, blocker type `hard_fail`\n- `persona_readiness_gate_status`: current `FAIL`, reviewable threshold `WARN`, deck-ready threshold `OK`, blocker type `hard_fail`\n\n## Weak Source Decisions\n\n- `adobe_analytics_community` -> `parser_or_episode_fidelity_audit_needed` because `episode_yield` / `low_episode_yield` with blended influence `3.2`\n- `domo_community_forum` -> `parser_or_episode_fidelity_audit_needed` because `episode_yield` / `low_episode_yield` with blended influence `3.5`\n- `google_developer_forums` -> `fix_now_with_evidence` because `valid_filtering` / `low_valid_post_retention: missing_pain_signal` with blended influence `3.7`\n- `klaviyo_community` -> `downgrade_to_exploratory_only` because `relevance_prefilter` / `low_prefilter_retention: klaviyo_community:generic` with blended influence `0.9`\n\n## Scenario Simulation\n\n- `A_current_baseline`: overall `FAIL`, readiness `exploratory_only`, weak sources `4`, core coverage `74.5`\n- `B_downgrade_weakest_non_contributing_source_from_core_readiness`: overall `WARN`, readiness `reviewable_but_not_deck_ready`, weak sources `3`, core coverage `74.5`\n- `C_exclude_true_cost_center_source_from_core_readiness_denominator`: overall `WARN`, readiness `reviewable_but_not_deck_ready`, weak sources `3`, core coverage `75.2`\n- `D_fix_one_high_roi_weak_source`: overall `WARN`, readiness `reviewable_but_not_deck_ready`, weak sources `3`, core coverage `74.5`\n- `E_strict_source_balance_with_exploratory_only_source_debt_separated`: overall `WARN`, readiness `reviewable_but_not_deck_ready`, weak sources `3`, core coverage `74.5`\n- `F_no_op_baseline`: overall `FAIL`, readiness `exploratory_only`, weak sources `4`, core coverage `74.5`\n"
+}
