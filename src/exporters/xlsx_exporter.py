@@ -128,6 +128,8 @@ OVERVIEW_METRIC_LABELS = {
     "promoted_candidate_persona_count": "Promoted candidate persona count before grounding review",
     "promotion_visibility_persona_count": "Promotion-visibility persona count (review-visible promoted personas)",
     "headline_persona_count": "Headline persona count (final usable personas only)",
+    "production_ready_persona_count": "Production-ready persona count (strict final usable personas only)",
+    "review_ready_persona_count": "Review-ready persona count (visible for analyst review, not final usable)",
     "final_usable_persona_count": "Final usable persona count (structurally supported and grounded promoted personas only)",
     "deck_ready_persona_count": "Deck-ready persona count under current workbook gate",
     "promoted_persona_example_coverage_pct": "Promoted persona grounding coverage (%)",
@@ -137,6 +139,7 @@ OVERVIEW_METRIC_LABELS = {
     "promoted_personas_weakly_grounded": "Weakly grounded promoted persona ids",
     "promoted_personas_missing_examples": "Promoted persona ids missing accepted grounding examples",
     "exploratory_bucket_count": "Exploratory non-promoted cluster count",
+    "blocked_or_constrained_persona_count": "Blocked or constrained candidate persona count",
     "min_cluster_size": "Minimum cluster size for promotion review",
     "selected_axes": "Selected persona analysis axes",
     "clustering_mode": "Clustering mode",
@@ -382,6 +385,14 @@ def _display_frame(sheet_name: str, df: pd.DataFrame) -> pd.DataFrame:
             "denominator_value": "denominator_row_count",
         }
         return frame.rename(columns={key: value for key, value in rename_map.items() if key in frame.columns})
+    if sheet_name in {"persona_summary", "cluster_stats"}:
+        frame = _sort_persona_readiness_frame(frame)
+        rename_map = {
+            column: DISPLAY_HEADER_OVERRIDES.get(column, column)
+            for column in frame.columns
+        }
+        frame = frame.rename(columns=rename_map)
+        return _reorder_persona_display_frame(sheet_name, frame)
     rename_map = {
         column: DISPLAY_HEADER_OVERRIDES.get(column, column)
         for column in frame.columns
@@ -425,6 +436,79 @@ def _quality_check_metric_label(metric: str) -> str:
 def _glossary_metric_label(metric: str) -> str:
     """Return a reviewer-facing label for glossary rows."""
     return QUALITY_CHECK_METRIC_LABELS.get(metric, OVERVIEW_METRIC_LABELS.get(metric, metric.replace("_", " ")))
+
+
+def _sort_persona_readiness_frame(df: pd.DataFrame) -> pd.DataFrame:
+    """Sort persona-facing sheets by readiness tier before existing share/size order."""
+    if df.empty or "persona_id" not in df.columns:
+        return df
+    frame = df.copy()
+    readiness_rank = {
+        "production_ready_persona": 0,
+        "review_ready_persona": 1,
+        "blocked_or_constrained_candidate": 2,
+        "exploratory_bucket": 3,
+    }
+    frame["_readiness_rank"] = frame.get("readiness_tier", pd.Series("", index=frame.index)).astype(str).map(readiness_rank).fillna(4).astype(int)
+    frame["_production_rank"] = frame.get("production_ready_persona", pd.Series(False, index=frame.index)).fillna(False).astype(bool).astype(int)
+    frame["_review_rank"] = frame.get("review_ready_persona", pd.Series(False, index=frame.index)).fillna(False).astype(bool).astype(int)
+    share_column = None
+    for candidate in ("share_of_core_labeled", "share_of_all_labeled"):
+        if candidate in frame.columns:
+            share_column = candidate
+            frame[candidate] = pd.to_numeric(frame[candidate], errors="coerce")
+            break
+    if "persona_size" in frame.columns:
+        frame["persona_size"] = pd.to_numeric(frame["persona_size"], errors="coerce")
+    sort_columns = ["_readiness_rank", "_production_rank", "_review_rank"]
+    ascending = [True, False, False]
+    if share_column is not None:
+        sort_columns.append(share_column)
+        ascending.append(False)
+    if "persona_size" in frame.columns:
+        sort_columns.append("persona_size")
+        ascending.append(False)
+    sort_columns.append("persona_id")
+    ascending.append(True)
+    frame = frame.sort_values(sort_columns, ascending=ascending, kind="stable")
+    return frame.drop(columns=["_readiness_rank", "_production_rank", "_review_rank"], errors="ignore")
+
+
+def _reorder_persona_display_frame(sheet_name: str, df: pd.DataFrame) -> pd.DataFrame:
+    """Move readiness fields near the front for persona-facing workbook sheets."""
+    preferred_prefix: list[str]
+    if sheet_name == "persona_summary":
+        preferred_prefix = [
+            "persona_id",
+            "persona_name",
+            "persona_profile_name",
+            "legacy_persona_name",
+            "persona_size",
+        ]
+    else:
+        preferred_prefix = [
+            "persona_id",
+            "persona_size",
+        ]
+    readiness_columns = [
+        "readiness_tier",
+        "production_ready_persona",
+        "review_ready_persona",
+        "review_visibility_status",
+        "review_ready_reason",
+        "blocked_reason",
+        "workbook_policy_constraint",
+    ]
+    supporting_columns = [
+        "workbook_readiness_state",
+        "workbook_readiness_gate_status",
+        "workbook_usage_restriction",
+        "share_of_persona_core_labeled_pct",
+        "share_of_all_labeled_pct",
+    ]
+    preferred = [column for column in [*preferred_prefix, *readiness_columns, *supporting_columns] if column in df.columns]
+    remainder = [column for column in df.columns if column not in preferred]
+    return df.loc[:, [*preferred, *remainder]]
 
 
 def _format_worksheet(worksheet, sheet_name: str, raw_frame: pd.DataFrame, export_frame: pd.DataFrame) -> None:
@@ -523,8 +607,12 @@ def _write_readme_sheet(workbook) -> None:
         ["Persona-Core Labeled Episode Row Count", '=INDEX(overview!$C:$C,MATCH("persona_core_labeled_rows",overview!$A:$A,0))'],
         ["Review-Visible Promoted Persona Count", '=INDEX(overview!$C:$C,MATCH("promotion_visibility_persona_count",overview!$A:$A,0))'],
         ["Headline Persona Count (final usable personas only)", '=INDEX(overview!$C:$C,MATCH("headline_persona_count",overview!$A:$A,0))'],
+        ["Production-Ready Persona Count", '=INDEX(overview!$C:$C,MATCH("production_ready_persona_count",overview!$A:$A,0))'],
+        ["Review-Ready Persona Count", '=INDEX(overview!$C:$C,MATCH("review_ready_persona_count",overview!$A:$A,0))'],
         ["Final Usable Persona Count (structurally supported and grounded promoted personas only)", '=INDEX(overview!$C:$C,MATCH("final_usable_persona_count",overview!$A:$A,0))'],
         ["Deck-Ready Persona Count", '=INDEX(overview!$C:$C,MATCH("deck_ready_persona_count",overview!$A:$A,0))'],
+        ["Blocked or Constrained Persona Count", '=INDEX(overview!$C:$C,MATCH("blocked_or_constrained_persona_count",overview!$A:$A,0))'],
+        ["Exploratory Bucket Count", '=INDEX(overview!$C:$C,MATCH("exploratory_bucket_count",overview!$A:$A,0))'],
         ["Weakly Grounded Review-Visible Promoted Persona Count", '=INDEX(overview!$C:$C,MATCH("promoted_persona_weakly_grounded_count",overview!$A:$A,0))'],
         ["Ungrounded Review-Visible Promoted Persona Count", '=INDEX(overview!$C:$C,MATCH("promoted_persona_ungrounded_count",overview!$A:$A,0))'],
         ["Approximate Unknown Labeled Episode Rows", '=ROUND(INDEX(overview!$C:$C,MATCH("overall_unknown_ratio",overview!$A:$A,0))*INDEX(overview!$C:$C,MATCH("labeled_episode_rows",overview!$A:$A,0)),0)'],
@@ -537,8 +625,12 @@ def _write_readme_sheet(workbook) -> None:
         ["", ""],
         ["Review Tips", ""],
         ["Readiness gate", "If persona_readiness_state is below deck_ready, no sheet in this workbook may be interpreted as a final persona asset. Treat persona_summary and cluster_stats as hypothesis or review material only."],
+        ["Production-ready personas", "Production-ready personas are strict final usable outputs."],
+        ["Review-ready personas", "Review-ready personas are strong candidates for analyst review, but are not included in final usable persona count."],
+        ["Threshold discipline", "Review-ready status does not relax workbook policy or production-ready thresholds."],
+        ["Human review requirement", "Review-ready personas need human review before deck-ready or production use."],
         ["Grounding states", "See persona_summary and cluster_stats for base_promotion_status, structural_support_status, visibility_state, usability_state, deck_readiness_state, promotion_action, promotion_status, grounding_status, promotion_grounding_status, and reporting_readiness_status. Review-visible personas remain workbook-visible for audit but are not final usable or deck-ready personas."],
-        ["Persona counts", "Use Headline Persona Count or Final Usable Persona Count for headline or downstream persona totals only when persona_readiness_state is deck_ready or higher. Use Review-Visible Promoted Persona Count only for workbook review coverage, because it can include weakly grounded or ungrounded promoted personas."],
+        ["Persona counts", "Use Headline Persona Count or Final Usable Persona Count for headline or downstream persona totals only when persona_readiness_state is deck_ready or higher. Production-Ready Persona Count mirrors final usable personas. Review-Ready Persona Count is reported separately and must not be added into final usable totals."],
         ["Rows versus sources", "Raw Record Row Count is a count of JSONL rows. Effective labeled-source count and source_distribution rows describe sources, not post or episode rows."],
         ["Mixed-grain diagnostics", "source_diagnostics rows with row_grain=mixed_grain_bridge are cross-grain ratios, not same-grain funnel percentages."],
         ["Glossary", "See metric_glossary for metric keys, reviewer-facing workbook labels, and denominator semantics."],
@@ -557,15 +649,16 @@ def _write_readme_sheet(workbook) -> None:
         cell.fill = HEADER_FILL
     for cell in worksheet[13]:
         cell.fill = HEADER_FILL
-    for row_index in [29, 35]:
+    for row_index in [33, 39]:
         for cell in worksheet[row_index]:
             cell.font = HEADER_FONT
             cell.fill = SUBTLE_FILL
     for row in worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=2):
         for cell in row:
             cell.alignment = Alignment(vertical="top", wrap_text=True)
-    worksheet["B37"].hyperlink = "#metric_glossary!A1"
-    worksheet["B37"].style = "Hyperlink"
+    glossary_row = len(rows)
+    worksheet[f"B{glossary_row}"].hyperlink = "#metric_glossary!A1"
+    worksheet[f"B{glossary_row}"].style = "Hyperlink"
 
 
 def _excel_safe_value(value: object, max_len: int) -> object:

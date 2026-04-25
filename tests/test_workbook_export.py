@@ -17,6 +17,18 @@ from src.exporters.xlsx_exporter import export_workbook_from_frames
 class WorkbookExportTests(unittest.TestCase):
     """Verify workbook creation remains robust for sparse inputs."""
 
+    @staticmethod
+    def _readme_value_by_label(workbook, label: str) -> object:
+        for left_cell, right_cell in workbook["readme"].iter_rows(min_col=1, max_col=2, values_only=True):
+            if left_cell == label:
+                return right_cell
+        raise AssertionError(f"Missing readme label: {label}")
+
+    @staticmethod
+    def _sheet_rows_by_first_column(worksheet) -> dict[object, tuple[object, ...]]:
+        rows = list(worksheet.iter_rows(values_only=True))
+        return {row[0]: row for row in rows[1:] if row and row[0] is not None}
+
     def test_export_creates_required_sheets_even_with_sparse_frames(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -107,7 +119,22 @@ class WorkbookExportTests(unittest.TestCase):
             (root / "config").mkdir(parents=True, exist_ok=True)
             (root / "config" / "export_schema.yaml").write_text("workbook_name: test.xlsx\n", encoding="utf-8")
             frames = assemble_workbook_frames(
-                overview_df=pd.DataFrame({"metric": ["x", "promoted_candidate_persona_count", "promotion_visibility_persona_count", "headline_persona_count", "final_usable_persona_count", "deck_ready_persona_count"], "value": ["y", 1, 1, 1, 1, 1]}),
+                overview_df=pd.DataFrame(
+                    {
+                        "metric": [
+                            "x",
+                            "promoted_candidate_persona_count",
+                            "promotion_visibility_persona_count",
+                            "headline_persona_count",
+                            "production_ready_persona_count",
+                            "review_ready_persona_count",
+                            "final_usable_persona_count",
+                            "exploratory_bucket_count",
+                            "deck_ready_persona_count",
+                        ],
+                        "value": ["y", 1, 1, 1, 1, 0, 1, 0, 1],
+                    }
+                ),
                 counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [1]}),
                 source_distribution_df=pd.DataFrame({"source": ["reddit"], "normalized_count": [1], "valid_count": [1], "episode_count": [1], "labeled_count": [1], "share_of_labeled": [100.0]}),
                 taxonomy_summary_df=pd.DataFrame({"axis_name": ["role"], "why_it_matters": ["x"], "allowed_values_or_logic": ["a"], "evidence_fields": ["b"]}),
@@ -147,7 +174,22 @@ class WorkbookExportTests(unittest.TestCase):
             (root / "config").mkdir(parents=True, exist_ok=True)
             (root / "config" / "export_schema.yaml").write_text("workbook_name: test.xlsx\n", encoding="utf-8")
             frames = assemble_workbook_frames(
-                overview_df=pd.DataFrame({"metric": ["quality_flag", "promoted_candidate_persona_count", "promotion_visibility_persona_count", "headline_persona_count", "final_usable_persona_count", "deck_ready_persona_count"], "value": ["OK", 1, 1, 1, 1, 1]}),
+                overview_df=pd.DataFrame(
+                    {
+                        "metric": [
+                            "quality_flag",
+                            "promoted_candidate_persona_count",
+                            "promotion_visibility_persona_count",
+                            "headline_persona_count",
+                            "production_ready_persona_count",
+                            "review_ready_persona_count",
+                            "final_usable_persona_count",
+                            "exploratory_bucket_count",
+                            "deck_ready_persona_count",
+                        ],
+                        "value": ["OK", 1, 1, 1, 1, 0, 1, 0, 1],
+                    }
+                ),
                 counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [1]}),
                 source_distribution_df=pd.DataFrame({"source": ["reddit"], "raw_count": [1], "normalized_count": [1], "valid_count": [1], "prefiltered_valid_count": [1], "episode_count": [1], "labeled_count": [1], "share_of_labeled": [100.0]}),
                 taxonomy_summary_df=pd.DataFrame({"axis_name": ["role"], "why_it_matters": ["x"], "allowed_values_or_logic": ["a"], "evidence_fields": ["b"]}),
@@ -212,8 +254,16 @@ class WorkbookExportTests(unittest.TestCase):
             frames = assemble_workbook_frames(
                 overview_df=pd.DataFrame(
                     {
-                        "metric": ["raw_record_rows", "promotion_visibility_persona_count", "headline_persona_count", "final_usable_persona_count"],
-                        "value": [12, 3, 2, 2],
+                        "metric": [
+                            "raw_record_rows",
+                            "promotion_visibility_persona_count",
+                            "headline_persona_count",
+                            "production_ready_persona_count",
+                            "review_ready_persona_count",
+                            "final_usable_persona_count",
+                            "blocked_or_constrained_persona_count",
+                        ],
+                        "value": [12, 3, 2, 2, 1, 2, 1],
                     }
                 ),
                 counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [12]}),
@@ -267,19 +317,21 @@ class WorkbookExportTests(unittest.TestCase):
             output = export_workbook_from_frames(root, frames)
             workbook = load_workbook(output, read_only=True)
             try:
-                overview_rows = list(workbook["overview"].iter_rows(min_row=1, max_row=5, values_only=True))
+                overview_rows = self._sheet_rows_by_first_column(workbook["overview"])
                 quality_rows = list(workbook["quality_checks"].iter_rows(min_row=1, max_row=3, values_only=True))
                 glossary_rows = list(workbook["metric_glossary"].iter_rows(min_row=1, max_row=4, values_only=True))
-                readme_persona_copy = workbook["readme"]["B38"].value
-                readme_row_source_copy = workbook["readme"]["B39"].value
+                readme_persona_copy = self._readme_value_by_label(workbook, "Persona counts")
+                readme_row_source_copy = self._readme_value_by_label(workbook, "Rows versus sources")
             finally:
                 workbook.close()
 
-            self.assertEqual(overview_rows[0][:3], ("metric_key", "display_label", "metric_value"))
-            self.assertEqual(overview_rows[1][:3], ("raw_record_rows", "Raw record row count (JSONL lines, not source count)", 12))
-            self.assertEqual(overview_rows[2][:3], ("promotion_visibility_persona_count", "Promotion-visibility persona count (review-visible promoted personas)", 3))
-            self.assertEqual(overview_rows[3][:3], ("headline_persona_count", "Headline persona count (final usable personas only)", 2))
-            self.assertEqual(overview_rows[4][:3], ("final_usable_persona_count", "Final usable persona count (structurally supported and grounded promoted personas only)", 2))
+            self.assertEqual(overview_rows["raw_record_rows"][:3], ("raw_record_rows", "Raw record row count (JSONL lines, not source count)", 12))
+            self.assertEqual(overview_rows["promotion_visibility_persona_count"][:3], ("promotion_visibility_persona_count", "Promotion-visibility persona count (review-visible promoted personas)", 3))
+            self.assertEqual(overview_rows["headline_persona_count"][:3], ("headline_persona_count", "Headline persona count (final usable personas only)", 2))
+            self.assertEqual(overview_rows["production_ready_persona_count"][:3], ("production_ready_persona_count", "Production-ready persona count (strict final usable personas only)", 2))
+            self.assertEqual(overview_rows["review_ready_persona_count"][:3], ("review_ready_persona_count", "Review-ready persona count (visible for analyst review, not final usable)", 1))
+            self.assertEqual(overview_rows["final_usable_persona_count"][:3], ("final_usable_persona_count", "Final usable persona count (structurally supported and grounded promoted personas only)", 2))
+            self.assertEqual(overview_rows["blocked_or_constrained_persona_count"][:3], ("blocked_or_constrained_persona_count", "Blocked or constrained candidate persona count", 1))
 
             self.assertEqual(quality_rows[0][:3], ("metric_key", "display_label", "metric_value"))
             self.assertEqual(quality_rows[1][1], "Effective labeled-source count (source diversity score, not row count)")
@@ -288,7 +340,7 @@ class WorkbookExportTests(unittest.TestCase):
             self.assertEqual(glossary_rows[0][:3], ("metric_key", "workbook_label", "denominator_type_key"))
             self.assertEqual(glossary_rows[1][1], "Effective labeled-source count (source diversity score, not row count)")
             self.assertIn("source-count metric, not a row-count metric", str(glossary_rows[1][3]))
-            self.assertIn("Final Usable Persona Count", str(readme_persona_copy))
+            self.assertIn("Review-Ready Persona Count is reported separately", str(readme_persona_copy))
             self.assertIn("Raw Record Row Count is a count of JSONL rows", str(readme_row_source_copy))
 
     def test_validate_workbook_frames_rejects_final_asset_claim_below_deck_ready(self) -> None:
@@ -473,13 +525,294 @@ class WorkbookExportTests(unittest.TestCase):
             output = export_workbook_from_frames(root, frames)
             workbook = load_workbook(output, read_only=True)
             try:
-                readme_gate_copy = workbook["readme"]["B36"].value
-                readme_persona_count_copy = workbook["readme"]["B38"].value
+                readme_gate_copy = self._readme_value_by_label(workbook, "Readiness gate")
+                readme_persona_count_copy = self._readme_value_by_label(workbook, "Persona counts")
             finally:
                 workbook.close()
 
             self.assertIn("no sheet in this workbook may be interpreted as a final persona asset", str(readme_gate_copy))
             self.assertIn("only when persona_readiness_state is deck_ready or higher", str(readme_persona_count_copy))
+
+    def test_export_surfaces_review_ready_tier_without_changing_headline_counts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            (root / "config").mkdir(parents=True, exist_ok=True)
+            (root / "config" / "export_schema.yaml").write_text("workbook_name: test.xlsx\n", encoding="utf-8")
+            overview_df = pd.DataFrame(
+                {
+                    "metric": [
+                        "persona_readiness_state",
+                        "persona_readiness_label",
+                        "persona_asset_class",
+                        "persona_readiness_gate_status",
+                        "persona_completion_claim_allowed",
+                        "persona_usage_restriction",
+                        "persona_readiness_summary",
+                        "persona_readiness_blockers",
+                        "raw_record_rows",
+                        "normalized_post_rows",
+                        "valid_candidate_rows",
+                        "prefiltered_valid_rows",
+                        "episode_rows",
+                        "labeled_episode_rows",
+                        "persona_core_labeled_rows",
+                        "promoted_candidate_persona_count",
+                        "promotion_visibility_persona_count",
+                        "headline_persona_count",
+                        "production_ready_persona_count",
+                        "review_ready_persona_count",
+                        "final_usable_persona_count",
+                        "deck_ready_persona_count",
+                        "blocked_or_constrained_persona_count",
+                        "exploratory_bucket_count",
+                        "promoted_persona_weakly_grounded_count",
+                        "promoted_persona_ungrounded_count",
+                        "overall_unknown_ratio",
+                    ],
+                    "value": [
+                        "reviewable_but_not_deck_ready",
+                        "Reviewable Candidate",
+                        "review_only_material",
+                        "WARN",
+                        False,
+                        "Review material only. Not a final persona asset.",
+                        "Workbook is reviewable but not deck-ready.",
+                        "top_3_cluster_share_of_core_labeled",
+                        100,
+                        90,
+                        80,
+                        70,
+                        60,
+                        60,
+                        55,
+                        5,
+                        4,
+                        3,
+                        3,
+                        1,
+                        3,
+                        0,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0.14,
+                    ],
+                }
+            )
+            cluster_stats_df = pd.DataFrame(
+                {
+                    "persona_id": ["persona_01", "persona_02", "persona_03", "persona_04", "persona_05"],
+                    "workbook_readiness_state": ["reviewable_but_not_deck_ready"] * 5,
+                    "workbook_readiness_gate_status": ["WARN"] * 5,
+                    "workbook_usage_restriction": ["Review material only. Not a final persona asset."] * 5,
+                    "persona_size": [4490, 2570, 807, 598, 539],
+                    "share_of_core_labeled": [47.6, 27.2, 8.5, 6.3, 5.7],
+                    "share_of_all_labeled": [40.0, 23.0, 7.0, 5.0, 4.7],
+                    "denominator_type": ["persona_core_labeled_rows"] * 5,
+                    "denominator_value": [55] * 5,
+                    "base_promotion_status": ["promoted_persona"] * 5,
+                    "promoted_candidate_persona": [True] * 5,
+                    "workbook_review_visible": [True, True, True, True, False],
+                    "promotion_status": ["promoted_persona"] * 5,
+                    "promotion_grounding_status": ["promoted_and_grounded"] * 5,
+                    "final_usable_persona": [True, True, True, False, False],
+                    "production_ready_persona": [True, True, True, False, False],
+                    "review_ready_persona": [False, False, False, True, False],
+                    "readiness_tier": [
+                        "production_ready_persona",
+                        "production_ready_persona",
+                        "production_ready_persona",
+                        "review_ready_persona",
+                        "blocked_or_constrained_candidate",
+                    ],
+                    "review_visibility_status": [
+                        "production_ready_visible",
+                        "production_ready_visible",
+                        "production_ready_visible",
+                        "review_ready_visible",
+                        "blocked_not_review_ready",
+                    ],
+                    "review_ready_reason": ["", "", "", "Locally grounded and structurally supported, but workbook-global concentration policy keeps this persona review-ready only.", ""],
+                    "blocked_reason": ["", "", "", "blocked from production-ready use by workbook-global concentration policy", "weak-source dominated or insufficiently cross-source robust | thin evidence"],
+                    "workbook_policy_constraint": ["", "", "", "top_3_cluster_share_of_core_labeled", "top_3_cluster_share_of_core_labeled"],
+                    "dominant_signature": ["a", "b", "c", "d", "e"],
+                    "dominant_bottleneck": ["manual_reporting", "manual_reporting", "dashboard_mistrust", "data_quality", "manual_reporting"],
+                    "dominant_analysis_goal": ["report_speed", "report_speed", "decision_confidence", "validate_numbers", "report_speed"],
+                }
+            )
+            persona_summary_df = pd.DataFrame(
+                {
+                    "persona_id": ["persona_01", "persona_02", "persona_03", "persona_04", "persona_05"],
+                    "workbook_readiness_state": ["reviewable_but_not_deck_ready"] * 5,
+                    "workbook_readiness_gate_status": ["WARN"] * 5,
+                    "workbook_usage_restriction": ["Review material only. Not a final persona asset."] * 5,
+                    "persona_name": ["P1", "P2", "P3", "P4", "P5"],
+                    "persona_profile_name": ["P1", "P2", "P3", "P4", "P5"],
+                    "legacy_persona_name": ["", "", "", "", ""],
+                    "persona_size": [4490, 2570, 807, 598, 539],
+                    "share_of_core_labeled": [47.6, 27.2, 8.5, 6.3, 5.7],
+                    "share_of_all_labeled": [40.0, 23.0, 7.0, 5.0, 4.7],
+                    "denominator_type": ["persona_core_labeled_rows"] * 5,
+                    "denominator_value": [55] * 5,
+                    "min_cluster_size": [200] * 5,
+                    "base_promotion_status": ["promoted_persona"] * 5,
+                    "promoted_candidate_persona": [True] * 5,
+                    "workbook_review_visible": [True, True, True, True, False],
+                    "visibility_state": ["workbook_visible"] * 5,
+                    "final_usable_persona": [True, True, True, False, False],
+                    "production_ready_persona": [True, True, True, False, False],
+                    "review_ready_persona": [False, False, False, True, False],
+                    "readiness_tier": [
+                        "production_ready_persona",
+                        "production_ready_persona",
+                        "production_ready_persona",
+                        "review_ready_persona",
+                        "blocked_or_constrained_candidate",
+                    ],
+                    "review_ready_reason": ["", "", "", "Locally grounded and structurally supported, but workbook-global concentration policy keeps this persona review-ready only.", ""],
+                    "blocked_reason": ["", "", "", "blocked from production-ready use by workbook-global concentration policy", "weak-source dominated or insufficiently cross-source robust | thin evidence"],
+                    "workbook_policy_constraint": ["", "", "", "top_3_cluster_share_of_core_labeled", "top_3_cluster_share_of_core_labeled"],
+                    "review_visibility_status": [
+                        "production_ready_visible",
+                        "production_ready_visible",
+                        "production_ready_visible",
+                        "review_ready_visible",
+                        "blocked_not_review_ready",
+                    ],
+                    "usability_state": ["final_usable", "final_usable", "final_usable", "not_final_usable", "not_final_usable"],
+                    "deck_ready_persona": [False] * 5,
+                    "deck_readiness_state": ["not_deck_ready"] * 5,
+                    "reporting_readiness_status": ["review_only"] * 5,
+                    "promotion_action": ["keep"] * 5,
+                    "promotion_status": ["promoted_persona"] * 5,
+                    "grounding_status": ["grounded"] * 5,
+                    "promotion_grounding_status": ["promoted_and_grounded"] * 5,
+                    "promotion_reason": ["meets floor"] * 5,
+                    "grounding_reason": ["grounded example exists"] * 5,
+                    "grounded_candidate_count": [2, 2, 2, 2, 1],
+                    "weak_candidate_count": [0, 0, 0, 0, 1],
+                    "selected_example_count": [2, 2, 1, 1, 1],
+                    "fallback_selected_count": [0, 0, 0, 0, 0],
+                    "one_line_summary": ["s1", "s2", "s3", "s4", "s5"],
+                    "dominant_bottleneck": ["manual_reporting", "manual_reporting", "dashboard_mistrust", "data_quality", "manual_reporting"],
+                    "main_workflow_context": ["reporting", "reporting", "validation", "validation", "reporting"],
+                    "analysis_behavior": ["report_speed", "report_speed", "decision_confidence", "validate_numbers", "report_speed"],
+                    "trust_explanation_need": ["high"] * 5,
+                    "current_tool_dependency": ["spreadsheet_heavy"] * 5,
+                    "primary_output_expectation": ["xlsx"] * 5,
+                    "top_pain_points": ["pain"] * 5,
+                    "representative_examples": ["example"] * 5,
+                    "why_this_persona_matters": ["matters"] * 5,
+                }
+            )
+            frames = assemble_workbook_frames(
+                overview_df=overview_df,
+                counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [100]}),
+                source_distribution_df=pd.DataFrame(),
+                taxonomy_summary_df=pd.DataFrame(),
+                cluster_stats_df=cluster_stats_df,
+                persona_summary_df=persona_summary_df,
+                persona_axes_df=pd.DataFrame(),
+                persona_needs_df=pd.DataFrame(),
+                persona_cooccurrence_df=pd.DataFrame(),
+                persona_examples_df=pd.DataFrame(
+                    {
+                        "persona_id": ["persona_04", "persona_05"],
+                        "example_rank": [1, 1],
+                        "example_text": ["reconcile report totals before signoff", "manual reporting burden"],
+                    }
+                ),
+                quality_checks_df=pd.DataFrame({"metric": ["quality_flag"], "value": ["WARN"], "threshold": [""], "status": ["warn"], "level": ["warning"], "denominator_type": [""], "denominator_value": [""], "notes": [""]}),
+                source_diagnostics_df=pd.DataFrame(),
+                quality_failures_df=pd.DataFrame(),
+                metric_glossary_df=pd.DataFrame(),
+            )
+            with warnings.catch_warnings(record=True) as captured:
+                warnings.simplefilter("always")
+                output = export_workbook_from_frames(root, frames)
+
+            review_ready_warning_text = "\n".join(str(item.message) for item in captured)
+            self.assertNotIn("review_ready_persona", review_ready_warning_text)
+            self.assertNotIn("production_ready_persona", review_ready_warning_text)
+            self.assertNotIn("readiness_tier", review_ready_warning_text)
+
+            workbook = load_workbook(output, read_only=True)
+            try:
+                overview_rows = self._sheet_rows_by_first_column(workbook["overview"])
+                persona_summary_rows = list(workbook["persona_summary"].iter_rows(values_only=True))
+                cluster_stats_rows = list(workbook["cluster_stats"].iter_rows(values_only=True))
+                readme_review_ready_copy = self._readme_value_by_label(workbook, "Review-ready personas")
+                readme_threshold_copy = self._readme_value_by_label(workbook, "Threshold discipline")
+            finally:
+                workbook.close()
+
+            self.assertEqual(overview_rows["final_usable_persona_count"][2], 3)
+            self.assertEqual(overview_rows["production_ready_persona_count"][2], 3)
+            self.assertEqual(overview_rows["review_ready_persona_count"][2], 1)
+            self.assertEqual(overview_rows["blocked_or_constrained_persona_count"][2], 1)
+
+            persona_headers = list(persona_summary_rows[0])
+            cluster_headers = list(cluster_stats_rows[0])
+            self.assertEqual(
+                persona_headers[:12],
+                [
+                    "persona_id",
+                    "persona_name",
+                    "persona_profile_name",
+                    "legacy_persona_name",
+                    "persona_size",
+                    "readiness_tier",
+                    "production_ready_persona",
+                    "review_ready_persona",
+                    "review_visibility_status",
+                    "review_ready_reason",
+                    "blocked_reason",
+                    "workbook_policy_constraint",
+                ],
+            )
+            self.assertEqual(
+                cluster_headers[:9],
+                [
+                    "persona_id",
+                    "persona_size",
+                    "readiness_tier",
+                    "production_ready_persona",
+                    "review_ready_persona",
+                    "review_visibility_status",
+                    "review_ready_reason",
+                    "blocked_reason",
+                    "workbook_policy_constraint",
+                ],
+            )
+
+            persona_id_index = persona_headers.index("persona_id")
+            readiness_index = persona_headers.index("readiness_tier")
+            review_ready_index = persona_headers.index("review_ready_persona")
+            production_ready_index = persona_headers.index("production_ready_persona")
+            visible_index = persona_headers.index("review_visibility_status")
+            ordered_personas = [row[persona_id_index] for row in persona_summary_rows[1:6]]
+            self.assertEqual(ordered_personas, ["persona_01", "persona_02", "persona_03", "persona_04", "persona_05"])
+
+            persona_row_map = {row[persona_id_index]: row for row in persona_summary_rows[1:] if row and row[persona_id_index]}
+            self.assertEqual(persona_row_map["persona_04"][readiness_index], "review_ready_persona")
+            self.assertEqual(persona_row_map["persona_04"][review_ready_index], True)
+            self.assertEqual(persona_row_map["persona_04"][production_ready_index], False)
+            self.assertEqual(persona_row_map["persona_04"][visible_index], "review_ready_visible")
+            self.assertEqual(persona_row_map["persona_05"][readiness_index], "blocked_or_constrained_candidate")
+            self.assertEqual(persona_row_map["persona_05"][review_ready_index], False)
+            self.assertEqual(persona_row_map["persona_05"][visible_index], "blocked_not_review_ready")
+
+            cluster_persona_id_index = cluster_headers.index("persona_id")
+            cluster_readiness_index = cluster_headers.index("readiness_tier")
+            cluster_review_index = cluster_headers.index("review_ready_persona")
+            cluster_row_map = {row[cluster_persona_id_index]: row for row in cluster_stats_rows[1:] if row and row[cluster_persona_id_index]}
+            self.assertEqual(cluster_row_map["persona_04"][cluster_readiness_index], "review_ready_persona")
+            self.assertEqual(cluster_row_map["persona_04"][cluster_review_index], True)
+            self.assertEqual(cluster_row_map["persona_05"][cluster_readiness_index], "blocked_or_constrained_candidate")
+
+            self.assertIn("not included in final usable persona count", str(readme_review_ready_copy))
+            self.assertIn("does not relax workbook policy or production-ready thresholds", str(readme_threshold_copy))
 
     def test_export_uses_explicit_row_based_headers_for_counts_and_source_distribution(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
