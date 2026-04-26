@@ -16,6 +16,12 @@ __pycache__/
 .coverage.*
 htmlcov/
 
+# Local-only test scratch space
+tests/_scratch/
+tests/local_*.py
+tests/*.tmp
+tests/*.log
+
 data/
 
 AGENTS.md
