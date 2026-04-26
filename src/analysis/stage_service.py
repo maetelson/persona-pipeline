@@ -25,6 +25,10 @@ from src.analysis.persona05_boundary_diagnostics import (
     build_persona05_boundary_outputs,
     write_persona05_boundary_artifacts,
 )
+from src.analysis.persona05_subtheme_preservation import (
+    build_persona05_subtheme_outputs,
+    write_persona05_subtheme_artifacts,
+)
 from src.analysis.persona_service import _review_ready_fields, build_persona_outputs, write_persona_outputs
 from src.analysis.quality_status import build_quality_metrics, evaluate_quality_status
 from src.analysis.reddit_retention import analyze_reddit_retention
@@ -429,6 +433,7 @@ def persist_analysis_outputs(
     debug_paths: dict[str, Path] = {}
     export_paths: dict[str, Path] = {}
     messaging_paths: dict[str, Path] = {}
+    debug_persona_outputs = dict(persona_service_outputs)
 
     if optional_outputs:
         (analysis_dir / "persona_generation_audit.json").write_text(
@@ -437,7 +442,15 @@ def persist_analysis_outputs(
         )
 
     if write_debug_artifacts:
-        debug_paths = write_persona_outputs(root_dir, persona_service_outputs)
+        subtheme_outputs = build_persona05_subtheme_outputs(
+            persona_summary_df=persona_service_outputs["persona_summary_df"],
+            cluster_stats_df=persona_service_outputs["cluster_stats_df"],
+            persona_promotion_path_debug_df=persona_service_outputs["persona_promotion_path_debug_df"],
+        )
+        debug_persona_outputs["persona_summary_df"] = subtheme_outputs["persona_summary_df"]
+        debug_persona_outputs["cluster_stats_df"] = subtheme_outputs["cluster_stats_df"]
+        debug_persona_outputs["persona_promotion_path_debug_df"] = subtheme_outputs["persona_promotion_path_debug_df"]
+        debug_paths = write_persona_outputs(root_dir, debug_persona_outputs)
         debug_paths.update(
             write_source_tier_evidence_artifacts(
                 root_dir,
@@ -453,6 +466,7 @@ def persist_analysis_outputs(
                 deterministic_outputs["persona05_boundary_outputs"]["report"],
             )
         )
+        debug_paths.update(write_persona05_subtheme_artifacts(root_dir, subtheme_outputs["report"]))
         deterministic_outputs["persona_core_policy_df"].to_csv(analysis_dir / "persona_core_policy_audit.csv", index=False)
         deterministic_outputs["counts_df"].to_csv(analysis_dir / "counts.csv", index=False)
         deterministic_outputs["source_distribution_df"].to_csv(analysis_dir / "source_distribution.csv", index=False)

@@ -1,0 +1,28 @@
+{
+  "persona_id": "persona_05",
+  "subtheme_fields_added": [
+    "subtheme_status",
+    "parent_persona_id",
+    "parent_persona_relation",
+    "future_candidate_subtheme",
+    "subtheme_reason",
+    "standalone_persona_recommended",
+    "claim_eligible_recommended",
+    "related_subtheme_ids"
+  ],
+  "persona_05_field_values": {
+    "subtheme_status": "future_candidate_subtheme",
+    "parent_persona_id": "persona_03",
+    "parent_persona_relation": "delivery_specific_subtheme",
+    "future_candidate_subtheme": true,
+    "subtheme_reason": "Last-mile reporting output construction blocked by tool limitations is real, but current evidence is too overlap-heavy and too thin for standalone persona treatment.",
+    "standalone_persona_recommended": false,
+    "claim_eligible_recommended": false,
+    "production_ready_persona": false,
+    "review_ready_persona": false,
+    "final_usable_persona": false,
+    "deck_ready_claim_eligible_persona": false,
+    "readiness_tier": "blocked_or_constrained_candidate"
+  },
+  "persona_03_related_subtheme_ids": "persona_05"
+}
