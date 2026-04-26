@@ -211,11 +211,11 @@
   ],
   "core_coverage_gap_analysis": {
     "current_labeled_rows": 12674,
-    "current_persona_core_rows": 9444,
+    "current_persona_core_rows": 9445,
     "current_persona_core_coverage_pct": 74.5,
-    "rows_needed_to_reach_75_0": 62,
-    "rows_needed_to_reach_80_0": 696,
-    "non_core_labeled_rows": 3230,
+    "rows_needed_to_reach_75_0": 61,
+    "rows_needed_to_reach_80_0": 695,
+    "non_core_labeled_rows": 3229,
     "recoverable_non_core_rows_concentrated_in_weak_cost_centers_pct": 60.3,
     "top_non_core_sources": [
       {
@@ -228,7 +228,7 @@
       },
       {
         "source": "google_developer_forums",
-        "non_core_labeled_rows": 561
+        "non_core_labeled_rows": 560
       },
       {
         "source": "adobe_analytics_community",

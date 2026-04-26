@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -43,10 +44,20 @@ class ReviewReadyGapAnalysisTests(unittest.TestCase):
 
     def test_core_coverage_gap_matches_current_artifacts(self) -> None:
         gap = self.report["core_coverage_gap_analysis"]
-        self.assertEqual(gap["current_labeled_rows"], 12674)
-        self.assertEqual(gap["current_persona_core_rows"], 9444)
-        self.assertEqual(gap["rows_needed_to_reach_75_0"], 62)
-        self.assertEqual(gap["rows_needed_to_reach_80_0"], 696)
+        quality_checks = pd.read_csv(ROOT_DIR / "data" / "analysis" / "quality_checks.csv")
+        labeled_rows = int(
+            float(quality_checks.loc[quality_checks["metric"] == "labeled_episode_rows", "value"].iloc[0])
+        )
+        persona_core_rows = int(
+            float(quality_checks.loc[quality_checks["metric"] == "persona_core_labeled_rows", "value"].iloc[0])
+        )
+        expected_rows_to_75 = max(0, math.ceil(labeled_rows * 0.75) - persona_core_rows)
+        expected_rows_to_80 = max(0, math.ceil(labeled_rows * 0.80) - persona_core_rows)
+
+        self.assertEqual(gap["current_labeled_rows"], labeled_rows)
+        self.assertEqual(gap["current_persona_core_rows"], persona_core_rows)
+        self.assertEqual(gap["rows_needed_to_reach_75_0"], expected_rows_to_75)
+        self.assertEqual(gap["rows_needed_to_reach_80_0"], expected_rows_to_80)
 
     def test_weak_source_decisions_follow_expected_defaults(self) -> None:
         decisions = {row["source"]: row["recommended_action"] for row in self.report["weak_source_decisions"]}

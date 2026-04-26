@@ -581,7 +581,7 @@
       "episodes_per_prefiltered_valid_post": 0.56,
       "labelable_episode_ratio_pct": 48.2,
       "collapse_stage": "valid_filtering",
-      "failure_reason_top": "low_valid_post_retention: low_relevance_prefilter",
+      "failure_reason_top": "low_valid_post_retention: missing_pain_signal",
       "failure_level": "warning",
       "source_balance_status": "watchlist",
       "weak_source_cost_center": false,
@@ -590,12 +590,12 @@
       "weak_source_denominator_policy_action": "not_applicable",
       "weak_source_denominator_policy_reason": "",
       "policy_action": "review_source_specific_valid_filtering",
-      "false_negative_hint": "Support-style phrasing is being rejected upstream as low relevance before source-specific rescue can apply.",
-      "source_specific_next_check": "Inspect data/valid/invalid_candidates_with_prefilter.parquet for support-style rows rejected upstream as low relevance before source rescue.",
-      "root_cause_category": "valid_filter_low_relevance_prefilter_proxy",
+      "false_negative_hint": "Source-native reporting trust phrasing is being treated as generic product help before pain is recognized.",
+      "source_specific_next_check": "Inspect data/valid/invalid_candidates_with_prefilter.parquet for reporting-trust rows that were rejected as generic product help.",
+      "root_cause_category": "valid_filter_missing_pain_signal",
       "evidence_to_inspect": "data/valid/invalid_candidates_with_prefilter.parquet",
-      "likely_false_negative_pattern": "Support-style phrasing is being rejected upstream as low relevance before source-specific rescue can apply.",
-      "recommended_config_change": "Refine src/filters/invalid_filter.py so low-relevance-like support phrasing is not rejected before source-specific rescue can apply.",
+      "likely_false_negative_pattern": "Source-native reporting trust phrasing is being treated as generic product help before pain is recognized.",
+      "recommended_config_change": "Update source-aware rescue terms in src/filters/invalid_filter.py for reporting-trust, dashboard-behavior, export-correctness, and scheduling language.",
       "required_regression_check": "Add source-specific positive and noise-negative invalid-filter regressions in tests/test_invalid_filter.py.",
       "owner_action_type": "adjust_invalid_filter_terms",
       "can_auto_tune": false,
@@ -769,7 +769,7 @@
       "episodes_per_prefiltered_valid_post": 0.82,
       "labelable_episode_ratio_pct": 71.3,
       "collapse_stage": "valid_filtering",
-      "failure_reason_top": "low_valid_post_retention: low_relevance_prefilter",
+      "failure_reason_top": "low_valid_post_retention: missing_pain_signal",
       "failure_level": "warning",
       "source_balance_status": "watchlist",
       "weak_source_cost_center": false,
@@ -778,12 +778,12 @@
       "weak_source_denominator_policy_action": "not_applicable",
       "weak_source_denominator_policy_reason": "",
       "policy_action": "review_source_specific_valid_filtering",
-      "false_negative_hint": "Support-style phrasing is being rejected upstream as low relevance before source-specific rescue can apply.",
-      "source_specific_next_check": "Inspect data/valid/invalid_candidates_with_prefilter.parquet for support-style rows rejected upstream as low relevance before source rescue.",
-      "root_cause_category": "valid_filter_low_relevance_prefilter_proxy",
+      "false_negative_hint": "Source-native reporting pain is phrased as troubleshooting context rather than explicit mismatch language.",
+      "source_specific_next_check": "Inspect data/valid/invalid_candidates_with_prefilter.parquet for reporting-trust rows that were rejected as generic product help.",
+      "root_cause_category": "valid_filter_missing_pain_signal",
       "evidence_to_inspect": "data/valid/invalid_candidates_with_prefilter.parquet",
-      "likely_false_negative_pattern": "Support-style phrasing is being rejected upstream as low relevance before source-specific rescue can apply.",
-      "recommended_config_change": "Refine src/filters/invalid_filter.py so low-relevance-like support phrasing is not rejected before source-specific rescue can apply.",
+      "likely_false_negative_pattern": "Source-native reporting pain is phrased as troubleshooting context rather than explicit mismatch language.",
+      "recommended_config_change": "Update source-aware rescue terms in src/filters/invalid_filter.py for reporting-trust, dashboard-behavior, export-correctness, and scheduling language.",
       "required_regression_check": "Add source-specific positive and noise-negative invalid-filter regressions in tests/test_invalid_filter.py.",
       "owner_action_type": "adjust_invalid_filter_terms",
       "can_auto_tune": false,
@@ -811,7 +811,7 @@
         {
           "persona_id": "persona_04",
           "episode_count": 61,
-          "share_of_persona_pct": 10.2,
+          "share_of_persona_pct": 10.1,
           "readiness_tier": "review_ready_persona"
         }
       ],
@@ -883,9 +883,9 @@
       "can_auto_tune": false,
       "must_manual_review": true,
       "priority_tier": "fix_now",
-      "persona_core_rows": 251,
+      "persona_core_rows": 252,
       "production_ready_persona_contribution": 186,
-      "review_ready_persona_contribution": 52,
+      "review_ready_persona_contribution": 53,
       "selected_example_support_count": 1,
       "production_ready_example_support_count": 0,
       "review_ready_example_support_count": 1,
@@ -898,8 +898,8 @@
         },
         {
           "persona_id": "persona_04",
-          "episode_count": 52,
-          "share_of_persona_pct": 8.7,
+          "episode_count": 53,
+          "share_of_persona_pct": 8.8,
           "readiness_tier": "review_ready_persona"
         },
         {
@@ -1521,7 +1521,7 @@
       "episodes_per_prefiltered_valid_post": 1.0,
       "labelable_episode_ratio_pct": 100.0,
       "collapse_stage": "valid_filtering",
-      "failure_reason_top": "low_valid_post_retention: low_relevance_prefilter",
+      "failure_reason_top": "low_valid_post_retention: missing_pain_signal",
       "failure_level": "warning",
       "source_balance_status": "watchlist",
       "weak_source_cost_center": false,
@@ -1530,12 +1530,12 @@
       "weak_source_denominator_policy_action": "not_applicable",
       "weak_source_denominator_policy_reason": "",
       "policy_action": "review_source_specific_valid_filtering",
-      "false_negative_hint": "Support-style phrasing is being rejected upstream as low relevance before source-specific rescue can apply.",
-      "source_specific_next_check": "Inspect data/valid/invalid_candidates_with_prefilter.parquet for support-style rows rejected upstream as low relevance before source rescue.",
-      "root_cause_category": "valid_filter_low_relevance_prefilter_proxy",
+      "false_negative_hint": "Source-native reporting pain is phrased as troubleshooting context rather than explicit mismatch language.",
+      "source_specific_next_check": "Inspect data/valid/invalid_candidates_with_prefilter.parquet for reporting-trust rows that were rejected as generic product help.",
+      "root_cause_category": "valid_filter_missing_pain_signal",
       "evidence_to_inspect": "data/valid/invalid_candidates_with_prefilter.parquet",
-      "likely_false_negative_pattern": "Support-style phrasing is being rejected upstream as low relevance before source-specific rescue can apply.",
-      "recommended_config_change": "Refine src/filters/invalid_filter.py so low-relevance-like support phrasing is not rejected before source-specific rescue can apply.",
+      "likely_false_negative_pattern": "Source-native reporting pain is phrased as troubleshooting context rather than explicit mismatch language.",
+      "recommended_config_change": "Update source-aware rescue terms in src/filters/invalid_filter.py for reporting-trust, dashboard-behavior, export-correctness, and scheduling language.",
       "required_regression_check": "Add source-specific positive and noise-negative invalid-filter regressions in tests/test_invalid_filter.py.",
       "owner_action_type": "adjust_invalid_filter_terms",
       "can_auto_tune": false,
@@ -1825,8 +1825,8 @@
         },
         {
           "persona_id": "persona_04",
-          "baseline_episode_count": 600,
-          "remaining_episode_count": 600,
+          "baseline_episode_count": 601,
+          "remaining_episode_count": 601,
           "removed_episode_count": 0,
           "share_removed_pct": 0.0
         },
@@ -1898,7 +1898,7 @@
       "production_ready_persona_count": 3,
       "review_ready_persona_count": 1,
       "effective_balanced_source_count": 5.8,
-      "persona_core_coverage_of_all_labeled_pct": 74.3,
+      "persona_core_coverage_of_all_labeled_pct": 74.4,
       "weak_source_cost_center_count": 3,
       "core_readiness_weak_source_cost_center_count": 3,
       "overall_status": "WARN",
@@ -1928,8 +1928,8 @@
         },
         {
           "persona_id": "persona_04",
-          "baseline_episode_count": 600,
-          "remaining_episode_count": 575,
+          "baseline_episode_count": 601,
+          "remaining_episode_count": 576,
           "removed_episode_count": 25,
           "share_removed_pct": 4.2
         },
@@ -2031,10 +2031,10 @@
         },
         {
           "persona_id": "persona_04",
-          "baseline_episode_count": 600,
+          "baseline_episode_count": 601,
           "remaining_episode_count": 548,
-          "removed_episode_count": 52,
-          "share_removed_pct": 8.7
+          "removed_episode_count": 53,
+          "share_removed_pct": 8.8
         },
         {
           "persona_id": "persona_05",
@@ -2134,8 +2134,8 @@
         },
         {
           "persona_id": "persona_04",
-          "baseline_episode_count": 600,
-          "remaining_episode_count": 579,
+          "baseline_episode_count": 601,
+          "remaining_episode_count": 580,
           "removed_episode_count": 21,
           "share_removed_pct": 3.5
         },
@@ -2237,8 +2237,8 @@
         },
         {
           "persona_id": "persona_04",
-          "baseline_episode_count": 600,
-          "remaining_episode_count": 591,
+          "baseline_episode_count": 601,
+          "remaining_episode_count": 592,
           "removed_episode_count": 9,
           "share_removed_pct": 1.5
         },
@@ -2342,10 +2342,10 @@
         },
         {
           "persona_id": "persona_04",
-          "baseline_episode_count": 600,
+          "baseline_episode_count": 601,
           "remaining_episode_count": 518,
-          "removed_episode_count": 82,
-          "share_removed_pct": 13.7
+          "removed_episode_count": 83,
+          "share_removed_pct": 13.8
         },
         {
           "persona_id": "persona_05",
@@ -2448,8 +2448,8 @@
         },
         {
           "persona_id": "persona_04",
-          "baseline_episode_count": 600,
-          "remaining_episode_count": 560,
+          "baseline_episode_count": 601,
+          "remaining_episode_count": 561,
           "removed_episode_count": 40,
           "share_removed_pct": 6.7
         },
@@ -2562,9 +2562,9 @@
         },
         {
           "persona_id": "persona_04",
-          "baseline_episode_count": 600,
+          "baseline_episode_count": 601,
           "remaining_episode_count": 174,
-          "removed_episode_count": 426,
+          "removed_episode_count": 427,
           "share_removed_pct": 71.0
         },
         {

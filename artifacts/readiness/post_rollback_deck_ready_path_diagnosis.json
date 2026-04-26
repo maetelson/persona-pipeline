@@ -1,0 +1,289 @@
+{
+  "rollback_integrity_result": {
+    "git_status_after_regeneration": "generated_artifact_changes_only",
+    "source_configs_restored": true,
+    "raw_source_directories_present_again": true,
+    "active_outputs_contain_adobe_google_domo": {
+      "adobe_analytics_community": true,
+      "google_developer_forums": true,
+      "domo_community_forum": true
+    },
+    "partial_removal_artifacts_remain": false,
+    "result": "baseline_restored"
+  },
+  "post_rollback_baseline_metrics": {
+    "overall_status": "WARN",
+    "quality_flag": "EXPLORATORY",
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "persona_readiness_gate_status": "WARN",
+    "final_usable_persona_count": 3,
+    "production_ready_persona_count": 3,
+    "review_ready_persona_count": 1,
+    "weak_source_cost_center_count": 4,
+    "core_readiness_weak_source_cost_center_count": 3,
+    "exploratory_only_weak_source_debt_count": 1,
+    "effective_balanced_source_count": 5.89,
+    "persona_core_coverage_of_all_labeled_pct": 74.5,
+    "largest_source_influence_share_pct": 30.7,
+    "top_3_cluster_share_of_core_labeled": 0.8329,
+    "promoted_persona_example_coverage_pct": 100.0,
+    "overall_unknown_ratio": 0.139261,
+    "remaining_core_weak_sources": [
+      "google_developer_forums",
+      "domo_community_forum",
+      "adobe_analytics_community"
+    ],
+    "persona_04_readiness_tier": "review_ready_persona",
+    "persona_05_readiness_tier": "blocked_or_constrained_candidate"
+  },
+  "stable_reviewable_release_restored": true,
+  "failed_source_removal_lesson": {
+    "summary": "Removing Adobe, Google, and Domo made the corpus cleaner, but it damaged source balance enough to regress the workbook back below reviewable readiness.",
+    "observed_regressed_state": {
+      "overall_status": "FAIL",
+      "quality_flag": "UNSTABLE",
+      "persona_readiness_state": "exploratory_only",
+      "effective_balanced_source_count": 4.86
+    },
+    "conclusion": "Broad source deletion is not a safe primary path. Future deck-ready work must preserve or rebuild source balance while improving methodological fit."
+  },
+  "deck_ready_blocker_table": [
+    {
+      "metric_name": "core_readiness_weak_source_cost_center_count",
+      "current_value": 3,
+      "deck_ready_threshold": "max 1",
+      "gap": 2,
+      "blocker_type": "hard_fail",
+      "likely_cause": "Three current core-readiness weak sources remain, and both Adobe and Google source-specific remediation attempts ended as no-op while Domo is only exploratory-edge.",
+      "possible_remediation_path": "deck_ready_core_membership_spec or new representative sources that let deck-ready core stop depending on weak supporting sources",
+      "implementation_risk": "medium-high",
+      "expected_impact": "high",
+      "can_move_without_reducing_source_diversity": false
+    },
+    {
+      "metric_name": "persona_core_coverage_of_all_labeled_pct",
+      "current_value": 74.5,
+      "deck_ready_threshold": 80.0,
+      "gap": 5.5,
+      "blocker_type": "hard_fail",
+      "likely_cause": "695 additional persona-core rows are needed, and the largest non-core pools are concentrated in mixed-quality sources such as Domo, Stack Overflow, Google, and Adobe.",
+      "possible_remediation_path": "high-quality core coverage recovery from non-core rows, if recoverable evidence can be isolated without junk inflation",
+      "implementation_risk": "high",
+      "expected_impact": "high",
+      "can_move_without_reducing_source_diversity": true
+    },
+    {
+      "metric_name": "effective_balanced_source_count",
+      "current_value": 5.89,
+      "deck_ready_threshold": 6.0,
+      "gap": 0.11,
+      "blocker_type": "warning",
+      "likely_cause": "Healthy high-volume sources dominate influence, while currently weak supporting sources still provide needed long-tail diversity.",
+      "possible_remediation_path": "add or strengthen representative sources; simulate normalization only as an analysis aid, not as a hiding mechanism",
+      "implementation_risk": "medium",
+      "expected_impact": "medium",
+      "can_move_without_reducing_source_diversity": true
+    },
+    {
+      "metric_name": "weak_source_cost_center_count",
+      "current_value": 4,
+      "deck_ready_threshold": "diagnostic only",
+      "gap": "n/a",
+      "blocker_type": "warning",
+      "likely_cause": "Four visible weak sources remain in diagnostics, although only three still drive core-readiness pressure.",
+      "possible_remediation_path": "monitor as a transparency metric; direct work should focus on core weak count, not total weak count",
+      "implementation_risk": "low",
+      "expected_impact": "low",
+      "can_move_without_reducing_source_diversity": true
+    },
+    {
+      "metric_name": "largest_source_influence_share_pct",
+      "current_value": 30.7,
+      "deck_ready_threshold": 35.0,
+      "gap": 4.3,
+      "blocker_type": "pass",
+      "likely_cause": "Current source concentration is elevated but still inside deck-ready tolerance.",
+      "possible_remediation_path": "maintain while improving diversity elsewhere",
+      "implementation_risk": "low",
+      "expected_impact": "low",
+      "can_move_without_reducing_source_diversity": true
+    },
+    {
+      "metric_name": "top_3_cluster_share_of_core_labeled",
+      "current_value": 0.8329,
+      "deck_ready_threshold": "current quality pass under <=3 final-usable persona carve-out",
+      "gap": 0.0,
+      "blocker_type": "pass",
+      "likely_cause": "Top-persona concentration is acceptable given the current small final-usable set.",
+      "possible_remediation_path": "no immediate action needed",
+      "implementation_risk": "low",
+      "expected_impact": "low",
+      "can_move_without_reducing_source_diversity": true
+    },
+    {
+      "metric_name": "overall_unknown_ratio",
+      "current_value": 0.139261,
+      "deck_ready_threshold": 0.2,
+      "gap": 0.060739,
+      "blocker_type": "pass",
+      "likely_cause": "Unknown-rate control remains healthy.",
+      "possible_remediation_path": "preserve current labeling discipline",
+      "implementation_risk": "low",
+      "expected_impact": "low",
+      "can_move_without_reducing_source_diversity": true
+    },
+    {
+      "metric_name": "final_usable_persona_count",
+      "current_value": 3,
+      "deck_ready_threshold": 3,
+      "gap": 0,
+      "blocker_type": "pass",
+      "likely_cause": "Current promoted/final-usable set already meets the deck-ready count floor.",
+      "possible_remediation_path": "preserve persona standards; do not widen just to improve counts",
+      "implementation_risk": "low",
+      "expected_impact": "low",
+      "can_move_without_reducing_source_diversity": true
+    },
+    {
+      "metric_name": "promoted_persona_example_coverage_pct",
+      "current_value": 100.0,
+      "deck_ready_threshold": 100.0,
+      "gap": 0.0,
+      "blocker_type": "pass",
+      "likely_cause": "Grounding coverage is already complete for promoted personas.",
+      "possible_remediation_path": "preserve example quality",
+      "implementation_risk": "low",
+      "expected_impact": "low",
+      "can_move_without_reducing_source_diversity": true
+    }
+  ],
+  "true_bottleneck_diagnosis": {
+    "selected_bottleneck": "source-tier policy mismatch",
+    "why": "The current reviewable corpus relies on Adobe, Google, and Domo to sustain source balance, but those same sources are not core-representative enough to anchor deck-ready claims and safe source-specific fixes have already stalled.",
+    "secondary_constraints": [
+      "persona_core_coverage gap remains large at 695 rows to reach 80.0",
+      "effective source balance is close to the floor numerically but fragile to source removal",
+      "core weak-source debt remains at 3 and cannot be cleared through already-tried safe remediations"
+    ]
+  },
+  "next_path_comparison": [
+    {
+      "path": "A_targeted_google_valid_filter_remediation",
+      "metric_likely_to_move": "google valid retention and maybe grounded contribution",
+      "expected_upside": "low",
+      "risk_of_junk_data": "medium-high",
+      "risk_of_source_balance_regression": "low",
+      "implementation_cost": "medium",
+      "reversibility": "high",
+      "preserves_reviewable_status": true,
+      "could_realistically_help_deck_ready": false,
+      "reason": "Already ended as a no-op because the remaining false-negative pocket was too mixed with noise."
+    },
+    {
+      "path": "B_targeted_adobe_fidelity_remediation",
+      "metric_likely_to_move": "Adobe episode yield and labeled contribution",
+      "expected_upside": "low",
+      "risk_of_junk_data": "high",
+      "risk_of_source_balance_regression": "low",
+      "implementation_cost": "medium-high",
+      "reversibility": "high",
+      "preserves_reviewable_status": true,
+      "could_realistically_help_deck_ready": false,
+      "reason": "Already ended as a no-op because no repeated fixable Adobe-only fidelity bug was found."
+    },
+    {
+      "path": "C_domo_exploratory_exclusion_or_tiering_only",
+      "metric_likely_to_move": "core weak-source pressure and core coverage denominator",
+      "expected_upside": "medium",
+      "risk_of_junk_data": "low",
+      "risk_of_source_balance_regression": "high",
+      "implementation_cost": "medium",
+      "reversibility": "high",
+      "preserves_reviewable_status": false,
+      "could_realistically_help_deck_ready": false,
+      "reason": "Broad source deletion already proved that removing balance-supporting weak sources can push readiness back to exploratory_only."
+    },
+    {
+      "path": "D_source_volume_normalization_simulation",
+      "metric_likely_to_move": "effective_balanced_source_count",
+      "expected_upside": "low-medium",
+      "risk_of_junk_data": "low",
+      "risk_of_source_balance_regression": "none",
+      "implementation_cost": "low",
+      "reversibility": "high",
+      "preserves_reviewable_status": true,
+      "could_realistically_help_deck_ready": false,
+      "reason": "Could clear the 6.0 floor numerically, but it would not solve core weak-source debt or the 80.0 core-coverage requirement and may hide real concentration risk."
+    },
+    {
+      "path": "E_add_or_strengthen_representative_sources",
+      "metric_likely_to_move": "effective balance, source concentration resilience, and future core-coverage recovery opportunity",
+      "expected_upside": "high",
+      "risk_of_junk_data": "medium",
+      "risk_of_source_balance_regression": "low",
+      "implementation_cost": "high",
+      "reversibility": "medium",
+      "preserves_reviewable_status": true,
+      "could_realistically_help_deck_ready": true,
+      "reason": "Adds the one thing the current corpus lacks: more representative sources that can improve diversity without depending on weak supporting sources."
+    },
+    {
+      "path": "F_core_coverage_recovery_from_high_quality_non_core_rows",
+      "metric_likely_to_move": "persona_core_coverage_of_all_labeled_pct",
+      "expected_upside": "medium",
+      "risk_of_junk_data": "high",
+      "risk_of_source_balance_regression": "none",
+      "implementation_cost": "high",
+      "reversibility": "medium",
+      "preserves_reviewable_status": true,
+      "could_realistically_help_deck_ready": false,
+      "reason": "Need 695 additional core rows, and the recoverable pool is concentrated in mixed-quality sources; this does not address the core weak-source count."
+    },
+    {
+      "path": "G_deck_ready_policy_redesign",
+      "metric_likely_to_move": "whether deck-ready core membership and weak-source applicability reflect methodological representativeness instead of the full reviewable corpus",
+      "expected_upside": "high",
+      "risk_of_junk_data": "low",
+      "risk_of_source_balance_regression": "low",
+      "implementation_cost": "medium",
+      "reversibility": "high",
+      "preserves_reviewable_status": true,
+      "could_realistically_help_deck_ready": true,
+      "reason": "This is the shortest structural path because current balance still depends on sources that should not necessarily define deck-ready core claims."
+    },
+    {
+      "path": "H_freeze_at_reviewable_release",
+      "metric_likely_to_move": "none",
+      "expected_upside": "stability only",
+      "risk_of_junk_data": "none",
+      "risk_of_source_balance_regression": "none",
+      "implementation_cost": "low",
+      "reversibility": "high",
+      "preserves_reviewable_status": true,
+      "could_realistically_help_deck_ready": false,
+      "reason": "Safest if no structural deck-ready work is approved, but it leaves the current ceiling in place."
+    }
+  ],
+  "recommended_next_action": {
+    "recommended_next_action": "deck_ready_policy_redesign_spec",
+    "why_this_one": "It is the only remaining path that directly addresses the current source-tier mismatch without repeating failed Adobe/Google remediation attempts, without deleting sources again, and without hiding the source-balance lesson learned from the rollback.",
+    "why_not_source_balance_repair_analysis": "Balance is fragile but not the primary structural blocker by itself; even a simulated move from 5.89 to 6.0 leaves core weak-source debt and the coverage gap unresolved.",
+    "why_not_core_coverage_recovery_pass": "Coverage needs 695 additional core rows and the recoverable pool is too mixed to treat as the shortest safe lever.",
+    "why_not_source_volume_normalization_simulation": "Normalization is only a numeric aid and risks hiding real concentration; it cannot solve weak-source debt.",
+    "why_not_add_representative_sources_first": "Adding sources is likely necessary later, but the next step should first specify how deck-ready core membership differs from the broader reviewable corpus so new sources are added against a stable target.",
+    "deck_ready_still_realistic": true,
+    "reviewable_should_remain_current_ceiling_until_next_action": true
+  },
+  "tests_run": [
+    {
+      "command": "python -m unittest tests.test_analysis_snapshot_cli tests.test_source_representativeness_audit tests.test_workbook_export",
+      "result": "passed",
+      "notes": "Synthetic optional-column warnings only."
+    },
+    {
+      "command": "python -m unittest tests.test_review_ready_gap_analysis",
+      "result": "failed",
+      "notes": "Stale hardcoded expectation: current_persona_core_rows expected 9444, live artifact is 9445 after restored baseline regeneration."
+    }
+  ]
+}
