@@ -18,7 +18,7 @@ LOGGER = get_logger("run.cluster_and_score")
 
 def main() -> None:
     """Generate exploratory analysis artifacts from labeled episodes."""
-    write_debug_artifacts = os.getenv("WRITE_ANALYSIS_DEBUG_ARTIFACTS", "true").strip().lower() == "true"
+    write_debug_artifacts = os.getenv("WRITE_ANALYSIS_DEBUG_ARTIFACTS", "false").strip().lower() == "true"
     outputs = run_analysis_stage(ROOT, write_debug_artifacts=write_debug_artifacts)
     persisted = outputs["persisted"]
     cluster_meta = persisted["cluster_meta"]

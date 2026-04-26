@@ -42,6 +42,8 @@ Expanded sequence used by `00_run_all.py`:
   - `04_build_episodes.py -> 05_label_episodes.py -> 06_cluster_and_score.py -> 07_export_xlsx.py`
 - After changing any stage logic, rerun all downstream stages sequentially so downstream artifacts stay consistent.
 - For development validation, the canonical stopping point is the workbook bundle written by `06_cluster_and_score.py`; `07_export_xlsx.py` is only required when export-layer behavior or final workbook deliverables need verification.
+- Default pipeline runs must prefer canonical outputs under `data/` and should not emit optional files under `artifacts/` unless the operator explicitly opts in.
+- Diagnostics, pilot, policy, readiness, release, and other sidecar artifact generation is opt-in behavior, not part of the default `00 -> 07` execution contract.
 
 ## Stage boundaries
 
@@ -213,6 +215,9 @@ Expanded sequence used by `00_run_all.py`:
   - outputs must carry `exploratory_only=true` and lower reliability flags when thresholds are weak
 - scaling profile:
   - strict cluster gate can skip cluster/persona generation when readiness is below threshold
+- default run behavior:
+  - keep canonical workbook-bundle outputs in `data/analysis/`
+  - do not write optional persona report exports, messaging exports, source-tier diagnostics, readiness artifacts, or policy artifacts unless explicitly enabled
 
 ### Export
 
@@ -221,6 +226,7 @@ Expanded sequence used by `00_run_all.py`:
 - note:
   - `07_export_xlsx.py` is a final deliverable verification step, not the default development validation step
   - bundle-based validation can stop after `06_cluster_and_score.py` and use `run/cli/17_analysis_snapshot.py`
+  - export should not implicitly turn on optional debug/report artifact emission
 
 ## Re-run behavior
 

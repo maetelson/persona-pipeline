@@ -19,7 +19,7 @@ LOGGER = get_logger("run.export_xlsx")
 
 def main() -> None:
     """Run final analytics assembly and export the workbook."""
-    write_debug_artifacts = os.getenv("WRITE_ANALYSIS_DEBUG_ARTIFACTS", "true").strip().lower() == "true"
+    write_debug_artifacts = os.getenv("WRITE_ANALYSIS_DEBUG_ARTIFACTS", "false").strip().lower() == "true"
     outputs = run_final_report_stage(ROOT, write_debug_artifacts=write_debug_artifacts)
     LOGGER.info("Wrote final workbook -> %s", outputs["final_workbook_path"])
 

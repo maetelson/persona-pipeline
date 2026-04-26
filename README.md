@@ -249,6 +249,8 @@ python run/cli/16_persona_workbook_audit.py
 
 Important: dependent stages should be run sequentially, not in parallel. This repository treats the pipeline as dependency-sensitive by design.
 
+By default, pipeline runs are expected to update canonical outputs under `data/`. Optional diagnostics and experimental sidecar artifacts under `artifacts/` should be treated as opt-in outputs.
+
 ### 4. Run Tests
 
 Example test commands:

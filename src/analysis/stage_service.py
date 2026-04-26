@@ -393,7 +393,7 @@ def persist_analysis_outputs(
     root_dir: Path,
     deterministic_outputs: dict[str, Any],
     optional_outputs: dict[str, Any] | None = None,
-    write_debug_artifacts: bool = True,
+    write_debug_artifacts: bool = False,
 ) -> dict[str, Any]:
     """Persist deterministic analysis outputs and optional report/debug artifacts."""
     analysis_dir = ensure_dir(root_dir / "data" / "analysis")
@@ -524,7 +524,7 @@ def persist_analysis_outputs(
     }
 
 
-def run_analysis_stage(root_dir: Path, write_debug_artifacts: bool = True) -> dict[str, Any]:
+def run_analysis_stage(root_dir: Path, write_debug_artifacts: bool = False) -> dict[str, Any]:
     """Run analysis stage with one shared in-memory handoff from analytics to persistence."""
     inputs = load_analysis_inputs(root_dir)
     deterministic_outputs = build_deterministic_analysis_outputs(root_dir, inputs)
@@ -543,7 +543,7 @@ def run_analysis_stage(root_dir: Path, write_debug_artifacts: bool = True) -> di
     }
 
 
-def run_final_report_stage(root_dir: Path, write_debug_artifacts: bool = True) -> dict[str, Any]:
+def run_final_report_stage(root_dir: Path, write_debug_artifacts: bool = False) -> dict[str, Any]:
     """Run analytics and write the final workbook through the single export path."""
     outputs = run_analysis_stage(root_dir, write_debug_artifacts=write_debug_artifacts)
     workbook_path = export_workbook_from_frames(
