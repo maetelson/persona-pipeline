@@ -1,0 +1,146 @@
+{
+  "persona_id": "persona_05",
+  "decision_table": {
+    "total_rows": 539,
+    "clean_evidence_count": 15,
+    "ambiguous_count": 269,
+    "persona03_overlap_count": 130,
+    "persona01_overlap_count": 1,
+    "support_noise_count": 88,
+    "weak_generic_count": 36,
+    "selected_example_count": 5,
+    "deck_ready_claim_eligible_persona": false,
+    "readiness_tier": "blocked_or_constrained_candidate",
+    "core_representative_rows": 377,
+    "supporting_validation_rows": 153,
+    "exploratory_edge_rows": 8,
+    "excluded_rows": 1,
+    "production_ready_persona": false,
+    "review_ready_persona": false,
+    "final_usable_persona": false
+  },
+  "persona05_vs_persona03": {
+    "shared_signals": [
+      "tool_limitation_workaround",
+      "dashboard and filter behavior friction",
+      "feature or interaction limits inside the BI layer",
+      "rows framed as making dashboards or views behave the way users expect"
+    ],
+    "differentiating_signals": [
+      "persona_05 is more delivery-facing and more often tied to a stakeholder-visible output artifact",
+      "persona_05 tends to retain manual_reporting as the lead bottleneck signal",
+      "persona_05 examples more often involve report usability, trend tables, shared dashboard interpretation, or target-facing presentation logic"
+    ],
+    "row_overlap_and_semantic_overlap": "High. The diagnostic overlap count is 130, and the sampled overlap rows were mostly generic filter, field, widget, or view-limitation problems that read like persona_03 with only weak delivery context.",
+    "selected_example_overlap_or_confusion": "Moderate. persona_05's curated examples are clearer than persona_03's current lone example, but several still read like delivery-specific variants of a tool-workaround pattern rather than a fully separate persona.",
+    "distinct_user_need_beyond_persona03": true,
+    "mostly_delivery_specific_submode_of_persona03": true,
+    "assessment": "persona_05 does add a real delivery-specific nuance beyond persona_03, but most of its broader evidence pool still behaves like a submode of persona_03 rather than a stable standalone persona."
+  },
+  "persona05_vs_persona01": {
+    "shared_signals": [
+      "manual_reporting",
+      "analyst-owned recurring reporting work",
+      "desire to make reporting workflows more reliable and repeatable"
+    ],
+    "differentiating_signals": [
+      "persona_05 is about the BI/report layer failing to express the final stakeholder-ready artifact cleanly",
+      "persona_01 is broader export churn, spreadsheet rework, and reconciliation burden",
+      "persona_05 examples are more layout, filter, interaction, and presentation-output specific"
+    ],
+    "mostly_last_mile_variant_of_manual_reporting": true,
+    "can_persona01_absorb_without_losing_nuance": false,
+    "assessment": "persona_01 can absorb some spillover rows, but folding persona_05 into persona_01 would lose the specific last-mile output-construction nuance that makes the surviving clean examples interesting."
+  },
+  "ambiguous_row_sample": {
+    "sample_size": 50,
+    "classification_counts": {
+      "should_merge_into_persona03": 9,
+      "should_merge_into_persona01": 0,
+      "should_remain_persona05_future_candidate": 0,
+      "should_suppress_as_noise": 6,
+      "ambiguous_keep_unresolved": 35
+    },
+    "interpretation": "The ambiguous pool is not secretly a strong persona_05 reserve. Most sampled rows stayed unresolved, a meaningful minority looked like persona_03, and a smaller slice was straightforward support or platform noise."
+  },
+  "persona03_overlap_sample": {
+    "sample_size": 30,
+    "classification_counts": {
+      "true_persona03": 13,
+      "persona05_submode_of_persona03": 0,
+      "clean_persona05_misclassified": 1,
+      "support_noise": 2,
+      "ambiguous": 14
+    },
+    "interpretation": "The overlap pool is much more likely to collapse toward persona_03 than to strengthen persona_05. Very few sampled rows looked like clean persona_05 evidence that the rule missed."
+  },
+  "clean_persona05_review": {
+    "clean_row_count": 15,
+    "interpretation": "The clean rows are real, but too few to defend persona_05 as a standalone deck-ready claim candidate. They are best preserved as a named future subtheme centered on last-mile reporting output construction blocked by tool limitations.",
+    "selected_example_strength": "The five selected examples are clear enough to preserve the subtheme narrative even if persona_05 stays non-promotable."
+  },
+  "simulated_options": {
+    "A_keep_persona05_blocked_as_is": {
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "deck_ready_claim_eligible_persona_count": 4,
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "reviewer_clarity": "low_to_medium",
+      "evidence_preservation": "high",
+      "duplicate_risk": "high",
+      "information_loss": "low",
+      "risk_of_overclaiming": "low"
+    },
+    "B_merge_persona05_into_persona03": {
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "deck_ready_claim_eligible_persona_count": 4,
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "reviewer_clarity": "medium_to_high",
+      "evidence_preservation": "medium",
+      "duplicate_risk": "low",
+      "information_loss": "medium",
+      "risk_of_overclaiming": "low"
+    },
+    "C_merge_persona05_into_persona01": {
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "deck_ready_claim_eligible_persona_count": 4,
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "reviewer_clarity": "medium",
+      "evidence_preservation": "low_to_medium",
+      "duplicate_risk": "medium",
+      "information_loss": "high",
+      "risk_of_overclaiming": "medium"
+    },
+    "D_suppress_persona05_as_noisy_tail": {
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "deck_ready_claim_eligible_persona_count": 4,
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "reviewer_clarity": "high",
+      "evidence_preservation": "low",
+      "duplicate_risk": "low",
+      "information_loss": "high",
+      "risk_of_overclaiming": "low"
+    },
+    "E_keep_persona05_as_future_candidate_subtheme": {
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "deck_ready_claim_eligible_persona_count": 4,
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "reviewer_clarity": "high",
+      "evidence_preservation": "high",
+      "duplicate_risk": "medium_to_low",
+      "information_loss": "low",
+      "risk_of_overclaiming": "low"
+    }
+  },
+  "recommended_decision": "keep_as_future_candidate_subtheme",
+  "decision_reason": "persona_05 has too little clean standalone evidence to justify remaining on a path to claim eligibility, but its best examples preserve a real last-mile reporting-output nuance that would be lost by merging into persona_01 or suppressing entirely. It is best kept as a named future subtheme, most closely related to persona_03, while excluded from claim eligibility and promotion."
+}

@@ -1,0 +1,16 @@
+{
+  "total_persona_05_rows_evaluated": 539,
+  "clean_persona05_count": 15,
+  "persona01_overlap_count": 1,
+  "persona03_overlap_count": 130,
+  "support_troubleshooting_noise_count": 88,
+  "weak_generic_count": 36,
+  "ambiguous_count": 269,
+  "clean_evidence_share": 0.0278,
+  "overlap_noise_share": 0.4063,
+  "persona05_clean_evidence_count": 15,
+  "persona05_overlap_risk_count": 131,
+  "persona05_support_noise_count": 88,
+  "persona05_boundary_readiness": "fail",
+  "persona05_boundary_rule_status": "diagnostic_only_rule_implemented"
+}

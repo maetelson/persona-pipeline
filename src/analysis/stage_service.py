@@ -21,6 +21,10 @@ from src.analysis.persona import build_persona_candidates
 from src.analysis.persona_axes import build_persona_core_flags, discover_persona_axes, write_persona_axis_outputs
 from src.analysis.persona_gen import generate_personas
 from src.analysis.persona_messaging import build_persona_messaging_outputs, write_persona_messaging_outputs
+from src.analysis.persona05_boundary_diagnostics import (
+    build_persona05_boundary_outputs,
+    write_persona05_boundary_artifacts,
+)
 from src.analysis.persona_service import _review_ready_fields, build_persona_outputs, write_persona_outputs
 from src.analysis.quality_status import build_quality_metrics, evaluate_quality_status
 from src.analysis.reddit_retention import analyze_reddit_retention
@@ -244,6 +248,14 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
     quality_checks.update(source_tier_evidence["global_counts"])
     persona_service_outputs["persona_summary_df"] = source_tier_evidence["persona_summary_df"]
     persona_service_outputs["cluster_stats_df"] = source_tier_evidence["cluster_stats_df"]
+    persona05_boundary_outputs = build_persona05_boundary_outputs(
+        persona_assignments_df=persona_service_outputs["persona_assignments_df"],
+        episodes_df=episodes_df,
+        persona_summary_df=persona_service_outputs["persona_summary_df"],
+        cluster_stats_df=persona_service_outputs["cluster_stats_df"],
+    )
+    persona_service_outputs["persona_summary_df"] = persona05_boundary_outputs["persona_summary_df"]
+    persona_service_outputs["cluster_stats_df"] = persona05_boundary_outputs["cluster_stats_df"]
     deck_ready_claim_outputs = build_deck_ready_claim_outputs(
         persona_summary_df=persona_service_outputs["persona_summary_df"],
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
@@ -352,6 +364,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         "clustering_episodes_df": clustering_episodes_df,
         "source_tier_evidence_report": source_tier_evidence["report"],
         "persona_evidence_tier_breakdown_df": source_tier_evidence["persona_breakdown_df"],
+        "persona05_boundary_outputs": persona05_boundary_outputs,
     }
 
 
@@ -430,6 +443,14 @@ def persist_analysis_outputs(
                 root_dir,
                 deterministic_outputs["source_tier_evidence_report"],
                 deterministic_outputs["persona_evidence_tier_breakdown_df"],
+            )
+        )
+        debug_paths.update(
+            write_persona05_boundary_artifacts(
+                root_dir,
+                deterministic_outputs["persona05_boundary_outputs"]["diagnostic_df"],
+                deterministic_outputs["persona05_boundary_outputs"]["summary"],
+                deterministic_outputs["persona05_boundary_outputs"]["report"],
             )
         )
         deterministic_outputs["persona_core_policy_df"].to_csv(analysis_dir / "persona_core_policy_audit.csv", index=False)
