@@ -72,6 +72,7 @@ class WorkbookExportTests(unittest.TestCase):
                 self.assertIsNotNone(workbook["overview"].auto_filter.ref)
                 self.assertEqual(str(workbook["readme"]["B4"].value).startswith("=INDEX("), True)
                 self.assertEqual(str(self._readme_value_by_label(workbook, "Core-Readiness Weak-Source Cost-Center Count")).startswith("=INDEX("), True)
+                self.assertEqual(str(self._readme_value_by_label(workbook, "Deck-Ready Claim-Eligible Persona Count")).startswith("=INDEX("), True)
                 self.assertIn(
                     "Exploratory-Only Weak-Source Debt",
                     str(self._readme_value_by_label(workbook, "Weak-source split")),
@@ -210,8 +211,11 @@ class WorkbookExportTests(unittest.TestCase):
             workbook = load_workbook(output, read_only=False)
             try:
                 worksheet = workbook["cluster_stats"]
-                self.assertEqual(worksheet["C2"].number_format, '0.0"%"')
-                self.assertEqual(worksheet["D2"].number_format, '0.0"%"')
+                headers = [cell.value for cell in next(worksheet.iter_rows(min_row=1, max_row=1))]
+                core_col = headers.index("share_of_persona_core_labeled_pct") + 1
+                all_col = headers.index("share_of_all_labeled_pct") + 1
+                self.assertEqual(worksheet.cell(row=2, column=core_col).number_format, '0.0"%"')
+                self.assertEqual(worksheet.cell(row=2, column=all_col).number_format, '0.0"%"')
             finally:
                 workbook.close()
 
@@ -265,10 +269,11 @@ class WorkbookExportTests(unittest.TestCase):
                             "headline_persona_count",
                             "production_ready_persona_count",
                             "review_ready_persona_count",
+                            "deck_ready_claim_eligible_persona_count",
                             "final_usable_persona_count",
                             "blocked_or_constrained_persona_count",
                         ],
-                        "value": [12, 3, 2, 2, 1, 2, 1],
+                        "value": [12, 3, 2, 2, 1, 0, 2, 1],
                     }
                 ),
                 counts_df=pd.DataFrame({"metric": ["raw_record_rows"], "count": [12]}),
@@ -335,6 +340,7 @@ class WorkbookExportTests(unittest.TestCase):
             self.assertEqual(overview_rows["headline_persona_count"][:3], ("headline_persona_count", "Headline persona count (final usable personas only)", 2))
             self.assertEqual(overview_rows["production_ready_persona_count"][:3], ("production_ready_persona_count", "Production-ready persona count (strict final usable personas only)", 2))
             self.assertEqual(overview_rows["review_ready_persona_count"][:3], ("review_ready_persona_count", "Review-ready persona count (visible for analyst review, not final usable)", 1))
+            self.assertEqual(overview_rows["deck_ready_claim_eligible_persona_count"][:3], ("deck_ready_claim_eligible_persona_count", "Deck-ready claim-eligible persona count (discussion flag only, not final usable)", 0))
             self.assertEqual(overview_rows["final_usable_persona_count"][:3], ("final_usable_persona_count", "Final usable persona count (structurally supported and grounded promoted personas only)", 2))
             self.assertEqual(overview_rows["blocked_or_constrained_persona_count"][:3], ("blocked_or_constrained_persona_count", "Blocked or constrained candidate persona count", 1))
 
@@ -345,7 +351,7 @@ class WorkbookExportTests(unittest.TestCase):
             self.assertEqual(glossary_rows[0][:3], ("metric_key", "workbook_label", "denominator_type_key"))
             self.assertEqual(glossary_rows[1][1], "Effective labeled-source count (source diversity score, not row count)")
             self.assertIn("source-count metric, not a row-count metric", str(glossary_rows[1][3]))
-            self.assertIn("Review-Ready Persona Count is reported separately", str(readme_persona_copy))
+            self.assertIn("Deck-Ready Claim-Eligible Persona Count are reported separately", str(readme_persona_copy))
             self.assertIn("Raw Record Row Count is a count of JSONL rows", str(readme_row_source_copy))
 
     def test_validate_workbook_frames_rejects_final_asset_claim_below_deck_ready(self) -> None:
@@ -566,6 +572,7 @@ class WorkbookExportTests(unittest.TestCase):
                         "headline_persona_count",
                         "production_ready_persona_count",
                         "review_ready_persona_count",
+                        "deck_ready_claim_eligible_persona_count",
                         "final_usable_persona_count",
                         "deck_ready_persona_count",
                         "blocked_or_constrained_persona_count",
@@ -595,6 +602,7 @@ class WorkbookExportTests(unittest.TestCase):
                         3,
                         3,
                         1,
+                        4,
                         3,
                         0,
                         1,
@@ -631,6 +639,19 @@ class WorkbookExportTests(unittest.TestCase):
                         "review_ready_persona",
                         "blocked_or_constrained_candidate",
                     ],
+                    "deck_ready_claim_eligible_persona": [True, True, True, True, False],
+                    "deck_ready_claim_evidence_status": ["core_anchored"] * 5,
+                    "deck_ready_claim_reason": [
+                        "eligible",
+                        "eligible",
+                        "eligible",
+                        "persona_04 is a core-anchored approved review-ready persona for analyst/deck discussion only; it remains non-production and outside the final usable count.",
+                        "Blocked or constrained persona remains ineligible for deck-ready claim wording.",
+                    ],
+                    "core_anchor_policy_status": ["pass"] * 5,
+                    "supporting_validation_policy_status": ["strengthens_claim"] * 5,
+                    "exploratory_dependency_policy_status": ["pass"] * 5,
+                    "excluded_source_dependency_policy_status": ["pass"] * 5,
                     "review_visibility_status": [
                         "production_ready_visible",
                         "production_ready_visible",
@@ -675,6 +696,19 @@ class WorkbookExportTests(unittest.TestCase):
                         "review_ready_persona",
                         "blocked_or_constrained_candidate",
                     ],
+                    "deck_ready_claim_eligible_persona": [True, True, True, True, False],
+                    "deck_ready_claim_evidence_status": ["core_anchored"] * 5,
+                    "deck_ready_claim_reason": [
+                        "eligible",
+                        "eligible",
+                        "eligible",
+                        "persona_04 is a core-anchored approved review-ready persona for analyst/deck discussion only; it remains non-production and outside the final usable count.",
+                        "Blocked or constrained persona remains ineligible for deck-ready claim wording.",
+                    ],
+                    "core_anchor_policy_status": ["pass"] * 5,
+                    "supporting_validation_policy_status": ["strengthens_claim"] * 5,
+                    "exploratory_dependency_policy_status": ["pass"] * 5,
+                    "excluded_source_dependency_policy_status": ["pass"] * 5,
                     "review_ready_reason": ["", "", "", "Locally grounded and structurally supported, but workbook-global concentration policy keeps this persona review-ready only.", ""],
                     "blocked_reason": ["", "", "", "blocked from production-ready use by workbook-global concentration policy", "weak-source dominated or insufficiently cross-source robust | thin evidence"],
                     "workbook_policy_constraint": ["", "", "", "top_3_cluster_share_of_core_labeled", "top_3_cluster_share_of_core_labeled"],
@@ -741,6 +775,9 @@ class WorkbookExportTests(unittest.TestCase):
             self.assertNotIn("review_ready_persona", review_ready_warning_text)
             self.assertNotIn("production_ready_persona", review_ready_warning_text)
             self.assertNotIn("readiness_tier", review_ready_warning_text)
+            self.assertNotIn("deck_ready_claim_eligible_persona", review_ready_warning_text)
+            self.assertNotIn("deck_ready_claim_evidence_status", review_ready_warning_text)
+            self.assertNotIn("deck_ready_claim_reason", review_ready_warning_text)
 
             workbook = load_workbook(output, read_only=True)
             try:
@@ -749,18 +786,23 @@ class WorkbookExportTests(unittest.TestCase):
                 cluster_stats_rows = list(workbook["cluster_stats"].iter_rows(values_only=True))
                 readme_review_ready_copy = self._readme_value_by_label(workbook, "Review-ready personas")
                 readme_threshold_copy = self._readme_value_by_label(workbook, "Threshold discipline")
+                readme_claim_copy = self._readme_value_by_label(workbook, "Deck-ready claim eligible")
+                readme_persona04_copy = self._readme_value_by_label(workbook, "Persona 04 treatment")
+                readme_persona05_copy = self._readme_value_by_label(workbook, "Persona 05 treatment")
+                readme_persona_counts_copy = self._readme_value_by_label(workbook, "Persona counts")
             finally:
                 workbook.close()
 
             self.assertEqual(overview_rows["final_usable_persona_count"][2], 3)
             self.assertEqual(overview_rows["production_ready_persona_count"][2], 3)
             self.assertEqual(overview_rows["review_ready_persona_count"][2], 1)
+            self.assertEqual(overview_rows["deck_ready_claim_eligible_persona_count"][2], 4)
             self.assertEqual(overview_rows["blocked_or_constrained_persona_count"][2], 1)
 
             persona_headers = list(persona_summary_rows[0])
             cluster_headers = list(cluster_stats_rows[0])
             self.assertEqual(
-                persona_headers[:12],
+                persona_headers[:20],
                 [
                     "persona_id",
                     "persona_name",
@@ -770,6 +812,14 @@ class WorkbookExportTests(unittest.TestCase):
                     "readiness_tier",
                     "production_ready_persona",
                     "review_ready_persona",
+                    "final_usable_persona",
+                    "deck_ready_claim_eligible_persona",
+                    "deck_ready_claim_evidence_status",
+                    "deck_ready_claim_reason",
+                    "core_anchor_policy_status",
+                    "supporting_validation_policy_status",
+                    "exploratory_dependency_policy_status",
+                    "excluded_source_dependency_policy_status",
                     "review_visibility_status",
                     "review_ready_reason",
                     "blocked_reason",
@@ -777,13 +827,21 @@ class WorkbookExportTests(unittest.TestCase):
                 ],
             )
             self.assertEqual(
-                cluster_headers[:9],
+                cluster_headers[:17],
                 [
                     "persona_id",
                     "persona_size",
                     "readiness_tier",
                     "production_ready_persona",
                     "review_ready_persona",
+                    "final_usable_persona",
+                    "deck_ready_claim_eligible_persona",
+                    "deck_ready_claim_evidence_status",
+                    "deck_ready_claim_reason",
+                    "core_anchor_policy_status",
+                    "supporting_validation_policy_status",
+                    "exploratory_dependency_policy_status",
+                    "excluded_source_dependency_policy_status",
                     "review_visibility_status",
                     "review_ready_reason",
                     "blocked_reason",
@@ -795,6 +853,7 @@ class WorkbookExportTests(unittest.TestCase):
             readiness_index = persona_headers.index("readiness_tier")
             review_ready_index = persona_headers.index("review_ready_persona")
             production_ready_index = persona_headers.index("production_ready_persona")
+            claim_eligible_index = persona_headers.index("deck_ready_claim_eligible_persona")
             visible_index = persona_headers.index("review_visibility_status")
             ordered_personas = [row[persona_id_index] for row in persona_summary_rows[1:6]]
             self.assertEqual(ordered_personas, ["persona_01", "persona_02", "persona_03", "persona_04", "persona_05"])
@@ -803,21 +862,30 @@ class WorkbookExportTests(unittest.TestCase):
             self.assertEqual(persona_row_map["persona_04"][readiness_index], "review_ready_persona")
             self.assertEqual(persona_row_map["persona_04"][review_ready_index], True)
             self.assertEqual(persona_row_map["persona_04"][production_ready_index], False)
+            self.assertEqual(persona_row_map["persona_04"][claim_eligible_index], True)
             self.assertEqual(persona_row_map["persona_04"][visible_index], "review_ready_visible")
             self.assertEqual(persona_row_map["persona_05"][readiness_index], "blocked_or_constrained_candidate")
             self.assertEqual(persona_row_map["persona_05"][review_ready_index], False)
+            self.assertEqual(persona_row_map["persona_05"][claim_eligible_index], False)
             self.assertEqual(persona_row_map["persona_05"][visible_index], "blocked_not_review_ready")
 
             cluster_persona_id_index = cluster_headers.index("persona_id")
             cluster_readiness_index = cluster_headers.index("readiness_tier")
             cluster_review_index = cluster_headers.index("review_ready_persona")
+            cluster_claim_index = cluster_headers.index("deck_ready_claim_eligible_persona")
             cluster_row_map = {row[cluster_persona_id_index]: row for row in cluster_stats_rows[1:] if row and row[cluster_persona_id_index]}
             self.assertEqual(cluster_row_map["persona_04"][cluster_readiness_index], "review_ready_persona")
             self.assertEqual(cluster_row_map["persona_04"][cluster_review_index], True)
+            self.assertEqual(cluster_row_map["persona_04"][cluster_claim_index], True)
             self.assertEqual(cluster_row_map["persona_05"][cluster_readiness_index], "blocked_or_constrained_candidate")
+            self.assertEqual(cluster_row_map["persona_05"][cluster_claim_index], False)
 
             self.assertIn("not included in final usable persona count", str(readme_review_ready_copy))
             self.assertIn("does not relax workbook policy or production-ready thresholds", str(readme_threshold_copy))
+            self.assertIn("discussion and claim-support flag only", str(readme_claim_copy))
+            self.assertIn("remains non-production and outside the final usable count", str(readme_persona04_copy))
+            self.assertIn("not deck-ready claim-eligible", str(readme_persona05_copy))
+            self.assertIn("Deck-Ready Claim-Eligible Persona Count", str(readme_persona_counts_copy))
 
     def test_export_uses_explicit_row_based_headers_for_counts_and_source_distribution(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

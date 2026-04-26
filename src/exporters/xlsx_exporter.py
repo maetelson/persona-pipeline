@@ -135,6 +135,7 @@ OVERVIEW_METRIC_LABELS = {
     "headline_persona_count": "Headline persona count (final usable personas only)",
     "production_ready_persona_count": "Production-ready persona count (strict final usable personas only)",
     "review_ready_persona_count": "Review-ready persona count (visible for analyst review, not final usable)",
+    "deck_ready_claim_eligible_persona_count": "Deck-ready claim-eligible persona count (discussion flag only, not final usable)",
     "final_usable_persona_count": "Final usable persona count (structurally supported and grounded promoted personas only)",
     "deck_ready_persona_count": "Deck-ready persona count under current workbook gate",
     "promoted_persona_example_coverage_pct": "Promoted persona grounding coverage (%)",
@@ -504,6 +505,14 @@ def _reorder_persona_display_frame(sheet_name: str, df: pd.DataFrame) -> pd.Data
         "readiness_tier",
         "production_ready_persona",
         "review_ready_persona",
+        "final_usable_persona",
+        "deck_ready_claim_eligible_persona",
+        "deck_ready_claim_evidence_status",
+        "deck_ready_claim_reason",
+        "core_anchor_policy_status",
+        "supporting_validation_policy_status",
+        "exploratory_dependency_policy_status",
+        "excluded_source_dependency_policy_status",
         "review_visibility_status",
         "review_ready_reason",
         "blocked_reason",
@@ -623,6 +632,7 @@ def _write_readme_sheet(workbook) -> None:
         ["Headline Persona Count (final usable personas only)", '=INDEX(overview!$C:$C,MATCH("headline_persona_count",overview!$A:$A,0))'],
         ["Production-Ready Persona Count", '=INDEX(overview!$C:$C,MATCH("production_ready_persona_count",overview!$A:$A,0))'],
         ["Review-Ready Persona Count", '=INDEX(overview!$C:$C,MATCH("review_ready_persona_count",overview!$A:$A,0))'],
+        ["Deck-Ready Claim-Eligible Persona Count", '=INDEX(overview!$C:$C,MATCH("deck_ready_claim_eligible_persona_count",overview!$A:$A,0))'],
         ["Final Usable Persona Count (structurally supported and grounded promoted personas only)", '=INDEX(overview!$C:$C,MATCH("final_usable_persona_count",overview!$A:$A,0))'],
         ["Deck-Ready Persona Count", '=INDEX(overview!$C:$C,MATCH("deck_ready_persona_count",overview!$A:$A,0))'],
         ["Blocked or Constrained Persona Count", '=INDEX(overview!$C:$C,MATCH("blocked_or_constrained_persona_count",overview!$A:$A,0))'],
@@ -641,11 +651,14 @@ def _write_readme_sheet(workbook) -> None:
         ["Readiness gate", "If persona_readiness_state is below deck_ready, no sheet in this workbook may be interpreted as a final persona asset. Treat persona_summary and cluster_stats as hypothesis or review material only."],
         ["Production-ready personas", "Production-ready personas are strict final usable outputs."],
         ["Review-ready personas", "Review-ready personas are strong candidates for analyst review, but are not included in final usable persona count."],
+        ["Deck-ready claim eligible", "Deck-ready claim eligible is a discussion and claim-support flag only. It is not the same as production-ready or final usable."],
+        ["Persona 04 treatment", "persona_04 may be deck-ready claim-eligible for analyst or deck discussion, but it remains non-production and outside the final usable count."],
+        ["Persona 05 treatment", "persona_05 remains blocked or constrained and is not deck-ready claim-eligible."],
         ["Threshold discipline", "Review-ready status does not relax workbook policy or production-ready thresholds."],
         ["Human review requirement", "Review-ready personas need human review before deck-ready or production use."],
         ["Weak-source split", "Weak-source Cost-Center Count remains the full visible diagnostic count. Core-Readiness Weak-Source Cost-Center Count is the subset still used for workbook hard-fail pressure. Exploratory-Only Weak-Source Debt stays visible but is separated from core reviewability pressure."],
         ["Grounding states", "See persona_summary and cluster_stats for base_promotion_status, structural_support_status, visibility_state, usability_state, deck_readiness_state, promotion_action, promotion_status, grounding_status, promotion_grounding_status, and reporting_readiness_status. Review-visible personas remain workbook-visible for audit but are not final usable or deck-ready personas."],
-        ["Persona counts", "Use Headline Persona Count or Final Usable Persona Count for headline or downstream persona totals only when persona_readiness_state is deck_ready or higher. Production-Ready Persona Count mirrors final usable personas. Review-Ready Persona Count is reported separately and must not be added into final usable totals."],
+        ["Persona counts", "Use Headline Persona Count or Final Usable Persona Count for headline or downstream persona totals only when persona_readiness_state is deck_ready or higher. Production-Ready Persona Count mirrors final usable personas. Review-Ready Persona Count and Deck-Ready Claim-Eligible Persona Count are reported separately and must not be added into final usable totals."],
         ["Rows versus sources", "Raw Record Row Count is a count of JSONL rows. Effective labeled-source count and source_distribution rows describe sources, not post or episode rows."],
         ["Mixed-grain diagnostics", "source_diagnostics rows with row_grain=mixed_grain_bridge are cross-grain ratios, not same-grain funnel percentages."],
         ["Glossary", "See metric_glossary for metric keys, reviewer-facing workbook labels, and denominator semantics."],
@@ -656,18 +669,13 @@ def _write_readme_sheet(workbook) -> None:
     worksheet.column_dimensions["A"].width = 28
     worksheet.column_dimensions["B"].width = 92
     worksheet["A1"].font = TITLE_FONT
-    worksheet["A3"].font = HEADER_FONT
-    worksheet["B3"].font = HEADER_FONT
-    worksheet["A13"].font = HEADER_FONT
-    worksheet["B13"].font = HEADER_FONT
-    for cell in worksheet[3]:
-        cell.fill = HEADER_FILL
-    for cell in worksheet[13]:
-        cell.fill = HEADER_FILL
-    for row_index in [37, 43]:
-        for cell in worksheet[row_index]:
-            cell.font = HEADER_FONT
-            cell.fill = SUBTLE_FILL
+    section_labels = {"Readiness Gate", "Pipeline Stage Summary", "How To Read Denominators", "Review Tips"}
+    for row_index in range(1, worksheet.max_row + 1):
+        label = worksheet.cell(row=row_index, column=1).value
+        if label in section_labels:
+            for cell in worksheet[row_index]:
+                cell.font = HEADER_FONT
+                cell.fill = HEADER_FILL if label in {"Readiness Gate", "Pipeline Stage Summary"} else SUBTLE_FILL
     for row in worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=2):
         for cell in row:
             cell.alignment = Alignment(vertical="top", wrap_text=True)

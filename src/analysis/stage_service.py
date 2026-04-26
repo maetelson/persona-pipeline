@@ -34,6 +34,7 @@ from src.analysis.diagnostics import (
     build_weak_source_triage,
     finalize_quality_checks,
 )
+from src.analysis.deck_ready_claims import build_deck_ready_claim_outputs
 from src.analysis.pipeline_thresholds import evaluate_cluster_thresholds, load_threshold_profile, upsert_threshold_audit
 from src.analysis.profiling import build_cluster_profiles
 from src.analysis.report_export import export_persona_reports
@@ -243,6 +244,15 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
     quality_checks.update(source_tier_evidence["global_counts"])
     persona_service_outputs["persona_summary_df"] = source_tier_evidence["persona_summary_df"]
     persona_service_outputs["cluster_stats_df"] = source_tier_evidence["cluster_stats_df"]
+    deck_ready_claim_outputs = build_deck_ready_claim_outputs(
+        persona_summary_df=persona_service_outputs["persona_summary_df"],
+        cluster_stats_df=persona_service_outputs["cluster_stats_df"],
+        persona_promotion_path_debug_df=persona_service_outputs["persona_promotion_path_debug_df"],
+    )
+    quality_checks.update(deck_ready_claim_outputs["counts"])
+    persona_service_outputs["persona_summary_df"] = deck_ready_claim_outputs["persona_summary_df"]
+    persona_service_outputs["cluster_stats_df"] = deck_ready_claim_outputs["cluster_stats_df"]
+    persona_service_outputs["persona_promotion_path_debug_df"] = deck_ready_claim_outputs["persona_promotion_path_debug_df"]
     persona_service_outputs["cluster_stats_df"] = _annotate_persona_readiness_frame(
         persona_service_outputs["cluster_stats_df"],
         quality_checks,
@@ -660,6 +670,7 @@ def _build_final_overview_df(
         {"metric": "exploratory_edge_persona_core_row_count", "value": quality_checks.get("exploratory_edge_persona_core_row_count", 0)},
         {"metric": "excluded_from_deck_ready_core_labeled_row_count", "value": quality_checks.get("excluded_from_deck_ready_core_labeled_row_count", 0)},
         {"metric": "excluded_from_deck_ready_core_persona_core_row_count", "value": quality_checks.get("excluded_from_deck_ready_core_persona_core_row_count", 0)},
+        {"metric": "deck_ready_claim_eligible_persona_count", "value": quality_checks.get("deck_ready_claim_eligible_persona_count", 0)},
         {"metric": "fix_now_source_count", "value": quality_checks.get("fix_now_source_count", 0)},
         {"metric": "tune_soon_source_count", "value": quality_checks.get("tune_soon_source_count", 0)},
         {"metric": "promoted_candidate_persona_count", "value": quality_checks.get("promoted_candidate_persona_count", promotion_visibility_persona_count)},
