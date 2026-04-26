@@ -1,0 +1,179 @@
+{
+  "persona_05_blocker_table": {
+    "readiness_tier": "blocked_or_constrained_candidate",
+    "production_ready_persona": false,
+    "review_ready_persona": false,
+    "final_usable_persona": false,
+    "deck_ready_claim_eligible_persona": false,
+    "promotion_score": 0.691,
+    "structural_support_status": "structurally_supported",
+    "grounding_status": "grounded_single",
+    "selected_example_count": 1,
+    "review_ready_reason": NaN,
+    "blocked_reason": "weak-source dominated or insufficiently cross-source robust | thin evidence | workbook policy constraint: top_3_cluster_share_of_core_labeled | weak_source_cost_centers_present",
+    "workbook_policy_constraint": "top_3_cluster_share_of_core_labeled | weak_source_cost_centers_present",
+    "deck_ready_claim_reason": "Blocked or constrained persona remains ineligible for deck-ready claim wording.",
+    "core_anchor_strength": "strong",
+    "supporting_validation_strength": "strong",
+    "exploratory_dependency_risk": "low",
+    "excluded_source_dependency_risk": "low"
+  },
+  "blocker_type_primary": "thin_evidence",
+  "blocker_type_secondary": [
+    "weak_selected_examples",
+    "semantic_overlap_with_existing_persona"
+  ],
+  "evidence_review_summary": {
+    "reviewed_row_count": 50,
+    "sample_buckets": {
+      "high_fit_central_rows": 20,
+      "selected_or_representative_examples": 10,
+      "boundary_rows": 10,
+      "low_confidence_or_weak_rows": 10
+    },
+    "classification_counts": {
+      "strong_persona05_evidence": 5,
+      "usable_supporting_evidence": 8,
+      "duplicate_of_existing_persona": 14,
+      "weak_or_generic": 9,
+      "source_specific_noise": 12,
+      "ambiguous": 2
+    },
+    "notable_findings": [
+      "Only one selected representative example is available for persona_05, which is too thin for a stronger deck-ready claim layer.",
+      "Many top-fit rows are vendor or platform troubleshooting threads that inherit tool_limitation_workaround signals but do not read like a stable cross-tool persona narrative.",
+      "The strongest legitimate persona_05 rows usually describe manual reporting blocked by product limits while trying to produce presentation-ready output under time pressure.",
+      "A large share of boundary rows read like a tail of persona_01 manual-reporting burden or persona_03 tool-limitation workaround rather than a clearly separate fifth persona."
+    ]
+  },
+  "persona_05_vs_persona_01_04": {
+    "semantically_distinct": "partially",
+    "true_fifth_persona_or_tail": "under-evidenced hybrid tail between persona_01 and persona_03, not yet a clean fifth anchor",
+    "enough_selected_examples": false,
+    "enough_core_representative_source_evidence": true,
+    "relies_too_much_on_supporting_or_exploratory_sources": false,
+    "promoting_creates_duplicate_or_thin_risk": true,
+    "comparison_notes": {
+      "persona_01": "High overlap. persona_05 shares manual_reporting as primary bottleneck and often differs only by adding tool_limitation_workaround and deadline/presentation pressure. This looks more like a constrained sub-tail than a clean new anchor.",
+      "persona_02": "Moderate overlap. persona_02 centers on root-cause-analysis difficulty and numbers-visible-but-not-explainable, while persona_05 is more execution/tool-limit heavy.",
+      "persona_03": "High overlap. persona_03 is the cleaner pure tool_limitation_workaround persona. persona_05 often reads like manual-reporting plus persona_03-style tool limits.",
+      "persona_04": "Low overlap. persona_04 is about reconciliation, mistrust, and repeated validation before sending, which is more distinct from persona_05."
+    }
+  },
+  "persona_05_source_profile": {
+    "top_sources": {
+      "power_bi_community": 244,
+      "metabase_discussions": 133,
+      "sisense_community": 66,
+      "github_discussions": 27,
+      "shopify_community": 23,
+      "hubspot_community": 20,
+      "stackoverflow": 14,
+      "domo_community_forum": 4,
+      "qlik_community": 3,
+      "reddit": 2,
+      "google_developer_forums": 1,
+      "klaviyo_community": 1,
+      "mixpanel_community": 1
+    },
+    "top_signatures": {
+      "primary=manual_reporting||secondary=presentation_ready_output_need|reporting_deadline_pressure|tool_limitation_workaround": 413,
+      "primary=manual_reporting||secondary=tool_limitation_workaround": 100,
+      "primary=tool_limitation_workaround||secondary=presentation_ready_output_need": 6,
+      "primary=tool_limitation_workaround||secondary=reporting_deadline_pressure": 6,
+      "primary=tool_limitation_workaround||secondary=presentation_ready_output_need|root_cause_analysis_difficulty": 5,
+      "primary=manual_reporting||secondary=root_cause_analysis_difficulty|tool_limitation_workaround": 4,
+      "primary=manual_reporting||secondary=presentation_ready_output_need|tool_limitation_workaround": 3,
+      "primary=tool_limitation_workaround||secondary=presentation_ready_output_need|reporting_deadline_pressure": 2
+    },
+    "core_representative_share_of_persona_core": 0.6994,
+    "supporting_validation_share_of_persona_core": 0.2839,
+    "exploratory_edge_share_of_persona_core": 0.0148,
+    "excluded_share_of_persona_core": 0.0019
+  },
+  "selected_examples": [
+    {
+      "episode_id": "metabase_discussions::22296::01",
+      "source": "metabase_discussions",
+      "final_example_score": 8.9,
+      "grounding_fit_score": 3.0,
+      "why_selected": "Selected for grounding fit, bottleneck specificity, persona fit, defining axis match. Matches persona on bottleneck_type=tool_limitation, user_role=analyst, tool_dependency_mode=bi_dashboard_heavy",
+      "grounded_text": "Field to map to table I want to map the variable \"version\" to the a field as shown in the picture below,Field to map to the data \"Nothing AWS Athena(Test) Data Device Quality\",but since the data structure is sophisticated,the column \"version\" can't display,so I can't select it.Can I map the variable \"version\" to a SQL Query?Or ,is there any other w"
+    }
+  ],
+  "claim_eligibility_simulation": [
+    {
+      "scenario": "A_current_baseline",
+      "deck_ready_claim_eligible_persona_count": 4,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "persona_05_becomes_claim_eligible": false,
+      "duplicate_risk": "high",
+      "thin_evidence_risk": "high",
+      "source_dependency_risk": "low",
+      "reviewer_confusion_risk": "low",
+      "interpretation": "Current state preserves strictness and avoids overclaiming a thin fifth persona."
+    },
+    {
+      "scenario": "B_allow_if_core_anchored_and_low_dependency_risk",
+      "deck_ready_claim_eligible_persona_count": 5,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "persona_05_becomes_claim_eligible": true,
+      "duplicate_risk": "high",
+      "thin_evidence_risk": "high",
+      "source_dependency_risk": "low",
+      "reviewer_confusion_risk": "high",
+      "interpretation": "This would pass source-tier checks but would bypass thin-evidence and distinctiveness safeguards."
+    },
+    {
+      "scenario": "C_allow_only_if_selected_example_threshold_met",
+      "deck_ready_claim_eligible_persona_count": 4,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "persona_05_becomes_claim_eligible": false,
+      "duplicate_risk": "medium",
+      "thin_evidence_risk": "high",
+      "source_dependency_risk": "low",
+      "reviewer_confusion_risk": "low",
+      "interpretation": "persona_05 fails immediately because selected_example_count=1 and evidence_confidence_tier=thin."
+    },
+    {
+      "scenario": "D_allow_only_as_review_candidate_not_claim_eligible",
+      "deck_ready_claim_eligible_persona_count": 4,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "persona_05_becomes_claim_eligible": false,
+      "duplicate_risk": "medium",
+      "thin_evidence_risk": "high",
+      "source_dependency_risk": "low",
+      "reviewer_confusion_risk": "medium",
+      "interpretation": "This adds process ambiguity without fixing the real evidence problem."
+    },
+    {
+      "scenario": "E_remains_blocked",
+      "deck_ready_claim_eligible_persona_count": 4,
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "persona_05_becomes_claim_eligible": false,
+      "duplicate_risk": "low",
+      "thin_evidence_risk": "contained",
+      "source_dependency_risk": "low",
+      "reviewer_confusion_risk": "low",
+      "interpretation": "Safest current choice until evidence quality improves."
+    }
+  ],
+  "can_safely_become_deck_ready_claim_eligible": false,
+  "exact_blocker": "persona_05 is core-anchored but still fails the thin-evidence and representative-example sufficiency bar, and its narrative boundary with persona_01 and persona_03 is too blurry for safe fifth-persona claim wording.",
+  "recommended_next_action": "create persona_05 evidence-improvement backlog",
+  "recommended_backlog_detail": [
+    "Increase representative-example depth before any claim reconsideration; one selected example is not enough.",
+    "Audit and prune source-specific support threads currently inheriting tool_limitation_workaround into persona_05.",
+    "Re-test semantic distinctiveness specifically against persona_01 manual-reporting burden and persona_03 tool-limitation workaround after better example grounding is available."
+  ]
+}

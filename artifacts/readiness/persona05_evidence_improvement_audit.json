@@ -1,0 +1,346 @@
+{
+  "persona_05_candidate_definition": {
+    "core_job_or_situation": "An analyst or operations owner is trying to produce a presentation-ready report, table, filter view, or stakeholder-facing dashboard cut under delivery pressure.",
+    "pain": "The primary BI tool can hold the data but cannot easily produce the final shape, interaction, formatting, or cross-table behavior needed, so the analyst gets stuck in last-mile report construction.",
+    "desired_output": "A presentation-ready, stakeholder-usable dashboard/table/view that can be delivered without manual workaround or tool-specific contortions.",
+    "how_it_differs_from_persona_01": "persona_01 is broader manual reporting burden and recurring export/spreadsheet rework. persona_05 is narrower: manual reporting is present, but the defining pain is last-mile output construction blocked by tool limitations and deadline pressure.",
+    "how_it_differs_from_persona_03": "persona_03 is the cleaner generic tool-limitation workaround persona. persona_05 is more output-oriented: the user is not just blocked by the tool generally, but specifically while trying to produce a presentable report, table, or stakeholder-ready view.",
+    "why_separate_persona": "It captures a repeatable last-mile delivery pattern that is not fully explained by spreadsheet/export burden alone and not fully explained by generic tool-limitation workaround alone."
+  },
+  "persona_05_blocker_context": {
+    "selected_example_count": 1,
+    "evidence_confidence_tier": "thin",
+    "blocked_reason": "weak-source dominated or insufficiently cross-source robust | thin evidence | workbook policy constraint: top_3_cluster_share_of_core_labeled | weak_source_cost_centers_present",
+    "deck_ready_claim_reason": "Blocked or constrained persona remains ineligible for deck-ready claim wording.",
+    "core_anchor_strength": "strong",
+    "supporting_validation_strength": "strong",
+    "exploratory_dependency_risk": "low",
+    "excluded_source_dependency_risk": "low"
+  },
+  "evidence_group_counts": {
+    "strong_central_evidence": 282,
+    "weak_generic": 114,
+    "source_specific_support_troubleshooting_noise": 63,
+    "usable_supporting_evidence": 61,
+    "duplicate_overlap_persona_03": 19
+  },
+  "persona_05_vs_persona_01_boundary_analysis": {
+    "overlapping_signals": [
+      "manual_reporting as the dominant primary bottleneck",
+      "report creation and stakeholder delivery context",
+      "some presentation_ready_output_need overlap"
+    ],
+    "differentiating_signals": [
+      "persona_05 rows more often include explicit tool_limitation_workaround",
+      "persona_05 rows cluster around last-mile output construction, layout, filtering, formatting, or view behavior",
+      "persona_01 has much stronger recurring_export_work and spreadsheet_rework signatures"
+    ],
+    "classification": "not just a tail of persona_01, but currently too blurry and under-grounded to stand alone cleanly"
+  },
+  "persona_05_vs_persona_03_boundary_analysis": {
+    "overlapping_signals": [
+      "tool_limitation_workaround is a recurring signature",
+      "many rows involve product features that cannot express the needed output behavior"
+    ],
+    "differentiating_signals": [
+      "persona_05 is usually manual-reporting-led rather than pure tool-limitation-led",
+      "persona_05 adds presentation_ready_output_need and reporting_deadline_pressure much more often",
+      "persona_03 is a cleaner generic tool-workaround persona without the same output-delivery emphasis"
+    ],
+    "classification": "not just a tail of persona_03, but a nearby sibling pattern that still needs cleaner narrative boundaries"
+  },
+  "candidate_representative_examples": [
+    {
+      "episode_id": "hubspot_community::823169::01",
+      "source": "hubspot_community",
+      "current_persona_id": "persona_05",
+      "normalized_episode": "Trying to build a simple number-of-leads-versus-target tracker in HubSpot, but the goals feature forces campaign-specific setup instead of allowing total lead tracking against a business target.",
+      "business_question": "How can this workflow be made more reliable and repeatable?",
+      "bottleneck_text": "general_friction",
+      "desired_output": "unspecified_output",
+      "why_it_is_strong": "Clear analyst job, clear target-tracking output, explicit product limitation, and clear business reporting context.",
+      "why_it_is_not_persona_01": "The pain is not export/rework volume; it is the inability to construct the needed target-tracking output inside the tool.",
+      "why_it_is_not_persona_03": "The story is output-delivery-specific, not just generic tool limitation.",
+      "source_tier": "supporting_validation_source",
+      "confidence": "high"
+    },
+    {
+      "episode_id": "metabase_discussions::99555::01",
+      "source": "metabase_discussions",
+      "current_persona_id": "persona_05",
+      "normalized_episode": "User can produce the underlying data in a pivot table but cannot flip rows and columns to get the exact presentation-ready layout needed.",
+      "business_question": "How can this workflow be made more reliable and repeatable?",
+      "bottleneck_text": "tool_limitation",
+      "desired_output": "unspecified_output",
+      "why_it_is_strong": "Strong last-mile presentation problem with an explicit desired report shape and no obvious support-only noise.",
+      "why_it_is_not_persona_01": "The issue is not recurring export burden; it is a final-layout limitation inside the BI tool.",
+      "why_it_is_not_persona_03": "The limitation matters because a presentable deliverable is blocked, not just because the tool lacks a feature in the abstract.",
+      "source_tier": "core_representative_source",
+      "confidence": "high"
+    },
+    {
+      "episode_id": "metabase_discussions::109422::01",
+      "source": "metabase_discussions",
+      "current_persona_id": "persona_05",
+      "normalized_episode": "Measures and dimensions are merged into one list in Metabase, making it hard for end users to build or understand the intended report correctly.",
+      "business_question": "How can this workflow be made more reliable and repeatable?",
+      "bottleneck_text": "general_friction",
+      "desired_output": "unspecified_output",
+      "why_it_is_strong": "This shows a stakeholder-facing reporting usability problem, not just admin setup friction.",
+      "why_it_is_not_persona_01": "The user is blocked by final output usability and report construction clarity, not by repetitive export/rework.",
+      "why_it_is_not_persona_03": "The tool limitation is tied to report usability for consumers, which is more specific than generic workaround behavior.",
+      "source_tier": "core_representative_source",
+      "confidence": "medium_high"
+    },
+    {
+      "episode_id": "power_bi_community::5134064::01",
+      "source": "power_bi_community",
+      "current_persona_id": "persona_05",
+      "normalized_episode": "The user needs a dynamic Top-N visual behavior, but the filtering/ranking interaction breaks the intended stakeholder-facing view.",
+      "business_question": "How can this workflow be made more reliable and repeatable?",
+      "bottleneck_text": "general_friction",
+      "desired_output": "unspecified_output",
+      "why_it_is_strong": "It is a concrete last-mile dashboard behavior problem with a specific report-view goal.",
+      "why_it_is_not_persona_01": "The difficulty is not repetitive reporting labor; it is that the final dashboard behavior cannot be expressed cleanly in the tool.",
+      "why_it_is_not_persona_03": "The problem is bound to a presentation-ready output interaction, not just generic tool limitation.",
+      "source_tier": "core_representative_source",
+      "confidence": "medium"
+    },
+    {
+      "episode_id": "github_discussions::4223807485::01",
+      "source": "github_discussions",
+      "current_persona_id": "persona_05",
+      "normalized_episode": "Absolute date filters use browser timezone instead of project timezone, so shared dashboard filters produce different stakeholder-visible results depending on who set them.",
+      "business_question": "How can this workflow be made more reliable and repeatable?",
+      "bottleneck_text": "general_friction",
+      "desired_output": "dashboard_update",
+      "why_it_is_strong": "This clearly affects a shared dashboard deliverable and shows why the output cannot be trusted or reused reliably.",
+      "why_it_is_not_persona_01": "This is not export burden; it is a shared output construction and interpretation defect.",
+      "why_it_is_not_persona_03": "The tool limitation matters because it corrupts a stakeholder-facing output, not merely because a feature is missing.",
+      "source_tier": "supporting_validation_source",
+      "confidence": "medium"
+    }
+  ],
+  "weak_noisy_row_summary": {
+    "group_counts": {
+      "source_specific_support_troubleshooting_noise": 63,
+      "weak_generic": 114,
+      "duplicate_overlap_persona_03": 19
+    },
+    "diagnostic_examples": [
+      {
+        "episode_id": "github_discussions::1649346821::01",
+        "source": "github_discussions",
+        "evidence_group": "duplicate_overlap_persona_03",
+        "primary_bottleneck": "tool_limitation_workaround",
+        "secondary_bottlenecks": "presentation_ready_output_need | root_cause_analysis_difficulty",
+        "quality_bucket": "hard_pass",
+        "quality_fail_reason": "",
+        "evidence_snippet": "Timezone Issue with month filters ### Description Selecting a month filter, gives a wrong SQL ![image](https://user-images.githubusercontent.com/1983672/229154305-be952c17-e693-4074-91e7-15b32b45e52c.png) I was able to r"
+      },
+      {
+        "episode_id": "github_discussions::3402693743::01",
+        "source": "github_discussions",
+        "evidence_group": "duplicate_overlap_persona_03",
+        "primary_bottleneck": "tool_limitation_workaround",
+        "secondary_bottlenecks": "presentation_ready_output_need | root_cause_analysis_difficulty",
+        "quality_bucket": "hard_pass",
+        "quality_fail_reason": "",
+        "evidence_snippet": "Fanout handling not working when using only metrics without dimensions ### Description Looks like there a bug in the fanouts handling logic: I have a Big Value chart that is supposed to have no dimension selected and onl"
+      },
+      {
+        "episode_id": "github_discussions::2611359619::01",
+        "source": "github_discussions",
+        "evidence_group": "source_specific_support_troubleshooting_noise",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround",
+        "quality_bucket": "hard_pass",
+        "quality_fail_reason": "",
+        "evidence_snippet": "[Testing Plan] Admin Onboarding Checklist # Testing plan for #48387 ## Admin onboarding checklist We are creating this view for admins only, which makes it easier from the permissions standpoint. However, we should be mi"
+      },
+      {
+        "episode_id": "github_discussions::1986744828::01",
+        "source": "github_discussions",
+        "evidence_group": "duplicate_overlap_persona_03",
+        "primary_bottleneck": "tool_limitation_workaround",
+        "secondary_bottlenecks": "presentation_ready_output_need | root_cause_analysis_difficulty",
+        "quality_bucket": "hard_pass",
+        "quality_fail_reason": "",
+        "evidence_snippet": "cross-filtering multiple types of data only possible when data on same dataset, can't do cross-filtering across multiple datasets if they don't cross-filters same data across datasets A clear and concise description of w"
+      },
+      {
+        "episode_id": "github_discussions::1199913352::01",
+        "source": "github_discussions",
+        "evidence_group": "duplicate_overlap_persona_03",
+        "primary_bottleneck": "tool_limitation_workaround",
+        "secondary_bottlenecks": "presentation_ready_output_need | root_cause_analysis_difficulty",
+        "quality_bucket": "hard_pass",
+        "quality_fail_reason": "",
+        "evidence_snippet": "I want to be able to create default filters in my Explores ### Description: What is it? I want to add default filters to my Explores so that when people use them, they automatically have filters applied to them. These fi"
+      },
+      {
+        "episode_id": "github_discussions::2283500183::01",
+        "source": "github_discussions",
+        "evidence_group": "duplicate_overlap_persona_03",
+        "primary_bottleneck": "tool_limitation_workaround",
+        "secondary_bottlenecks": "presentation_ready_output_need | root_cause_analysis_difficulty",
+        "quality_bucket": "hard_pass",
+        "quality_fail_reason": "",
+        "evidence_snippet": "overrided embedded dashboard filters doesn't respect the field mapping ### Description If I map my `filter` to another field in a chart, and change this default filter in an embedded dashboard, the filter doesn't work Da"
+      },
+      {
+        "episode_id": "github_discussions::2948445793::01",
+        "source": "github_discussions",
+        "evidence_group": "source_specific_support_troubleshooting_noise",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround",
+        "quality_bucket": "hard_pass",
+        "quality_fail_reason": "",
+        "evidence_snippet": "[SIP-161] Translating Superset asset metadata ## [SIP] Proposal for Translating Superset asset metadata ### Motivation Superset provides translation support for built-in components in the UI. However, the o[Open edX](htt"
+      },
+      {
+        "episode_id": "hubspot_community::687537::01",
+        "source": "hubspot_community",
+        "evidence_group": "weak_generic",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround",
+        "quality_bucket": "borderline",
+        "quality_fail_reason": "weak_problem_phrasing",
+        "evidence_snippet": "Filter - Date Property: Date entered \"Sales Qualified Lead (Lifecycle Stage Pipeline)\" That's correct, @mayalaraineri , the date of the conversion. Since these properties are read-only, they can't be updated via workflow"
+      },
+      {
+        "episode_id": "hubspot_community::1194266::01",
+        "source": "hubspot_community",
+        "evidence_group": "duplicate_overlap_persona_03",
+        "primary_bottleneck": "tool_limitation_workaround",
+        "secondary_bottlenecks": "presentation_ready_output_need",
+        "quality_bucket": "hard_pass",
+        "quality_fail_reason": "",
+        "evidence_snippet": "Conversion rate reports Hello, HubSpot team! Hope you’re doing well. I’d like to share some feedback and suggestions regarding the conversion rate reports in HubSpot. This type of report is critical for sales and operati"
+      },
+      {
+        "episode_id": "hubspot_community::838493::01",
+        "source": "hubspot_community",
+        "evidence_group": "weak_generic",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround | root_cause_analysis_difficulty",
+        "quality_bucket": "borderline",
+        "quality_fail_reason": "weak_problem_phrasing",
+        "evidence_snippet": "On meetings link see a list of 'meetings booked' There are no meeting link drop downs to display when I type in \"meeting\" I have two meetings links setup under sales -> meetings. Any idea why it's not showing up on the a"
+      },
+      {
+        "episode_id": "klaviyo_community::1a54b223407b85d85fd316ac9fd833a12bebc452::01",
+        "source": "klaviyo_community",
+        "evidence_group": "weak_generic",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround | reporting_deadline_pressure | presentation_ready_output_need",
+        "quality_bucket": "borderline",
+        "quality_fail_reason": "weak_problem_phrasing",
+        "evidence_snippet": "How can I see total list growth? I understand how to view and measure list growth via each individual list, however, is there a way to see total list growth for all of my lists combined? I have a lot of different lists, "
+      },
+      {
+        "episode_id": "metabase_discussions::10032::01",
+        "source": "metabase_discussions",
+        "evidence_group": "weak_generic",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround | reporting_deadline_pressure | presentation_ready_output_need",
+        "quality_bucket": "borderline",
+        "quality_fail_reason": "",
+        "evidence_snippet": "Query with more than 30 columns when i create a query with a “Custom Column”, metabase creates a query like SELECT source . id AS id , … FROM (SELECT analytics . tablename . id , …) source When I use more than 30 columns"
+      },
+      {
+        "episode_id": "metabase_discussions::229278::01",
+        "source": "metabase_discussions",
+        "evidence_group": "weak_generic",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround",
+        "quality_bucket": "borderline",
+        "quality_fail_reason": "",
+        "evidence_snippet": "How do I Automatically Create and Add Questions to Dashboards via Node Script I've created a Node.js script that programmatically generates tables and dashboards in Metabase. After the dashboard creation, I'd like to aut"
+      },
+      {
+        "episode_id": "metabase_discussions::8743::01",
+        "source": "metabase_discussions",
+        "evidence_group": "weak_generic",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround | reporting_deadline_pressure | presentation_ready_output_need",
+        "quality_bucket": "borderline",
+        "quality_fail_reason": "",
+        "evidence_snippet": "Query Generated limits on goal / gauge widgets It seems silly that we are unable to dynamically assign limits via SQL queries / questions in an application that is designed to display SQL data. Having to hard-code these "
+      },
+      {
+        "episode_id": "metabase_discussions::23206::01",
+        "source": "metabase_discussions",
+        "evidence_group": "duplicate_overlap_persona_03",
+        "primary_bottleneck": "tool_limitation_workaround",
+        "secondary_bottlenecks": "reporting_deadline_pressure",
+        "quality_bucket": "hard_pass",
+        "quality_fail_reason": "",
+        "evidence_snippet": "Trying to create a variable for list of numbers My original query looks like that: select * from table where id in (1,2,15); How can I create a variable instead of the list of numbers? Something like: select * from table"
+      },
+      {
+        "episode_id": "metabase_discussions::20967::01",
+        "source": "metabase_discussions",
+        "evidence_group": "duplicate_overlap_persona_03",
+        "primary_bottleneck": "tool_limitation_workaround",
+        "secondary_bottlenecks": "presentation_ready_output_need",
+        "quality_bucket": "hard_pass",
+        "quality_fail_reason": "",
+        "evidence_snippet": "Metabase API get parameter type Hello everyone, I am posting this because I am trying to recreate dashboards via the metabase api using python libraries. I've managed to get my charts and order them on a dashboard but I'"
+      },
+      {
+        "episode_id": "metabase_discussions::4620::01",
+        "source": "metabase_discussions",
+        "evidence_group": "weak_generic",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround | reporting_deadline_pressure | presentation_ready_output_need",
+        "quality_bucket": "borderline",
+        "quality_fail_reason": "",
+        "evidence_snippet": "Can't reorder question columns Hi, I had understood that the columns coming through questions are ordered alphabetically, but when I adjusted the names of the columns in the data model like so: 13 1010×208 10.9 KB The de"
+      },
+      {
+        "episode_id": "metabase_discussions::15954::01",
+        "source": "metabase_discussions",
+        "evidence_group": "weak_generic",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround | presentation_ready_output_need | reporting_deadline_pressure",
+        "quality_bucket": "borderline",
+        "quality_fail_reason": "",
+        "evidence_snippet": "Nulls assigned value of 0 - min scale in line chart doesn't work i'm creating a line chart with all values between 1.0 and .7. For any period that we don't have information (null), Metabase is assigning a value of 0. Bec"
+      },
+      {
+        "episode_id": "metabase_discussions::237099::01",
+        "source": "metabase_discussions",
+        "evidence_group": "weak_generic",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround | reporting_deadline_pressure | presentation_ready_output_need",
+        "quality_bucket": "borderline",
+        "quality_fail_reason": "",
+        "evidence_snippet": "Relative Period Date Filter with SQL Is there a way to do period filters with SQL for exsample last 30 days Last year Current month etc Or is the only option choosing the start and end dates? Is there a way to do period "
+      },
+      {
+        "episode_id": "metabase_discussions::17453::01",
+        "source": "metabase_discussions",
+        "evidence_group": "weak_generic",
+        "primary_bottleneck": "manual_reporting",
+        "secondary_bottlenecks": "tool_limitation_workaround | reporting_deadline_pressure | presentation_ready_output_need",
+        "quality_bucket": "borderline",
+        "quality_fail_reason": "",
+        "evidence_snippet": "Locked value for filter in Metabase embedding Hi, I would like to embed metabase in our backoffice platform, but we can't provide the same filtered value for every view. For different users, we would like to lock a value"
+      }
+    ]
+  },
+  "salvageability_decision": "salvageable_but_needs_boundary_rule",
+  "why_salvageable": [
+    "persona_05 has substantial core representative evidence and low exploratory/excluded dependency risk",
+    "a repeatable last-mile output-construction pattern is visible in the stronger rows",
+    "the current failure is mostly about weak representative-example selection and fuzzy boundaries, not missing source support"
+  ],
+  "why_not_ready_yet": [
+    "selected_example_count is only 1",
+    "the current selected example is too technical and not ideal as a deck-facing anchor",
+    "too many top-fit rows still look like support/troubleshooting spillover or near-neighbors of persona_01/persona_03"
+  ],
+  "recommended_next_implementation_path": "selected-example improvement only",
+  "recommended_path_reason": "The smallest safe next move is to improve representative example selection for persona_05 using the now-identified cleaner last-mile output-construction examples, without touching persona assignment or claim policy yet."
+}
