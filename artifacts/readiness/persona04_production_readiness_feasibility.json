@@ -1,0 +1,167 @@
+{
+  "decision": "cannot_safely_become_production_ready_yet",
+  "primary_blocker_type": "workbook_global_concentration_policy",
+  "secondary_blocker_types": [
+    "weak_source_debt"
+  ],
+  "blocker_table": {
+    "readiness_tier": "review_ready_persona",
+    "production_ready_persona": false,
+    "review_ready_persona": true,
+    "final_usable_persona": false,
+    "deck_ready_claim_eligible_persona": true,
+    "promotion_score": 0.7524,
+    "structural_support_status": "structurally_supported",
+    "grounding_status": "grounded_single",
+    "selected_example_count": 5,
+    "review_ready_reason": "Locally grounded and structurally supported, but workbook-global concentration policy keeps this persona review-ready only. Constraints: top_3_cluster_share_of_core_labeled | weak_source_cost_centers_present.",
+    "blocked_reason": "blocked from production-ready use by workbook-global concentration policy",
+    "workbook_policy_constraint": "top_3_cluster_share_of_core_labeled | weak_source_cost_centers_present",
+    "source_concentration_top_share": 0.1797,
+    "weak_source_link": "present_but_not_dominant",
+    "share_rank": 4,
+    "protected_distinct_candidate": true,
+    "borderline_candidate": true,
+    "top_3_cluster_share_of_core_labeled": 0.8329,
+    "weak_source_cost_centers_present": true,
+    "core_anchor_strength": "strong",
+    "supporting_validation_strength": "strong",
+    "exploratory_dependency_risk": "low",
+    "excluded_source_dependency_risk": "low"
+  },
+  "persona_04_source_mix": {
+    "top_source": "github_discussions",
+    "top_source_share": 0.1797,
+    "weak_source_rows": 108,
+    "core_representative_persona_core_rows": 174,
+    "supporting_validation_persona_core_rows": 387,
+    "exploratory_edge_persona_core_rows": 15,
+    "excluded_from_deck_ready_core_persona_core_rows": 25
+  },
+  "evidence_review_summary": {
+    "sampled_row_count": 32,
+    "classification_counts": {
+      "strong_persona04_evidence": 17,
+      "usable_supporting_evidence": 9,
+      "duplicate_of_existing_persona": 2,
+      "weak_or_generic": 4,
+      "source_specific_noise": 6,
+      "ambiguous": 5
+    },
+    "notes": [
+      "Selected examples are materially stronger than the raw top-fit rows and preserve the metric-validation/sign-off story.",
+      "High-fit central rows include noticeable technical support contamination, especially platform setup, sync, refresh, and query-generation issues.",
+      "Boundary overlap is much lower than persona_05; the dominant risk is workbook-global policy, not semantic duplication."
+    ]
+  },
+  "distinctiveness_analysis": {
+    "vs_persona_01": "distinct; persona_01 centers manual reporting/package assembly, while persona_04 centers metric validation and sign-off confidence before sharing.",
+    "vs_persona_02": "distinct; persona_02 is insight translation across tool-limit handoffs, while persona_04 is pre-share reconciliation and trust validation.",
+    "vs_persona_03": "distinct; persona_03 is generic tool-limitation workaround, while persona_04 is number-reconciliation and trust-gating even when tools are available.",
+    "is_semantically_distinct": true,
+    "local_evidence_weakness": "moderate_support_noise_in_central_rows_but_not_disqualifying"
+  },
+  "selected_example_quality": {
+    "selected_example_count": 5,
+    "selected_sources": [
+      "shopify_community",
+      "github_discussions",
+      "reddit",
+      "adobe_analytics_community",
+      "google_developer_forums"
+    ],
+    "selected_source_tiers": [
+      "supporting_validation_source",
+      "supporting_validation_source",
+      "supporting_validation_source",
+      "supporting_validation_source",
+      "supporting_validation_source"
+    ],
+    "note": "Example set is review-usable, but selected examples skew toward supporting_validation rather than core representative sources."
+  },
+  "simulation_results": {
+    "A_current_baseline": {
+      "production_ready_persona_count": 3,
+      "final_usable_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "deck_ready_claim_eligible_persona_count": 4,
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "top_3_cluster_share_of_core_labeled": 0.8329,
+      "weak_source_metrics": "unchanged_warn",
+      "duplicate_risk": "low",
+      "thin_evidence_risk": "low",
+      "reviewer_confusion_risk": "low",
+      "weakens_standards": false,
+      "persona_04_production_ready": false
+    },
+    "B_allow_one_review_ready_claim_eligible_persona_if_local_evidence_passes": {
+      "production_ready_persona_count": 4,
+      "final_usable_persona_count": 4,
+      "review_ready_persona_count": 0,
+      "deck_ready_claim_eligible_persona_count": 4,
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "top_3_cluster_share_of_core_labeled": 0.8329,
+      "weak_source_metrics": "unchanged_warn",
+      "duplicate_risk": "low",
+      "thin_evidence_risk": "low",
+      "reviewer_confusion_risk": "medium",
+      "weakens_standards": true,
+      "persona_04_production_ready": true
+    },
+    "C_allow_if_concentration_risk_not_worsened": {
+      "production_ready_persona_count": 4,
+      "final_usable_persona_count": 4,
+      "review_ready_persona_count": 0,
+      "deck_ready_claim_eligible_persona_count": 4,
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "top_3_cluster_share_of_core_labeled": 0.8329,
+      "weak_source_metrics": "unchanged_warn",
+      "duplicate_risk": "low",
+      "thin_evidence_risk": "low",
+      "reviewer_confusion_risk": "medium",
+      "weakens_standards": true,
+      "persona_04_production_ready": true
+    },
+    "D_allow_production_ready_but_keep_workbook_reviewable": {
+      "production_ready_persona_count": 4,
+      "final_usable_persona_count": 4,
+      "review_ready_persona_count": 0,
+      "deck_ready_claim_eligible_persona_count": 4,
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "top_3_cluster_share_of_core_labeled": 0.8329,
+      "weak_source_metrics": "unchanged_warn",
+      "duplicate_risk": "low",
+      "thin_evidence_risk": "low",
+      "reviewer_confusion_risk": "high",
+      "weakens_standards": true,
+      "persona_04_production_ready": true
+    },
+    "E_keep_review_ready_only": {
+      "production_ready_persona_count": 3,
+      "final_usable_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "deck_ready_claim_eligible_persona_count": 4,
+      "persona_readiness_state": "reviewable_but_not_deck_ready",
+      "overall_status": "WARN",
+      "quality_flag": "EXPLORATORY",
+      "top_3_cluster_share_of_core_labeled": 0.8329,
+      "weak_source_metrics": "unchanged_warn",
+      "duplicate_risk": "low",
+      "thin_evidence_risk": "low",
+      "reviewer_confusion_risk": "low",
+      "weakens_standards": false,
+      "persona_04_production_ready": false
+    }
+  },
+  "recommended_next_action": "keep_persona_04_review_ready_and_claim_eligible",
+  "recommended_follow_up": "create_persona_04_production_readiness_backlog",
+  "rationale": "persona_04 clears local evidence quality, structural support, grounding, and distinctiveness checks well enough for review-ready + claim-eligible treatment, but current production-ready promotion would weaken the workbook-global production policy without resolving concentration and weak-source-debt warnings."
+}
