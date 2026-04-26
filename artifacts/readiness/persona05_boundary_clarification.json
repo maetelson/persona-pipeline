@@ -1,0 +1,125 @@
+{
+  "persona_id": "persona_05",
+  "current_hypothesis": {
+    "core_job_or_situation": "An analyst or operations owner has the data needed for reporting, but is blocked while constructing the final stakeholder-facing output in the BI layer.",
+    "pain": "The final table, filter behavior, dashboard interaction, layout, or visual configuration cannot be expressed cleanly enough to deliver a presentation-ready output without awkward workarounds.",
+    "desired_output": "A stakeholder-ready report, table, dashboard interaction, or shareable view that can be delivered without manual reconstruction or tool-specific contortions.",
+    "different_from_persona_01": "persona_01 is broader recurring manual reporting, export churn, spreadsheet rework, and reconciliation burden. persona_05 is narrower and more last-mile: the delivery artifact itself is blocked by BI or reporting-layer behavior.",
+    "different_from_persona_03": "persona_03 is a cleaner generic tool-limitation workaround persona. persona_05 keeps the tool-limitation element but ties it to reporting delivery, presentation readiness, and stakeholder-facing output construction.",
+    "should_not_count_as_persona05_evidence": [
+      "Recurring export burden without final-output construction specificity",
+      "Spreadsheet rework alone",
+      "Generic tool limitation without reporting delivery context",
+      "Auth, connector, refresh, permission, setup, or sandboxing support",
+      "Formula or API debugging without stakeholder-facing output context",
+      "General feature request without a concrete reporting delivery pain"
+    ]
+  },
+  "boundary_matrix": {
+    "vs_persona_01": {
+      "shared_signals": [
+        "manual_reporting",
+        "report delivery pressure",
+        "analyst-led workflow ownership",
+        "desire for repeatable stakeholder reporting"
+      ],
+      "differentiating_signals": [
+        "final output shape, layout, or interaction is blocked inside the BI tool",
+        "presentation_ready_output_need is explicit",
+        "dashboard, filter, pivot, or visual behavior is part of the pain",
+        "stakeholder-facing usability matters more than export volume"
+      ],
+      "overlapping_rows": [
+        "metabase_discussions::99555::01",
+        "hubspot_community::823169::01",
+        "sisense_community::21785::01"
+      ],
+      "high_risk_confusion_cases": [
+        "power_bi_community::4755354::01",
+        "stackoverflow::68635577::01",
+        "shopify_community::416748::01"
+      ],
+      "clean_separation_examples": [
+        "github_discussions::4223807485::01",
+        "metabase_discussions::153908::01",
+        "github_discussions::866442257::01"
+      ],
+      "boundary_strength": "moderate"
+    },
+    "vs_persona_03": {
+      "shared_signals": [
+        "tool_limitation_workaround",
+        "BI-layer behavior blocks task completion",
+        "feature or interaction limitations inside the reporting tool"
+      ],
+      "differentiating_signals": [
+        "manual_reporting remains the dominant lead signal",
+        "the pain is tied to a stakeholder-facing report, dashboard, or shareable artifact",
+        "presentation_ready_output_need and reporting_deadline_pressure recur",
+        "the desired state is a deliverable output, not just feature parity"
+      ],
+      "overlapping_rows": [
+        "github_discussions::1810542734::01",
+        "github_discussions::3517021486::01",
+        "metabase_discussions::109422::01"
+      ],
+      "high_risk_confusion_cases": [
+        "metabase_discussions::20967::01",
+        "metabase_discussions::20909::01",
+        "github_discussions::1199913352::01"
+      ],
+      "clean_separation_examples": [
+        "metabase_discussions::99555::01",
+        "hubspot_community::823169::01",
+        "github_discussions::4223807485::01"
+      ],
+      "boundary_strength": "moderate"
+    }
+  },
+  "reviewed_rows": {
+    "review_scope": {
+      "selected_examples": 5,
+      "additional_central_rows": 20,
+      "boundary_rows_vs_persona_01": 15,
+      "boundary_rows_vs_persona_03": 15,
+      "weak_or_noisy_rows": 10,
+      "total_reviewed_rows": 65
+    },
+    "classification_summary": {
+      "clean_persona05": 27,
+      "persona01_overlap": 13,
+      "persona03_overlap": 11,
+      "support_troubleshooting_noise": 8,
+      "weak_generic": 4,
+      "ambiguous": 2
+    }
+  },
+  "positive_boundary_rules": [
+    "Stakeholder-facing output construction is explicit.",
+    "The user needs a final table, view, dashboard interaction, report layout, or shareable artifact.",
+    "Filter, interaction, layout, or visual configuration blocks the final reporting deliverable.",
+    "Presentation-ready or stakeholder-consumable output matters.",
+    "There is visible last-mile delivery pressure, not just abstract tooling friction."
+  ],
+  "negative_boundary_rules": [
+    "Recurring export burden without clear final-output construction specificity.",
+    "Spreadsheet rework alone.",
+    "Generic tool limitation without reporting delivery context.",
+    "Auth, connector, refresh, permission, setup, sandboxing, or support troubleshooting.",
+    "Formula, API, or automation debugging without stakeholder-facing output context.",
+    "General feature request without concrete reporting pain."
+  ],
+  "scores": {
+    "boundary_score_vs_persona_01": 3,
+    "boundary_score_vs_persona_03": 3,
+    "representative_example_strength": 4,
+    "support_noise_risk": 3,
+    "duplicate_risk": 3,
+    "overall_boundary_readiness": "borderline"
+  },
+  "next_action": {
+    "decision": "needs_boundary_rule_implementation",
+    "smallest_safe_rule": "Require persona_05-supporting evidence to show both a reporting-delivery context and a concrete last-mile output-construction blocker. Downweight or exclude rows that are only generic tool limitation, automation/setup support, or recurring manual reporting without final-output specificity.",
+    "claim_eligibility_recheck_recommended_now": false
+  }
+}
