@@ -59,7 +59,7 @@ STAGE_LINKS: dict[str, dict[str, str]] = {
     "persona_relevant_promoted_rows": {
         "script": "run/pipeline/06_cluster_and_score.py",
         "function": "cluster + promotion outputs",
-        "config": "docs/source_balance_policy.md",
+        "config": "config/scoring.yaml",
     },
 }
 SOURCE_STAGE_OVERRIDES: dict[str, dict[str, dict[str, str]]] = {
