@@ -47,6 +47,10 @@ from src.analysis.summary import (
     build_taxonomy_summary,
 )
 from src.analysis.source_tiers import source_tier_counts
+from src.analysis.source_tier_evidence import (
+    build_source_tier_evidence_outputs,
+    write_source_tier_evidence_artifacts,
+)
 from src.analysis.workbook_bundle import assemble_workbook_frames, validate_workbook_frames, write_workbook_bundle
 from src.exporters.xlsx_exporter import export_workbook_from_frames
 from src.labeling.unknown_reasons import build_unknown_reason_breakdown
@@ -229,6 +233,16 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
     quality_checks["source_action_priority_summary"] = _source_action_priority_summary(source_balance_audit_df)
     quality_checks["fix_now_source_count"] = int(source_balance_audit_df.get("priority_tier", pd.Series(dtype=str)).astype(str).eq("fix_now").sum()) if "priority_tier" in source_balance_audit_df.columns else int((source_balance_audit_df.get("failure_level", pd.Series(dtype=str)).astype(str) == "failure").sum())
     quality_checks["tune_soon_source_count"] = int(source_balance_audit_df.get("priority_tier", pd.Series(dtype=str)).astype(str).eq("tune_soon").sum()) if "priority_tier" in source_balance_audit_df.columns else int((source_balance_audit_df.get("failure_level", pd.Series(dtype=str)).astype(str) == "warning").sum())
+    source_tier_evidence = build_source_tier_evidence_outputs(
+        episodes_df=episodes_df,
+        labeled_df=labeled_df,
+        persona_assignments_df=persona_service_outputs["persona_assignments_df"],
+        persona_summary_df=persona_service_outputs["persona_summary_df"],
+        cluster_stats_df=persona_service_outputs["cluster_stats_df"],
+    )
+    quality_checks.update(source_tier_evidence["global_counts"])
+    persona_service_outputs["persona_summary_df"] = source_tier_evidence["persona_summary_df"]
+    persona_service_outputs["cluster_stats_df"] = source_tier_evidence["cluster_stats_df"]
     persona_service_outputs["cluster_stats_df"] = _annotate_persona_readiness_frame(
         persona_service_outputs["cluster_stats_df"],
         quality_checks,
@@ -326,6 +340,8 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         "persona_core_policy_df": persona_core_policy_df,
         "clustering_labeled_df": clustering_labeled_df,
         "clustering_episodes_df": clustering_episodes_df,
+        "source_tier_evidence_report": source_tier_evidence["report"],
+        "persona_evidence_tier_breakdown_df": source_tier_evidence["persona_breakdown_df"],
     }
 
 
@@ -399,6 +415,13 @@ def persist_analysis_outputs(
 
     if write_debug_artifacts:
         debug_paths = write_persona_outputs(root_dir, persona_service_outputs)
+        debug_paths.update(
+            write_source_tier_evidence_artifacts(
+                root_dir,
+                deterministic_outputs["source_tier_evidence_report"],
+                deterministic_outputs["persona_evidence_tier_breakdown_df"],
+            )
+        )
         deterministic_outputs["persona_core_policy_df"].to_csv(analysis_dir / "persona_core_policy_audit.csv", index=False)
         deterministic_outputs["counts_df"].to_csv(analysis_dir / "counts.csv", index=False)
         deterministic_outputs["source_distribution_df"].to_csv(analysis_dir / "source_distribution.csv", index=False)
@@ -629,6 +652,14 @@ def _build_final_overview_df(
         {"metric": "supporting_validation_source_count", "value": tier_counts["supporting_validation_source_count"]},
         {"metric": "exploratory_edge_source_count", "value": tier_counts["exploratory_edge_source_count"]},
         {"metric": "excluded_from_deck_ready_core_source_count", "value": tier_counts["excluded_from_deck_ready_core_source_count"]},
+        {"metric": "deck_ready_core_labeled_row_count", "value": quality_checks.get("deck_ready_core_labeled_row_count", 0)},
+        {"metric": "deck_ready_core_persona_core_row_count", "value": quality_checks.get("deck_ready_core_persona_core_row_count", 0)},
+        {"metric": "supporting_validation_labeled_row_count", "value": quality_checks.get("supporting_validation_labeled_row_count", 0)},
+        {"metric": "supporting_validation_persona_core_row_count", "value": quality_checks.get("supporting_validation_persona_core_row_count", 0)},
+        {"metric": "exploratory_edge_labeled_row_count", "value": quality_checks.get("exploratory_edge_labeled_row_count", 0)},
+        {"metric": "exploratory_edge_persona_core_row_count", "value": quality_checks.get("exploratory_edge_persona_core_row_count", 0)},
+        {"metric": "excluded_from_deck_ready_core_labeled_row_count", "value": quality_checks.get("excluded_from_deck_ready_core_labeled_row_count", 0)},
+        {"metric": "excluded_from_deck_ready_core_persona_core_row_count", "value": quality_checks.get("excluded_from_deck_ready_core_persona_core_row_count", 0)},
         {"metric": "fix_now_source_count", "value": quality_checks.get("fix_now_source_count", 0)},
         {"metric": "tune_soon_source_count", "value": quality_checks.get("tune_soon_source_count", 0)},
         {"metric": "promoted_candidate_persona_count", "value": quality_checks.get("promoted_candidate_persona_count", promotion_visibility_persona_count)},

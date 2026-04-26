@@ -14,6 +14,12 @@ Phase 1 of this policy is limited to workbook-facing source-tier annotation only
 - `overview.csv` may carry aggregate source-tier counts.
 - No readiness state, persona count, weak-source denominator behavior, or XLSX presentation semantics change in Phase 1.
 
+Phase 2 of this policy is limited to tier-aware evidence accounting only.
+
+- Workbook-facing outputs may add core-vs-supporting-vs-exploratory evidence counts.
+- Persona-facing outputs may add tier-aware persona-core row counts and deck-ready claim anchoring diagnostics.
+- No readiness state, persona count, weak-source denominator behavior, or XLSX presentation semantics change in Phase 2.
+
 ## Purpose
 
 Define a transparent deck-ready core policy that separates:
