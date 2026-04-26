@@ -1,0 +1,189 @@
+{
+  "decision": "accepted",
+  "scope": "persona_05 selected-example improvement only",
+  "previous_selected_examples": [
+    {
+      "episode_id": "metabase_discussions::22296::01",
+      "source": "metabase_discussions",
+      "source_tier": "core_representative_source",
+      "text": "Field to map to table I want to map the variable \"version\" to the a field as shown in the picture below,Field to map to the data \"Nothing AWS Athena(Test) Data Device Quality\",but since the data structure is sophisticated,the column \"version\" can't display,so I can't select it.Can I map the variable \"version\" to a SQL Query?Or ,is there any other way to solve this problem",
+      "why_weak": "Too technical and implementation-specific; it does not clearly show stakeholder-facing last-mile reporting output pain and reads like generic tool-limitation troubleshooting.",
+      "weakness_tags": [
+        "too_technical",
+        "too_support_like",
+        "overlaps_persona_03"
+      ]
+    }
+  ],
+  "validated_candidate_examples": [
+    {
+      "episode_id": "hubspot_community::823169::01",
+      "source": "hubspot_community",
+      "current_persona_id": "persona_05",
+      "normalized_episode": "Trying to build a simple number-of-leads-versus-target tracker in HubSpot, but the goals feature forces campaign-specific setup instead of allowing total lead tracking against a business target.",
+      "business_question": "How can this workflow be made more reliable and repeatable?",
+      "bottleneck_text": "general_friction",
+      "desired_output": "unspecified_output",
+      "why_it_is_strong": "Clear analyst job, clear target-tracking output, explicit product limitation, and clear business reporting context.",
+      "why_it_is_not_persona_01": "The pain is not export/rework volume; it is the inability to construct the needed target-tracking output inside the tool.",
+      "why_it_is_not_persona_03": "The story is output-delivery-specific, not just generic tool limitation.",
+      "source_tier": "supporting_validation_source",
+      "confidence": "high"
+    },
+    {
+      "episode_id": "metabase_discussions::99555::01",
+      "source": "metabase_discussions",
+      "current_persona_id": "persona_05",
+      "normalized_episode": "User can produce the underlying data in a pivot table but cannot flip rows and columns to get the exact presentation-ready layout needed.",
+      "business_question": "How can this workflow be made more reliable and repeatable?",
+      "bottleneck_text": "tool_limitation",
+      "desired_output": "unspecified_output",
+      "why_it_is_strong": "Strong last-mile presentation problem with an explicit desired report shape and no obvious support-only noise.",
+      "why_it_is_not_persona_01": "The issue is not recurring export burden; it is a final-layout limitation inside the BI tool.",
+      "why_it_is_not_persona_03": "The limitation matters because a presentable deliverable is blocked, not just because the tool lacks a feature in the abstract.",
+      "source_tier": "core_representative_source",
+      "confidence": "high"
+    },
+    {
+      "episode_id": "metabase_discussions::109422::01",
+      "source": "metabase_discussions",
+      "current_persona_id": "persona_05",
+      "normalized_episode": "Measures and dimensions are merged into one list in Metabase, making it hard for end users to build or understand the intended report correctly.",
+      "business_question": "How can this workflow be made more reliable and repeatable?",
+      "bottleneck_text": "general_friction",
+      "desired_output": "unspecified_output",
+      "why_it_is_strong": "This shows a stakeholder-facing reporting usability problem, not just admin setup friction.",
+      "why_it_is_not_persona_01": "The user is blocked by final output usability and report construction clarity, not by repetitive export/rework.",
+      "why_it_is_not_persona_03": "The tool limitation is tied to report usability for consumers, which is more specific than generic workaround behavior.",
+      "source_tier": "core_representative_source",
+      "confidence": "medium_high"
+    },
+    {
+      "episode_id": "power_bi_community::5134064::01",
+      "source": "power_bi_community",
+      "current_persona_id": "persona_05",
+      "normalized_episode": "The user needs a dynamic Top-N visual behavior, but the filtering/ranking interaction breaks the intended stakeholder-facing view.",
+      "business_question": "How can this workflow be made more reliable and repeatable?",
+      "bottleneck_text": "general_friction",
+      "desired_output": "unspecified_output",
+      "why_it_is_strong": "It is a concrete last-mile dashboard behavior problem with a specific report-view goal.",
+      "why_it_is_not_persona_01": "The difficulty is not repetitive reporting labor; it is that the final dashboard behavior cannot be expressed cleanly in the tool.",
+      "why_it_is_not_persona_03": "The problem is bound to a presentation-ready output interaction, not just generic tool limitation.",
+      "source_tier": "core_representative_source",
+      "confidence": "medium"
+    },
+    {
+      "episode_id": "github_discussions::4223807485::01",
+      "source": "github_discussions",
+      "current_persona_id": "persona_05",
+      "normalized_episode": "Absolute date filters use browser timezone instead of project timezone, so shared dashboard filters produce different stakeholder-visible results depending on who set them.",
+      "business_question": "How can this workflow be made more reliable and repeatable?",
+      "bottleneck_text": "general_friction",
+      "desired_output": "dashboard_update",
+      "why_it_is_strong": "This clearly affects a shared dashboard deliverable and shows why the output cannot be trusted or reused reliably.",
+      "why_it_is_not_persona_01": "This is not export burden; it is a shared output construction and interpretation defect.",
+      "why_it_is_not_persona_03": "The tool limitation matters because it corrupts a stakeholder-facing output, not merely because a feature is missing.",
+      "source_tier": "supporting_validation_source",
+      "confidence": "medium"
+    }
+  ],
+  "selected_new_examples": [
+    {
+      "example_rank": 1,
+      "episode_id": "metabase_discussions::99555::01",
+      "source": "metabase_discussions",
+      "source_tier": "core_representative_source",
+      "selection_strength": "curated_override",
+      "coverage_selection_reason": "persona_curated_example_override",
+      "grounded_text": "I've seen many Github tickets closed so I think this has been solved. I have replicated it with the test data this simple query: image 1408×535 24.5 KB Now I have this pivot table visualisation: image 789×652 57.7 KB And that's basically the data I want to see but as you probably can guess just rows and columns flipped."
+    },
+    {
+      "example_rank": 2,
+      "episode_id": "metabase_discussions::109422::01",
+      "source": "metabase_discussions",
+      "source_tier": "core_representative_source",
+      "selection_strength": "curated_override",
+      "coverage_selection_reason": "persona_curated_example_override",
+      "grounded_text": "We are pulling data from cube that contains both measures and dimensions. In the cube query playground the measures and dimensions have their own dropdown, however in Metabase they are combined into a single list, making them indistinguishable from each other."
+    },
+    {
+      "example_rank": 3,
+      "episode_id": "github_discussions::4223807485::01",
+      "source": "github_discussions",
+      "source_tier": "supporting_validation_source",
+      "selection_strength": "curated_override",
+      "coverage_selection_reason": "persona_curated_example_override",
+      "grounded_text": "Absolute date filter inputs should use project timezone instead of browser timezone Problem Absolute date filter inputs interpret user entered datetimes in the browser's local timezone , not the project timezone. This means two users in different timezones entering the same value in a dashboard filter produce different query results."
+    },
+    {
+      "example_rank": 4,
+      "episode_id": "hubspot_community::823169::01",
+      "source": "hubspot_community",
+      "source_tier": "supporting_validation_source",
+      "selection_strength": "curated_override",
+      "coverage_selection_reason": "persona_curated_example_override",
+      "grounded_text": "e.g this year we want 10,000 leads, where are we at vs target. Goals functionality makes me select an ad account, but I just want totals in hubspot not from a particular campaign Number of Leads vs Target Hello community, hoping someone has a smart answer for me!"
+    },
+    {
+      "example_rank": 5,
+      "episode_id": "metabase_discussions::153908::01",
+      "source": "metabase_discussions",
+      "source_tier": "core_representative_source",
+      "selection_strength": "grounded",
+      "coverage_selection_reason": "bundle_grounding_materialization",
+      "grounded_text": "With the filter in the wrong position, it removes the previous year's data, loaded into the table to make the trend work. It seems that if the question already has a filter in that place, the Dashboard filter appears in the correct place, but if there is no filter, it assumes the place before the aggregations."
+    }
+  ],
+  "exact_change": {
+    "config": "Added a persona_05 curated example override in config/example_selection.yaml with four approved episode IDs from core representative and supporting validation sources only.",
+    "code": "Added a narrow config-backed curated persona example policy in src/analysis/example_selection.py that replaces generic selection only for persona_05 when the curated pool meets the configured minimum.",
+    "tests": "Added a unit test in tests/test_example_selection.py to prove persona_05 can select multiple curated last-mile reporting examples without pulling in support noise."
+  },
+  "before_after": {
+    "selected_example_count_before": 1,
+    "selected_example_count_after": 5,
+    "selected_example_ids_before": [
+      "metabase_discussions::22296::01"
+    ],
+    "selected_example_ids_after": [
+      "metabase_discussions::99555::01",
+      "metabase_discussions::109422::01",
+      "github_discussions::4223807485::01",
+      "hubspot_community::823169::01",
+      "metabase_discussions::153908::01"
+    ],
+    "selected_example_source_tiers_after": [
+      "core_representative_source",
+      "core_representative_source",
+      "supporting_validation_source",
+      "supporting_validation_source",
+      "core_representative_source"
+    ],
+    "readiness_tier_before": "blocked_or_constrained_candidate",
+    "readiness_tier_after": "blocked_or_constrained_candidate",
+    "deck_ready_claim_eligible_persona_before": false,
+    "deck_ready_claim_eligible_persona_after": false,
+    "final_usable_persona_count_before": 3,
+    "final_usable_persona_count_after": 3,
+    "production_ready_persona_count_before": 3,
+    "production_ready_persona_count_after": 3,
+    "review_ready_persona_count_before": 1,
+    "review_ready_persona_count_after": 1,
+    "deck_ready_claim_eligible_persona_count_before": 4,
+    "deck_ready_claim_eligible_persona_count_after": 4
+  },
+  "persona05_status_confirmation": {
+    "readiness_tier": "blocked_or_constrained_candidate",
+    "production_ready_persona": false,
+    "review_ready_persona": false,
+    "final_usable_persona": false,
+    "deck_ready_claim_eligible_persona": false
+  },
+  "tests_run": [
+    "python run/pipeline/06_cluster_and_score.py",
+    "python run/pipeline/07_export_xlsx.py",
+    "python run/cli/17_analysis_snapshot.py --compare-latest",
+    "python -m unittest tests.test_example_selection tests.test_deck_ready_claims tests.test_source_tier_evidence tests.test_analysis_snapshot_cli tests.test_workbook_export"
+  ],
+  "next_recommendation": "If persona_05 is revisited later, the next smallest safe move should be a boundary diagnostic or narrative clarification pass, not a claim-eligibility change."
+}

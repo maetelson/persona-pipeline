@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import unittest
 
 import pandas as pd
@@ -318,6 +319,83 @@ class ExampleSelectionTests(unittest.TestCase):
         self.assertEqual(selected.iloc[0]["selection_strength"], "weak_grounding_fallback")
         self.assertTrue(bool(selected.iloc[0]["fallback_selected"]))
         self.assertEqual(str(grounding.iloc[0]["promotion_grounding_status"]), "promoted_but_weakly_grounded")
+
+    def test_persona_05_curated_override_can_select_multiple_last_mile_examples(self) -> None:
+        config = copy.deepcopy(self.config)
+        config["curated_persona_examples"] = {
+            "persona_05": {
+                "min_selected_examples": 3,
+                "max_selected_examples": 4,
+                "allowed_source_tiers": [
+                    "core_representative_source",
+                    "supporting_validation_source",
+                ],
+                "preferred_episode_ids": [
+                    "metabase_discussions::99555::01",
+                    "power_bi_community::5134064::01",
+                    "github_discussions::4223807485::01",
+                ],
+                "override_reason": "Curated persona_05 examples emphasize last-mile reporting output construction pain.",
+            }
+        }
+        df = pd.DataFrame(
+            [
+                {
+                    "persona_id": "persona_05",
+                    "episode_id": "metabase_discussions::99555::01",
+                    "source": "metabase_discussions",
+                    "normalized_episode": "I can get the data into a pivot table, but I cannot flip rows and columns into the presentation-ready layout the team needs for the report.",
+                    "workflow_stage": "reporting",
+                    "analysis_goal": "report_speed",
+                    "bottleneck_type": "tool_limitation",
+                    "tool_dependency_mode": "bi_dashboard_heavy",
+                },
+                {
+                    "persona_id": "persona_05",
+                    "episode_id": "power_bi_community::5134064::01",
+                    "source": "power_bi_community",
+                    "normalized_episode": "I need dynamic Top-N behavior in the visual, but the ranking and filtering interaction breaks the stakeholder-facing dashboard view we need to share.",
+                    "workflow_stage": "reporting",
+                    "analysis_goal": "report_speed",
+                    "bottleneck_type": "tool_limitation",
+                    "tool_dependency_mode": "bi_dashboard_heavy",
+                },
+                {
+                    "persona_id": "persona_05",
+                    "episode_id": "github_discussions::4223807485::01",
+                    "source": "github_discussions",
+                    "normalized_episode": "Absolute date filters use browser timezone instead of project timezone, so two users see different results in the same shared dashboard output.",
+                    "workflow_stage": "reporting",
+                    "analysis_goal": "validate_numbers",
+                    "bottleneck_type": "tool_limitation",
+                    "tool_dependency_mode": "bi_dashboard_heavy",
+                },
+                {
+                    "persona_id": "persona_05",
+                    "episode_id": "stackoverflow::support-noise::01",
+                    "source": "stackoverflow",
+                    "normalized_episode": "Oauth callback fails after npm install and docker build.",
+                    "workflow_stage": "triage",
+                    "analysis_goal": "diagnose_change",
+                    "bottleneck_type": "tool_limitation",
+                    "tool_dependency_mode": "bi_dashboard_heavy",
+                },
+            ]
+        )
+        outputs = select_persona_representative_examples(df, self.axis_names, config, max_items=4)
+        selected = outputs["selected_df"]
+        self.assertEqual(selected["episode_id"].astype(str).tolist(), [
+            "metabase_discussions::99555::01",
+            "power_bi_community::5134064::01",
+            "github_discussions::4223807485::01",
+        ])
+        self.assertTrue((selected["selection_strength"].astype(str) == "curated_override").all())
+        self.assertTrue((selected["coverage_selection_reason"].astype(str) == "persona_curated_example_override").all())
+        self.assertNotIn("stackoverflow::support-noise::01", selected["episode_id"].astype(str).tolist())
+        self.assertEqual(selected["source_tier"].astype(str).tolist()[:2], [
+            "core_representative_source",
+            "core_representative_source",
+        ])
 
     def test_support_answer_and_personal_learning_snippets_do_not_beat_real_workflow_pain(self) -> None:
         df = pd.DataFrame(

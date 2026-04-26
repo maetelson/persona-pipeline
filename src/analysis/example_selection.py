@@ -9,6 +9,7 @@ from typing import Any
 
 import pandas as pd
 
+from src.analysis.source_tiers import source_tier_payload
 from src.utils.io import ensure_dir, load_yaml
 from src.utils.record_access import get_episode_id, get_record_source, get_record_text, get_record_value
 from src.utils.text import clean_text, make_dedupe_key
@@ -41,14 +42,21 @@ def select_persona_representative_examples(
         candidates = [_score_candidate(row, dominant_axes, axis_names, config) for _, row in group.iterrows()]
         ranked = sorted(candidates, key=lambda item: (-float(item["final_example_score"]), str(item["episode_id"])))
         selected = _select_diverse_examples(ranked, max_items=max_items, config=config)
+        selected = _apply_curated_persona_example_policy(
+            persona_id=str(persona_id),
+            ranked=ranked,
+            selected=selected,
+            config=config,
+            max_items=max_items,
+        )
         selected_ids = {str(item["episode_id"]) for item in selected}
         for rank, item in enumerate(selected, start=1):
             item["persona_id"] = str(persona_id)
             item["example_rank"] = rank
             item["selection_decision"] = "selected"
-            item["selection_strength"] = "grounded"
-            item["fallback_selected"] = False
-            item["coverage_selection_reason"] = "score_plus_diversity_policy"
+            item["selection_strength"] = str(item.get("selection_strength", "grounded") or "grounded")
+            item["fallback_selected"] = bool(item.get("fallback_selected", False))
+            item["coverage_selection_reason"] = str(item.get("coverage_selection_reason", "score_plus_diversity_policy") or "score_plus_diversity_policy")
             selected_rows.append(item)
         for item in ranked:
             item["persona_id"] = str(persona_id)
@@ -509,9 +517,12 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
     top_positive_signals = _top_signals(score_breakdown, positive=True)
     top_negative_signals = _top_signals(score_breakdown, positive=False)
     rejection_reason = _rejection_reason(score_breakdown, quote_quality)
+    source = str(get_record_source(row) or "")
+    tier_payload = source_tier_payload(source)
     candidate = {
         "episode_id": get_episode_id(row),
-        "source": get_record_source(row),
+        "source": source,
+        "source_tier": str(tier_payload["source_tier"]),
         "grounded_text": snippet,
         "quote_quality": quote_quality,
         "top_positive_signals": json.dumps(top_positive_signals, ensure_ascii=False),
@@ -538,6 +549,77 @@ def _score_candidate(row: pd.Series, dominant_axes: dict[str, str], axis_names: 
     candidate["fallback_eligible"] = bool(candidate["grounding_strength"] == "weak" and _allow_borderline_fallback(candidate, config))
     candidate["grounding_reason"] = _grounding_reason(candidate)
     return candidate
+
+
+def _apply_curated_persona_example_policy(
+    *,
+    persona_id: str,
+    ranked: list[dict[str, Any]],
+    selected: list[dict[str, Any]],
+    config: dict[str, Any],
+    max_items: int,
+) -> list[dict[str, Any]]:
+    """Apply narrow persona-specific curated example overrides without changing generic selection behavior."""
+    curated_cfg = (
+        config.get("curated_persona_examples", {}).get(str(persona_id), {})
+        if isinstance(config.get("curated_persona_examples", {}), dict)
+        else {}
+    )
+    if not curated_cfg:
+        return selected
+
+    preferred_ids = [str(value).strip() for value in list(curated_cfg.get("preferred_episode_ids", []) or []) if str(value).strip()]
+    if not preferred_ids:
+        return selected
+
+    min_selected_examples = max(1, int(curated_cfg.get("min_selected_examples", 1) or 1))
+    max_selected_examples = max(min_selected_examples, int(curated_cfg.get("max_selected_examples", max_items) or max_items))
+    max_selected_examples = min(max_selected_examples, max_items)
+    allowed_tiers = {
+        str(value).strip()
+        for value in list(
+            curated_cfg.get(
+                "allowed_source_tiers",
+                ["core_representative_source", "supporting_validation_source"],
+            )
+            or []
+        )
+        if str(value).strip()
+    }
+    override_reason = str(
+        curated_cfg.get(
+            "override_reason",
+            "Curated example override preserves a clearer persona boundary than the generic selector for this persona.",
+        )
+        or ""
+    ).strip()
+
+    ranked_lookup = {str(item.get("episode_id", "") or ""): item for item in ranked}
+    curated: list[dict[str, Any]] = []
+    for episode_id in preferred_ids:
+        candidate = ranked_lookup.get(episode_id)
+        if candidate is None:
+            continue
+        source_tier = str(candidate.get("source_tier", "") or "")
+        if allowed_tiers and source_tier not in allowed_tiers:
+            continue
+        curated_candidate = dict(candidate)
+        curated_candidate["selection_strength"] = "curated_override"
+        curated_candidate["coverage_selection_reason"] = "persona_curated_example_override"
+        curated_candidate["fallback_selected"] = False
+        curated_candidate["curated_example_override"] = True
+        curated_candidate["curated_example_override_reason"] = override_reason
+        curated_candidate["why_selected"] = (
+            f"{override_reason} "
+            + str(curated_candidate.get("why_selected", "") or "")
+        ).strip()
+        curated.append(curated_candidate)
+        if len(curated) >= max_selected_examples:
+            break
+
+    if len(curated) < min_selected_examples:
+        return selected
+    return curated
 
 
 def _select_diverse_examples(candidates: list[dict[str, Any]], max_items: int, config: dict[str, Any]) -> list[dict[str, Any]]:

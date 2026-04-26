@@ -272,3 +272,20 @@ subpatterns:
     - why did
     - root cause
     - drove it
+
+curated_persona_examples:
+  persona_05:
+    min_selected_examples: 3
+    max_selected_examples: 4
+    allowed_source_tiers:
+      - core_representative_source
+      - supporting_validation_source
+    preferred_episode_ids:
+      - metabase_discussions::99555::01
+      - metabase_discussions::109422::01
+      - github_discussions::4223807485::01
+      - hubspot_community::823169::01
+    override_reason: >
+      Curated persona_05 example override keeps the representative-example layer focused on
+      last-mile reporting output construction pain rather than generic support or generic
+      tool-limitation spillover.
