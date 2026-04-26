@@ -46,6 +46,7 @@ from src.analysis.summary import (
     build_quality_checks_df,
     build_taxonomy_summary,
 )
+from src.analysis.source_tiers import source_tier_counts
 from src.analysis.workbook_bundle import assemble_workbook_frames, validate_workbook_frames, write_workbook_bundle
 from src.exporters.xlsx_exporter import export_workbook_from_frames
 from src.labeling.unknown_reasons import build_unknown_reason_breakdown
@@ -245,6 +246,7 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         quality_checks=quality_checks,
         stage_counts=stage_counts,
         cluster_stats_df=persona_service_outputs["cluster_stats_df"],
+        source_balance_audit_df=source_balance_audit_df,
     )
     survival_funnel_df = build_survival_funnel_by_source(source_stage_counts_df)
     persona_service_outputs["quality_checks_df"] = append_source_survival_rows(
@@ -532,6 +534,7 @@ def _build_final_overview_df(
     quality_checks: dict[str, Any],
     stage_counts: dict[str, int],
     cluster_stats_df: pd.DataFrame,
+    source_balance_audit_df: pd.DataFrame | None = None,
     persona_core_labeled_rows: int | None = None,
 ) -> pd.DataFrame:
     """Render overview directly from the evaluated quality result and stable report counts."""
@@ -557,6 +560,12 @@ def _build_final_overview_df(
         for row in axis_names
         if str(row.get("axis_name", "")).strip()
     )
+    tier_counts = source_tier_counts(source_balance_audit_df) if source_balance_audit_df is not None and not source_balance_audit_df.empty else {
+        "core_representative_source_count": 0,
+        "supporting_validation_source_count": 0,
+        "exploratory_edge_source_count": 0,
+        "excluded_from_deck_ready_core_source_count": 0,
+    }
     rows = [
         {"metric": "persona_readiness_state", "value": quality_checks.get("persona_readiness_state", "exploratory_only")},
         {"metric": "persona_readiness_label", "value": quality_checks.get("persona_readiness_label", "Hypothesis Material")},
@@ -616,6 +625,10 @@ def _build_final_overview_df(
         {"metric": "largest_source_influence_share_pct", "value": quality_checks.get("largest_source_influence_share_pct", 0.0)},
         {"metric": "weak_source_cost_center_count", "value": quality_checks.get("weak_source_cost_center_count", 0)},
         {"metric": "weak_source_cost_centers", "value": quality_checks.get("weak_source_cost_centers", "")},
+        {"metric": "core_representative_source_count", "value": tier_counts["core_representative_source_count"]},
+        {"metric": "supporting_validation_source_count", "value": tier_counts["supporting_validation_source_count"]},
+        {"metric": "exploratory_edge_source_count", "value": tier_counts["exploratory_edge_source_count"]},
+        {"metric": "excluded_from_deck_ready_core_source_count", "value": tier_counts["excluded_from_deck_ready_core_source_count"]},
         {"metric": "fix_now_source_count", "value": quality_checks.get("fix_now_source_count", 0)},
         {"metric": "tune_soon_source_count", "value": quality_checks.get("tune_soon_source_count", 0)},
         {"metric": "promoted_candidate_persona_count", "value": quality_checks.get("promoted_candidate_persona_count", promotion_visibility_persona_count)},

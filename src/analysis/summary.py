@@ -8,6 +8,7 @@ import pandas as pd
 from src.analysis.diagnostics import count_raw_jsonl_by_source
 from src.analysis.stage_counts import build_pipeline_stage_counts, build_pipeline_stage_rows
 from src.analysis.quality_status import build_quality_metrics, quality_display_thresholds
+from src.analysis.source_tiers import annotate_source_tiers
 from src.utils.source_registry import load_enabled_source_ids
 from src.utils.pipeline_schema import (
     DENOMINATOR_EPISODE_ROWS,
@@ -127,7 +128,7 @@ def build_final_source_distribution(
                 "denominator_value": total_labeled,
             }
         )
-    return pd.DataFrame(rows)
+    return annotate_source_tiers(pd.DataFrame(rows))
 
 
 def _workbook_source_candidates(root_dir: Path | None, source_sets: list[set[str]]) -> set[str]:

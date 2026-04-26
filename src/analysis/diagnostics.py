@@ -8,6 +8,7 @@ from typing import Any
 import pandas as pd
 
 from src.analysis.quality_status import QUALITY_STATUS_POLICY, flatten_quality_status_result
+from src.analysis.source_tiers import SOURCE_TIER_COLUMNS, annotate_source_tiers
 from src.utils.io import load_yaml, read_parquet
 from src.utils.source_registry import load_enabled_source_ids
 from src.utils.pipeline_schema import (
@@ -388,6 +389,7 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
         return pd.DataFrame(
             columns=[
                 "source",
+                *SOURCE_TIER_COLUMNS,
                 "priority_tier",
                 "primary_collapse_stage",
                 "recommended_action",
@@ -720,6 +722,7 @@ def build_source_diagnostics(source_stage_counts_df: pd.DataFrame) -> pd.DataFra
             .drop(columns=["_row_order", "_section_order", "_metric_order"])
             .reset_index(drop=True)
         )
+        result = annotate_source_tiers(result)
     _validate_source_diagnostics_frame(result)
     return result
 
@@ -809,6 +812,7 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
     frame["source_specific_next_check"] = frame["source_specific_next_check"].astype(str)
     preferred = [
         "source",
+        *SOURCE_TIER_COLUMNS,
         "raw_record_count",
         "valid_post_count",
         "prefiltered_valid_post_count",
@@ -843,7 +847,11 @@ def build_source_balance_audit(source_stage_counts_df: pd.DataFrame) -> pd.DataF
         "priority_tier",
     ]
     available = [column for column in preferred if column in frame.columns]
-    return frame[available].sort_values(["blended_influence_share_pct", "labeled_episode_count", "source"], ascending=[False, False, True]).reset_index(drop=True)
+    return (
+        annotate_source_tiers(frame[available])
+        .sort_values(["blended_influence_share_pct", "labeled_episode_count", "source"], ascending=[False, False, True])
+        .reset_index(drop=True)
+    )
 
 
 def build_weak_source_triage(source_balance_audit_df: pd.DataFrame) -> pd.DataFrame:

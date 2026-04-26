@@ -6,6 +6,14 @@
 - No production policy change is implemented by this document.
 - No thresholds, source configs, clustering rules, labeling rules, promotion logic, workbook semantics, or `final_usable_persona` semantics are changed here.
 
+## Phase 1 Implementation Note
+
+Phase 1 of this policy is limited to workbook-facing source-tier annotation only.
+
+- `source_balance_audit.csv`, `source_diagnostics.csv`, and `source_distribution.csv` may carry deterministic source-tier fields.
+- `overview.csv` may carry aggregate source-tier counts.
+- No readiness state, persona count, weak-source denominator behavior, or XLSX presentation semantics change in Phase 1.
+
 ## Purpose
 
 Define a transparent deck-ready core policy that separates:
