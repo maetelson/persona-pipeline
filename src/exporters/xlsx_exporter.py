@@ -648,7 +648,7 @@ def _write_readme_sheet(workbook) -> None:
         ["denominator_type_key", "The semantic denominator family. Cross-check this against metric_glossary before comparing row counts, source counts, or persona counts."],
         ["", ""],
         ["Review Tips", ""],
-        ["Readiness gate", "If persona_readiness_state is below deck_ready, no sheet in this workbook may be interpreted as a final persona asset. Treat persona_summary and cluster_stats as hypothesis or review material only."],
+        ["Readiness gate", "If persona_readiness_state is below deck_ready, no sheet in this workbook may be interpreted as a final persona asset. Treat persona_summary and cluster_stats as hypothesis or review material only. In the current release, workbook readiness remains reviewable_but_not_deck_ready unless a separate readiness policy change is approved."],
         ["Production-ready personas", "Production-ready personas are strict final usable outputs."],
         ["Review-ready personas", "Review-ready personas are strong candidates for analyst review, but are not included in final usable persona count."],
         ["Deck-ready claim eligible", "Deck-ready claim eligible is a discussion and claim-support flag only. It is not the same as production-ready or final usable."],

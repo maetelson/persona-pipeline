@@ -1,0 +1,270 @@
+{
+  "final_release_validation_decision": "accepted",
+  "workbook_readiness": {
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "overall_status": "WARN",
+    "quality_flag": "EXPLORATORY"
+  },
+  "final_artifact_paths": {
+    "overview_csv": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\data\\analysis\\overview.csv",
+    "persona_summary_csv": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\data\\analysis\\persona_summary.csv",
+    "cluster_stats_csv": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\data\\analysis\\cluster_stats.csv",
+    "persona_promotion_path_debug_csv": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\data\\analysis\\persona_promotion_path_debug.csv",
+    "workbook_xlsx": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\data\\output\\persona_pipeline_output.xlsx"
+  },
+  "final_count_interpretation": {
+    "final_usable_persona_count": 3,
+    "production_ready_persona_count": 3,
+    "review_ready_persona_count": 1,
+    "deck_ready_claim_eligible_persona_count": 4,
+    "production_ready_equals_final_usable": true,
+    "claim_eligible_personas_include_review_ready_only_persona": true,
+    "workbook_readiness_unchanged": true
+  },
+  "persona_treatment_table": {
+    "persona_01": {
+      "readiness_tier": "production_ready_persona",
+      "production_ready_persona": true,
+      "review_ready_persona": false,
+      "final_usable_persona": true,
+      "deck_ready_claim_eligible_persona": true,
+      "deck_ready_claim_evidence_status": "core_anchored",
+      "deck_ready_claim_reason": "Production-ready persona is core-anchored with low exploratory and excluded dependency risk, so deck-ready claim wording is allowed.",
+      "core_anchor_policy_status": "pass",
+      "supporting_validation_policy_status": "strengthens_claim",
+      "exploratory_dependency_policy_status": "pass",
+      "excluded_source_dependency_policy_status": "pass"
+    },
+    "persona_02": {
+      "readiness_tier": "production_ready_persona",
+      "production_ready_persona": true,
+      "review_ready_persona": false,
+      "final_usable_persona": true,
+      "deck_ready_claim_eligible_persona": true,
+      "deck_ready_claim_evidence_status": "core_anchored",
+      "deck_ready_claim_reason": "Production-ready persona is core-anchored with low exploratory and excluded dependency risk, so deck-ready claim wording is allowed.",
+      "core_anchor_policy_status": "pass",
+      "supporting_validation_policy_status": "strengthens_claim",
+      "exploratory_dependency_policy_status": "pass",
+      "excluded_source_dependency_policy_status": "pass"
+    },
+    "persona_03": {
+      "readiness_tier": "production_ready_persona",
+      "production_ready_persona": true,
+      "review_ready_persona": false,
+      "final_usable_persona": true,
+      "deck_ready_claim_eligible_persona": true,
+      "deck_ready_claim_evidence_status": "core_anchored",
+      "deck_ready_claim_reason": "Production-ready persona is core-anchored with low exploratory and excluded dependency risk, so deck-ready claim wording is allowed.",
+      "core_anchor_policy_status": "pass",
+      "supporting_validation_policy_status": "strengthens_claim",
+      "exploratory_dependency_policy_status": "pass",
+      "excluded_source_dependency_policy_status": "pass"
+    },
+    "persona_04": {
+      "readiness_tier": "review_ready_persona",
+      "production_ready_persona": false,
+      "review_ready_persona": true,
+      "final_usable_persona": false,
+      "deck_ready_claim_eligible_persona": true,
+      "deck_ready_claim_evidence_status": "core_anchored",
+      "deck_ready_claim_reason": "persona_04 is a core-anchored approved review-ready persona for analyst/deck discussion only; it remains non-production and outside the final usable count.",
+      "core_anchor_policy_status": "pass",
+      "supporting_validation_policy_status": "strengthens_claim",
+      "exploratory_dependency_policy_status": "pass",
+      "excluded_source_dependency_policy_status": "pass"
+    },
+    "persona_05": {
+      "readiness_tier": "blocked_or_constrained_candidate",
+      "production_ready_persona": false,
+      "review_ready_persona": false,
+      "final_usable_persona": false,
+      "deck_ready_claim_eligible_persona": false,
+      "deck_ready_claim_evidence_status": "core_anchored",
+      "deck_ready_claim_reason": "Blocked or constrained persona remains ineligible for deck-ready claim wording.",
+      "core_anchor_policy_status": "pass",
+      "supporting_validation_policy_status": "strengthens_claim",
+      "exploratory_dependency_policy_status": "pass",
+      "excluded_source_dependency_policy_status": "pass"
+    }
+  },
+  "csv_validation_result": {
+    "passed": true,
+    "count_checks": {
+      "final_usable_persona_count": {
+        "actual": 3,
+        "expected": 3,
+        "passed": true
+      },
+      "production_ready_persona_count": {
+        "actual": 3,
+        "expected": 3,
+        "passed": true
+      },
+      "review_ready_persona_count": {
+        "actual": 1,
+        "expected": 1,
+        "passed": true
+      },
+      "deck_ready_claim_eligible_persona_count": {
+        "actual": 4,
+        "expected": 4,
+        "passed": true
+      }
+    },
+    "checks": {
+      "counts_match_expected": true,
+      "production_ready_equals_final_usable": true,
+      "claim_does_not_imply_final_usable": true,
+      "claim_does_not_imply_production_ready": true,
+      "summary_cluster_agree": true,
+      "promotion_debug_agrees": true,
+      "persona_treatment_expected": true
+    },
+    "summary_cluster_field_agreement": {
+      "production_ready_persona": true,
+      "review_ready_persona": true,
+      "final_usable_persona": true,
+      "deck_ready_claim_eligible_persona": true,
+      "deck_ready_claim_evidence_status": true,
+      "deck_ready_claim_reason": true,
+      "core_anchor_policy_status": true,
+      "supporting_validation_policy_status": true,
+      "exploratory_dependency_policy_status": true,
+      "excluded_source_dependency_policy_status": true,
+      "readiness_tier": true
+    },
+    "promotion_debug_field_agreement": {
+      "production_ready_persona": true,
+      "review_ready_persona": true,
+      "final_usable_persona": true,
+      "deck_ready_claim_eligible_persona": true,
+      "deck_ready_claim_evidence_status": true,
+      "deck_ready_claim_reason": true,
+      "core_anchor_policy_status": true,
+      "supporting_validation_policy_status": true,
+      "exploratory_dependency_policy_status": true,
+      "excluded_source_dependency_policy_status": true,
+      "readiness_tier": true
+    }
+  },
+  "xlsx_validation_result": {
+    "passed": true,
+    "checks": {
+      "overview_counts_separate": true,
+      "persona_summary_claim_fields_near_front": true,
+      "cluster_stats_claim_fields_near_front": true,
+      "readme_checks": true,
+      "no_claim_as_final_usable_headline": true,
+      "no_review_ready_as_production_headline": true
+    },
+    "overview_sheet_counts": {
+      "final_usable_persona_count": 3,
+      "production_ready_persona_count": 3,
+      "review_ready_persona_count": 1,
+      "deck_ready_claim_eligible_persona_count": 4
+    },
+    "persona_summary_header_positions": {
+      "readiness_tier": 5,
+      "production_ready_persona": 6,
+      "review_ready_persona": 7,
+      "final_usable_persona": 8,
+      "deck_ready_claim_eligible_persona": 9,
+      "deck_ready_claim_evidence_status": 10,
+      "deck_ready_claim_reason": 11,
+      "core_anchor_policy_status": 12,
+      "supporting_validation_policy_status": 13,
+      "exploratory_dependency_policy_status": 14,
+      "excluded_source_dependency_policy_status": 15
+    },
+    "cluster_stats_header_positions": {
+      "readiness_tier": 2,
+      "production_ready_persona": 3,
+      "review_ready_persona": 4,
+      "final_usable_persona": 5,
+      "deck_ready_claim_eligible_persona": 6,
+      "deck_ready_claim_evidence_status": 7,
+      "deck_ready_claim_reason": 8,
+      "core_anchor_policy_status": 9,
+      "supporting_validation_policy_status": 10,
+      "exploratory_dependency_policy_status": 11,
+      "excluded_source_dependency_policy_status": 12
+    },
+    "readme_checks": {
+      "distinguishes_claim_eligibility": true,
+      "explains_persona_04": true,
+      "explains_persona_05": true,
+      "preserves_workbook_readiness": true
+    }
+  },
+  "source_tier_evidence_validation_result": {
+    "passed": true,
+    "checks": {
+      "source_tier_fields_present": true,
+      "claims_backed_by_core_anchor": true,
+      "persona_05_blocked": true,
+      "supporting_validation_not_substitute": true,
+      "exploratory_excluded_risk_not_incorrectly_passing": true
+    },
+    "source_tier_field_presence": {
+      "source_balance_audit": true,
+      "source_diagnostics": true
+    },
+    "core_anchor_checks": {
+      "persona_01": {
+        "has_core_representative_anchor": true,
+        "core_anchor_strength": "strong",
+        "exploratory_dependency_risk": "low",
+        "excluded_source_dependency_risk": "low",
+        "claim_eligible": true,
+        "passed": true
+      },
+      "persona_02": {
+        "has_core_representative_anchor": true,
+        "core_anchor_strength": "strong",
+        "exploratory_dependency_risk": "low",
+        "excluded_source_dependency_risk": "low",
+        "claim_eligible": true,
+        "passed": true
+      },
+      "persona_03": {
+        "has_core_representative_anchor": true,
+        "core_anchor_strength": "strong",
+        "exploratory_dependency_risk": "low",
+        "excluded_source_dependency_risk": "low",
+        "claim_eligible": true,
+        "passed": true
+      },
+      "persona_04": {
+        "has_core_representative_anchor": true,
+        "core_anchor_strength": "strong",
+        "exploratory_dependency_risk": "low",
+        "excluded_source_dependency_risk": "low",
+        "claim_eligible": true,
+        "passed": true
+      }
+    },
+    "persona_05_block_check": {
+      "claim_eligible": false,
+      "blocked_reason": "weak-source dominated or insufficiently cross-source robust | thin evidence | workbook policy constraint: top_3_cluster_share_of_core_labeled | weak_source_cost_centers_present",
+      "passed": true
+    }
+  },
+  "tests_run": [
+    "python -m unittest tests.test_workbook_export",
+    "python -m unittest tests.test_deck_ready_claims",
+    "python -m unittest tests.test_source_tier_evidence",
+    "python -m unittest tests.test_source_tier_annotations",
+    "python -m unittest tests.test_analysis_snapshot_cli",
+    "python -m unittest tests.test_persona_workbook_regressions"
+  ],
+  "warnings": [
+    "Claim-eligible persona count exceeds production-ready persona count because persona_04 is discussion-only claim-eligible. This is expected and must remain explicitly explained.",
+    "Workbook readiness remains reviewable_but_not_deck_ready; claim eligibility does not upgrade workbook readiness."
+  ],
+  "remaining_risks": [
+    "Deck-ready claim eligibility can still be misread as production readiness if downstream deck language drops the explicit workbook distinction.",
+    "Workbook readiness is still reviewable_but_not_deck_ready, so the claim layer must not be used as a substitute for readiness promotion.",
+    "persona_04 remains the most interpretation-sensitive case because it is claim-eligible but still non-production and outside the final usable count."
+  ]
+}
