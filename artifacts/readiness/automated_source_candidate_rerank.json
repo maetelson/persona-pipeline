@@ -1,0 +1,211 @@
+{
+  "rejection_memory": [
+    {
+      "source": "tableau_community",
+      "prior_status": "rejected_for_now",
+      "rejection_reason": "Automated HTML or API access was already judged too unstable or high-risk for bounded collection.",
+      "retry_allowed": false,
+      "retry_condition": "Only if a new clearly public and stable HTML or API path is documented."
+    },
+    {
+      "source": "supermetrics_community",
+      "prior_status": "pilot_failed",
+      "rejection_reason": "Bounded HTML-only pilot failed at listing discovery with zero discovered threads and zero usable rows.",
+      "retry_allowed": false,
+      "retry_condition": "Only if new artifacts show stable public listing access from scripted fetches."
+    },
+    {
+      "source": "looker_studio_community",
+      "prior_status": "rejected_for_now",
+      "rejection_reason": "Current context says prior yield was too low, and no repo artifact contradicts that memory.",
+      "retry_allowed": false,
+      "retry_condition": "Only if a new public listing or JSON endpoint is documented and shown to produce stable yield."
+    }
+  ],
+  "ranked_candidates": [
+    {
+      "candidate_source": "reddit_seed_expansion_revops_analytics_bundle",
+      "source_family": "reddit_existing_collector",
+      "access_method": "existing public Reddit collector path",
+      "expected_yield": "high",
+      "subscores": {
+        "target_user_fit": 4,
+        "bi_analytics_workflow_fit": 4,
+        "post_dashboard_interpretation_fit": 4,
+        "persona_01_contribution_likelihood": 4,
+        "persona_02_contribution_likelihood": 4,
+        "persona_03_contribution_likelihood": 3,
+        "persona_04_contribution_likelihood": 4,
+        "automated_access_feasibility": 5,
+        "expected_public_yield": 5,
+        "parser_complexity_reverse": 5,
+        "maintenance_risk_reverse": 4,
+        "support_setup_noise_risk_reverse": 3
+      },
+      "methodological_fit_score": 24,
+      "automated_feasibility_score": 25,
+      "total_score": 49,
+      "disqualified": false,
+      "disqualification_reason": "",
+      "recommended_action": "expand_existing_reddit_seed"
+    },
+    {
+      "candidate_source": "github_discussions_repo_expansion_bi_tools",
+      "source_family": "github_discussions_existing_collector",
+      "access_method": "existing public GitHub Discussions collector path",
+      "expected_yield": "medium_high",
+      "subscores": {
+        "target_user_fit": 3,
+        "bi_analytics_workflow_fit": 4,
+        "post_dashboard_interpretation_fit": 3,
+        "persona_01_contribution_likelihood": 2,
+        "persona_02_contribution_likelihood": 4,
+        "persona_03_contribution_likelihood": 4,
+        "persona_04_contribution_likelihood": 3,
+        "automated_access_feasibility": 5,
+        "expected_public_yield": 4,
+        "parser_complexity_reverse": 5,
+        "maintenance_risk_reverse": 4,
+        "support_setup_noise_risk_reverse": 2
+      },
+      "methodological_fit_score": 23,
+      "automated_feasibility_score": 20,
+      "total_score": 43,
+      "disqualified": false,
+      "disqualification_reason": "",
+      "recommended_action": "expand_existing_github_discussions_seed"
+    },
+    {
+      "candidate_source": "stackoverflow_tag_expansion_reporting_bi",
+      "source_family": "stackoverflow_existing_collector",
+      "access_method": "existing Stack Exchange API and HTML collector path",
+      "expected_yield": "high",
+      "subscores": {
+        "target_user_fit": 3,
+        "bi_analytics_workflow_fit": 4,
+        "post_dashboard_interpretation_fit": 3,
+        "persona_01_contribution_likelihood": 3,
+        "persona_02_contribution_likelihood": 3,
+        "persona_03_contribution_likelihood": 4,
+        "persona_04_contribution_likelihood": 3,
+        "automated_access_feasibility": 5,
+        "expected_public_yield": 5,
+        "parser_complexity_reverse": 5,
+        "maintenance_risk_reverse": 4,
+        "support_setup_noise_risk_reverse": 1
+      },
+      "methodological_fit_score": 23,
+      "automated_feasibility_score": 17,
+      "total_score": 40,
+      "disqualified": false,
+      "disqualification_reason": "",
+      "recommended_action": "expand_existing_stackoverflow_tags"
+    },
+    {
+      "candidate_source": "salesforce_trailblazer_reports_dashboards",
+      "source_family": "new_vendor_community",
+      "access_method": "uncertain public HTML, likely account-gated in practice",
+      "expected_yield": "medium",
+      "methodological_fit_score": 21,
+      "automated_feasibility_score": 7,
+      "total_score": 28,
+      "disqualified": true,
+      "disqualification_reason": "Public access looks inconsistent and parser risk is too high for the next bounded pass.",
+      "recommended_action": "stop_for_now"
+    },
+    {
+      "candidate_source": "looker_studio_community",
+      "source_family": "new_vendor_community",
+      "access_method": "public Google help surface, but prior yield memory is negative",
+      "expected_yield": "medium_low",
+      "methodological_fit_score": 20,
+      "automated_feasibility_score": 9,
+      "total_score": 29,
+      "disqualified": true,
+      "disqualification_reason": "Prior low-yield rejection memory and high support/developer noise risk.",
+      "recommended_action": "stop_for_now"
+    },
+    {
+      "candidate_source": "supermetrics_community",
+      "source_family": "new_vendor_community",
+      "access_method": "public HTML pilot already attempted",
+      "expected_yield": "none",
+      "methodological_fit_score": 26,
+      "automated_feasibility_score": 6,
+      "total_score": 32,
+      "disqualified": true,
+      "disqualification_reason": "Prior pilot failed with zero discovered threads and zero usable rows.",
+      "recommended_action": "stop_for_now"
+    },
+    {
+      "candidate_source": "thoughtspot_community",
+      "source_family": "new_vendor_community",
+      "access_method": "login-gated or unstable public surface",
+      "expected_yield": "low",
+      "methodological_fit_score": 18,
+      "automated_feasibility_score": 6,
+      "total_score": 24,
+      "disqualified": true,
+      "disqualification_reason": "Login-first surface and high maintenance risk.",
+      "recommended_action": "stop_for_now"
+    },
+    {
+      "candidate_source": "tableau_community",
+      "source_family": "new_vendor_community",
+      "access_method": "unstable or unclear public access for bounded collection",
+      "expected_yield": "unknown",
+      "methodological_fit_score": 30,
+      "automated_feasibility_score": 7,
+      "total_score": 37,
+      "disqualified": true,
+      "disqualification_reason": "Explicit do-not-retry memory.",
+      "recommended_action": "stop_for_now"
+    }
+  ],
+  "recommended_next_action": "expand_existing_reddit_seed",
+  "selected_next_source_or_family": {
+    "source_name": "reddit_existing_collector",
+    "bundle_name": "reddit_revops_analytics_bundle",
+    "why_better_than_tableau_supermetrics_looker": [
+      "It uses a stable, already-supported collector family.",
+      "It avoids the access failures and prior rejection memory attached to Tableau, Supermetrics, and Looker Studio.",
+      "It is more likely to add operator-language evidence for persona_01 and persona_04 without new parser risk."
+    ],
+    "pilot_size": "100 to 150 bounded post candidates across the new subreddit bundle",
+    "expected_failure_mode": "generic career, productivity, or broad chatter reduces valid-candidate ratio",
+    "pilot_command_or_script_to_create_next": "run/diagnostics/38_pilot_reddit_seed_expansion.py"
+  },
+  "disqualified_sources": [
+    {
+      "source": "tableau_community",
+      "reason": "Explicit rejection memory and no allowed manual sampling path."
+    },
+    {
+      "source": "supermetrics_community",
+      "reason": "Pilot already failed with zero discovered threads and zero usable rows."
+    },
+    {
+      "source": "looker_studio_community",
+      "reason": "Prior low-yield rejection memory and likely support-heavy surface."
+    },
+    {
+      "source": "salesforce_trailblazer_reports_dashboards",
+      "reason": "Public access uncertainty and likely account-gated behavior."
+    },
+    {
+      "source": "thoughtspot_community",
+      "reason": "Login-first surface and high maintenance risk."
+    }
+  ],
+  "assumptions": [
+    "Expanding a proven collector family is safer than opening a new unstable vendor community.",
+    "Reddit can add useful operator-language evidence if subreddit selection stays narrow.",
+    "The next source-expansion step should maximize learning per unit of implementation risk."
+  ],
+  "risks": [
+    "Reddit expansion can still overpull generic chatter if subreddit scope is too broad.",
+    "Even with stable access, new subreddit bundles may add support-like noise rather than persona-core evidence.",
+    "GitHub Discussions may still outperform Reddit in actual pilot quality for persona_02 and persona_03.",
+    "This ranking favors feasibility and yield, not ideal theoretical representativeness."
+  ]
+}

@@ -1,0 +1,215 @@
+{
+  "status": "spec_only",
+  "source_family": "existing_github_discussions_collector",
+  "recommended_next_step": "implement_bounded_github_discussions_pilot",
+  "do_not": [
+    "activate_new_github_source_in_production",
+    "change_production_configs",
+    "change_clustering",
+    "change_labeling",
+    "change_thresholds",
+    "change_workbook_policy",
+    "change_source_tiers",
+    "change_review_ready_logic",
+    "change_deck_ready_claim_logic",
+    "change_final_usable_persona_semantics",
+    "retry_reddit_revops_analytics_bundle",
+    "retry_tableau",
+    "retry_supermetrics",
+    "retry_looker_studio"
+  ],
+  "candidate_repo_criteria": [
+    "analytics, BI, dashboard, reporting, semantic-layer, or product-analytics tools",
+    "used by analysts, operators, product teams, or data teams",
+    "likely to contain dashboard, report, metric trust, export, drill-down, or explanation friction",
+    "public and accessible through GitHub Discussions",
+    "active enough to produce meaningful public volume"
+  ],
+  "avoid_repo_patterns": [
+    "pure library debugging",
+    "installation or deployment support only",
+    "generic feature requests without user pain context",
+    "CI/CD or infrastructure issues",
+    "authentication or permission troubleshooting",
+    "beginner coding help",
+    "low-volume discussions"
+  ],
+  "repo_shortlist": [
+    {
+      "repo_name": "apache/superset",
+      "discussions_enabled": "yes",
+      "estimated_discussion_volume": "high",
+      "likely_persona_01_contribution": "medium",
+      "likely_persona_02_contribution": "medium",
+      "likely_persona_03_contribution": "strong",
+      "likely_persona_04_contribution": "medium",
+      "developer_support_noise_risk": "medium",
+      "implementation_difficulty": "low",
+      "expected_source_tier": "strong_supporting_validation_source_candidate",
+      "pilot_priority": "P1"
+    },
+    {
+      "repo_name": "lightdash/lightdash",
+      "discussions_enabled": "yes",
+      "estimated_discussion_volume": "medium_high",
+      "likely_persona_01_contribution": "medium",
+      "likely_persona_02_contribution": "medium",
+      "likely_persona_03_contribution": "strong",
+      "likely_persona_04_contribution": "medium",
+      "developer_support_noise_risk": "medium",
+      "implementation_difficulty": "low",
+      "expected_source_tier": "strong_supporting_validation_source_candidate",
+      "pilot_priority": "P1"
+    },
+    {
+      "repo_name": "evidence-dev/evidence",
+      "discussions_enabled": "yes",
+      "estimated_discussion_volume": "medium",
+      "likely_persona_01_contribution": "medium",
+      "likely_persona_02_contribution": "medium",
+      "likely_persona_03_contribution": "medium_strong",
+      "likely_persona_04_contribution": "low_medium",
+      "developer_support_noise_risk": "medium",
+      "implementation_difficulty": "low",
+      "expected_source_tier": "supporting_validation_source_candidate",
+      "pilot_priority": "P1"
+    },
+    {
+      "repo_name": "plausible/analytics",
+      "discussions_enabled": "yes",
+      "estimated_discussion_volume": "medium",
+      "likely_persona_01_contribution": "low_medium",
+      "likely_persona_02_contribution": "medium",
+      "likely_persona_03_contribution": "medium",
+      "likely_persona_04_contribution": "strong",
+      "developer_support_noise_risk": "medium_low",
+      "implementation_difficulty": "low",
+      "expected_source_tier": "supporting_validation_source_candidate",
+      "pilot_priority": "P1"
+    },
+    {
+      "repo_name": "getredash/redash",
+      "discussions_enabled": "yes",
+      "estimated_discussion_volume": "medium_low",
+      "likely_persona_01_contribution": "medium",
+      "likely_persona_02_contribution": "low_medium",
+      "likely_persona_03_contribution": "medium",
+      "likely_persona_04_contribution": "medium",
+      "developer_support_noise_risk": "medium",
+      "implementation_difficulty": "low",
+      "expected_source_tier": "supporting_validation_source_candidate",
+      "pilot_priority": "P2"
+    },
+    {
+      "repo_name": "grafana/grafana",
+      "discussions_enabled": "yes",
+      "estimated_discussion_volume": "high",
+      "likely_persona_01_contribution": "low",
+      "likely_persona_02_contribution": "low_medium",
+      "likely_persona_03_contribution": "medium",
+      "likely_persona_04_contribution": "low_medium",
+      "developer_support_noise_risk": "high",
+      "implementation_difficulty": "low",
+      "expected_source_tier": "low_value_supporting_source_candidate",
+      "pilot_priority": "P3"
+    },
+    {
+      "repo_name": "dbt-labs/dbt-core",
+      "discussions_enabled": "yes",
+      "estimated_discussion_volume": "high",
+      "likely_persona_01_contribution": "low",
+      "likely_persona_02_contribution": "medium",
+      "likely_persona_03_contribution": "medium",
+      "likely_persona_04_contribution": "low_medium",
+      "developer_support_noise_risk": "high",
+      "implementation_difficulty": "low",
+      "expected_source_tier": "low_value_supporting_source_candidate",
+      "pilot_priority": "P3"
+    },
+    {
+      "repo_name": "metabase/metabase",
+      "discussions_enabled": "no",
+      "estimated_discussion_volume": "n_a",
+      "likely_persona_01_contribution": "n_a",
+      "likely_persona_02_contribution": "n_a",
+      "likely_persona_03_contribution": "n_a",
+      "likely_persona_04_contribution": "n_a",
+      "developer_support_noise_risk": "n_a",
+      "implementation_difficulty": "n_a",
+      "expected_source_tier": "n_a",
+      "pilot_priority": "excluded"
+    }
+  ],
+  "recommended_bundle": [
+    "apache/superset",
+    "lightdash/lightdash",
+    "evidence-dev/evidence",
+    "plausible/analytics"
+  ],
+  "backup_repo": "getredash/redash",
+  "pilot_scope": {
+    "target_threads": "500_to_1000",
+    "include_fields": [
+      "title",
+      "body",
+      "category",
+      "labels_if_available",
+      "bounded_comments"
+    ],
+    "comment_cap_per_discussion": 10,
+    "pilot_only_outputs": {
+      "raw_jsonl": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\artifacts\\source_pilots\\github_discussions_expansion_raw.jsonl",
+      "sample_csv": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\artifacts\\source_pilots\\github_discussions_expansion_sample.csv",
+      "summary_json": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\artifacts\\source_pilots\\github_discussions_expansion_summary.json",
+      "plan_md": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\docs\\operational\\GITHUB_DISCUSSIONS_EXPANSION_PILOT_PLAN.md"
+    }
+  },
+  "positive_signals": [
+    "dashboard_or_reporting_pain",
+    "metric_definition_confusion",
+    "data_model_or_semantic_layer_confusion_tied_to_reporting",
+    "stakeholder_facing_reporting_need",
+    "export_or_spreadsheet_workaround",
+    "data_trust_or_reconciliation_issue",
+    "workflow_limitation_in_bi_or_reporting_tool",
+    "root_cause_or_explanation_handoff"
+  ],
+  "negative_signals": [
+    "install_deploy_debug_only",
+    "auth_permission_setup_only",
+    "generic_feature_request_without_user_pain",
+    "api_or_library_coding_issue",
+    "ci_cd_or_infrastructure_issue",
+    "beginner_tutorial_help",
+    "release_announcement",
+    "maintainer_or_internal_discussion_without_user_pain"
+  ],
+  "persona_fit_expectation": {
+    "persona_01": "manual_reporting_export_spreadsheet_recurring_reporting_burden",
+    "persona_02": "kpi_explanation_root_cause_insight_handoff",
+    "persona_03": "tool_limitation_workflow_workaround",
+    "persona_04": "metric_validation_dashboard_mistrust_number_reconciliation",
+    "persona_05": "last_mile_reporting_output_construction"
+  },
+  "onboarding_gate": {
+    "enough_public_discussions_accessible": true,
+    "target_valid_candidate_ratio": 0.35,
+    "target_estimated_labelable_ratio": 0.6,
+    "target_estimated_persona_core_candidates_min": 120,
+    "require_two_personas_with_strong_signal": true,
+    "developer_support_noise_must_not_dominate": true,
+    "expected_weak_source_risk_must_not_be_high": true
+  },
+  "decision_outcomes": [
+    "promote_to_active_github_discussions_bundle",
+    "expand_repo_sample",
+    "narrow_repo_scope",
+    "reject_github_discussions_expansion",
+    "fallback_to_stackoverflow_tag_expansion",
+    "stop_source_expansion"
+  ],
+  "go_no_go_recommendation": {
+    "recommendation": "go",
+    "reason": "the existing github_discussions collector family already exists, public discussions are visible for the recommended repos, and the shortlisted bundle is more likely than the failed reddit bundle to produce higher-quality workflow and reporting pain evidence without opening a new collector family"
+  }
+}

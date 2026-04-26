@@ -1,0 +1,58 @@
+{
+  "source": "github_discussions_lightdash_single_repo_pilot",
+  "total_discovered_discussions": 93,
+  "total_fetched_discussions": 66,
+  "total_fetched_comments": 150,
+  "usable_rows": 66,
+  "valid_candidate_count": 13,
+  "valid_candidate_ratio": 0.197,
+  "estimated_persona_core_candidate_count": 7,
+  "estimated_labelable_ratio": 0.197,
+  "persona_01_fit_count": 35,
+  "persona_02_fit_count": 7,
+  "persona_03_fit_count": 20,
+  "persona_04_fit_count": 3,
+  "persona_05_fit_count": 15,
+  "install_deploy_debug_noise_count": 13,
+  "auth_permission_setup_noise_count": 12,
+  "api_library_coding_noise_count": 8,
+  "generic_feature_request_noise_count": 4,
+  "expected_source_tier": "low_value_supporting_source_candidate",
+  "estimated_weak_source_risk": "high",
+  "unavailable_discussion_count": 0,
+  "request_error_count": 0,
+  "per_repo_summary": {
+    "lightdash/lightdash": {
+      "fetched_discussions": 66,
+      "fetched_comments": 150,
+      "valid_candidate_count": 13,
+      "persona_core_candidate_count": 7,
+      "developer_support_noise_count": 30,
+      "persona_01_fit_count": 35,
+      "persona_02_fit_count": 7,
+      "persona_03_fit_count": 20,
+      "persona_04_fit_count": 3,
+      "persona_05_fit_count": 15,
+      "valid_candidate_ratio": 0.197,
+      "developer_support_noise_ratio": 0.4545,
+      "expected_source_tier": "low_value_supporting_source_candidate",
+      "estimated_weak_source_risk": "high"
+    }
+  },
+  "onboarding_gate_checks": {
+    "enough_public_discussions_are_accessible": false,
+    "valid_candidate_ratio_ge_0_35": false,
+    "estimated_labelable_ratio_ge_0_60": false,
+    "estimated_persona_core_candidate_count_ge_120": false,
+    "two_personas_have_40_meaningful_rows": false,
+    "developer_support_noise_not_dominant": false,
+    "estimated_weak_source_risk_not_high": false
+  },
+  "onboarding_gate_result": "fail",
+  "decision": "fallback_to_stackoverflow_tag_expansion",
+  "failure_diagnosis": [
+    "low_access_volume",
+    "developer_support_noise",
+    "weak_persona_core_fit"
+  ]
+}

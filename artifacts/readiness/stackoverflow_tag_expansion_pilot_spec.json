@@ -1,0 +1,328 @@
+{
+  "spec_name": "stackoverflow_tag_expansion_pilot",
+  "source_family": "existing_stackoverflow_collector",
+  "planning_only": true,
+  "current_context": {
+    "vendor_community_pilots_failed_or_rejected": true,
+    "reddit_revops_bundle_failed": true,
+    "github_discussions_expansion_rejected_for_now": true,
+    "recommended_next_route": "stackoverflow_tag_expansion"
+  },
+  "candidate_tag_strategy": {
+    "use_broad_generic_tags_alone": false,
+    "approach": [
+      "combine_bi_reporting_tool_tags_with_reporting_workflow_terms",
+      "prefer_bundles_with_dashboard_metric_filter_totals_export_layout_pain",
+      "apply_strict_negative_scoring_for_debug_setup_api_and_generic_programming_noise"
+    ],
+    "preferred_tag_families": [
+      "powerbi",
+      "powerbi-desktop",
+      "dax",
+      "powerquery",
+      "tableau-desktop",
+      "reporting-services",
+      "ssrs",
+      "business-intelligence",
+      "dashboard",
+      "data-visualization",
+      "metabase",
+      "data-analysis_only_when_combined"
+    ]
+  },
+  "inclusion_logic": {
+    "priority_terms": [
+      "dashboard",
+      "report",
+      "reporting",
+      "metric",
+      "measure",
+      "kpi",
+      "visualization",
+      "filter",
+      "slicer",
+      "pivot",
+      "export",
+      "spreadsheet",
+      "table layout",
+      "matrix",
+      "calculated field",
+      "total mismatch",
+      "data mismatch",
+      "aggregation",
+      "stakeholder",
+      "business reporting",
+      "recurring report",
+      "monthly report",
+      "weekly report"
+    ]
+  },
+  "exclusion_logic": {
+    "exclude_or_downweight": [
+      "pure syntax errors",
+      "package installation",
+      "auth permission setup",
+      "api sdk integration",
+      "server deployment",
+      "ci cd",
+      "database connection errors",
+      "driver setup",
+      "generic programming questions",
+      "beginner homework",
+      "career interview",
+      "course tutorial"
+    ],
+    "negative_markers": [
+      "syntax error",
+      "nullpointerexception",
+      "module not found",
+      "oauth",
+      "jwt",
+      "api",
+      "sdk",
+      "docker",
+      "kubernetes",
+      "deployment",
+      "connection string",
+      "ssl",
+      "interview",
+      "resume",
+      "homework"
+    ]
+  },
+  "proposed_bundles": [
+    {
+      "bundle_name": "powerbi_dax_reporting",
+      "tags": [
+        "powerbi",
+        "powerbi-desktop",
+        "dax",
+        "powerquery"
+      ],
+      "query_terms": [
+        "dashboard",
+        "report",
+        "reporting",
+        "measure",
+        "metric",
+        "filter",
+        "slicer",
+        "total mismatch",
+        "aggregation",
+        "export"
+      ],
+      "expected_persona_contribution": {
+        "persona_01": "medium",
+        "persona_02": "possible",
+        "persona_03": "strong",
+        "persona_04": "strong",
+        "persona_05": "possible"
+      },
+      "expected_noise_risk": "medium",
+      "expected_yield": "high",
+      "implementation_complexity": "low"
+    },
+    {
+      "bundle_name": "tableau_dashboard_calculation",
+      "tags": [
+        "tableau-desktop"
+      ],
+      "query_terms": [
+        "dashboard",
+        "calculated field",
+        "filter",
+        "totals",
+        "layout",
+        "export",
+        "table",
+        "measure"
+      ],
+      "expected_persona_contribution": {
+        "persona_01": "possible",
+        "persona_02": "possible",
+        "persona_03": "strong",
+        "persona_04": "strong",
+        "persona_05": "possible"
+      },
+      "expected_noise_risk": "medium_low",
+      "expected_yield": "medium",
+      "implementation_complexity": "low"
+    },
+    {
+      "bundle_name": "ssrs_reporting_services",
+      "tags": [
+        "reporting-services",
+        "ssrs"
+      ],
+      "query_terms": [
+        "report",
+        "layout",
+        "pagination",
+        "export",
+        "matrix",
+        "tablix",
+        "subscription",
+        "recurring report"
+      ],
+      "expected_persona_contribution": {
+        "persona_01": "strong",
+        "persona_02": "possible",
+        "persona_03": "possible",
+        "persona_04": "possible",
+        "persona_05": "strong"
+      },
+      "expected_noise_risk": "medium",
+      "expected_yield": "medium",
+      "implementation_complexity": "low"
+    },
+    {
+      "bundle_name": "business_intelligence_reporting",
+      "tags": [
+        "business-intelligence",
+        "dashboard",
+        "data-visualization"
+      ],
+      "query_terms": [
+        "reporting",
+        "dashboard",
+        "metric",
+        "kpi",
+        "stakeholder",
+        "business reporting",
+        "data mismatch"
+      ],
+      "expected_persona_contribution": {
+        "persona_01": "medium",
+        "persona_02": "medium",
+        "persona_03": "medium",
+        "persona_04": "medium",
+        "persona_05": "possible"
+      },
+      "expected_noise_risk": "medium_high",
+      "expected_yield": "medium",
+      "implementation_complexity": "medium"
+    },
+    {
+      "bundle_name": "metabase_reporting",
+      "tags": [
+        "metabase"
+      ],
+      "query_terms": [
+        "dashboard",
+        "report",
+        "metric",
+        "filter",
+        "totals",
+        "export"
+      ],
+      "expected_persona_contribution": {
+        "persona_01": "possible",
+        "persona_02": "possible",
+        "persona_03": "strong",
+        "persona_04": "possible",
+        "persona_05": "possible"
+      },
+      "expected_noise_risk": "medium",
+      "expected_yield": "unknown_to_low_medium",
+      "implementation_complexity": "low"
+    }
+  ],
+  "selected_first_pilot_bundle": "powerbi_dax_reporting",
+  "pilot_scope": {
+    "target_question_count": {
+      "min": 500,
+      "max": 1000
+    },
+    "time_window": "recent_multi_year_window_consistent_with_current_corpus",
+    "include_all_answers_and_comments": false,
+    "accepted_or_top_answer_only_if_cleanly_supported": true,
+    "output_root": "artifacts/source_pilots"
+  },
+  "output_artifacts": [
+    "artifacts/source_pilots/stackoverflow_tag_expansion_raw.jsonl",
+    "artifacts/source_pilots/stackoverflow_tag_expansion_sample.csv",
+    "artifacts/source_pilots/stackoverflow_tag_expansion_summary.json",
+    "docs/operational/STACKOVERFLOW_TAG_EXPANSION_PILOT_PLAN.md",
+    "artifacts/readiness/stackoverflow_tag_expansion_pilot_spec.json"
+  ],
+  "row_schema": [
+    "source",
+    "raw_id",
+    "url",
+    "title",
+    "body_or_excerpt",
+    "tags",
+    "score",
+    "answer_count",
+    "accepted_answer_flag",
+    "created_at",
+    "updated_at",
+    "bundle_name",
+    "fetch_method",
+    "fetched_at"
+  ],
+  "positive_signals": [
+    "reporting_workflow_signal",
+    "dashboard_metric_signal",
+    "bi_tool_signal",
+    "calculation_measure_signal",
+    "filter_slicer_signal",
+    "export_spreadsheet_signal",
+    "validation_reconciliation_signal",
+    "visualization_layout_signal",
+    "stakeholder_output_signal"
+  ],
+  "negative_signals": [
+    "pure_syntax_debug_noise",
+    "install_setup_noise",
+    "auth_permission_noise",
+    "api_sdk_noise",
+    "database_connection_noise",
+    "server_deploy_noise",
+    "homework_beginner_noise",
+    "generic_programming_noise"
+  ],
+  "persona_fit_targets": {
+    "persona_01": "manual_reporting_export_spreadsheet_recurring_reporting_burden",
+    "persona_02": "kpi_explanation_root_cause_insight_handoff",
+    "persona_03": "tool_limitation_workflow_workaround",
+    "persona_04": "metric_validation_dashboard_mistrust_number_reconciliation",
+    "persona_05": "last_mile_reporting_output_construction"
+  },
+  "onboarding_gate": {
+    "valid_candidate_ratio_gte": 0.35,
+    "estimated_labelable_ratio_gte": 0.6,
+    "estimated_persona_core_candidate_count_gte": 120,
+    "at_least_two_personas_01_to_04_show_meaningful_signal": true,
+    "pure_technical_debug_noise_not_dominant": true,
+    "estimated_weak_source_risk_not_high": true,
+    "access_stable_and_reproducible": true,
+    "interpretation_note": "Must materially outperform previous Reddit and GitHub Discussions pilots on quality, not just volume."
+  },
+  "decision_outcomes": [
+    "implement_stackoverflow_pilot_runner",
+    "narrow_tag_bundle",
+    "try_next_tag_bundle",
+    "reject_stackoverflow_expansion",
+    "stop_source_expansion"
+  ],
+  "implementation_recommendation": {
+    "recommendation": "go",
+    "next_step": "implement_bounded_stackoverflow_pilot_runner",
+    "reuse_existing_collector_family": true,
+    "production_config_changes_in_this_pass": false
+  },
+  "risks_and_assumptions": {
+    "risks": [
+      "stack_overflow_may_overproduce_dax_or_formula_debug_noise",
+      "high_yield_tags_may_still_fail_persona_core_quality",
+      "powerbi_dax_reporting_may_bias_toward_persona_03_without_strict_reporting_output_scoring",
+      "broad_dashboard_or_business_intelligence_tags_can_leak_generic_programming_noise"
+    ],
+    "assumptions": [
+      "existing_stackoverflow_collector_access_remains_stable",
+      "current_repository_scaffolding_can_support_a_bounded_pilot_without_a_new_collector_family",
+      "a_tightly_constrained_tag_bundle_has_better_odds_than_broad_source_family_expansion"
+    ]
+  }
+}

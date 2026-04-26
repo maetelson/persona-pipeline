@@ -1,0 +1,189 @@
+{
+  "spec_name": "stackoverflow_tag_bundle_rerank",
+  "planning_only": true,
+  "inputs_used": [
+    "data/analysis/source_distribution.csv",
+    "data/analysis/source_balance_audit.csv",
+    "data/analysis/source_diagnostics.csv",
+    "artifacts/readiness/source_representativeness_audit.json",
+    "artifacts/readiness/representative_source_expansion_plan.json",
+    "artifacts/readiness/stackoverflow_tag_expansion_pilot_spec.json"
+  ],
+  "existing_strong_source_families": [
+    {
+      "source": "power_bi_community",
+      "source_tier": "core_representative_source",
+      "labeled_share_pct": 24.6,
+      "blended_influence_share_pct": 30.7,
+      "top_persona_overlap": [
+        "persona_01",
+        "persona_02",
+        "persona_03"
+      ],
+      "duplication_pressure": "high"
+    },
+    {
+      "source": "metabase_discussions",
+      "source_tier": "core_representative_source",
+      "labeled_share_pct": 16.2,
+      "blended_influence_share_pct": 20.0,
+      "top_persona_overlap": [
+        "persona_01",
+        "persona_02",
+        "persona_03"
+      ],
+      "duplication_pressure": "high"
+    }
+  ],
+  "anti_duplication_rule": {
+    "purpose": "Penalize Stack Overflow bundles that mostly reinforce already-dominant core source families instead of improving source balance.",
+    "penalize_if": [
+      "overlaps_heavily_with_existing_core_representative_source_family",
+      "mostly_reinforces_power_bi_or_metabase_evidence",
+      "is_likely_to_increase_concentration_rather_than_balance",
+      "contributes_mainly_to_personas_already_dominated_by_existing_sources"
+    ],
+    "overlap_penalty_levels": {
+      "high": "direct platform duplication with strong persona overlap",
+      "medium": "partial workflow overlap with some new reporting nuance",
+      "low": "materially different reporting surface or stakeholder-output workflow"
+    }
+  },
+  "bundle_scores": [
+    {
+      "bundle_name": "ssrs_reporting_services",
+      "reporting_workflow_fit": 5,
+      "expected_yield": 3,
+      "expected_persona_01_contribution": 5,
+      "expected_persona_02_contribution": 2,
+      "expected_persona_03_contribution": 3,
+      "expected_persona_04_contribution": 3,
+      "technical_debug_noise_risk_reverse": 3,
+      "overlap_with_existing_core_sources": 1,
+      "source_balance_improvement_potential": 5,
+      "maintenance_complexity_reverse": 4,
+      "total_adjusted_score": 33,
+      "recommended_rank": 1
+    },
+    {
+      "bundle_name": "tableau_dashboard_calculation",
+      "reporting_workflow_fit": 5,
+      "expected_yield": 3,
+      "expected_persona_01_contribution": 3,
+      "expected_persona_02_contribution": 2,
+      "expected_persona_03_contribution": 5,
+      "expected_persona_04_contribution": 4,
+      "technical_debug_noise_risk_reverse": 3,
+      "overlap_with_existing_core_sources": 2,
+      "source_balance_improvement_potential": 4,
+      "maintenance_complexity_reverse": 4,
+      "total_adjusted_score": 31,
+      "recommended_rank": 2
+    },
+    {
+      "bundle_name": "business_intelligence_reporting",
+      "reporting_workflow_fit": 4,
+      "expected_yield": 3,
+      "expected_persona_01_contribution": 3,
+      "expected_persona_02_contribution": 3,
+      "expected_persona_03_contribution": 3,
+      "expected_persona_04_contribution": 3,
+      "technical_debug_noise_risk_reverse": 2,
+      "overlap_with_existing_core_sources": 2,
+      "source_balance_improvement_potential": 4,
+      "maintenance_complexity_reverse": 3,
+      "total_adjusted_score": 28,
+      "recommended_rank": 3
+    },
+    {
+      "bundle_name": "powerbi_dax_reporting",
+      "reporting_workflow_fit": 5,
+      "expected_yield": 5,
+      "expected_persona_01_contribution": 3,
+      "expected_persona_02_contribution": 2,
+      "expected_persona_03_contribution": 5,
+      "expected_persona_04_contribution": 4,
+      "technical_debug_noise_risk_reverse": 2,
+      "overlap_with_existing_core_sources": 5,
+      "source_balance_improvement_potential": 1,
+      "maintenance_complexity_reverse": 4,
+      "total_adjusted_score": 26,
+      "recommended_rank": 4
+    },
+    {
+      "bundle_name": "data_visualization_reporting",
+      "reporting_workflow_fit": 3,
+      "expected_yield": 2,
+      "expected_persona_01_contribution": 2,
+      "expected_persona_02_contribution": 2,
+      "expected_persona_03_contribution": 2,
+      "expected_persona_04_contribution": 3,
+      "technical_debug_noise_risk_reverse": 2,
+      "overlap_with_existing_core_sources": 2,
+      "source_balance_improvement_potential": 3,
+      "maintenance_complexity_reverse": 3,
+      "total_adjusted_score": 22,
+      "recommended_rank": 5
+    },
+    {
+      "bundle_name": "metabase_reporting",
+      "reporting_workflow_fit": 4,
+      "expected_yield": 2,
+      "expected_persona_01_contribution": 2,
+      "expected_persona_02_contribution": 2,
+      "expected_persona_03_contribution": 4,
+      "expected_persona_04_contribution": 2,
+      "technical_debug_noise_risk_reverse": 3,
+      "overlap_with_existing_core_sources": 5,
+      "source_balance_improvement_potential": 1,
+      "maintenance_complexity_reverse": 4,
+      "total_adjusted_score": 19,
+      "recommended_rank": 6
+    },
+    {
+      "bundle_name": "looker_studio_reporting",
+      "reporting_workflow_fit": 3,
+      "expected_yield": 2,
+      "expected_persona_01_contribution": 2,
+      "expected_persona_02_contribution": 2,
+      "expected_persona_03_contribution": 3,
+      "expected_persona_04_contribution": 3,
+      "technical_debug_noise_risk_reverse": 1,
+      "overlap_with_existing_core_sources": 2,
+      "source_balance_improvement_potential": 3,
+      "maintenance_complexity_reverse": 3,
+      "total_adjusted_score": 19,
+      "recommended_rank": 7
+    }
+  ],
+  "powerbi_dax_reporting_evaluation": {
+    "adds_genuinely_new_evidence_beyond_power_bi_community": "partial_only",
+    "would_improve_or_worsen_source_balance": "likely_worsen_practical_concentration",
+    "likely_to_overproduce_dax_syntax_or_debug_noise": true,
+    "should_be_demoted_from_first_pilot_priority": true,
+    "reason": "High direct overlap with existing core Power BI evidence reduces true diversity value despite strong yield."
+  },
+  "selected_revised_first_pilot_bundle": "ssrs_reporting_services",
+  "secondary_candidates": [
+    "tableau_dashboard_calculation",
+    "business_intelligence_reporting"
+  ],
+  "recommendation": {
+    "next_step": "keep_stackoverflow_pilot_path_but_change_first_bundle",
+    "implement_runner_in_this_pass": false,
+    "first_bundle_for_next_implementation_pass": "ssrs_reporting_services"
+  },
+  "risks_and_assumptions": {
+    "risks": [
+      "ssrs_reporting_services_may_underperform_on_yield_even_if_methodologically_cleaner",
+      "tableau_dashboard_calculation_may_eventually_prove_stronger_if_ssrs_volume_is_too_thin",
+      "business_intelligence_reporting_may_be_too_broad_and_leak_generic_programming_noise",
+      "stack_overflow_overall_may_still_fail_quality_gate_even_after_anti_duplication_reranking"
+    ],
+    "assumptions": [
+      "source_balance_improvement_is_more_important_than_maximizing_stackoverflow_volume",
+      "a_medium_yield_less_duplicative_bundle_is_preferable_to_a_high_yield_power_bi_bundle_that_increases_concentration",
+      "existing_power_bi_community_and_metabase_discussions_are_already_strong_enough_to_warrant_same_family_penalties"
+    ]
+  }
+}

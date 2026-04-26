@@ -1,0 +1,179 @@
+{
+  "bundle_name": "reddit_revops_analytics_bundle",
+  "source_family": "reddit_existing_collector",
+  "status": "spec_only",
+  "recommended_next_step": "implement_bounded_pilot",
+  "do_not": [
+    "activate_new_production_sources",
+    "change_production_source_configs",
+    "change_clustering",
+    "change_labeling",
+    "change_thresholds",
+    "change_workbook_policy",
+    "change_source_tiers",
+    "change_review_ready_logic",
+    "change_final_usable_persona_semantics",
+    "retry_tableau",
+    "retry_supermetrics",
+    "retry_looker_studio",
+    "retry_salesforce_trailblazer",
+    "retry_thoughtspot"
+  ],
+  "pilot_scope": {
+    "target_subreddits": [
+      "dataanalysis",
+      "analyticsengineering",
+      "revops",
+      "salesops"
+    ],
+    "collection_window": {
+      "preferred": "trailing_12_months",
+      "fallback": "trailing_6_months"
+    },
+    "target_raw_post_count": 1000,
+    "comment_inclusion_policy": {
+      "mode": "bounded_top_level_comments_only_when_clarifying_reporting_pain",
+      "default_comment_cap_per_post": 5
+    },
+    "output_paths": {
+      "raw_jsonl": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\artifacts\\source_pilots\\reddit_revops_analytics_raw.jsonl",
+      "sample_csv": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\artifacts\\source_pilots\\reddit_revops_analytics_sample.csv",
+      "summary_json": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\artifacts\\source_pilots\\reddit_revops_analytics_summary.json",
+      "plan_md": "C:\\Users\\hands\\OneDrive\\Desktop\\persona\\docs\\operational\\REDDIT_REVOPS_ANALYTICS_PILOT_PLAN.md"
+    }
+  },
+  "subreddit_rationale": {
+    "dataanalysis": {
+      "persona_01": "strong",
+      "persona_02": "medium",
+      "persona_03": "low_medium",
+      "persona_04": "medium_strong",
+      "persona_05": "low",
+      "main_value": "analyst-language reporting burden, spreadsheet fallback, and number mismatch pain",
+      "main_risk": "career and beginner-question noise"
+    },
+    "analyticsengineering": {
+      "persona_01": "low_medium",
+      "persona_02": "medium",
+      "persona_03": "strong",
+      "persona_04": "medium",
+      "persona_05": "low_medium",
+      "main_value": "workflow workaround, metric-definition, and reporting pipeline friction",
+      "main_risk": "technical implementation drift without user-facing reporting pain"
+    },
+    "revops": {
+      "persona_01": "strong",
+      "persona_02": "medium",
+      "persona_03": "medium",
+      "persona_04": "strong",
+      "persona_05": "low_medium",
+      "main_value": "CRM reporting, attribution, funnel definitions, forecast trust, and stakeholder reporting pressure",
+      "main_risk": "low overall volume"
+    },
+    "salesops": {
+      "persona_01": "strong",
+      "persona_02": "medium",
+      "persona_03": "low_medium",
+      "persona_04": "strong",
+      "persona_05": "low",
+      "main_value": "recurring reporting pressure, manual spreadsheet work, and pipeline or forecast mismatch",
+      "main_risk": "process-advice chatter if scope is too broad"
+    }
+  },
+  "inclusion_criteria": [
+    "dashboards used for business review or decision-making",
+    "reporting workflows with recurring delivery or refresh pressure",
+    "kpi explanation, metric interpretation, or stakeholder handoff pain",
+    "revops or salesops reporting process pain",
+    "funnel, attribution, or crm reporting mismatch",
+    "dashboard trust, number mismatch, or reconciliation pain",
+    "manual spreadsheet work after dashboards or exports",
+    "data quality issues blocking a report or review cadence",
+    "report delivery pressure or recurring stakeholder reporting asks"
+  ],
+  "exclusion_criteria": [
+    "career advice",
+    "job search",
+    "salary discussion",
+    "resume or interview prep",
+    "course, training, or certification discussion",
+    "beginner tutorial requests with no workflow pain",
+    "generic tool recommendations with no concrete reporting problem",
+    "memes or generic discussion threads",
+    "pure coding or debugging without reporting workflow context",
+    "self-promotion",
+    "vendor marketing",
+    "homework or assignments"
+  ],
+  "thresholds": {
+    "minimum_raw_posts": 1000,
+    "minimum_valid_candidates": 300,
+    "minimum_estimated_persona_core_candidates": 150,
+    "minimum_estimated_labelable_ratio": 0.6,
+    "minimum_meaningful_persona_signal_count": 2,
+    "career_training_noise_must_not_dominate": true,
+    "must_not_profile_as_weak_source_cost_center": true
+  },
+  "scoring_plan": {
+    "summary_metrics": [
+      "total_fetched_posts",
+      "total_fetched_comments",
+      "valid_candidate_count",
+      "valid_candidate_ratio",
+      "career_training_noise_count",
+      "generic_chatter_count",
+      "tool_recommendation_noise_count",
+      "persona_01_fit_count",
+      "persona_02_fit_count",
+      "persona_03_fit_count",
+      "persona_04_fit_count",
+      "persona_05_fit_count",
+      "estimated_persona_core_candidate_count",
+      "estimated_labelable_ratio",
+      "expected_source_tier",
+      "estimated_weak_source_risk"
+    ],
+    "fit_labels": [
+      "weak",
+      "medium",
+      "strong"
+    ]
+  },
+  "implementation_plan": {
+    "reuse_existing_collector_family": true,
+    "preferred_changes_next_pass": [
+      "add pilot-only seed definition for reddit_revops_analytics_bundle",
+      "add bounded pilot runner under run/diagnostics",
+      "write outputs only to artifacts/source_pilots",
+      "reuse existing reddit normalization and lightweight scoring utilities where safe"
+    ],
+    "avoid": [
+      "new collector family",
+      "production source activation",
+      "writes to data/raw",
+      "writes to active pipeline directories"
+    ]
+  },
+  "test_plan": {
+    "required_checks": [
+      "pilot seed config loads correctly",
+      "career training resume and job noise is recognized",
+      "reporting dashboard kpi stakeholder and reconciliation pain is recognized",
+      "persona fit scoring works on sample fixtures",
+      "pilot outputs are written only under artifacts/source_pilots",
+      "production source configs remain unchanged",
+      "no active-source enablement occurs during pilot execution"
+    ]
+  },
+  "decision_outcomes": [
+    "promote_to_active_source_bundle",
+    "expand_pilot_sample",
+    "narrow_subreddit_scope",
+    "reject_reddit_bundle",
+    "fallback_to_github_discussions_expansion"
+  ],
+  "go_no_go": {
+    "recommendation": "go",
+    "reason": "bounded reddit seed expansion is the lowest-risk next implementation path because it reuses an existing stable collector family and avoids previously failed vendor-community access paths"
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "ssrs_recovery_decision_table": {
+    "total_ssrs_like_rows": 598,
+    "valid_rows": 295,
+    "prefiltered_rows": 234,
+    "labeled_rows": 93,
+    "persona_core_rows": 70,
+    "current_persona_contribution": {
+      "persona_01": 69,
+      "persona_04": 1
+    },
+    "selected_example_count": 0,
+    "strongest_matched_terms": {
+      "reporting-services": 189,
+      "ssrs": 170,
+      "pagination": 100,
+      "subscription": 75,
+      "tablix": 48,
+      "reportbuilder": 30,
+      "export to excel": 21,
+      "report server": 9,
+      "matrix report": 8,
+      "paginated report": 4
+    },
+    "useful_pattern_count": 117,
+    "syntax_debug_noise_count": 124,
+    "server_config_noise_count": 32,
+    "recovery_opportunity": "high_for_selected_example_exposure"
+  },
+  "stage_drop_off_analysis": [
+    {
+      "from": "normalized",
+      "to": "valid",
+      "start": 598,
+      "end": 295,
+      "loss_count": 303,
+      "loss_pct": 0.5067,
+      "loss_classification": "expected_noise_filtering_with_possible_source_specific_miss",
+      "evidence": "source_diagnostics flags stackoverflow missing_pain_signal at valid_filtering"
+    },
+    {
+      "from": "valid",
+      "to": "prefiltered",
+      "start": 295,
+      "end": 234,
+      "loss_count": 61,
+      "loss_pct": 0.2068,
+      "loss_classification": "relevance_miss",
+      "evidence": "existing source_diagnostics and SSRS tags show operational export/layout phrasing may under-signal pain"
+    },
+    {
+      "from": "prefiltered",
+      "to": "episodes",
+      "start": 234,
+      "end": 93,
+      "loss_count": 141,
+      "loss_pct": 0.6026,
+      "loss_classification": "episode_quality_issue",
+      "evidence": "many retained rows appear to be formula/layout questions that do not become distinct episode-quality snippets"
+    },
+    {
+      "from": "episodes",
+      "to": "labeled",
+      "start": 93,
+      "end": 93,
+      "loss_count": 0,
+      "loss_pct": 0.0,
+      "loss_classification": "expected_noise_filtering",
+      "evidence": "no loss observed; labeled rows equal episode rows"
+    },
+    {
+      "from": "labeled",
+      "to": "persona_core",
+      "start": 93,
+      "end": 70,
+      "loss_count": 23,
+      "loss_pct": 0.2473,
+      "loss_classification": "labelability_issue",
+      "evidence": "some labeled rows remain non-core, likely because they stay technical or weakly contextualized"
+    },
+    {
+      "from": "persona_core",
+      "to": "selected_examples",
+      "start": 70,
+      "end": 0,
+      "loss_count": 70,
+      "loss_pct": 1.0,
+      "loss_classification": "selected_example_ranking_issue",
+      "evidence": "70 persona-core rows and zero selected examples is too sharp to explain as normal scarcity alone"
+    }
+  ],
+  "reviewed_candidate_counts": {
+    "strong_persona05_subtheme_example": 18,
+    "server_config_noise": 11,
+    "syntax_debug_noise": 9,
+    "ambiguous": 7,
+    "strong_persona01_example": 2,
+    "usable_supporting_evidence": 2,
+    "weak_generic": 1
+  },
+  "reviewed_sample_group_counts": {
+    "persona_core_not_selected": 20,
+    "prefiltered_labeled_non_core": 15,
+    "valid_dropped_before_episode": 10,
+    "strong_export_layout_delivery": 5
+  },
+  "recovery_justified": true,
+  "recommended_recovery_target": "selected-example exposure only",
+  "persona_support_decision": "persona_01_primary_persona_05_secondary",
+  "candidate_selected_examples": [
+    {
+      "raw_id": 77409902,
+      "title": "SSRS Subtotals in Filtered Matrix",
+      "url": "https://stackoverflow.com/questions/77409902/ssrs-subtotals-in-filtered-matrix",
+      "review_classification": "strong_persona05_subtheme_example",
+      "persona_01_count": 1,
+      "persona_05_count": 0,
+      "matched_keywords": "['rdlc', 'reporting-services', 'ssrs', 'tablix']"
+    },
+    {
+      "raw_id": 78064431,
+      "title": "Aligning Two Matrix Tables in SSRS Based on Matching Column Names",
+      "url": "https://stackoverflow.com/questions/78064431/aligning-two-matrix-tables-in-ssrs-based-on-matching-column-names",
+      "review_classification": "strong_persona05_subtheme_example",
+      "persona_01_count": 1,
+      "persona_05_count": 0,
+      "matched_keywords": "['reporting-services', 'ssrs', 'tablix']"
+    },
+    {
+      "raw_id": 76798514,
+      "title": "Empty values issue SSRS Report Builder chart",
+      "url": "https://stackoverflow.com/questions/76798514/empty-values-issue-ssrs-report-builder-chart",
+      "review_classification": "strong_persona01_example",
+      "persona_01_count": 1,
+      "persona_05_count": 0,
+      "matched_keywords": "['reportbuilder', 'reporting-services', 'ssrs']"
+    },
+    {
+      "raw_id": 72371933,
+      "title": "Unable to COUNTROWS dataset B from tablix with dataset A scope, looking for alternate solutions",
+      "url": "https://stackoverflow.com/questions/72371933/unable-to-countrows-dataset-b-from-tablix-with-dataset-a-scope-looking-for-alte",
+      "review_classification": "strong_persona05_subtheme_example",
+      "persona_01_count": 1,
+      "persona_05_count": 0,
+      "matched_keywords": "['reportbuilder', 'reporting-services', 'tablix']"
+    },
+    {
+      "raw_id": 67115725,
+      "title": "SSRS inserting blank page",
+      "url": "https://stackoverflow.com/questions/67115725/ssrs-inserting-blank-page",
+      "review_classification": "strong_persona01_example",
+      "persona_01_count": 1,
+      "persona_05_count": 0,
+      "matched_keywords": "['reporting-services', 'ssrs', 'tablix']"
+    },
+    {
+      "raw_id": 78760872,
+      "title": "Is there a way in SSRS to only display specific parts of a report when rendered in MHTML, vs when it is rendered in the Report Viewer?",
+      "url": "https://stackoverflow.com/questions/78760872/is-there-a-way-in-ssrs-to-only-display-specific-parts-of-a-report-when-rendered",
+      "review_classification": "strong_persona05_subtheme_example",
+      "persona_01_count": 1,
+      "persona_05_count": 0,
+      "matched_keywords": "['report viewer', 'reporting-services', 'ssrs']"
+    }
+  ],
+  "next_implementation_recommendation": "if any code change is proposed next, keep it to a narrow selected-example preference review for existing Stack Overflow SSRS rows; do not change filters yet"
+}

@@ -1,0 +1,44 @@
+{
+  "source": "reddit_revops_analytics_bundle",
+  "total_fetched_posts": 524,
+  "total_fetched_comments": 328,
+  "usable_rows": 524,
+  "valid_candidate_count": 104,
+  "valid_candidate_ratio": 0.1985,
+  "estimated_persona_core_candidate_count": 34,
+  "estimated_labelable_ratio": 0.1832,
+  "career_training_noise_count": 113,
+  "generic_chatter_count": 39,
+  "tool_recommendation_noise_count": 1,
+  "persona_01_fit_count": 124,
+  "persona_02_fit_count": 178,
+  "persona_03_fit_count": 117,
+  "persona_04_fit_count": 115,
+  "persona_05_fit_count": 161,
+  "expected_source_tier": "low_value_supporting_source_candidate",
+  "estimated_weak_source_risk": "high",
+  "request_error_count": 21,
+  "subreddit_post_counts": {
+    "dataanalysis": 300,
+    "analyticsengineering": 124,
+    "revops": 100,
+    "salesops": 0
+  },
+  "exhausted_subreddits": [
+    "analyticsengineering",
+    "revops",
+    "salesops"
+  ],
+  "onboarding_gate_checks": {
+    "enough_raw_posts_or_justified_smaller_count": false,
+    "valid_candidate_count_threshold": false,
+    "persona_core_candidate_threshold": false,
+    "estimated_labelable_ratio_ge_60": false,
+    "two_personas_show_meaningful_signal": true,
+    "career_training_noise_not_dominant": true,
+    "generic_chatter_not_dominant": true,
+    "bundle_not_weak_source_cost_center_like": false
+  },
+  "onboarding_gate_result": "fail",
+  "decision": "reject_reddit_bundle"
+}

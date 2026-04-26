@@ -1,0 +1,56 @@
+bundle_name: github_discussions_narrow_bi_tools
+source_family: existing_github_discussions_collector
+pilot_only: true
+target_repos:
+  - lightdash/lightdash
+  - evidence-dev/evidence
+  - getredash/redash
+excluded_repos:
+  - plausible/analytics
+  - apache/superset
+thread_limit_per_repo: 150
+max_listing_pages_per_repo: 10
+comment_cap: 10
+request_delay_seconds: 0.75
+timeout_seconds: 20
+fetch_method: public_html
+pilot_output_dir: artifacts/source_pilots
+pilot_output_files:
+  raw_jsonl: github_discussions_narrow_raw.jsonl
+  sample_csv: github_discussions_narrow_sample.csv
+  summary_json: github_discussions_narrow_summary.json
+inclusion_terms:
+  - dashboard
+  - dashboards
+  - reporting
+  - report
+  - metric
+  - metrics
+  - source of truth
+  - drill down
+  - drilldown
+  - stakeholder
+  - export
+  - spreadsheet
+  - reconciliation
+  - mismatch
+  - semantic layer
+  - model confusion
+  - root cause
+  - explain numbers
+exclusion_terms:
+  - install
+  - deployment
+  - auth
+  - authentication
+  - permission
+  - ci/cd
+  - infrastructure
+  - tutorial
+  - beginner
+  - release
+  - announcement
+  - api
+  - sdk
+  - library
+  - bug in my code

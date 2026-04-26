@@ -1,0 +1,75 @@
+bundle_name: reddit_revops_analytics_bundle
+source_family: reddit_existing_collector
+pilot_only: true
+preferred_window: trailing_12_months
+fallback_window: trailing_6_months
+window_days:
+  trailing_12_months: 365
+  trailing_6_months: 182
+target_subreddits:
+  - dataanalysis
+  - analyticsengineering
+  - revops
+  - salesops
+sort: new
+listing_limit_per_page: 100
+target_raw_post_count: 1000
+max_posts_per_subreddit: 300
+max_pages_per_subreddit: 12
+top_level_comment_cap: 5
+max_comment_post_fetches: 200
+request_delay_seconds: 0.5
+timeout_seconds: 20
+fetch_method: reddit_public_json
+pilot_output_dir: artifacts/source_pilots
+pilot_output_files:
+  raw_jsonl: reddit_revops_analytics_raw.jsonl
+  sample_csv: reddit_revops_analytics_sample.csv
+  summary_json: reddit_revops_analytics_summary.json
+inclusion_terms:
+  - dashboard
+  - dashboards
+  - reporting
+  - report
+  - reports
+  - kpi
+  - metric
+  - metrics
+  - stakeholder
+  - attribution
+  - funnel
+  - crm
+  - salesforce
+  - hubspot
+  - number mismatch
+  - reconcile
+  - reconciliation
+  - spreadsheet
+  - excel
+  - weekly report
+  - monthly report
+  - recurring report
+  - revops
+  - sales ops
+  - salesops
+exclusion_terms:
+  - career
+  - job
+  - jobs
+  - salary
+  - resume
+  - interview
+  - internship
+  - homework
+  - assignment
+  - course
+  - certification
+  - certificate
+  - tutorial
+  - beginner
+  - homework
+  - meme
+  - hiring
+  - self promo
+  - self-promo
+  - promotion

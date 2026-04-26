@@ -1,0 +1,175 @@
+{
+  "current_baseline": {
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "overall_status": "WARN",
+    "quality_flag": "EXPLORATORY",
+    "effective_balanced_source_count": 5.89,
+    "persona_core_coverage_of_all_labeled_pct": 74.5,
+    "persona_core_row_gap_to_80": 695,
+    "core_readiness_weak_source_cost_center_count": 3,
+    "weak_sources": [
+      "adobe_analytics_community",
+      "google_developer_forums",
+      "domo_community_forum",
+      "klaviyo_community"
+    ]
+  },
+  "representative_source_criteria": [
+    "strong target-user alignment",
+    "strong BI and analytics workflow alignment",
+    "strong post-dashboard interpretation fit",
+    "low setup and helpdesk noise",
+    "low developer-support bias",
+    "recurring KPI, reporting, and insight pain",
+    "source-diversity benefit",
+    "likely contribution to persona_01 through persona_04",
+    "low risk of becoming a new weak-source cost center"
+  ],
+  "prioritized_categories": [
+    "BI and analytics practitioner communities",
+    "marketing analytics and growth analytics communities",
+    "data analyst workflow communities",
+    "CRM and lifecycle analytics communities with reporting pain",
+    "product analytics communities",
+    "business operations and RevOps analytics communities"
+  ],
+  "avoid_categories": [
+    "vendor docs forums dominated by setup and support",
+    "developer API troubleshooting forums",
+    "certification, training, or course communities",
+    "generic career or job communities",
+    "feature-request boards without pain context",
+    "support-ticket-like forums",
+    "sources that add volume without persona-core evidence"
+  ],
+  "candidate_shortlist": [
+    {
+      "source_name": "tableau_community",
+      "source_type": "bi_practitioner_community",
+      "expected_target_user_fit": "high",
+      "expected_persona_contribution": "strong for persona_01, persona_03, persona_04; moderate for persona_02",
+      "likely_noise_risk": "medium",
+      "likely_implementation_difficulty": "medium",
+      "expected_effect_on_source_balance": "high_positive",
+      "expected_effect_on_core_coverage": "high_positive",
+      "collector_already_exists": false,
+      "recommended_priority": "P1"
+    },
+    {
+      "source_name": "salesforce_trailblazer_reports_dashboards",
+      "source_type": "crm_revops_analytics_community",
+      "expected_target_user_fit": "medium_high",
+      "expected_persona_contribution": "strong for persona_01 and persona_04; moderate for persona_02",
+      "likely_noise_risk": "medium_high",
+      "likely_implementation_difficulty": "medium_high",
+      "expected_effect_on_source_balance": "medium_positive",
+      "expected_effect_on_core_coverage": "medium_positive",
+      "collector_already_exists": false,
+      "recommended_priority": "P2"
+    },
+    {
+      "source_name": "supermetrics_community",
+      "source_type": "marketing_analytics_reporting_community",
+      "expected_target_user_fit": "medium_high",
+      "expected_persona_contribution": "strong for persona_01 and persona_04; moderate for persona_02",
+      "likely_noise_risk": "medium",
+      "likely_implementation_difficulty": "medium",
+      "expected_effect_on_source_balance": "medium_positive",
+      "expected_effect_on_core_coverage": "medium_positive",
+      "collector_already_exists": false,
+      "recommended_priority": "P2"
+    },
+    {
+      "source_name": "looker_studio_community",
+      "source_type": "dashboard_reporting_help_community",
+      "expected_target_user_fit": "medium",
+      "expected_persona_contribution": "moderate for persona_01, persona_03, persona_04",
+      "likely_noise_risk": "high",
+      "likely_implementation_difficulty": "low_medium",
+      "expected_effect_on_source_balance": "medium_positive",
+      "expected_effect_on_core_coverage": "low_medium",
+      "collector_already_exists": false,
+      "recommended_priority": "P3"
+    },
+    {
+      "source_name": "thoughtspot_community",
+      "source_type": "bi_search_analytics_community",
+      "expected_target_user_fit": "medium",
+      "expected_persona_contribution": "moderate for persona_02 and persona_03; lower for persona_01 and persona_04",
+      "likely_noise_risk": "medium_high",
+      "likely_implementation_difficulty": "medium",
+      "expected_effect_on_source_balance": "medium_positive",
+      "expected_effect_on_core_coverage": "low_medium",
+      "collector_already_exists": false,
+      "recommended_priority": "P3"
+    }
+  ],
+  "impact_scenarios": {
+    "A_add_one_high_quality_representative_source": {
+      "effective_balanced_source_count": "6.0_to_6.2",
+      "persona_core_coverage_of_all_labeled_pct": "75.5_to_77.0",
+      "weak_source_dependency_reduction": "moderate",
+      "deck_ready_becomes_more_realistic": true,
+      "risk_of_new_weak_source_creation": "medium"
+    },
+    "B_add_two_representative_sources": {
+      "effective_balanced_source_count": "6.1_to_6.5",
+      "persona_core_coverage_of_all_labeled_pct": "77.0_to_79.0",
+      "weak_source_dependency_reduction": "medium_high",
+      "deck_ready_becomes_more_realistic": true,
+      "risk_of_new_weak_source_creation": "medium_high"
+    },
+    "C_add_one_representative_source_plus_recover_high_quality_non_core_rows": {
+      "effective_balanced_source_count": "6.0_to_6.2",
+      "persona_core_coverage_of_all_labeled_pct": "80.0_plus",
+      "weak_source_dependency_reduction": "moderate",
+      "deck_ready_becomes_more_realistic": true,
+      "risk_of_new_weak_source_creation": "medium"
+    },
+    "D_no_source_expansion": {
+      "effective_balanced_source_count": "about_5.89",
+      "persona_core_coverage_of_all_labeled_pct": "about_74.5",
+      "weak_source_dependency_reduction": "none",
+      "deck_ready_becomes_more_realistic": false,
+      "risk_of_new_weak_source_creation": "none"
+    }
+  },
+  "minimum_data_target": {
+    "minimum_raw_rows": 2500,
+    "minimum_labeled_rows": 250,
+    "minimum_persona_core_rows": 150,
+    "target_labelable_episode_ratio": ">=60%",
+    "max_allowed_weak_source_risk": "must_not_land_as_weak_source_cost_center_in_pilot",
+    "minimum_source_tier_score": "plausible_core_representative_or_strong_supporting_validation_with_upgrade_path"
+  },
+  "onboarding_gate": [
+    "sample quality review",
+    "parser and normalizer fidelity check",
+    "relevance prefilter sanity check",
+    "episode yield check",
+    "source representativeness score",
+    "small pilot run before full inclusion"
+  ],
+  "recommended_first_action": {
+    "action": "collect_candidate_samples_manually_before_coding",
+    "target_source": "tableau_community",
+    "pilot_shape": "manual sample of 100 to 150 public Tableau threads scored for persona_01 through persona_04 fit, support noise, dashboard pain density, and likely persona-core recovery"
+  },
+  "why_better_than_more_weak_source_remediation": {
+    "adobe": "Prior Adobe remediation was a no-op and still leaves weak-source debt.",
+    "google_developer_forums": "Google remains too developer-support-heavy for reliable rescue.",
+    "domo": "Domo supports breadth but is exploratory edge, not a deck-ready anchor.",
+    "klaviyo": "Klaviyo is exploratory-only weak debt and not a realistic deck-ready growth path."
+  },
+  "assumptions": [
+    "Representative-source expansion should improve balance by quality, not just by row count.",
+    "The next source should reduce dependence on weak supporting sources rather than merely averaging them out.",
+    "Source expansion is useful only if it improves both source diversity and persona-core evidence quality."
+  ],
+  "risks": [
+    "A candidate source may look representative by brand but collapse into setup and support noise.",
+    "A vendor community can still become a new weak-source cost center if reporting pain is too sparse.",
+    "Adding multiple sources too early can create maintenance cost before the first pilot proves value.",
+    "A shallow sample can overestimate representativeness from a hand-picked pocket."
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "source": "github_discussions_expansion_bi_tools",
+  "total_discovered_discussions": 580,
+  "total_fetched_discussions": 516,
+  "total_fetched_comments": 1629,
+  "usable_rows": 516,
+  "valid_candidate_count": 56,
+  "valid_candidate_ratio": 0.1085,
+  "estimated_persona_core_candidate_count": 46,
+  "estimated_labelable_ratio": 0.1085,
+  "persona_01_fit_count": 266,
+  "persona_02_fit_count": 40,
+  "persona_03_fit_count": 139,
+  "persona_04_fit_count": 30,
+  "persona_05_fit_count": 136,
+  "install_deploy_debug_noise_count": 136,
+  "auth_permission_setup_noise_count": 142,
+  "api_library_coding_noise_count": 127,
+  "generic_feature_request_noise_count": 51,
+  "expected_source_tier": "low_value_supporting_source_candidate",
+  "estimated_weak_source_risk": "high",
+  "unavailable_discussion_count": 1,
+  "request_error_count": 0,
+  "per_repo_summary": {
+    "apache/superset": {
+      "fetched_discussions": 150,
+      "valid_candidate_count": 22,
+      "persona_core_candidate_count": 19,
+      "developer_support_noise_count": 101,
+      "valid_candidate_ratio": 0.1467,
+      "developer_support_noise_ratio": 0.6733
+    },
+    "lightdash/lightdash": {
+      "fetched_discussions": 66,
+      "valid_candidate_count": 13,
+      "persona_core_candidate_count": 7,
+      "developer_support_noise_count": 30,
+      "valid_candidate_ratio": 0.197,
+      "developer_support_noise_ratio": 0.4545
+    },
+    "evidence-dev/evidence": {
+      "fetched_discussions": 150,
+      "valid_candidate_count": 13,
+      "persona_core_candidate_count": 12,
+      "developer_support_noise_count": 34,
+      "valid_candidate_ratio": 0.0867,
+      "developer_support_noise_ratio": 0.2267
+    },
+    "plausible/analytics": {
+      "fetched_discussions": 150,
+      "valid_candidate_count": 8,
+      "persona_core_candidate_count": 8,
+      "developer_support_noise_count": 97,
+      "valid_candidate_ratio": 0.0533,
+      "developer_support_noise_ratio": 0.6467
+    }
+  },
+  "onboarding_gate_checks": {
+    "enough_public_discussions_are_accessible": true,
+    "valid_candidate_ratio_ge_0_35": false,
+    "estimated_labelable_ratio_ge_0_60": false,
+    "estimated_persona_core_candidate_count_ge_120": false,
+    "two_personas_have_40_meaningful_rows": true,
+    "developer_support_noise_not_dominant": false,
+    "estimated_weak_source_risk_not_high": false
+  },
+  "onboarding_gate_result": "fail",
+  "decision": "narrow_repo_scope",
+  "failure_diagnosis": [
+    "developer_support_noise",
+    "one_bad_repo_dragging_down_bundle",
+    "weak_persona_core_fit"
+  ]
+}
