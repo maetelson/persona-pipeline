@@ -1,0 +1,7 @@
+scenario_id,description,slice_aware_weak_source_count,slice_aware_core_readiness_weak_source_count,quality_adjusted_effective_balance,largest_source_share_pct,top_3_source_share_pct,sources_still_weak,google_status,adobe_status,evidence_loss_risk,cherry_picking_risk,diagnostics_visible
+A_current_mixed_retained,Current mixed retained baseline.,2,2,6.04,29.83,60.39,adobe_analytics_community | google_developer_forums,slice_aware_mixed,slice_aware_mixed,low,low,True
+B_keep_reviewed_evidence_plus_mixed,Keep only reviewed evidence_producing + mixed_keep portions.,0,0,5.8,30.73,62.2,,evidence_rescued,evidence_rescued,medium,medium,True
+C_move_reviewed_debt_into_debt,Move reviewed debt_producing mixed rows into debt; retain ambiguous as mixed.,0,0,5.87,30.48,61.7,,evidence_rescued,evidence_rescued,medium,medium,True
+D_split_adobe_mixed,Refine Adobe mixed slices only.,1,1,5.89,30.38,61.49,google_developer_forums,slice_aware_mixed,evidence_rescued,medium,medium,True
+E_split_google_mixed,Refine Google mixed slices only.,1,1,6.01,29.94,60.6,adobe_analytics_community,evidence_rescued,slice_aware_mixed,medium,medium,True
+F_conservative_high_conf_debt_only,Only remove clearly debt-like reviewed mixed rows; retain ambiguous and diagnostics-only rows.,0,0,5.9,30.38,61.5,,evidence_rescued,evidence_rescued,low,low,True
