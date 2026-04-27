@@ -1,0 +1,184 @@
+{
+  "official_baseline": {
+    "official_effective_balanced_source_count": 5.89,
+    "largest_source_share_pct": 30.7,
+    "top_3_source_share_pct": 61.7,
+    "weak_source_cost_center_count": 4,
+    "core_readiness_weak_source_cost_center_count": 3,
+    "official_weak_sources": [
+      "adobe_analytics_community",
+      "domo_community_forum",
+      "google_developer_forums",
+      "klaviyo_community"
+    ],
+    "official_core_readiness_weak_sources": [
+      "adobe_analytics_community",
+      "domo_community_forum",
+      "google_developer_forums"
+    ]
+  },
+  "scenario_rows": [
+    {
+      "scenario_id": "A_official_source_level",
+      "description": "Current official source-level weak-source debt baseline.",
+      "weak_source_cost_center_count": 4,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "domo_community_forum",
+        "google_developer_forums",
+        "klaviyo_community"
+      ],
+      "sources_no_longer_weak": [],
+      "evidence_loss_risk": "low",
+      "diagnostics_visibility": "all rows remain visible in diagnostics",
+      "cherry_picking_risk": "low",
+      "methodologically_defensible": true
+    },
+    {
+      "scenario_id": "B_denominator_eligible_rows_only",
+      "description": "Compute weak-source debt on denominator-eligible rows only.",
+      "weak_source_cost_center_count": 3,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "domo_community_forum",
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "klaviyo_community"
+      ],
+      "evidence_loss_risk": "low",
+      "diagnostics_visibility": "all rows remain visible in diagnostics",
+      "cherry_picking_risk": "low",
+      "methodologically_defensible": true
+    },
+    {
+      "scenario_id": "C_high_conf_technical_noise_excluded",
+      "description": "Exclude conservative high-confidence technical/support noise before evaluating weak-source debt.",
+      "weak_source_cost_center_count": 3,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "domo_community_forum",
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "klaviyo_community"
+      ],
+      "evidence_loss_risk": "low",
+      "diagnostics_visibility": "all rows remain visible in diagnostics",
+      "cherry_picking_risk": "low",
+      "methodologically_defensible": true
+    },
+    {
+      "scenario_id": "D_refined_debt_producing_slices_quarantined",
+      "description": "Quarantine refined debt_producing_slice rows and evaluate remaining weak-source debt.",
+      "weak_source_cost_center_count": 2,
+      "core_readiness_weak_source_cost_center_count": 2,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "domo_community_forum",
+        "klaviyo_community"
+      ],
+      "evidence_loss_risk": "medium",
+      "diagnostics_visibility": "all rows remain visible in diagnostics",
+      "cherry_picking_risk": "medium",
+      "methodologically_defensible": true
+    },
+    {
+      "scenario_id": "E_refined_evidence_plus_mixed_only",
+      "description": "Keep refined evidence and mixed slices only.",
+      "weak_source_cost_center_count": 2,
+      "core_readiness_weak_source_cost_center_count": 2,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "domo_community_forum",
+        "klaviyo_community"
+      ],
+      "evidence_loss_risk": "medium",
+      "diagnostics_visibility": "all rows remain visible in diagnostics",
+      "cherry_picking_risk": "medium",
+      "methodologically_defensible": true
+    },
+    {
+      "scenario_id": "F_refined_evidence_producing_only",
+      "description": "Keep only refined evidence_producing_slice rows.",
+      "weak_source_cost_center_count": 0,
+      "core_readiness_weak_source_cost_center_count": 0,
+      "sources_still_weak": [],
+      "sources_no_longer_weak": [
+        "adobe_analytics_community",
+        "domo_community_forum",
+        "google_developer_forums",
+        "klaviyo_community"
+      ],
+      "evidence_loss_risk": "high",
+      "diagnostics_visibility": "all rows remain visible in diagnostics",
+      "cherry_picking_risk": "high",
+      "methodologically_defensible": false
+    },
+    {
+      "scenario_id": "G_refined_source_tier_aware_policy",
+      "description": "Refined debt quarantine plus excluded-from-core sources kept diagnostics-only.",
+      "weak_source_cost_center_count": 2,
+      "core_readiness_weak_source_cost_center_count": 2,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "domo_community_forum",
+        "klaviyo_community"
+      ],
+      "evidence_loss_risk": "medium",
+      "diagnostics_visibility": "all rows remain visible in diagnostics",
+      "cherry_picking_risk": "medium",
+      "methodologically_defensible": true
+    }
+  ],
+  "google_adobe_refined_interpretation": {
+    "google_developer_forums": {
+      "still_weak_under_refined_debt_quarantine": true,
+      "retained_rows": 643,
+      "retained_evidence_rows": 367,
+      "retained_mixed_rows": 276,
+      "retained_evidence_share": 0.5708,
+      "retained_mixed_share": 0.4292,
+      "improvement_driver": "credible evidence slices are more explicit after refinement, but mixed slices still remain material",
+      "ambiguous_or_mixed_preserved": true,
+      "can_safely_move_from_source_level_weak_to_slice_aware_mixed": true,
+      "slice_aware_interpretation": "slice_aware_mixed"
+    },
+    "adobe_analytics_community": {
+      "still_weak_under_refined_debt_quarantine": true,
+      "retained_rows": 598,
+      "retained_evidence_rows": 156,
+      "retained_mixed_rows": 442,
+      "retained_evidence_share": 0.2609,
+      "retained_mixed_share": 0.7391,
+      "improvement_driver": "credible evidence slices are more explicit after refinement, but mixed slices still remain material",
+      "ambiguous_or_mixed_preserved": true,
+      "can_safely_move_from_source_level_weak_to_slice_aware_mixed": true,
+      "slice_aware_interpretation": "slice_aware_mixed"
+    }
+  },
+  "comparison_to_previous_simulations": {
+    "previous_quality_adjusted_balance_under_debt_quarantine": 6.04,
+    "refined_quality_adjusted_balance_under_debt_quarantine": 6.0,
+    "previous_weak_source_count_under_debt_quarantine": 2,
+    "refined_weak_source_count_under_debt_quarantine": 2,
+    "previous_core_readiness_weak_source_count_under_debt_quarantine": 2,
+    "refined_core_readiness_weak_source_count_under_debt_quarantine": 2,
+    "material_interpretability_improvement": true,
+    "summary": "Refinement materially improves Google/Adobe interpretability even though debt-quarantine topline counts stay flat and balance edges slightly down from 6.04 to 6.00."
+  },
+  "recommended_next_action": "run_refined_slice_precision_review",
+  "recommended_reason": "Refined diagnostics materially improve interpretability, but Google and Adobe still remain slice-aware mixed under refined debt quarantine. A post-refinement precision review is the safest next step before any secondary metric spec."
+}
