@@ -1,0 +1,1033 @@
+{
+  "official_weak_source_baseline": {
+    "weak_source_cost_center_count": 4,
+    "core_readiness_weak_source_cost_center_count": 3,
+    "weak_sources": [
+      "adobe_analytics_community",
+      "domo_community_forum",
+      "google_developer_forums",
+      "klaviyo_community"
+    ],
+    "core_readiness_weak_sources": [
+      "adobe_analytics_community",
+      "domo_community_forum",
+      "google_developer_forums"
+    ],
+    "weak_source_source_table": [
+      {
+        "source": "adobe_analytics_community",
+        "source_tier": "supporting_validation_source",
+        "labeled_rows": 645,
+        "persona_core_rows": 196,
+        "denominator_eligible_rows": 561,
+        "debt_producing_rows": 0,
+        "evidence_producing_rows": 33,
+        "mixed_rows": 612
+      },
+      {
+        "source": "domo_community_forum",
+        "source_tier": "exploratory_edge_source",
+        "labeled_rows": 1044,
+        "persona_core_rows": 112,
+        "denominator_eligible_rows": 448,
+        "debt_producing_rows": 1044,
+        "evidence_producing_rows": 0,
+        "mixed_rows": 0
+      },
+      {
+        "source": "google_developer_forums",
+        "source_tier": "supporting_validation_source",
+        "labeled_rows": 812,
+        "persona_core_rows": 252,
+        "denominator_eligible_rows": 608,
+        "debt_producing_rows": 157,
+        "evidence_producing_rows": 351,
+        "mixed_rows": 304
+      },
+      {
+        "source": "klaviyo_community",
+        "source_tier": "excluded_from_deck_ready_core",
+        "labeled_rows": 110,
+        "persona_core_rows": 103,
+        "denominator_eligible_rows": 104,
+        "debt_producing_rows": 31,
+        "evidence_producing_rows": 79,
+        "mixed_rows": 0
+      }
+    ]
+  },
+  "simulation_method_note": {
+    "purpose": "diagnostics-only slice-aware weak-source debt simulation",
+    "official_metrics_unchanged": true,
+    "slice_aware_rule": "For simulated scenarios, a source remains weak when retained rows stay material and the retained slice mix still shows low evidence share or high mixed/debt dominance. Excluded-from-core sources remain diagnostics-visible and are not promoted into core-readiness weak debt.",
+    "minimum_material_retained_rows": 100,
+    "not_for_readiness_gating": true
+  },
+  "scenario_results": [
+    {
+      "scenario_id": "A_official_source_level",
+      "description": "Current official source-level weak-source debt baseline.",
+      "weak_source_cost_center_count": 4,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "domo_community_forum",
+        "google_developer_forums",
+        "klaviyo_community"
+      ],
+      "sources_no_longer_weak": [],
+      "source_level_vs_slice_aware_status": {
+        "adobe_analytics_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "source_level_weak",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "domo_community_forum": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "source_level_weak",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "google_developer_forums": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "source_level_weak",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "klaviyo_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": false,
+          "slice_aware_status": "excluded_from_deck_ready_core",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": false
+        }
+      },
+      "weak_debt_rows_by_source": {
+        "adobe_analytics_community": 0,
+        "domo_community_forum": 1044,
+        "google_developer_forums": 157,
+        "klaviyo_community": 31
+      },
+      "evidence_producing_retained_rows_by_source": {
+        "adobe_analytics_community": 33,
+        "github_discussions": 1102,
+        "google_developer_forums": 351,
+        "hubspot_community": 784,
+        "klaviyo_community": 79,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3103,
+        "qlik_community": 48,
+        "reddit": 197,
+        "shopify_community": 463,
+        "sisense_community": 189,
+        "stackoverflow": 865
+      },
+      "mixed_retained_rows_by_source": {
+        "adobe_analytics_community": 612,
+        "github_discussions": 23,
+        "google_developer_forums": 304,
+        "hubspot_community": 2,
+        "power_bi_community": 2,
+        "reddit": 10,
+        "shopify_community": 10,
+        "stackoverflow": 149
+      },
+      "debt_producing_quarantined_rows_by_source": {},
+      "evidence_loss_risk": "low",
+      "diagnostics_visibility": "all rows remain visible in diagnostics",
+      "cherry_picking_risk": "low",
+      "methodologically_defensible": true,
+      "included_row_count": 12674,
+      "excluded_or_quarantined_row_count": 0,
+      "included_rows_by_source": {
+        "adobe_analytics_community": 645,
+        "domo_community_forum": 1044,
+        "github_discussions": 1313,
+        "google_developer_forums": 812,
+        "hubspot_community": 796,
+        "klaviyo_community": 110,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3114,
+        "qlik_community": 48,
+        "reddit": 214,
+        "shopify_community": 624,
+        "sisense_community": 189,
+        "stackoverflow": 1683
+      },
+      "included_rows_by_source_tier": {
+        "core_representative_source": 5169,
+        "excluded_from_deck_ready_core": 110,
+        "exploratory_edge_source": 1119,
+        "supporting_validation_source": 6276
+      }
+    },
+    {
+      "scenario_id": "B_denominator_eligible_rows_only",
+      "description": "Compute weak-source debt on denominator-eligible rows only.",
+      "weak_source_cost_center_count": 3,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "domo_community_forum",
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "klaviyo_community"
+      ],
+      "source_level_vs_slice_aware_status": {
+        "adobe_analytics_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "domo_community_forum": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_debt_heavy",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "google_developer_forums": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "klaviyo_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": false,
+          "slice_aware_status": "excluded_from_deck_ready_core",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        }
+      },
+      "weak_debt_rows_by_source": {
+        "adobe_analytics_community": 0,
+        "domo_community_forum": 448,
+        "google_developer_forums": 74,
+        "klaviyo_community": 25
+      },
+      "evidence_producing_retained_rows_by_source": {
+        "adobe_analytics_community": 33,
+        "github_discussions": 1102,
+        "google_developer_forums": 260,
+        "hubspot_community": 784,
+        "klaviyo_community": 79,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3103,
+        "qlik_community": 48,
+        "reddit": 197,
+        "shopify_community": 463,
+        "sisense_community": 189,
+        "stackoverflow": 865
+      },
+      "mixed_retained_rows_by_source": {
+        "adobe_analytics_community": 528,
+        "github_discussions": 23,
+        "google_developer_forums": 274,
+        "hubspot_community": 2,
+        "power_bi_community": 2,
+        "reddit": 10,
+        "shopify_community": 10,
+        "stackoverflow": 149
+      },
+      "debt_producing_quarantined_rows_by_source": {
+        "domo_community_forum": 596,
+        "github_discussions": 188,
+        "google_developer_forums": 83,
+        "hubspot_community": 10,
+        "klaviyo_community": 6,
+        "power_bi_community": 9,
+        "reddit": 7,
+        "shopify_community": 151,
+        "stackoverflow": 669
+      },
+      "evidence_loss_risk": "low",
+      "diagnostics_visibility": "all rows remain visible in diagnostics",
+      "cherry_picking_risk": "low",
+      "methodologically_defensible": true,
+      "included_row_count": 10750,
+      "excluded_or_quarantined_row_count": 1924,
+      "included_rows_by_source": {
+        "adobe_analytics_community": 561,
+        "domo_community_forum": 448,
+        "github_discussions": 1125,
+        "google_developer_forums": 608,
+        "hubspot_community": 786,
+        "klaviyo_community": 104,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3105,
+        "qlik_community": 48,
+        "reddit": 207,
+        "shopify_community": 473,
+        "sisense_community": 189,
+        "stackoverflow": 1014
+      },
+      "included_rows_by_source_tier": {
+        "core_representative_source": 5160,
+        "excluded_from_deck_ready_core": 104,
+        "exploratory_edge_source": 523,
+        "supporting_validation_source": 4963
+      }
+    },
+    {
+      "scenario_id": "C_high_conf_technical_noise_excluded",
+      "description": "Exclude conservative high-confidence technical/support noise before evaluating weak-source debt.",
+      "weak_source_cost_center_count": 3,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "domo_community_forum",
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "klaviyo_community"
+      ],
+      "source_level_vs_slice_aware_status": {
+        "adobe_analytics_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "domo_community_forum": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_debt_heavy",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "google_developer_forums": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "klaviyo_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": false,
+          "slice_aware_status": "excluded_from_deck_ready_core",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        }
+      },
+      "weak_debt_rows_by_source": {
+        "adobe_analytics_community": 0,
+        "domo_community_forum": 525,
+        "google_developer_forums": 101,
+        "klaviyo_community": 26
+      },
+      "evidence_producing_retained_rows_by_source": {
+        "adobe_analytics_community": 33,
+        "github_discussions": 1102,
+        "google_developer_forums": 327,
+        "hubspot_community": 784,
+        "klaviyo_community": 79,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3103,
+        "qlik_community": 48,
+        "reddit": 197,
+        "shopify_community": 463,
+        "sisense_community": 189,
+        "stackoverflow": 865
+      },
+      "mixed_retained_rows_by_source": {
+        "adobe_analytics_community": 548,
+        "github_discussions": 23,
+        "google_developer_forums": 303,
+        "hubspot_community": 2,
+        "power_bi_community": 2,
+        "reddit": 10,
+        "shopify_community": 10,
+        "stackoverflow": 149
+      },
+      "debt_producing_quarantined_rows_by_source": {
+        "domo_community_forum": 519,
+        "github_discussions": 66,
+        "google_developer_forums": 56,
+        "hubspot_community": 10,
+        "klaviyo_community": 5,
+        "power_bi_community": 3,
+        "reddit": 1,
+        "shopify_community": 140,
+        "stackoverflow": 440
+      },
+      "evidence_loss_risk": "low",
+      "diagnostics_visibility": "all rows remain visible in diagnostics and conservative exclusion artifacts",
+      "cherry_picking_risk": "low",
+      "methodologically_defensible": true,
+      "included_row_count": 11345,
+      "excluded_or_quarantined_row_count": 1329,
+      "included_rows_by_source": {
+        "adobe_analytics_community": 581,
+        "domo_community_forum": 525,
+        "github_discussions": 1247,
+        "google_developer_forums": 731,
+        "hubspot_community": 786,
+        "klaviyo_community": 105,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3111,
+        "qlik_community": 48,
+        "reddit": 213,
+        "shopify_community": 484,
+        "sisense_community": 189,
+        "stackoverflow": 1243
+      },
+      "included_rows_by_source_tier": {
+        "core_representative_source": 5166,
+        "excluded_from_deck_ready_core": 105,
+        "exploratory_edge_source": 600,
+        "supporting_validation_source": 5474
+      }
+    },
+    {
+      "scenario_id": "D_debt_producing_slices_quarantined",
+      "description": "Quarantine debt_producing_slice rows and evaluate remaining weak-source debt.",
+      "weak_source_cost_center_count": 2,
+      "core_readiness_weak_source_cost_center_count": 2,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "domo_community_forum",
+        "klaviyo_community"
+      ],
+      "source_level_vs_slice_aware_status": {
+        "adobe_analytics_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "domo_community_forum": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "diagnostics_only",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        },
+        "google_developer_forums": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "klaviyo_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": false,
+          "slice_aware_status": "excluded_from_deck_ready_core",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        }
+      },
+      "weak_debt_rows_by_source": {
+        "adobe_analytics_community": 0,
+        "domo_community_forum": 0,
+        "google_developer_forums": 0,
+        "klaviyo_community": 0
+      },
+      "evidence_producing_retained_rows_by_source": {
+        "adobe_analytics_community": 33,
+        "github_discussions": 1102,
+        "google_developer_forums": 351,
+        "hubspot_community": 784,
+        "klaviyo_community": 79,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3103,
+        "qlik_community": 48,
+        "reddit": 197,
+        "shopify_community": 463,
+        "sisense_community": 189,
+        "stackoverflow": 865
+      },
+      "mixed_retained_rows_by_source": {
+        "adobe_analytics_community": 612,
+        "github_discussions": 23,
+        "google_developer_forums": 304,
+        "hubspot_community": 2,
+        "power_bi_community": 2,
+        "reddit": 10,
+        "shopify_community": 10,
+        "stackoverflow": 149
+      },
+      "debt_producing_quarantined_rows_by_source": {
+        "domo_community_forum": 1044,
+        "github_discussions": 188,
+        "google_developer_forums": 157,
+        "hubspot_community": 10,
+        "klaviyo_community": 31,
+        "power_bi_community": 9,
+        "reddit": 7,
+        "shopify_community": 151,
+        "stackoverflow": 669
+      },
+      "evidence_loss_risk": "medium",
+      "diagnostics_visibility": "all rows remain visible in source-slice diagnostics; quarantine is simulated only",
+      "cherry_picking_risk": "medium",
+      "methodologically_defensible": true,
+      "included_row_count": 10408,
+      "excluded_or_quarantined_row_count": 2266,
+      "included_rows_by_source": {
+        "adobe_analytics_community": 645,
+        "github_discussions": 1125,
+        "google_developer_forums": 655,
+        "hubspot_community": 786,
+        "klaviyo_community": 79,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3105,
+        "qlik_community": 48,
+        "reddit": 207,
+        "shopify_community": 473,
+        "sisense_community": 189,
+        "stackoverflow": 1014
+      },
+      "included_rows_by_source_tier": {
+        "core_representative_source": 5160,
+        "excluded_from_deck_ready_core": 79,
+        "exploratory_edge_source": 75,
+        "supporting_validation_source": 5094
+      }
+    },
+    {
+      "scenario_id": "E_debt_quarantined_mixed_retained",
+      "description": "Same as D; explicit mixed-slice retention callout.",
+      "weak_source_cost_center_count": 2,
+      "core_readiness_weak_source_cost_center_count": 2,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "domo_community_forum",
+        "klaviyo_community"
+      ],
+      "source_level_vs_slice_aware_status": {
+        "adobe_analytics_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "domo_community_forum": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "diagnostics_only",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        },
+        "google_developer_forums": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "klaviyo_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": false,
+          "slice_aware_status": "excluded_from_deck_ready_core",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        }
+      },
+      "weak_debt_rows_by_source": {
+        "adobe_analytics_community": 0,
+        "domo_community_forum": 0,
+        "google_developer_forums": 0,
+        "klaviyo_community": 0
+      },
+      "evidence_producing_retained_rows_by_source": {
+        "adobe_analytics_community": 33,
+        "github_discussions": 1102,
+        "google_developer_forums": 351,
+        "hubspot_community": 784,
+        "klaviyo_community": 79,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3103,
+        "qlik_community": 48,
+        "reddit": 197,
+        "shopify_community": 463,
+        "sisense_community": 189,
+        "stackoverflow": 865
+      },
+      "mixed_retained_rows_by_source": {
+        "adobe_analytics_community": 612,
+        "github_discussions": 23,
+        "google_developer_forums": 304,
+        "hubspot_community": 2,
+        "power_bi_community": 2,
+        "reddit": 10,
+        "shopify_community": 10,
+        "stackoverflow": 149
+      },
+      "debt_producing_quarantined_rows_by_source": {
+        "domo_community_forum": 1044,
+        "github_discussions": 188,
+        "google_developer_forums": 157,
+        "hubspot_community": 10,
+        "klaviyo_community": 31,
+        "power_bi_community": 9,
+        "reddit": 7,
+        "shopify_community": 151,
+        "stackoverflow": 669
+      },
+      "evidence_loss_risk": "medium",
+      "diagnostics_visibility": "all rows remain visible in source-slice diagnostics; mixed slices preserved",
+      "cherry_picking_risk": "medium",
+      "methodologically_defensible": true,
+      "included_row_count": 10408,
+      "excluded_or_quarantined_row_count": 2266,
+      "included_rows_by_source": {
+        "adobe_analytics_community": 645,
+        "github_discussions": 1125,
+        "google_developer_forums": 655,
+        "hubspot_community": 786,
+        "klaviyo_community": 79,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3105,
+        "qlik_community": 48,
+        "reddit": 207,
+        "shopify_community": 473,
+        "sisense_community": 189,
+        "stackoverflow": 1014
+      },
+      "included_rows_by_source_tier": {
+        "core_representative_source": 5160,
+        "excluded_from_deck_ready_core": 79,
+        "exploratory_edge_source": 75,
+        "supporting_validation_source": 5094
+      }
+    },
+    {
+      "scenario_id": "F_evidence_only",
+      "description": "Keep only evidence_producing_slice rows.",
+      "weak_source_cost_center_count": 1,
+      "core_readiness_weak_source_cost_center_count": 1,
+      "sources_still_weak": [
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "adobe_analytics_community",
+        "domo_community_forum",
+        "klaviyo_community"
+      ],
+      "source_level_vs_slice_aware_status": {
+        "adobe_analytics_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "diagnostics_only",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        },
+        "domo_community_forum": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "diagnostics_only",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        },
+        "google_developer_forums": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "klaviyo_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": false,
+          "slice_aware_status": "excluded_from_deck_ready_core",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        }
+      },
+      "weak_debt_rows_by_source": {
+        "adobe_analytics_community": 0,
+        "domo_community_forum": 0,
+        "google_developer_forums": 0,
+        "klaviyo_community": 0
+      },
+      "evidence_producing_retained_rows_by_source": {
+        "adobe_analytics_community": 33,
+        "github_discussions": 1102,
+        "google_developer_forums": 351,
+        "hubspot_community": 784,
+        "klaviyo_community": 79,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3103,
+        "qlik_community": 48,
+        "reddit": 197,
+        "shopify_community": 463,
+        "sisense_community": 189,
+        "stackoverflow": 865
+      },
+      "mixed_retained_rows_by_source": {},
+      "debt_producing_quarantined_rows_by_source": {
+        "domo_community_forum": 1044,
+        "github_discussions": 188,
+        "google_developer_forums": 157,
+        "hubspot_community": 10,
+        "klaviyo_community": 31,
+        "power_bi_community": 9,
+        "reddit": 7,
+        "shopify_community": 151,
+        "stackoverflow": 669
+      },
+      "evidence_loss_risk": "high",
+      "diagnostics_visibility": "all rows remain visible in diagnostics but mixed/debt slices dominate what is excluded",
+      "cherry_picking_risk": "high",
+      "methodologically_defensible": false,
+      "included_row_count": 9296,
+      "excluded_or_quarantined_row_count": 3378,
+      "included_rows_by_source": {
+        "adobe_analytics_community": 33,
+        "github_discussions": 1102,
+        "google_developer_forums": 351,
+        "hubspot_community": 784,
+        "klaviyo_community": 79,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3103,
+        "qlik_community": 48,
+        "reddit": 197,
+        "shopify_community": 463,
+        "sisense_community": 189,
+        "stackoverflow": 865
+      },
+      "included_rows_by_source_tier": {
+        "core_representative_source": 5158,
+        "excluded_from_deck_ready_core": 79,
+        "exploratory_edge_source": 75,
+        "supporting_validation_source": 3984
+      }
+    },
+    {
+      "scenario_id": "G_evidence_plus_mixed_only",
+      "description": "Keep evidence and mixed slices only.",
+      "weak_source_cost_center_count": 2,
+      "core_readiness_weak_source_cost_center_count": 2,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "domo_community_forum",
+        "klaviyo_community"
+      ],
+      "source_level_vs_slice_aware_status": {
+        "adobe_analytics_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "domo_community_forum": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "diagnostics_only",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        },
+        "google_developer_forums": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "klaviyo_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": false,
+          "slice_aware_status": "excluded_from_deck_ready_core",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        }
+      },
+      "weak_debt_rows_by_source": {
+        "adobe_analytics_community": 0,
+        "domo_community_forum": 0,
+        "google_developer_forums": 0,
+        "klaviyo_community": 0
+      },
+      "evidence_producing_retained_rows_by_source": {
+        "adobe_analytics_community": 33,
+        "github_discussions": 1102,
+        "google_developer_forums": 351,
+        "hubspot_community": 784,
+        "klaviyo_community": 79,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3103,
+        "qlik_community": 48,
+        "reddit": 197,
+        "shopify_community": 463,
+        "sisense_community": 189,
+        "stackoverflow": 865
+      },
+      "mixed_retained_rows_by_source": {
+        "adobe_analytics_community": 612,
+        "github_discussions": 23,
+        "google_developer_forums": 304,
+        "hubspot_community": 2,
+        "power_bi_community": 2,
+        "reddit": 10,
+        "shopify_community": 10,
+        "stackoverflow": 149
+      },
+      "debt_producing_quarantined_rows_by_source": {
+        "domo_community_forum": 1044,
+        "github_discussions": 188,
+        "google_developer_forums": 157,
+        "hubspot_community": 10,
+        "klaviyo_community": 31,
+        "power_bi_community": 9,
+        "reddit": 7,
+        "shopify_community": 151,
+        "stackoverflow": 669
+      },
+      "evidence_loss_risk": "medium",
+      "diagnostics_visibility": "all rows remain visible in diagnostics",
+      "cherry_picking_risk": "medium",
+      "methodologically_defensible": true,
+      "included_row_count": 10408,
+      "excluded_or_quarantined_row_count": 2266,
+      "included_rows_by_source": {
+        "adobe_analytics_community": 645,
+        "github_discussions": 1125,
+        "google_developer_forums": 655,
+        "hubspot_community": 786,
+        "klaviyo_community": 79,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3105,
+        "qlik_community": 48,
+        "reddit": 207,
+        "shopify_community": 473,
+        "sisense_community": 189,
+        "stackoverflow": 1014
+      },
+      "included_rows_by_source_tier": {
+        "core_representative_source": 5160,
+        "excluded_from_deck_ready_core": 79,
+        "exploratory_edge_source": 75,
+        "supporting_validation_source": 5094
+      }
+    },
+    {
+      "scenario_id": "H_source_tier_aware_slice_policy",
+      "description": "Debt-slice quarantine plus excluded-from-core sources treated as diagnostics-only for the secondary metric.",
+      "weak_source_cost_center_count": 2,
+      "core_readiness_weak_source_cost_center_count": 2,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "google_developer_forums"
+      ],
+      "sources_no_longer_weak": [
+        "domo_community_forum",
+        "klaviyo_community"
+      ],
+      "source_level_vs_slice_aware_status": {
+        "adobe_analytics_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "domo_community_forum": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "diagnostics_only",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        },
+        "google_developer_forums": {
+          "official_weak": true,
+          "official_core_readiness_weak": true,
+          "slice_aware_status": "slice_aware_mixed",
+          "slice_aware_weak": true,
+          "slice_aware_core_readiness_weak": true
+        },
+        "klaviyo_community": {
+          "official_weak": true,
+          "official_core_readiness_weak": false,
+          "slice_aware_status": "excluded_from_deck_ready_core",
+          "slice_aware_weak": false,
+          "slice_aware_core_readiness_weak": false
+        }
+      },
+      "weak_debt_rows_by_source": {
+        "adobe_analytics_community": 0,
+        "domo_community_forum": 0,
+        "google_developer_forums": 0,
+        "klaviyo_community": 0
+      },
+      "evidence_producing_retained_rows_by_source": {
+        "adobe_analytics_community": 33,
+        "github_discussions": 1102,
+        "google_developer_forums": 351,
+        "hubspot_community": 784,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3103,
+        "qlik_community": 48,
+        "reddit": 197,
+        "shopify_community": 463,
+        "sisense_community": 189,
+        "stackoverflow": 865
+      },
+      "mixed_retained_rows_by_source": {
+        "adobe_analytics_community": 612,
+        "github_discussions": 23,
+        "google_developer_forums": 304,
+        "hubspot_community": 2,
+        "power_bi_community": 2,
+        "reddit": 10,
+        "shopify_community": 10,
+        "stackoverflow": 149
+      },
+      "debt_producing_quarantined_rows_by_source": {
+        "domo_community_forum": 1044,
+        "github_discussions": 188,
+        "google_developer_forums": 157,
+        "hubspot_community": 10,
+        "klaviyo_community": 31,
+        "power_bi_community": 9,
+        "reddit": 7,
+        "shopify_community": 151,
+        "stackoverflow": 669
+      },
+      "evidence_loss_risk": "medium",
+      "diagnostics_visibility": "all rows remain visible in diagnostics; excluded-tier sources remain diagnostics-only",
+      "cherry_picking_risk": "medium",
+      "methodologically_defensible": true,
+      "included_row_count": 10329,
+      "excluded_or_quarantined_row_count": 2345,
+      "included_rows_by_source": {
+        "adobe_analytics_community": 645,
+        "github_discussions": 1125,
+        "google_developer_forums": 655,
+        "hubspot_community": 786,
+        "metabase_discussions": 2055,
+        "mixpanel_community": 27,
+        "power_bi_community": 3105,
+        "qlik_community": 48,
+        "reddit": 207,
+        "shopify_community": 473,
+        "sisense_community": 189,
+        "stackoverflow": 1014
+      },
+      "included_rows_by_source_tier": {
+        "core_representative_source": 5160,
+        "exploratory_edge_source": 75,
+        "supporting_validation_source": 5094
+      }
+    }
+  ],
+  "weak_source_interpretation": [
+    {
+      "source": "google_developer_forums",
+      "official_weak_source": true,
+      "official_core_readiness_weak_source": true,
+      "labeled_rows": 812,
+      "persona_core_rows": 252,
+      "denominator_eligible_rows": 608,
+      "debt_producing_rows": 157,
+      "evidence_producing_rows": 351,
+      "mixed_rows": 304,
+      "slice_aware_quarantine_no_longer_weak": false,
+      "improvement_driver": "real evidence-producing slices remain, but mixed report-delivery UI volume still keeps the source weak",
+      "mixed_slices_preserved": true,
+      "remains_visible_in_diagnostics": true,
+      "recommended_interpretation": "slice_aware_mixed",
+      "retained_rows_under_conservative_quarantine": 655
+    },
+    {
+      "source": "adobe_analytics_community",
+      "official_weak_source": true,
+      "official_core_readiness_weak_source": true,
+      "labeled_rows": 645,
+      "persona_core_rows": 196,
+      "denominator_eligible_rows": 561,
+      "debt_producing_rows": 0,
+      "evidence_producing_rows": 33,
+      "mixed_rows": 612,
+      "slice_aware_quarantine_no_longer_weak": false,
+      "improvement_driver": "mixed workspace and implementation slices dominate; improvement is not driven by hidden debt because explicit debt slices are minimal",
+      "mixed_slices_preserved": true,
+      "remains_visible_in_diagnostics": true,
+      "recommended_interpretation": "slice_aware_mixed",
+      "retained_rows_under_conservative_quarantine": 645
+    },
+    {
+      "source": "domo_community_forum",
+      "official_weak_source": true,
+      "official_core_readiness_weak_source": true,
+      "labeled_rows": 1044,
+      "persona_core_rows": 112,
+      "denominator_eligible_rows": 448,
+      "debt_producing_rows": 1044,
+      "evidence_producing_rows": 0,
+      "mixed_rows": 0,
+      "slice_aware_quarantine_no_longer_weak": true,
+      "improvement_driver": "improvement comes mostly from removing debt-heavy slices rather than rescuing meaningful evidence-producing slices",
+      "mixed_slices_preserved": false,
+      "remains_visible_in_diagnostics": true,
+      "recommended_interpretation": "slice_aware_debt_heavy",
+      "retained_rows_under_conservative_quarantine": 0
+    },
+    {
+      "source": "klaviyo_community",
+      "official_weak_source": true,
+      "official_core_readiness_weak_source": false,
+      "labeled_rows": 110,
+      "persona_core_rows": 103,
+      "denominator_eligible_rows": 104,
+      "debt_producing_rows": 31,
+      "evidence_producing_rows": 79,
+      "mixed_rows": 0,
+      "slice_aware_quarantine_no_longer_weak": true,
+      "improvement_driver": "source remains diagnostics-visible, but tier policy keeps it outside deck-ready core interpretation",
+      "mixed_slices_preserved": false,
+      "remains_visible_in_diagnostics": true,
+      "recommended_interpretation": "excluded_from_deck_ready_core",
+      "retained_rows_under_conservative_quarantine": 79
+    }
+  ],
+  "comparison_to_source_balance_scenario_F": {
+    "balance_scenario": "F_debt_quarantined_simulation",
+    "balance_effective_balanced_source_count": 6.04,
+    "weak_source_debt_scenario": "D_debt_producing_slices_quarantined",
+    "slice_aware_weak_source_cost_center_count": 2,
+    "slice_aware_core_readiness_weak_source_cost_center_count": 2,
+    "does_same_quarantine_reduce_weak_source_debt": true,
+    "summary": "The same debt-producing-slice quarantine that lifts quality-adjusted source balance to 6.04 also reduces weak-source debt from 4/3 to 2/2, but it does not fully resolve Google or Adobe because mixed slices remain large."
+  },
+  "recommended_next_action": "run_slice_classification_precision_review_first",
+  "recommended_action_reason": "Debt-producing-slice quarantine is promising, but slice-aware weak-source judgments still depend heavily on mixed slices in Google and Adobe. A precision review is the narrowest safe next step before proposing any secondary weak-source metric."
+}
