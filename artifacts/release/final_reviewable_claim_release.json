@@ -1,0 +1,237 @@
+{
+  "final_release_decision": "freeze_as_reviewable_claim_release",
+  "release_class": "reviewable_claim_release",
+  "final_baseline": {
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "overall_status": "WARN",
+    "quality_flag": "EXPLORATORY",
+    "final_usable_persona_count": 3,
+    "production_ready_persona_count": 3,
+    "review_ready_persona_count": 1,
+    "deck_ready_claim_eligible_persona_count": 4,
+    "persona_core_coverage_of_all_labeled_pct": 74.5,
+    "adjusted_deck_ready_denominator_core_coverage_pct": 83.25,
+    "original_coverage_gate_status": "fail",
+    "adjusted_coverage_gate_status": "pass",
+    "coverage_gate_passed_by_adjusted_metric": true,
+    "official_effective_balanced_source_count": 5.89,
+    "official_weak_source_cost_center_count": 4,
+    "official_core_readiness_weak_source_cost_center_count": 3,
+    "selected_example_grounding_issue_count": 4
+  },
+  "refined_source_slice_interpretation": {
+    "google_developer_forums": {
+      "status": "slice_aware_mixed",
+      "sample_count": 125,
+      "evidence_slice_precision": 0.566,
+      "mixed_slice_precision": 0.3684,
+      "debt_slice_precision": 0.6,
+      "evidence_or_mixed_retention_rate": 0.896,
+      "can_support_quality_adjusted_balance": true,
+      "can_safely_reduce_weak_source_debt": false
+    },
+    "adobe_analytics_community": {
+      "status": "slice_aware_mixed",
+      "sample_count": 125,
+      "evidence_slice_precision": 0.7222,
+      "mixed_slice_precision": 0.4773,
+      "debt_slice_precision": 0.7895,
+      "evidence_or_mixed_retention_rate": 0.808,
+      "can_support_quality_adjusted_balance": true,
+      "can_safely_reduce_weak_source_debt": false
+    }
+  },
+  "persona_treatment": [
+    {
+      "persona_id": "persona_01",
+      "readiness_tier": "production_ready_persona",
+      "production_ready_persona": true,
+      "final_usable_persona": true,
+      "review_ready_persona": false,
+      "deck_ready_claim_eligible_persona": true,
+      "release_treatment": "include_as_final_usable_production_ready_persona"
+    },
+    {
+      "persona_id": "persona_02",
+      "readiness_tier": "production_ready_persona",
+      "production_ready_persona": true,
+      "final_usable_persona": true,
+      "review_ready_persona": false,
+      "deck_ready_claim_eligible_persona": true,
+      "release_treatment": "include_as_final_usable_production_ready_persona"
+    },
+    {
+      "persona_id": "persona_03",
+      "readiness_tier": "production_ready_persona",
+      "production_ready_persona": true,
+      "final_usable_persona": true,
+      "review_ready_persona": false,
+      "deck_ready_claim_eligible_persona": true,
+      "release_treatment": "include_as_final_usable_production_ready_persona"
+    },
+    {
+      "persona_id": "persona_04",
+      "readiness_tier": "review_ready_persona",
+      "production_ready_persona": false,
+      "final_usable_persona": false,
+      "review_ready_persona": true,
+      "deck_ready_claim_eligible_persona": true,
+      "release_treatment": "keep_review_visible_not_final_usable"
+    },
+    {
+      "persona_id": "persona_05",
+      "readiness_tier": "blocked_or_constrained_candidate",
+      "production_ready_persona": false,
+      "final_usable_persona": false,
+      "review_ready_persona": false,
+      "deck_ready_claim_eligible_persona": false,
+      "release_treatment": "preserve_as_future_subtheme_candidate"
+    },
+    {
+      "persona_id": "persona_06_plus",
+      "readiness_tier": "exploratory_bucket",
+      "production_ready_persona": false,
+      "final_usable_persona": false,
+      "review_ready_persona": false,
+      "deck_ready_claim_eligible_persona": false,
+      "release_treatment": "diagnostics_only_tail_clusters"
+    }
+  ],
+  "blocker_resolution": [
+    {
+      "blocker": "core_coverage",
+      "original_status": "warn_under_original_denominator",
+      "remediation_attempted": "non_core_recovery_audit_then_denominator_eligibility_and_adjusted_secondary_gate",
+      "final_status": "original_74_5_adjusted_83_25",
+      "resolution_state": "partially_resolved",
+      "reason": "Coverage improved only through an audited secondary metric, while the original metric remains below the stronger deck-ready floor."
+    },
+    {
+      "blocker": "source_balance",
+      "original_status": "warn",
+      "remediation_attempted": "source_pilots_source_deletion_tests_slice_aware_diagnostics_refined_slice_simulations",
+      "final_status": "official_5_89_refined_diagnostics_about_6_00",
+      "resolution_state": "unresolved",
+      "reason": "Balance improvement is diagnostics-only and barely clears the floor under the safest refined simulation."
+    },
+    {
+      "blocker": "weak_source_debt",
+      "original_status": "warn",
+      "remediation_attempted": "weak_source_deletion_denominator_cleanup_slice_aware_diagnostics_refined_slice_review",
+      "final_status": "official_4_refined_simulation_still_leaves_google_and_adobe_uncertain",
+      "resolution_state": "unresolved",
+      "reason": "Weak-source pressure remains in official policy and refined slices are not stable enough for a secondary metric."
+    },
+    {
+      "blocker": "selected_example_grounding",
+      "original_status": "warn",
+      "remediation_attempted": "example_review_and_grounding_checks",
+      "final_status": "selected_example_grounding_issue_count_4",
+      "resolution_state": "unresolved",
+      "reason": "Representative example quality still carries visible caution."
+    },
+    {
+      "blocker": "source_slice_precision",
+      "original_status": "not_available_initially",
+      "remediation_attempted": "mixed_slice_review_refined_google_adobe_diagnostics_refined_slice_precision_review",
+      "final_status": "google_interpretable_adobe_still_unstable",
+      "resolution_state": "partially_resolved",
+      "reason": "Interpretability improved, but not enough for a reviewer-defensible secondary metric."
+    }
+  ],
+  "path_exhaustion_summary": [
+    {
+      "path": "adobe_remediation",
+      "result": "no_safe_improvement_path_found",
+      "changed_official_readiness": false,
+      "should_retry": false,
+      "retry_condition": "Only if genuinely new Adobe-specific evidence or safer body-fidelity logic appears."
+    },
+    {
+      "path": "google_remediation",
+      "result": "no_safe_improvement_path_found",
+      "changed_official_readiness": false,
+      "should_retry": false,
+      "retry_condition": "Only if new source-internal policy evidence justifies a fresh pass."
+    },
+    {
+      "path": "weak_source_deletion",
+      "result": "regressed_source_balance",
+      "changed_official_readiness": false,
+      "should_retry": false,
+      "retry_condition": "Only if policy changes explicitly allow source-removal tradeoffs."
+    },
+    {
+      "path": "new_source_pilots",
+      "result": "low_yield_or_no_safe_uplift",
+      "changed_official_readiness": false,
+      "should_retry": false,
+      "retry_condition": "Only with genuinely new representative sources."
+    },
+    {
+      "path": "reddit_expansion",
+      "result": "minimal_incremental_value",
+      "changed_official_readiness": false,
+      "should_retry": false,
+      "retry_condition": "Only if a narrow new evidence slice is discovered."
+    },
+    {
+      "path": "github_discussions_expansion",
+      "result": "did_not_safely_improve_readiness",
+      "changed_official_readiness": false,
+      "should_retry": false,
+      "retry_condition": "Only if source-specific evidence strategy changes materially."
+    },
+    {
+      "path": "stackoverflow_tag_ssrs_audit",
+      "result": "did_not_produce_safe_deck_ready_uplift",
+      "changed_official_readiness": false,
+      "should_retry": false,
+      "retry_condition": "Only if codebook or query strategy changes materially."
+    },
+    {
+      "path": "existing_source_expansion",
+      "result": "very_low_unique_yield",
+      "changed_official_readiness": false,
+      "should_retry": false,
+      "retry_condition": "Only if a narrow evidence-backed source-internal slice policy is approved."
+    },
+    {
+      "path": "non_core_recovery",
+      "result": "unsafe_for_closing_gap",
+      "changed_official_readiness": false,
+      "should_retry": false,
+      "retry_condition": "Replaced by denominator eligibility work; should not be retried directly."
+    },
+    {
+      "path": "denominator_eligibility",
+      "result": "conservative_audited_secondary_gate_succeeded_for_coverage_only",
+      "changed_official_readiness": false,
+      "should_retry": true,
+      "retry_condition": "Already implemented; do not broaden without separate policy approval."
+    },
+    {
+      "path": "source_slice_refinement",
+      "result": "improved_interpretability_but_not_metric_readiness",
+      "changed_official_readiness": false,
+      "should_retry": false,
+      "retry_condition": "Only after materially stronger precision evidence than the current refined review."
+    }
+  ],
+  "final_positioning": {
+    "approved_wording": [
+      "This is a reviewable claim release, not a full deck-ready corpus.",
+      "It contains 3 final-usable production-ready personas.",
+      "It contains 1 review-ready, deck-ready-claim-eligible persona under constraint.",
+      "It preserves 1 future subtheme candidate without claiming it as a standalone persona.",
+      "It keeps tail clusters visible as diagnostics-only, not final personas.",
+      "Adjusted coverage is audited and useful, but source balance and weak-source debt prevent full deck-ready status."
+    ],
+    "do_not_claim": [
+      "full deck-ready corpus",
+      "source balance fully resolved",
+      "weak-source debt resolved",
+      "persona_04 is final usable",
+      "persona_05 is a standalone validated persona"
+    ]
+  }
