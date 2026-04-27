@@ -259,7 +259,7 @@ Use the smallest validation tier that matches the change:
 |---|---|---|---|
 | pure utility change | date parser, YAML loader | `make test-unit` | no |
 | schema change | episode columns, label columns | `make validate-schema` | usually no |
-| config change | source yaml, time window | `make validate-config` + `make test-fixture` | no |
+| config change | source yaml, seed bank yaml, time window | `make validate-config` + `make test-fixture` | no |
 | filter rule change | invalid rule, hard negative | `make test-fixture` | no |
 | normalizer change | raw -> normalized mapping | `make test-fixture` | no |
 | episode change | normalized -> episode | `make test-fixture` | no |
@@ -280,6 +280,8 @@ make validate-config
 make validate-schema
 ```
 
+If `make` is unavailable in your shell, run the same tiers through `python run/devtools/test_matrix.py ...`.
+
 Command intent:
 
 - `make test-unit`: fast function-level tests only
@@ -287,7 +289,7 @@ Command intent:
 - `make test-smoke`: config/schema validation + CLI smoke tests + mini pipeline smoke
 - `make test-full`: full pipeline plus snapshot/audit checks
 - `make test-changed`: choose the smallest reasonable suite from current changed files
-- `make validate-config`: YAML/config integrity only
+- `make validate-config`: YAML/config integrity only, including source and seed-bank configs
 - `make validate-schema`: schema contract checks plus schema-focused tests
 
 ### 4. Run Tests

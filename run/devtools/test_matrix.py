@@ -12,7 +12,6 @@ ROOT = Path(__file__).resolve().parents[2]
 UNIT_TEST_MODULES = [
     "tests.test_time_window_filter",
     "tests.test_http_fetch",
-    "tests.test_seed_bank",
     "tests.test_record_access",
     "tests.test_pipeline_schema",
     "tests.test_git_sync",
@@ -62,7 +61,17 @@ CHANGED_PATH_RULES: list[tuple[tuple[str, ...], list[str]]] = [
     (("src/episodes/", "config/segmentation_rules.yaml"), ["validate-config", "test-fixture"]),
     (("src/labeling/", "config/labeling_policy.yaml", "config/codebook.yaml"), ["validate-config", "test-fixture"]),
     (("src/analysis/", "config/scoring.yaml", "config/pipeline_thresholds.yaml"), ["validate-schema", "test-fixture"]),
-    (("config/sources/", "config/time_window.yaml", "config/query_map.yaml", "config/query_seed_taxonomy.yaml", "config/query_expansion_rules.yaml"), ["validate-config", "test-fixture"]),
+    (
+        (
+            "config/sources/",
+            "config/seeds/",
+            "config/time_window.yaml",
+            "config/query_map.yaml",
+            "config/query_seed_taxonomy.yaml",
+            "config/query_expansion_rules.yaml",
+        ),
+        ["validate-config", "test-fixture"],
+    ),
     (("run/pipeline/08_smoke_pipeline.py", "run/pipeline/00_run_all.py"), ["test-smoke"]),
     (("run/pipeline/",), ["test-smoke"]),
     (("tests/",), ["test-unit"]),

@@ -1,0 +1,37 @@
+{
+  "total_labeled_rows": 12674,
+  "persona_core_rows": 9445,
+  "non_core_labeled_rows": 3229,
+  "count_by_denominator_eligibility_category": {
+    "persona_core_evidence": 9445,
+    "generic_low_signal": 3229
+  },
+  "eligible_row_count": 9445,
+  "ineligible_row_count": 3229,
+  "ambiguous_review_bucket_count": 0,
+  "ineligible_count_by_source": {
+    "adobe_analytics_community": 449,
+    "domo_community_forum": 932,
+    "github_discussions": 217,
+    "google_developer_forums": 560,
+    "hubspot_community": 13,
+    "klaviyo_community": 7,
+    "power_bi_community": 15,
+    "reddit": 17,
+    "shopify_community": 175,
+    "stackoverflow": 844
+  },
+  "ineligible_count_by_source_tier": {
+    "core_representative_source": 15,
+    "excluded_from_deck_ready_core": 7,
+    "exploratory_edge_source": 932,
+    "supporting_validation_source": 2275
+  },
+  "ineligible_count_by_reason": {
+    "Row lacks enough business context or signal quality to support deck-ready denominator reasoning.": 3229
+  },
+  "persona_core_rows_always_eligible_check": true,
+  "current_persona_core_coverage_of_all_labeled_pct": 74.5,
+  "adjusted_coverage_status": "not_computed_in_phase_1",
+  "note": "Adjusted coverage is intentionally not computed in Phase 1. Current denominator remains all_labeled_rows."
+}
