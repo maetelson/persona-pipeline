@@ -91,7 +91,7 @@ class SourceSliceClassificationTests(unittest.TestCase):
         self.assertEqual(str(rows.loc["ep-filters", "source_slice_name"]), "report_logic_and_filters")
         self.assertEqual(str(rows.loc["ep-filters", "source_slice_category"]), "evidence_producing_slice")
 
-    def test_google_other_operational_remains_visible_as_debt(self) -> None:
+    def test_google_support_tail_remains_visible_as_debt(self) -> None:
         outputs = self._build_outputs(
             labeled_rows=[{"episode_id": "ep-google-debt", "persona_core_eligible": False}],
             episode_rows=[
@@ -112,9 +112,11 @@ class SourceSliceClassificationTests(unittest.TestCase):
             ],
         )
         row = outputs["rows_df"].iloc[0]
-        self.assertEqual(str(row["source_slice_name"]), "other_operational")
-        self.assertEqual(str(row["source_slice_category"]), "debt_producing_slice")
-        self.assertEqual(str(row["source_slice_quarantine_status"]), "diagnostics_only_not_quarantined")
+        self.assertEqual(str(row["source_slice_name"]), "report_delivery_ui")
+        self.assertEqual(str(row["source_slice_category"]), "mixed_evidence_slice")
+        self.assertEqual(str(row["source_slice_quarantine_status"]), "active_diagnostic")
+        self.assertEqual(str(row["refined_source_slice_name"]), "google_auth_query_formula_support")
+        self.assertEqual(str(row["refined_source_slice_category"]), "debt_producing_slice")
 
     def test_adobe_metric_reconciliation_is_evidence_producing(self) -> None:
         outputs = self._build_outputs(
@@ -139,6 +141,7 @@ class SourceSliceClassificationTests(unittest.TestCase):
         row = outputs["rows_df"].iloc[0]
         self.assertEqual(str(row["source_slice_name"]), "metric_reconciliation")
         self.assertEqual(str(row["source_slice_category"]), "evidence_producing_slice")
+        self.assertEqual(str(row["refined_source_slice_name"]), "metric_reconciliation")
 
     def test_adobe_mixed_slices_are_not_over_promoted(self) -> None:
         outputs = self._build_outputs(
@@ -165,6 +168,10 @@ class SourceSliceClassificationTests(unittest.TestCase):
         self.assertEqual(str(row["source_slice_category"]), "mixed_evidence_slice")
         self.assertFalse(bool(row["source_slice_deck_ready_balance_eligible"]))
         self.assertTrue(bool(row["source_slice_weak_debt_eligible"]))
+        self.assertIn(
+            str(row["refined_source_slice_name"]),
+            {"adobe_workspace_business_reporting", "adobe_workspace_ambiguous"},
+        )
 
     def test_domo_debt_producing_slices_do_not_disappear(self) -> None:
         outputs = self._build_outputs(
@@ -287,6 +294,215 @@ class SourceSliceClassificationTests(unittest.TestCase):
         )
         row = outputs["rows_df"].iloc[0]
         self.assertEqual(str(row["source_slice_category"]), "mixed_evidence_slice")
+
+    def test_google_report_mismatch_routes_to_refined_delivery_slice(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[{"episode_id": "ep-google-business", "persona_core_eligible": False}],
+            episode_rows=[
+                {
+                    "episode_id": "ep-google-business",
+                    "source": "google_developer_forums",
+                    "normalized_episode": "Looker Studio dashboard does not match Google Ads totals and the scheduled stakeholder report is wrong.",
+                    "url": "https://discuss.google.dev/report-mismatch",
+                }
+            ],
+            denominator_rows=[
+                {
+                    "episode_id": "ep-google-business",
+                    "denominator_eligibility_category": "ambiguous_review_bucket",
+                    "deck_ready_denominator_eligible": True,
+                    "technical_noise_confidence": 0.35,
+                }
+            ],
+        )
+        row = outputs["rows_df"].iloc[0]
+        self.assertEqual(str(row["source_slice_name"]), "report_delivery_ui")
+        self.assertEqual(str(row["refined_source_slice_name"]), "google_delivery_mismatch_missing_data")
+        self.assertIn(str(row["refined_source_slice_category"]), {"evidence_producing_slice", "mixed_evidence_slice"})
+
+    def test_google_oauth_setup_routes_to_refined_support_slice(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[{"episode_id": "ep-google-tech", "persona_core_eligible": False}],
+            episode_rows=[
+                {
+                    "episode_id": "ep-google-tech",
+                    "source": "google_developer_forums",
+                    "normalized_episode": "Looker Studio OAuth permission and property setup issue blocks connector access.",
+                    "url": "https://discuss.google.dev/oauth-property",
+                }
+            ],
+            denominator_rows=[
+                {
+                    "episode_id": "ep-google-tech",
+                    "denominator_eligibility_category": "setup_auth_permission_noise",
+                    "deck_ready_denominator_eligible": False,
+                    "technical_noise_confidence": 0.96,
+                }
+            ],
+        )
+        row = outputs["rows_df"].iloc[0]
+        self.assertEqual(str(row["source_slice_name"]), "report_delivery_ui")
+        self.assertEqual(str(row["refined_source_slice_name"]), "google_auth_query_formula_support")
+        self.assertEqual(str(row["refined_source_slice_category"]), "debt_producing_slice")
+
+    def test_google_mixed_reporting_and_setup_stays_mixed(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[{"episode_id": "ep-google-mixed", "persona_core_eligible": False}],
+            episode_rows=[
+                {
+                    "episode_id": "ep-google-mixed",
+                    "source": "google_developer_forums",
+                    "normalized_episode": "Scheduled report delivery mismatch appears after connector setup and query parameter changes.",
+                    "url": "https://discuss.google.dev/report-setup-mixed",
+                }
+            ],
+            denominator_rows=[
+                {
+                    "episode_id": "ep-google-mixed",
+                    "denominator_eligibility_category": "ambiguous_review_bucket",
+                    "deck_ready_denominator_eligible": True,
+                    "technical_noise_confidence": 0.55,
+                }
+            ],
+        )
+        row = outputs["rows_df"].iloc[0]
+        self.assertEqual(str(row["refined_source_slice_name"]), "google_report_delivery_mixed_uncertain")
+        self.assertEqual(str(row["refined_source_slice_category"]), "mixed_evidence_slice")
+
+    def test_adobe_workspace_business_reporting_routes_correctly(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[{"episode_id": "ep-adobe-workspace", "persona_core_eligible": False}],
+            episode_rows=[
+                {
+                    "episode_id": "ep-adobe-workspace",
+                    "source": "adobe_analytics_community",
+                    "normalized_episode": "Workspace report delivery is slow and metric comparison is wrong for stakeholder reporting.",
+                    "url": "https://experienceleague.adobe.com/workspace-report",
+                }
+            ],
+            denominator_rows=[
+                {
+                    "episode_id": "ep-adobe-workspace",
+                    "denominator_eligibility_category": "ambiguous_review_bucket",
+                    "deck_ready_denominator_eligible": True,
+                    "technical_noise_confidence": 0.3,
+                }
+            ],
+        )
+        row = outputs["rows_df"].iloc[0]
+        self.assertEqual(str(row["refined_source_slice_name"]), "adobe_workspace_business_reporting")
+        self.assertIn(str(row["refined_source_slice_category"]), {"evidence_producing_slice", "mixed_evidence_slice"})
+
+    def test_adobe_tracking_setup_routes_to_noise(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[{"episode_id": "ep-adobe-track", "persona_core_eligible": False}],
+            episode_rows=[
+                {
+                    "episode_id": "ep-adobe-track",
+                    "source": "adobe_analytics_community",
+                    "normalized_episode": "eVar tracking implementation and tag manager server call setup are failing.",
+                    "url": "https://experienceleague.adobe.com/tracking-setup",
+                }
+            ],
+            denominator_rows=[
+                {
+                    "episode_id": "ep-adobe-track",
+                    "denominator_eligibility_category": "source_specific_support_noise",
+                    "deck_ready_denominator_eligible": False,
+                    "technical_noise_confidence": 0.94,
+                }
+            ],
+        )
+        row = outputs["rows_df"].iloc[0]
+        self.assertEqual(str(row["source_slice_name"]), "implementation_tracking")
+        self.assertEqual(str(row["refined_source_slice_name"]), "adobe_tracking_setup_noise")
+        self.assertEqual(str(row["refined_source_slice_category"]), "debt_producing_slice")
+
+    def test_adobe_api_admin_support_routes_to_noise(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[{"episode_id": "ep-adobe-api", "persona_core_eligible": False}],
+            episode_rows=[
+                {
+                    "episode_id": "ep-adobe-api",
+                    "source": "adobe_analytics_community",
+                    "normalized_episode": "API admin configuration and virtual report suite setup are blocking access.",
+                    "url": "https://experienceleague.adobe.com/api-admin",
+                }
+            ],
+            denominator_rows=[
+                {
+                    "episode_id": "ep-adobe-api",
+                    "denominator_eligibility_category": "server_deploy_config_noise",
+                    "deck_ready_denominator_eligible": False,
+                    "technical_noise_confidence": 0.92,
+                }
+            ],
+        )
+        row = outputs["rows_df"].iloc[0]
+        self.assertEqual(str(row["source_slice_name"]), "api_admin_config")
+        self.assertEqual(str(row["refined_source_slice_name"]), "adobe_api_admin_support_noise")
+        self.assertEqual(str(row["refined_source_slice_category"]), "debt_producing_slice")
+
+    def test_adobe_ambiguous_rows_remain_mixed(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[{"episode_id": "ep-adobe-amb", "persona_core_eligible": False}],
+            episode_rows=[
+                {
+                    "episode_id": "ep-adobe-amb",
+                    "source": "adobe_analytics_community",
+                    "normalized_episode": "Workspace report suite issue mixes stakeholder dashboard use with processing rule troubleshooting.",
+                    "url": "https://experienceleague.adobe.com/workspace-amb",
+                }
+            ],
+            denominator_rows=[
+                {
+                    "episode_id": "ep-adobe-amb",
+                    "denominator_eligibility_category": "ambiguous_review_bucket",
+                    "deck_ready_denominator_eligible": True,
+                    "technical_noise_confidence": 0.5,
+                }
+            ],
+        )
+        row = outputs["rows_df"].iloc[0]
+        self.assertIn(
+            str(row["refined_source_slice_name"]),
+            {"adobe_workspace_ambiguous", "adobe_api_admin_ambiguous", "adobe_operational_ambiguous", "adobe_tracking_ambiguous"},
+        )
+        self.assertEqual(str(row["refined_source_slice_category"]), "mixed_evidence_slice")
+
+    def test_official_fields_remain_present_with_refined_output(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[{"episode_id": "ep-fields", "persona_core_eligible": False}],
+            episode_rows=[
+                {
+                    "episode_id": "ep-fields",
+                    "source": "google_developer_forums",
+                    "normalized_episode": "Dashboard report mismatch for stakeholders.",
+                    "url": "https://discuss.google.dev/fields",
+                }
+            ],
+            denominator_rows=[
+                {
+                    "episode_id": "ep-fields",
+                    "denominator_eligibility_category": "ambiguous_review_bucket",
+                    "deck_ready_denominator_eligible": True,
+                    "technical_noise_confidence": 0.4,
+                }
+            ],
+        )
+        row = outputs["rows_df"].iloc[0]
+        for column in [
+            "source_slice_id",
+            "source_slice_name",
+            "source_slice_category",
+            "refined_source_slice_id",
+            "refined_source_slice_name",
+            "refined_source_slice_category",
+            "refined_source_slice_parent",
+            "refined_source_slice_refinement_status",
+        ]:
+            self.assertIn(column, outputs["rows_df"].columns)
+            self.assertNotEqual(str(row[column]), "")
 
     def test_official_metrics_and_persona_counts_do_not_change(self) -> None:
         overview_df = pd.read_csv(ROOT_DIR / "data" / "analysis" / "overview.csv")

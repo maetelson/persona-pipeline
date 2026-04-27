@@ -8,16 +8,16 @@ It does not quarantine slices, does not change official source balance or weak-s
 ## Current Outputs
 
 - total_rows_classified: `12674`
-- evidence_producing_slice_count: `9296`
-- mixed_evidence_slice_count: `1112`
-- debt_producing_slice_count: `2266`
+- evidence_producing_slice_count: `9228`
+- mixed_evidence_slice_count: `1187`
+- debt_producing_slice_count: `2259`
 - diagnostics_only_count: `0`
 
 ## Weak-Source Highlights
 
 - `adobe_analytics_community`: `{'evidence_producing_slice': 33, 'mixed_evidence_slice': 612}`
 - `domo_community_forum`: `{'debt_producing_slice': 1044}`
-- `google_developer_forums`: `{'debt_producing_slice': 157, 'evidence_producing_slice': 351, 'mixed_evidence_slice': 304}`
+- `google_developer_forums`: `{'debt_producing_slice': 150, 'evidence_producing_slice': 283, 'mixed_evidence_slice': 379}`
 - `klaviyo_community`: `{'debt_producing_slice': 31, 'evidence_producing_slice': 79}`
 
 ## Guardrails

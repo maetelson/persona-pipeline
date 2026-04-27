@@ -1,0 +1,201 @@
+{
+  "total_rows_classified": 12674,
+  "count_by_original_source_slice_name": {
+    "adobe_analytics_community::other_operational": 277,
+    "adobe_analytics_community::workspace_reporting": 223,
+    "adobe_analytics_community::api_admin_config": 78,
+    "adobe_analytics_community::implementation_tracking": 34,
+    "adobe_analytics_community::metric_reconciliation": 33,
+    "domo_community_forum::card_report_delivery": 513,
+    "domo_community_forum::etl_dataset_config": 259,
+    "domo_community_forum::other_operational": 196,
+    "domo_community_forum::beast_mode_formula": 38,
+    "domo_community_forum::filtering_logic": 38,
+    "github_discussions::evidence_aligned_non_weak_source": 1102,
+    "github_discussions::technical_noise_aligned_non_weak_source": 188,
+    "github_discussions::ambiguous_non_weak_source": 23,
+    "google_developer_forums::report_delivery_ui": 379,
+    "google_developer_forums::report_logic_and_filters": 221,
+    "google_developer_forums::other_operational": 150,
+    "google_developer_forums::sharing_permissions_delivery": 62,
+    "hubspot_community::evidence_aligned_non_weak_source": 784,
+    "hubspot_community::technical_noise_aligned_non_weak_source": 10,
+    "hubspot_community::ambiguous_non_weak_source": 2,
+    "klaviyo_community::revenue_reporting": 54,
+    "klaviyo_community::other_operational": 31,
+    "klaviyo_community::segment_flow_logic": 25,
+    "metabase_discussions::evidence_aligned_non_weak_source": 2055,
+    "mixpanel_community::evidence_aligned_non_weak_source": 27,
+    "power_bi_community::evidence_aligned_non_weak_source": 3103,
+    "power_bi_community::technical_noise_aligned_non_weak_source": 9,
+    "power_bi_community::ambiguous_non_weak_source": 2,
+    "qlik_community::evidence_aligned_non_weak_source": 48,
+    "reddit::evidence_aligned_non_weak_source": 197,
+    "reddit::ambiguous_non_weak_source": 10,
+    "reddit::technical_noise_aligned_non_weak_source": 7,
+    "shopify_community::evidence_aligned_non_weak_source": 463,
+    "shopify_community::technical_noise_aligned_non_weak_source": 151,
+    "shopify_community::ambiguous_non_weak_source": 10,
+    "sisense_community::evidence_aligned_non_weak_source": 189,
+    "stackoverflow::evidence_aligned_non_weak_source": 865,
+    "stackoverflow::technical_noise_aligned_non_weak_source": 669,
+    "stackoverflow::ambiguous_non_weak_source": 149
+  },
+  "count_by_refined_source_slice_name": {
+    "adobe_analytics_community::adobe_operational_reporting_evidence": 74,
+    "adobe_analytics_community::adobe_workspace_business_reporting": 49,
+    "adobe_analytics_community::adobe_workspace_ambiguous": 47,
+    "adobe_analytics_community::adobe_api_admin_business_blocker": 46,
+    "adobe_analytics_community::adobe_operational_support_noise": 36,
+    "adobe_analytics_community::metric_reconciliation": 33,
+    "adobe_analytics_community::adobe_tracking_ambiguous": 29,
+    "adobe_analytics_community::adobe_api_admin_ambiguous": 27,
+    "adobe_analytics_community::adobe_operational_ambiguous": 26,
+    "adobe_analytics_community::adobe_api_admin_support_noise": 5,
+    "adobe_analytics_community::adobe_tracking_setup_noise": 5,
+    "adobe_analytics_community::adobe_workspace_technical_setup": 1,
+    "domo_community_forum::card_report_delivery": 513,
+    "domo_community_forum::etl_dataset_config": 259,
+    "domo_community_forum::other_operational": 196,
+    "domo_community_forum::beast_mode_formula": 38,
+    "domo_community_forum::filtering_logic": 38,
+    "github_discussions::evidence_aligned_non_weak_source": 1102,
+    "github_discussions::technical_noise_aligned_non_weak_source": 188,
+    "github_discussions::ambiguous_non_weak_source": 23,
+    "google_developer_forums::report_logic_and_filters": 221,
+    "google_developer_forums::google_delivery_mismatch_missing_data": 84,
+    "google_developer_forums::other_operational": 150,
+    "google_developer_forums::google_report_delivery_mixed_uncertain": 113,
+    "google_developer_forums::sharing_permissions_delivery": 62,
+    "google_developer_forums::google_auth_query_formula_support": 19,
+    "hubspot_community::evidence_aligned_non_weak_source": 784,
+    "hubspot_community::technical_noise_aligned_non_weak_source": 10,
+    "hubspot_community::ambiguous_non_weak_source": 2,
+    "klaviyo_community::revenue_reporting": 54,
+    "klaviyo_community::other_operational": 31,
+    "klaviyo_community::segment_flow_logic": 25,
+    "metabase_discussions::evidence_aligned_non_weak_source": 2055,
+    "mixpanel_community::evidence_aligned_non_weak_source": 27,
+    "power_bi_community::evidence_aligned_non_weak_source": 3103,
+    "power_bi_community::technical_noise_aligned_non_weak_source": 9,
+    "power_bi_community::ambiguous_non_weak_source": 2,
+    "qlik_community::evidence_aligned_non_weak_source": 48,
+    "reddit::evidence_aligned_non_weak_source": 197,
+    "reddit::ambiguous_non_weak_source": 10,
+    "reddit::technical_noise_aligned_non_weak_source": 7,
+    "shopify_community::evidence_aligned_non_weak_source": 463,
+    "shopify_community::technical_noise_aligned_non_weak_source": 151,
+    "shopify_community::ambiguous_non_weak_source": 10,
+    "sisense_community::evidence_aligned_non_weak_source": 189,
+    "stackoverflow::evidence_aligned_non_weak_source": 865,
+    "stackoverflow::technical_noise_aligned_non_weak_source": 669,
+    "stackoverflow::ambiguous_non_weak_source": 149
+  },
+  "count_by_refined_source_slice_category": {
+    "debt_producing_slice": 2325,
+    "evidence_producing_slice": 9435,
+    "mixed_evidence_slice": 914
+  },
+  "google_refined_split_summary": {
+    "row_count": 812,
+    "count_by_original_slice_name": {
+      "other_operational": 150,
+      "report_delivery_ui": 379,
+      "report_logic_and_filters": 221,
+      "sharing_permissions_delivery": 62
+    },
+    "count_by_refined_slice_name": {
+      "google_auth_query_formula_support": 19,
+      "google_delivery_mismatch_missing_data": 247,
+      "google_report_delivery_mixed_uncertain": 113,
+      "other_operational": 150,
+      "report_logic_and_filters": 221,
+      "sharing_permissions_delivery": 62
+    },
+    "count_by_refined_slice_category": {
+      "debt_producing_slice": 169,
+      "evidence_producing_slice": 367,
+      "mixed_evidence_slice": 276
+    },
+    "refinement_status_counts": {
+      "inherited_from_parent": 433,
+      "refined_rule_applied": 379
+    }
+  },
+  "adobe_refined_split_summary": {
+    "row_count": 645,
+    "count_by_original_slice_name": {
+      "api_admin_config": 78,
+      "implementation_tracking": 34,
+      "metric_reconciliation": 33,
+      "other_operational": 277,
+      "workspace_reporting": 223
+    },
+    "count_by_refined_slice_name": {
+      "adobe_api_admin_ambiguous": 27,
+      "adobe_api_admin_business_blocker": 46,
+      "adobe_api_admin_support_noise": 5,
+      "adobe_operational_ambiguous": 26,
+      "adobe_operational_reporting_evidence": 215,
+      "adobe_operational_support_noise": 36,
+      "adobe_tracking_ambiguous": 29,
+      "adobe_tracking_setup_noise": 5,
+      "adobe_workspace_ambiguous": 47,
+      "adobe_workspace_business_reporting": 175,
+      "adobe_workspace_technical_setup": 1,
+      "metric_reconciliation": 33
+    },
+    "count_by_refined_slice_category": {
+      "debt_producing_slice": 47,
+      "evidence_producing_slice": 156,
+      "mixed_evidence_slice": 442
+    },
+    "refinement_status_counts": {
+      "inherited_from_parent": 33,
+      "refined_rule_applied": 612
+    }
+  },
+  "comparison_to_mixed_slice_precision_review_expectations": {
+    "google_report_delivery_ui_expected_business_lead": {
+      "source": "google_developer_forums",
+      "original_slice": "report_delivery_ui",
+      "expected_review_direction": "business_leaning_mixed_with_small_debt_tail",
+      "observed_refined_breakdown": {
+        "google_auth_query_formula_support": 19,
+        "google_delivery_mismatch_missing_data": 247,
+        "google_report_delivery_mixed_uncertain": 113,
+        "other_operational": 150,
+        "report_logic_and_filters": 221,
+        "sharing_permissions_delivery": 62
+      }
+    },
+    "adobe_workspace_reporting_expected_business_lead": {
+      "source": "adobe_analytics_community",
+      "original_slice": "workspace_reporting",
+      "expected_review_direction": "business_heavy_mixed",
+      "observed_refined_breakdown": {
+        "adobe_api_admin_ambiguous": 27,
+        "adobe_api_admin_business_blocker": 46,
+        "adobe_api_admin_support_noise": 5,
+        "adobe_operational_ambiguous": 26,
+        "adobe_operational_reporting_evidence": 215,
+        "adobe_operational_support_noise": 36,
+        "adobe_tracking_ambiguous": 29,
+        "adobe_tracking_setup_noise": 5,
+        "adobe_workspace_ambiguous": 47,
+        "adobe_workspace_business_reporting": 175,
+        "adobe_workspace_technical_setup": 1,
+        "metric_reconciliation": 33
+      }
+    }
+  },
+  "official_metrics_unchanged_confirmation": {
+    "effective_balanced_source_count": "5.89",
+    "weak_source_cost_center_count": "4",
+    "core_readiness_weak_source_cost_center_count": "3",
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "final_usable_persona_count": "3",
+    "note": "Refined mixed-slice diagnostics do not change official source balance, weak-source counts, readiness, or persona counts."
+  },
+  "note": "Refined mixed-slice diagnostics are diagnostics-only. They do not change official source balance, weak-source counts, readiness gates, or persona semantics."
+}
