@@ -1,0 +1,220 @@
+{
+  "total_rows_classified": 12674,
+  "count_by_source_slice_category": {
+    "debt_producing_slice": 2266,
+    "evidence_producing_slice": 9296,
+    "mixed_evidence_slice": 1112
+  },
+  "count_by_source": {
+    "adobe_analytics_community": 645,
+    "domo_community_forum": 1044,
+    "github_discussions": 1313,
+    "google_developer_forums": 812,
+    "hubspot_community": 796,
+    "klaviyo_community": 110,
+    "metabase_discussions": 2055,
+    "mixpanel_community": 27,
+    "power_bi_community": 3114,
+    "qlik_community": 48,
+    "reddit": 214,
+    "shopify_community": 624,
+    "sisense_community": 189,
+    "stackoverflow": 1683
+  },
+  "count_by_source_and_slice_category": {
+    "adobe_analytics_community": {
+      "evidence_producing_slice": 33,
+      "mixed_evidence_slice": 612
+    },
+    "domo_community_forum": {
+      "debt_producing_slice": 1044
+    },
+    "github_discussions": {
+      "debt_producing_slice": 188,
+      "evidence_producing_slice": 1102,
+      "mixed_evidence_slice": 23
+    },
+    "google_developer_forums": {
+      "debt_producing_slice": 157,
+      "evidence_producing_slice": 351,
+      "mixed_evidence_slice": 304
+    },
+    "hubspot_community": {
+      "debt_producing_slice": 10,
+      "evidence_producing_slice": 784,
+      "mixed_evidence_slice": 2
+    },
+    "klaviyo_community": {
+      "debt_producing_slice": 31,
+      "evidence_producing_slice": 79
+    },
+    "metabase_discussions": {
+      "evidence_producing_slice": 2055
+    },
+    "mixpanel_community": {
+      "evidence_producing_slice": 27
+    },
+    "power_bi_community": {
+      "debt_producing_slice": 9,
+      "evidence_producing_slice": 3103,
+      "mixed_evidence_slice": 2
+    },
+    "qlik_community": {
+      "evidence_producing_slice": 48
+    },
+    "reddit": {
+      "debt_producing_slice": 7,
+      "evidence_producing_slice": 197,
+      "mixed_evidence_slice": 10
+    },
+    "shopify_community": {
+      "debt_producing_slice": 151,
+      "evidence_producing_slice": 463,
+      "mixed_evidence_slice": 10
+    },
+    "sisense_community": {
+      "evidence_producing_slice": 189
+    },
+    "stackoverflow": {
+      "debt_producing_slice": 669,
+      "evidence_producing_slice": 865,
+      "mixed_evidence_slice": 149
+    }
+  },
+  "evidence_producing_slice_count": 9296,
+  "debt_producing_slice_count": 2266,
+  "mixed_evidence_slice_count": 1112,
+  "diagnostics_only_count": 0,
+  "weak_source_slice_summary": {
+    "adobe_analytics_community": {
+      "row_count": 645,
+      "count_by_slice_category": {
+        "evidence_producing_slice": 33,
+        "mixed_evidence_slice": 612
+      },
+      "slice_breakdown": [
+        {
+          "source_slice_name": "other_operational",
+          "source_slice_category": "mixed_evidence_slice",
+          "row_count": 277
+        },
+        {
+          "source_slice_name": "workspace_reporting",
+          "source_slice_category": "mixed_evidence_slice",
+          "row_count": 223
+        },
+        {
+          "source_slice_name": "api_admin_config",
+          "source_slice_category": "mixed_evidence_slice",
+          "row_count": 78
+        },
+        {
+          "source_slice_name": "implementation_tracking",
+          "source_slice_category": "mixed_evidence_slice",
+          "row_count": 34
+        },
+        {
+          "source_slice_name": "metric_reconciliation",
+          "source_slice_category": "evidence_producing_slice",
+          "row_count": 33
+        }
+      ]
+    },
+    "domo_community_forum": {
+      "row_count": 1044,
+      "count_by_slice_category": {
+        "debt_producing_slice": 1044
+      },
+      "slice_breakdown": [
+        {
+          "source_slice_name": "card_report_delivery",
+          "source_slice_category": "debt_producing_slice",
+          "row_count": 513
+        },
+        {
+          "source_slice_name": "etl_dataset_config",
+          "source_slice_category": "debt_producing_slice",
+          "row_count": 259
+        },
+        {
+          "source_slice_name": "other_operational",
+          "source_slice_category": "debt_producing_slice",
+          "row_count": 196
+        },
+        {
+          "source_slice_name": "beast_mode_formula",
+          "source_slice_category": "debt_producing_slice",
+          "row_count": 38
+        },
+        {
+          "source_slice_name": "filtering_logic",
+          "source_slice_category": "debt_producing_slice",
+          "row_count": 38
+        }
+      ]
+    },
+    "google_developer_forums": {
+      "row_count": 812,
+      "count_by_slice_category": {
+        "debt_producing_slice": 157,
+        "evidence_producing_slice": 351,
+        "mixed_evidence_slice": 304
+      },
+      "slice_breakdown": [
+        {
+          "source_slice_name": "report_delivery_ui",
+          "source_slice_category": "mixed_evidence_slice",
+          "row_count": 304
+        },
+        {
+          "source_slice_name": "report_logic_and_filters",
+          "source_slice_category": "evidence_producing_slice",
+          "row_count": 201
+        },
+        {
+          "source_slice_name": "other_operational",
+          "source_slice_category": "debt_producing_slice",
+          "row_count": 157
+        },
+        {
+          "source_slice_name": "sharing_permissions_delivery",
+          "source_slice_category": "evidence_producing_slice",
+          "row_count": 150
+        }
+      ]
+    },
+    "klaviyo_community": {
+      "row_count": 110,
+      "count_by_slice_category": {
+        "debt_producing_slice": 31,
+        "evidence_producing_slice": 79
+      },
+      "slice_breakdown": [
+        {
+          "source_slice_name": "revenue_reporting",
+          "source_slice_category": "evidence_producing_slice",
+          "row_count": 54
+        },
+        {
+          "source_slice_name": "other_operational",
+          "source_slice_category": "debt_producing_slice",
+          "row_count": 31
+        },
+        {
+          "source_slice_name": "segment_flow_logic",
+          "source_slice_category": "evidence_producing_slice",
+          "row_count": 25
+        }
+      ]
+    }
+  },
+  "official_metrics_unchanged_confirmation": {
+    "effective_balanced_source_count": "5.89",
+    "weak_source_cost_center_count": "4",
+    "core_readiness_weak_source_cost_center_count": "3",
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "final_usable_persona_count": "3",
+    "note": "Phase 1 source-slice diagnostics do not change official source balance, weak-source counts, readiness, or persona counts."
+  },
+  "boolean_default_note": "Conditional slice-policy concepts are represented with conservative booleans in Phase 1. Mixed, exploratory, diagnostics-only, and insufficient-evidence slices default to non-balance-eligible and weak-debt-eligible until a later policy pass defines audited secondary metrics."
+}
