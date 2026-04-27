@@ -1,98 +1,76 @@
-# Persona Mining Pipeline
+# LOGUE Persona Pipeline
 
-> Reproducible qualitative data mining for evidence-based persona discovery from public community data.
+> Evidence-first persona discovery from noisy public community data.
 
 ![Python 3.11](https://img.shields.io/badge/python-3.11-blue)
-![Local Only](https://img.shields.io/badge/architecture-local--only-informational)
-![Pipeline](https://img.shields.io/badge/output-reviewable%20workbook-success)
-![Status](https://img.shields.io/badge/status-reviewable%20release%20%2F%20research%20pipeline-orange)
+![Architecture](https://img.shields.io/badge/architecture-local--only-informational)
+![Pipeline](https://img.shields.io/badge/pipeline-file--based-success)
+![Release](https://img.shields.io/badge/release-reviewable%20claim-orange)
+![Workbook](https://img.shields.io/badge/workbook-not%20deck--ready-lightgrey)
 
-This repository turns messy public discussion data into auditable persona evidence. It collects multi-source community data, normalizes it into a common schema, segments pain episodes, labels them with rules plus optional LLM assistance, clusters persona candidates, scores readiness, and exports a reviewable workbook.
+LOGUE Persona Pipeline turns messy community discussions into auditable persona evidence. It collects, filters, labels, clusters, scores, and exports user pain signals into a reviewable persona workbook with source-balance checks, weak-source diagnostics, and explicit readiness tiers.
 
-It is not a SaaS product, a dashboard template, or a one-shot LLM summarizer. It is a local, file-based research pipeline built for product discovery, UX research, market pain-point mining, and evidence review.
+This is not another LLM summarizer. It is a research pipeline designed to show what you can claim, what you should review, and what you should not overstate.
 
-Current workbook artifact: [`data/output/persona_pipeline_output.xlsx`](./data/output/persona_pipeline_output.xlsx)  
-Current release label: `Reviewable release / research pipeline`
+**Current release status**
 
-## Problem
-
-Persona research often falls into one of three traps:
-
-- too small: a handful of interviews becomes the whole market narrative
-- too manual: tagging, clustering, and evidence review do not scale
-- too vague: LLM summaries sound polished but hide weak grounding, source bias, and duplicate claims
-
-Public communities contain real pain signals, but they are noisy, duplicated, source-biased, and structurally inconsistent. A Reddit thread, a forum post, a GitHub discussion, and a Stack Overflow question do not arrive in the same shape, and they do not deserve the same evidentiary weight.
-
-This project exists to turn that mess into something reviewable: auditable persona candidates with source-aware diagnostics, explicit readiness tiers, and workbook artifacts that can be inspected instead of merely trusted.
+- `reviewable claim release`
+- not a full deck-ready corpus
+- not a production-ready persona system as a whole
+- `3` final-usable, production-ready personas
+- `1` review-ready, deck-ready-claim-eligible persona under constraint
+- adjusted denominator coverage passes as an audited secondary metric
+- source balance and weak-source debt still block full deck-ready status
 
 ## Why This Matters
 
-Teams make product, UX, and GTM decisions from personas all the time. If the persona pipeline cannot show where a claim came from, how balanced the evidence is, and what remains weak, the result is usually presentation-ready fiction.
+LLMs can generate convincing personas from weak evidence.
 
-This repository aims for a better standard: quality gates, not vibes.
+Community data is noisy, biased, duplicated, support-heavy, and structurally inconsistent. A Stack Overflow debugging thread, a Reddit complaint, a GitHub discussion, and a vendor community post do not carry the same evidentiary weight, even if they talk about similar pain.
 
-## What This Project Does
+Good persona research is not about generating attractive narratives. It is about knowing:
 
-The pipeline processes public/community data through explicit, rerunnable stages:
+- what evidence supports each claim
+- which sources shaped the result
+- where the system should stop before overclaiming
 
-1. collect public/community data into raw JSONL
-2. normalize heterogeneous sources into a shared schema
+This repository focuses on auditability, source diagnostics, quality gates, and claim boundaries rather than polished output alone.
+
+## What The Pipeline Does
+
+The pipeline converts public/community data into a reviewable workbook through explicit, rerunnable stages:
+
+1. collect public/community data
+2. normalize heterogeneous sources
 3. filter invalid and noisy rows
-4. prefilter for pain/relevance
-5. build episode-level units from posts
+4. prefilter for relevance
+5. build user-pain episodes
 6. label episodes with rule-based and optional LLM-assisted workflows
-7. discover persona axes from the corpus
+7. discover persona axes
 8. cluster and score persona candidates
-9. evaluate source balance, weak-source debt, and evidence quality
-10. export a reviewable workbook and supporting artifacts
+9. audit source balance, weak-source debt, denominator eligibility, and readiness
+10. export workbook artifacts for review
 
-This keeps raw collection separate from filtering, episode segmentation, labeling, clustering, and export. Each stage is local, file-based, and rerunnable.
+The point is not just to find patterns. The point is to preserve enough structure that an analyst can inspect where those patterns came from.
 
-## Why It Is Different
-
-Most "persona generation" projects stop at scraping plus summarization. This one does not.
-
-- Evidence-first persona generation: personas are backed by episode-level evidence, not just generated prose.
-- Source-aware diagnostics: source balance, source-tier behavior, and weak-source debt are first-class outputs.
-- Weak-source handling: low-quality or weakly contributing sources are diagnosed, not silently blended away.
-- Readiness distinctions: review-ready, production-ready, claim-eligible, and blocked candidates are deliberately separated.
-- Claim controls: deck-ready claim eligibility is tracked independently from workbook readiness.
-- No silent source deletion: raw data is preserved close to source and downstream decisions remain inspectable.
-- Workbook-quality gates: the export is treated as a deliverable with validation, not an afterthought.
-- Reproducible stages: the pipeline is scriptable end to end and emits artifacts suitable for audit and regression testing.
-
-## Pipeline Overview
+## Pipeline Architecture
 
 ```mermaid
 flowchart LR
-    A["Raw Sources"] --> B["Normalization"]
-    B --> C["Valid Filter"]
-    C --> D["Relevance Prefilter"]
-    D --> E["Episode Builder"]
-    E --> F["Labeling"]
-    F --> G["Axis Discovery"]
-    G --> H["Clustering + Scoring"]
-    H --> I["Quality Gates"]
-    I --> J["Workbook Export"]
+  A[Public / Community Sources] --> B[Collectors]
+  B --> C[Normalization]
+  C --> D[Invalid + Noise Filters]
+  D --> E[Relevance Prefilter]
+  E --> F[Episode Builder]
+  F --> G[Rule + LLM Labeling]
+  G --> H[Axis Discovery]
+  H --> I[Clustering + Scoring]
+  I --> J[Quality Gates]
+  J --> K[Workbook Export]
+  J --> L[Readiness + Source Diagnostics]
 ```
 
-ASCII view:
-
-```text
-Raw Sources
-  -> Normalization
-  -> Valid Filter
-  -> Relevance Prefilter
-  -> Episode Builder
-  -> Labeling
-  -> Axis Discovery
-  -> Clustering + Scoring
-  -> Quality Gates
-  -> Workbook Export
-```
-
-Canonical pipeline order:
+Canonical stage order:
 
 ```bash
 python run/pipeline/00_generate_time_slices.py
@@ -109,100 +87,138 @@ python run/pipeline/06_cluster_and_score.py
 python run/pipeline/07_export_xlsx.py
 ```
 
-## Current Output Status
+This repository is intentionally:
 
-The current release is intentionally described as `reviewable_but_not_deck_ready`.
+- local-only
+- file-based
+- rerunnable stage by stage
+- auditable at every major handoff
 
-- Production-ready personas: `3`
-- Review-ready personas: `1`
-- Deck-ready claim-eligible personas: `4`
-- Blocked/constrained candidates: `1`
+It is intentionally not:
 
-Why the distinction matters:
+- a simple scraper
+- a black-box LLM summarizer
+- a generic dashboard
+- a finished SaaS product
 
-- `production-ready persona`: strong enough to count as final usable output in the current workbook.
-- `review-ready persona`: ready for analyst/research discussion, but not counted as final usable output.
-- `deck-ready claim-eligible persona`: supported strongly enough that claim wording may be used in a deck, but that does not automatically make the persona production-ready or upgrade workbook readiness.
-- `blocked/constrained candidate`: materially limited by evidence, source policy, or readiness constraints and should not be promoted.
+## Why It Feels Different
 
-In the current accepted release:
+Most persona-generation demos stop at "collect text, prompt a model, export a summary."
 
-- the workbook itself remains `reviewable_but_not_deck_ready`
-- the `3` production-ready personas are also the `3` final usable personas
-- the extra claim-eligible persona is discussion-ready, not production-ready
-- one candidate remains blocked and is not claim-eligible
+This one adds the infrastructure that serious research work actually needs:
 
-This is deliberate. The project tracks overclaim risk explicitly rather than pretending every cluster deserves promotion.
+- source-aware evidence weighting
+- weak-source debt diagnostics
+- denominator eligibility diagnostics
+- explicit readiness tiers
+- claim eligibility separate from workbook readiness
+- preserved raw-to-analysis stage boundaries
+- workbook-facing validation instead of narrative-only output
 
-## Key Artifacts
+In practice, that means the pipeline can say:
 
-Primary outputs:
+- "this claim is supported"
+- "this cluster is interesting but constrained"
+- "this source is visible but weak"
+- "this workbook should stop at reviewable, not deck-ready"
 
-- [`data/output/persona_pipeline_output.xlsx`](./data/output/persona_pipeline_output.xlsx)
-- [`data/analysis/overview.csv`](./data/analysis/overview.csv)
-- [`data/analysis/persona_summary.csv`](./data/analysis/persona_summary.csv)
-- [`data/analysis/cluster_stats.csv`](./data/analysis/cluster_stats.csv)
-- [`data/analysis/source_balance_audit.csv`](./data/analysis/source_balance_audit.csv)
-- [`data/analysis/source_diagnostics.csv`](./data/analysis/source_diagnostics.csv)
-- [`data/analysis/persona_promotion_path_debug.csv`](./data/analysis/persona_promotion_path_debug.csv)
+That honesty is part of the product of the repo.
 
-Readiness and policy artifacts:
+## Current Release Snapshot
 
-- [`artifacts/readiness/`](./artifacts/readiness/)
-- [`artifacts/policy/`](./artifacts/policy/)
-- [`artifacts/release/`](./artifacts/release/)
+The accepted release is intentionally frozen as `reviewable_but_not_deck_ready`.
 
-These artifacts are part of the value proposition. They make it possible to inspect how a persona was promoted, why a source is weak, and why a workbook is reviewable instead of deck-ready.
+Headline numbers:
 
-## Quality And Trust Model
+- `final_usable_persona_count = 3`
+- `production_ready_persona_count = 3`
+- `review_ready_persona_count = 1`
+- `deck_ready_claim_eligible_persona_count = 4`
+- original coverage: `74.5`
+- adjusted conservative denominator coverage: `83.25`
+- official effective source balance: `5.89`
+- official weak-source cost centers: `4`
 
-### Quality Gates, Not Vibes
+Interpretation:
 
-The pipeline tries to earn trust through explicit controls:
+- `persona_01`, `persona_02`, `persona_03` are production-ready and final usable
+- `persona_04` is review-ready and deck-ready-claim-eligible under constraint, but not final usable
+- `persona_05` is preserved as a future subtheme candidate / blocked candidate
+- `persona_06+` tail clusters are diagnostics-only
 
-- Source balance checks: personas should not be driven by one dominant or weakly representative source mix.
-- Weak-source cost center handling: weak sources are surfaced as debt instead of being silently averaged away.
-- Source-tier policy: evidence is treated differently depending on whether it comes from core representative, supporting validation, or exploratory edge sources.
-- Persona evidence tiers: readiness depends on evidence shape, not just cluster existence.
-- Claim eligibility controls: deck-ready claim wording is evaluated separately from persona production readiness.
-- Workbook policy checks: the exported workbook is validated against expected count and policy invariants.
+Why the workbook is still not full deck-ready:
 
-Source evidence is interpreted through tiers:
+- adjusted denominator coverage clears the coverage gate only as an audited secondary metric
+- source balance improves only narrowly under diagnostics
+- weak-source debt remains unresolved enough to block a full deck-ready claim
+- refined Google / Adobe slice diagnostics improve interpretability, but not enough to justify a stronger readiness promotion
 
-- `core representative`: the anchor layer for claims that must hold up beyond anecdote
-- `supporting validation`: strengthens a claim but does not substitute for a missing core anchor
-- `exploratory edge`: useful for discovery, hypothesis generation, and edge-case signal, but not enough to carry a production-ready persona alone
+For the final freeze decision, see:
 
-This is why the README does not say "five finished personas" even though multiple persona candidates exist. The system is designed to avoid that kind of inflation.
+- [docs/operational/FINAL_REVIEWABLE_CLAIM_RELEASE.md](docs/operational/FINAL_REVIEWABLE_CLAIM_RELEASE.md)
+
+## Quality Gates And Claim Boundaries
+
+This project treats claim control as a first-class requirement.
+
+Key gate families include:
+
+- core coverage
+- effective source balance
+- source concentration
+- weak-source debt
+- representative example grounding
+- workbook-level readiness policy
+
+Important distinction:
+
+- the workbook can contain useful persona evidence
+- a persona can be claim-eligible
+- a persona can be review-ready
+- and the overall workbook can still remain below full deck-ready
+
+That separation is intentional. It prevents "one interesting cluster" from being mistaken for "a finished persona system."
+
+## Key Outputs
+
+Primary outputs under `data/`:
+
+- [data/output/persona_pipeline_output.xlsx](data/output/persona_pipeline_output.xlsx)
+- [data/analysis/overview.csv](data/analysis/overview.csv)
+- [data/analysis/quality_checks.csv](data/analysis/quality_checks.csv)
+- [data/analysis/persona_summary.csv](data/analysis/persona_summary.csv)
+- [data/analysis/cluster_stats.csv](data/analysis/cluster_stats.csv)
+- [data/analysis/source_balance_audit.csv](data/analysis/source_balance_audit.csv)
+- [data/analysis/source_diagnostics.csv](data/analysis/source_diagnostics.csv)
+
+Important diagnostics and release artifacts:
+
+- [artifacts/readiness/](artifacts/readiness/)
+- [artifacts/release/](artifacts/release/)
+- [docs/operational/FINAL_RELEASE_CHECKLIST.md](docs/operational/FINAL_RELEASE_CHECKLIST.md)
+
+These artifacts matter because they show:
+
+- why a persona was promoted or constrained
+- which sources are helping versus distorting
+- which rows count as denominator-eligible evidence
+- why the workbook stops at reviewable instead of deck-ready
 
 ## Quickstart
 
-### 1. Install
+### Requirements
+
+- Python `3.11`
+- local filesystem access
+- optional API keys only for enabled source or LLM workflows
+
+Install:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Requirements:
-
-- Python `3.11`
-- Core libraries include `pandas`, `pyarrow`, `openpyxl`, and `PyYAML`
-
-### 2. Configure Environment
-
-Required for some live sources:
-
-- `REDDIT_USER_AGENT`
-
-Optional depending on enabled workflows:
-
-- `STACKEXCHANGE_KEY`
-- `GITHUB_TOKEN`
-- `OPENAI_API_KEY`
-- `LLM_MODEL` or `OPENAI_MODEL`
-- `ENABLE_LLM_LABELER`
-
-Example PowerShell setup:
+Example environment setup in PowerShell:
 
 ```powershell
 $env:REDDIT_USER_AGENT="persona-pipeline/0.1 (by /u/your_reddit_username)"
@@ -210,17 +226,39 @@ $env:GITHUB_TOKEN=""
 $env:ENABLE_LLM_LABELER="false"
 ```
 
-You can also use a repo-root `.env` file for local development.
+Optional environment variables depending on enabled workflows:
 
-### 3. Run The Pipeline
+- `REDDIT_USER_AGENT`
+- `STACKEXCHANGE_KEY`
+- `GITHUB_TOKEN`
+- `OPENAI_API_KEY`
+- `LLM_MODEL` or `OPENAI_MODEL`
+- `ENABLE_LLM_LABELER`
 
-Full pipeline:
+### Run The Full Pipeline
 
 ```bash
 python run/pipeline/00_run_all.py
 ```
 
-Common analysis-quality rerun loop:
+### Run The Canonical Stage Sequence
+
+```bash
+python run/pipeline/00_generate_time_slices.py
+python run/pipeline/01_collect_all.py
+python run/pipeline/01_5_expand_queries_from_raw.py
+python run/pipeline/02_normalize_all.py
+python run/pipeline/02.5_filter_time_window.py
+python run/pipeline/03_filter_valid.py
+python run/pipeline/03_5_prefilter_relevance.py
+python run/pipeline/04_build_episodes.py
+python run/pipeline/05_label_episodes.py
+python run/pipeline/06_1_discover_persona_axes.py
+python run/pipeline/06_cluster_and_score.py
+python run/pipeline/07_export_xlsx.py
+```
+
+### Common Analysis Loop
 
 ```bash
 python run/pipeline/03_filter_valid.py
@@ -232,154 +270,127 @@ python run/pipeline/06_cluster_and_score.py
 python run/cli/17_analysis_snapshot.py --compare-latest
 ```
 
-Workbook export:
+### Workbook And Audit Commands
 
 ```bash
 python run/pipeline/07_export_xlsx.py
-```
-
-Useful examples:
-
-```bash
-python run/pipeline/06_cluster_and_score.py
-python run/pipeline/07_export_xlsx.py
-python run/cli/17_analysis_snapshot.py --compare-latest
 python run/cli/16_persona_workbook_audit.py
+python run/cli/17_analysis_snapshot.py --compare-latest
 ```
 
-Important: dependent stages should be run sequentially, not in parallel. This repository treats the pipeline as dependency-sensitive by design.
+Important:
 
-By default, pipeline runs are expected to update canonical outputs under `data/`. Optional diagnostics and experimental sidecar artifacts under `artifacts/` should be treated as opt-in outputs.
+- stages are dependency-sensitive
+- downstream stages should be run sequentially, not in parallel
+- canonical outputs belong under `data/`
+- diagnostics under `artifacts/` are opt-in, not default pipeline output
 
-## Test And Validation Tiers
+For stage order and rerun discipline, see:
 
-Use the smallest validation tier that matches the change:
-
-| Change type | Example | Minimum validation | Full pipeline required |
-|---|---|---|---|
-| pure utility change | date parser, YAML loader | `make test-unit` | no |
-| schema change | episode columns, label columns | `make validate-schema` | usually no |
-| config change | source yaml, seed bank yaml, time window | `make validate-config` + `make test-fixture` | no |
-| filter rule change | invalid rule, hard negative | `make test-fixture` | no |
-| normalizer change | raw -> normalized mapping | `make test-fixture` | no |
-| episode change | normalized -> episode | `make test-fixture` | no |
-| labeling parser change | LLM output parsing | `make test-fixture` | no |
-| clustering or scoring change | co-occurrence, persona scoring | `make validate-schema` + `make test-fixture` | sometimes smoke only |
-| end-to-end behavior change | pipeline wiring, stage orchestration | `make test-smoke` | yes, before merge or release |
-| release validation | final regression check | `make test-full` | yes |
-
-Primary commands:
-
-```bash
-make test-unit
-make test-fixture
-make test-smoke
-make test-full
-make test-changed
-make validate-config
-make validate-schema
-```
-
-If `make` is unavailable in your shell, run the same tiers through `python run/devtools/test_matrix.py ...`.
-
-Command intent:
-
-- `make test-unit`: fast function-level tests only
-- `make test-fixture`: small fixture-based stage tests
-- `make test-smoke`: config/schema validation + CLI smoke tests + mini pipeline smoke
-- `make test-full`: full pipeline plus snapshot/audit checks
-- `make test-changed`: choose the smallest reasonable suite from current changed files
-- `make validate-config`: YAML/config integrity only, including source and seed-bank configs
-- `make validate-schema`: schema contract checks plus schema-focused tests
-
-### 4. Run Tests
-
-Example test commands:
-
-```bash
-python -m unittest tests.test_workbook_export
-python -m unittest tests.test_analysis_snapshot_cli
-python -m unittest tests.test_persona_workbook_regressions
-```
-
-You can also run a broader suite, for example:
-
-```bash
-python -m unittest
-```
-
-Fast local alternatives:
-
-```bash
-python run/devtools/test_matrix.py test-unit
-python run/devtools/test_matrix.py test-fixture
-python run/devtools/test_matrix.py test-changed
-```
+- [docs/operational/ORCHESTRATION.md](docs/operational/ORCHESTRATION.md)
 
 ## Repository Structure
 
 ```text
 config/          source configs, filters, labeling policy, query maps, time windows
 run/pipeline/    main sequential pipeline stages
-run/cli/         targeted audit, analysis, and operating commands
+run/cli/         targeted audit, validation, and operating commands
 src/             collectors, normalizers, filters, episodes, labeling, analysis, exporters
 tests/           unit and regression tests
-docs/            operational docs, contracts, codebooks, and repo guidance
-artifacts/       readiness, policy, curation, and release evidence
-data/            local raw, intermediate parquet, analysis outputs, final xlsx
+docs/            operational docs, contracts, runbooks, and policy notes
+artifacts/       opt-in diagnostics, readiness, and release evidence
+data/            local raw, parquet intermediates, analysis outputs, final xlsx
 ```
 
 Storage contract:
 
-- raw: `data/raw/{source}/*.jsonl`
-- intermediate stages: parquet
-- final output: `data/output/*.xlsx`
+- raw input/output: `data/raw/{source}/*.jsonl`
+- normalized / valid / episodes / labeled / analysis: parquet
+- final export: `data/output/*.xlsx`
 
-## Example Use Cases
+## Who This Is For
 
-- Product discovery from public user pain signals
-- UX research synthesis across community sources
-- Market pain-point mining for positioning or roadmap work
-- Community-based VOC analysis with source-aware filtering
-- Persona evidence workbook generation for review workflows
-- Source quality auditing before socializing persona claims
+- product managers
+- UX researchers
+- data analysts
+- research engineers
+- startup and product discovery teams
+- open-source contributors interested in pipelines, labeling systems, and evidence-aware research tooling
 
-## Limitations
+## Contribution Opportunities
 
-- This is not a fully automated truth engine.
-- Public community data is noisy and source bias still matters.
-- LLM labeling is optional and requires audit safeguards.
-- Deck-ready claims require passing quality gates, not just finding an interesting cluster.
-- Some outputs are reviewable rather than final production-ready deliverables.
-- The current accepted workbook is explicitly `reviewable_but_not_deck_ready`.
+If you like this repo, the highest-value contributions are not "make the summary prettier."
 
-That honesty is part of the design, not a defect in the README.
-
-## Roadmap
-
-- Better source adapters and source-specific normalizers
-- Stronger gold-set and benchmark-style evaluation
-- Improved source balance and weak-source remediation
-- Interactive review UI for workbook and evidence inspection
-- Human-in-the-loop labeling and adjudication workflows
-- Better persona merge/split controls
-- Expanded workbook export and validation surfaces
-
-## Contributing
-
-Contributions are especially useful in these areas:
+They are things like:
 
 - new collectors for relevant public/community sources
-- better source adapters and normalizers
-- improved quality gates and policy checks
-- labeling and audit improvements
-- evaluation datasets and gold-set construction
-- documentation and operational clarity
+- stronger source adapters and normalizers
+- source-specific filtering improvements
+- better episode segmentation diagnostics
+- labeling rule improvements and audit tools
+- denominator and claim-boundary evaluation
+- source balance and weak-source diagnostics
+- regression tests and benchmark fixtures
+- workbook validation and export hardening
 
-If you are extending the pipeline, keep the stage boundaries explicit. Avoid collapsing collection, filtering, labeling, and export into one opaque step.
+In other words: contributors who care about evidence quality, not just presentation quality.
 
-## License, Citation, Acknowledgement
+## Test And Validation
+
+Useful commands:
+
+```bash
+make test-unit
+make test-fixture
+make test-smoke
+make test-full
+make validate-config
+make validate-schema
+```
+
+If `make` is unavailable:
+
+```bash
+python run/devtools/test_matrix.py test-unit
+python run/devtools/test_matrix.py test-fixture
+python run/devtools/test_matrix.py test-smoke
+python run/devtools/test_matrix.py test-full
+```
+
+Example direct unittest commands:
+
+```bash
+python -m unittest tests.test_analysis_snapshot_cli
+python -m unittest tests.test_persona_workbook_regressions
+python -m unittest tests.test_workbook_export
+```
+
+## What This Repo Does Not Claim
+
+- It does not claim that public community data alone automatically yields trustworthy personas.
+- It does not claim that LLM-assisted labeling removes the need for diagnostics.
+- It does not claim this repository currently produces a fully deck-ready persona corpus.
+- It does not claim five production-ready personas.
+- It does not claim that every cluster deserves promotion.
+
+The system is most valuable when it stops overclaiming before a team does.
+
+## Why It Might Be Worth Starring
+
+If you care about research engineering, this repo is trying to solve a real and underrated problem:
+
+how to turn noisy public text into persona evidence without pretending the pipeline knows more than it does.
+
+That means:
+
+- explicit pipeline stages instead of opaque notebooks
+- auditable artifacts instead of hidden heuristics
+- evidence-aware readiness instead of generic "AI insights"
+- source diagnostics instead of silent averaging
+- honest release boundaries instead of polished overclaiming
+
+## License
 
 License: `TBD`
 
-If you want to cite or reuse the approach before a formal license is chosen, treat this repository as a research-engineering reference implementation and confirm usage expectations with the maintainer.
+Until a formal license is chosen, treat this repository as a research-engineering reference implementation and confirm reuse expectations with the maintainer.
