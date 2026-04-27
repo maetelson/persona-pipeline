@@ -1,0 +1,266 @@
+{
+  "sampled_row_classification_summary": {
+    "sample_size": 300,
+    "reviewed_category_counts": {
+      "ambiguous_review_bucket": 79,
+      "server_deploy_config_noise": 71,
+      "technical_support_debug_noise": 68,
+      "syntax_formula_debug_noise": 53,
+      "setup_auth_permission_noise": 13,
+      "api_sdk_debug_noise": 6,
+      "denominator_eligible_business_non_core": 3,
+      "generic_low_signal": 3,
+      "vendor_announcement_or_feature_request_only": 2,
+      "career_training_certification_noise": 1,
+      "source_specific_support_noise": 1
+    },
+    "percentage_of_generic_low_signal_truly_generic_low_signal": 1.0,
+    "percentage_that_should_be_denominator_eligible_business_non_core": 1.0,
+    "percentage_that_should_be_explicit_technical_support_noise": 71.7,
+    "percentage_that_should_be_ambiguous_review_bucket": 26.3,
+    "percentage_that_may_be_persona_core_candidate": 0.0
+  },
+  "source_by_source_category_distribution": [
+    {
+      "source": "adobe_analytics_community",
+      "reviewed_category": "ambiguous_review_bucket",
+      "rows": 36
+    },
+    {
+      "source": "adobe_analytics_community",
+      "reviewed_category": "api_sdk_debug_noise",
+      "rows": 1
+    },
+    {
+      "source": "adobe_analytics_community",
+      "reviewed_category": "server_deploy_config_noise",
+      "rows": 8
+    },
+    {
+      "source": "adobe_analytics_community",
+      "reviewed_category": "technical_support_debug_noise",
+      "rows": 10
+    },
+    {
+      "source": "domo_community_forum",
+      "reviewed_category": "ambiguous_review_bucket",
+      "rows": 10
+    },
+    {
+      "source": "domo_community_forum",
+      "reviewed_category": "api_sdk_debug_noise",
+      "rows": 3
+    },
+    {
+      "source": "domo_community_forum",
+      "reviewed_category": "server_deploy_config_noise",
+      "rows": 42
+    },
+    {
+      "source": "domo_community_forum",
+      "reviewed_category": "setup_auth_permission_noise",
+      "rows": 1
+    },
+    {
+      "source": "domo_community_forum",
+      "reviewed_category": "technical_support_debug_noise",
+      "rows": 14
+    },
+    {
+      "source": "domo_community_forum",
+      "reviewed_category": "vendor_announcement_or_feature_request_only",
+      "rows": 1
+    },
+    {
+      "source": "github_discussions",
+      "reviewed_category": "ambiguous_review_bucket",
+      "rows": 9
+    },
+    {
+      "source": "github_discussions",
+      "reviewed_category": "api_sdk_debug_noise",
+      "rows": 1
+    },
+    {
+      "source": "github_discussions",
+      "reviewed_category": "server_deploy_config_noise",
+      "rows": 8
+    },
+    {
+      "source": "github_discussions",
+      "reviewed_category": "setup_auth_permission_noise",
+      "rows": 11
+    },
+    {
+      "source": "github_discussions",
+      "reviewed_category": "technical_support_debug_noise",
+      "rows": 21
+    },
+    {
+      "source": "github_discussions",
+      "reviewed_category": "vendor_announcement_or_feature_request_only",
+      "rows": 1
+    },
+    {
+      "source": "google_developer_forums",
+      "reviewed_category": "ambiguous_review_bucket",
+      "rows": 17
+    },
+    {
+      "source": "google_developer_forums",
+      "reviewed_category": "api_sdk_debug_noise",
+      "rows": 1
+    },
+    {
+      "source": "google_developer_forums",
+      "reviewed_category": "career_training_certification_noise",
+      "rows": 1
+    },
+    {
+      "source": "google_developer_forums",
+      "reviewed_category": "server_deploy_config_noise",
+      "rows": 13
+    },
+    {
+      "source": "google_developer_forums",
+      "reviewed_category": "setup_auth_permission_noise",
+      "rows": 1
+    },
+    {
+      "source": "google_developer_forums",
+      "reviewed_category": "technical_support_debug_noise",
+      "rows": 23
+    },
+    {
+      "source": "shopify_community",
+      "reviewed_category": "source_specific_support_noise",
+      "rows": 1
+    },
+    {
+      "source": "stackoverflow",
+      "reviewed_category": "ambiguous_review_bucket",
+      "rows": 7
+    },
+    {
+      "source": "stackoverflow",
+      "reviewed_category": "denominator_eligible_business_non_core",
+      "rows": 3
+    },
+    {
+      "source": "stackoverflow",
+      "reviewed_category": "generic_low_signal",
+      "rows": 3
+    },
+    {
+      "source": "stackoverflow",
+      "reviewed_category": "syntax_formula_debug_noise",
+      "rows": 53
+    }
+  ],
+  "precision_of_current_generic_low_signal_bucket": {
+    "sample_size": 300,
+    "percentage_of_generic_low_signal_truly_generic_low_signal": 1.0,
+    "percentage_that_should_be_denominator_eligible_business_non_core": 1.0,
+    "percentage_that_should_be_explicit_technical_support_noise": 71.7,
+    "percentage_that_should_be_ambiguous_review_bucket": 26.3,
+    "percentage_that_may_be_persona_core_candidate": 0.0
+  },
+  "root_cause_of_generic_low_signal_collapse": [
+    "The current Phase 1 classifier effectively hard-defaults every non-core row with labelability_status=low_signal into generic_low_signal; all 3229 non-core rows have that status.",
+    "The current text scoring is too shallow for Stack Overflow and vendor-community language, so business-relevant reporting rows and explicit technical-noise rows are not being separated.",
+    "Episode inputs do not include richer workflow metadata such as workflow_stage, analysis_goal, bottleneck_type, or trust_validation_need, so classifier decisions rely on compressed text only.",
+    "Source-specific business and support vocabularies are under-modeled, especially for Adobe, Domo, Google Developer Forums, and GitHub Discussions."
+  ],
+  "proposed_classifier_calibration": {
+    "additional_business_context_terms": [
+      "workspace",
+      "report suite",
+      "board deck",
+      "executive summary",
+      "page views",
+      "quarterly reporting",
+      "weekly reporting",
+      "forecast review",
+      "stakeholder delivery",
+      "validated export",
+      "leadership update"
+    ],
+    "additional_technical_noise_terms": [
+      "parser exception",
+      "permission denied",
+      "oauth",
+      "token",
+      "connector",
+      "runtime",
+      "endpoint",
+      "sdk",
+      "deployment",
+      "server call",
+      "calculated column",
+      "measure",
+      "matrix visual"
+    ],
+    "source_specific_noise_patterns": {
+      "adobe_analytics_community": [
+        "server calls",
+        "evar",
+        "tracking rule"
+      ],
+      "domo_community_forum": [
+        "beast mode",
+        "dataset view",
+        "connector config"
+      ],
+      "google_developer_forums": [
+        "api quota",
+        "oauth consent",
+        "property setup"
+      ],
+      "github_discussions": [
+        "self-hosted",
+        "docker",
+        "installation",
+        "upgrade"
+      ],
+      "stackoverflow": [
+        "dax syntax",
+        "measure",
+        "calculated column",
+        "slicer"
+      ]
+    },
+    "ambiguity_rules": [
+      "If business context >= 2 and technical/support signals >= 1, prefer ambiguous_review_bucket over generic_low_signal.",
+      "If stakeholder, mismatch, reconciliation, export, or delivery terms appear, do not fall back to generic_low_signal without a stronger explicit noise bucket."
+    ],
+    "text_field_enrichment_needed": [
+      "Always include evidence_snippet, work_moment, and segmentation_note in the classifier text blob.",
+      "If available later, join workflow_stage, analysis_goal, bottleneck_type, and trust_validation_need before any denominator ablation."
+    ],
+    "confidence_thresholds": [
+      "Only emit explicit denominator-ineligible noise buckets when technical/support evidence clearly dominates business context.",
+      "Keep mixed rows denominator-eligible and route them to ambiguous_review_bucket."
+    ]
+  },
+  "projected_full_corpus_category_counts_after_calibration": {
+    "reviewed_category_counts": {
+      "server_deploy_config_noise": 817,
+      "technical_support_debug_noise": 727,
+      "ambiguous_review_bucket": 711,
+      "syntax_formula_debug_noise": 710,
+      "setup_auth_permission_noise": 98,
+      "api_sdk_debug_noise": 75,
+      "generic_low_signal": 32,
+      "career_training_certification_noise": 28,
+      "denominator_eligible_business_non_core": 22,
+      "vendor_announcement_or_feature_request_only": 5,
+      "source_specific_support_noise": 4
+    },
+    "possible_denominator_ineligible_rows": 2496,
+    "possible_adjusted_denominator_row_count": 10178,
+    "possible_adjusted_core_coverage_pct": 92.8
+  },
+  "whether_denominator_ablation_is_safe_to_run_next": false,
+  "recommended_next_action": "implement_classifier_calibration_diagnostics",
+  "note": "Projection is diagnostic only; no denominator or coverage metric is changed in this pass."
+}

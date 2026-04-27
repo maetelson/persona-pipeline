@@ -1,0 +1,18 @@
+{
+  "reviewed_category_counts": {
+    "server_deploy_config_noise": 817,
+    "technical_support_debug_noise": 727,
+    "ambiguous_review_bucket": 711,
+    "syntax_formula_debug_noise": 710,
+    "setup_auth_permission_noise": 98,
+    "api_sdk_debug_noise": 75,
+    "generic_low_signal": 32,
+    "career_training_certification_noise": 28,
+    "denominator_eligible_business_non_core": 22,
+    "vendor_announcement_or_feature_request_only": 5,
+    "source_specific_support_noise": 4
+  },
+  "possible_denominator_ineligible_rows": 2496,
+  "possible_adjusted_denominator_row_count": 10178,
+  "possible_adjusted_core_coverage_pct": 92.8
+}
