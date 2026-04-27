@@ -1,0 +1,163 @@
+{
+  "decision_scope": "readiness_policy_decision_for_adjusted_conservative_denominator_metric",
+  "original_persona_core_coverage_pct": 74.5,
+  "adjusted_deck_ready_denominator_core_coverage_pct": 83.25,
+  "adjusted_deck_ready_denominator_row_count": 11345,
+  "adjusted_deck_ready_denominator_excluded_row_count": 1329,
+  "denominator_policy_mode": "conservative_high_confidence_noise_only",
+  "denominator_policy_version": "v1",
+  "adjusted_denominator_metric_status": "audited",
+  "excluded_rows_remain_diagnostics_visible": true,
+  "ambiguous_review_bucket_remains_included": true,
+  "business_non_core_rows_remain_included": true,
+  "persona_core_rows_never_excluded": true,
+  "excluded_count_by_category": {
+    "api_sdk_debug_noise": 71,
+    "career_training_certification_noise": 1,
+    "server_deploy_config_noise": 981,
+    "setup_auth_permission_noise": 55,
+    "source_specific_support_noise": 77,
+    "syntax_formula_debug_noise": 144
+  },
+  "excluded_count_by_source": {
+    "adobe_analytics_community": 64,
+    "domo_community_forum": 519,
+    "github_discussions": 66,
+    "google_developer_forums": 81,
+    "hubspot_community": 10,
+    "klaviyo_community": 5,
+    "power_bi_community": 3,
+    "reddit": 1,
+    "shopify_community": 140,
+    "stackoverflow": 440
+  },
+  "excluded_count_by_source_tier": {
+    "core_representative_source": 3,
+    "excluded_from_deck_ready_core": 5,
+    "exploratory_edge_source": 519,
+    "supporting_validation_source": 802
+  },
+  "policy_safety_assessment": {
+    "conservative_rule_is_narrow_enough": true,
+    "high_confidence_exclusion_precision_sufficient": true,
+    "ambiguous_rows_handled_conservatively": true,
+    "weak_source_evidence_hidden": false,
+    "reviewer_explainability": "high_with_original_metric_visible",
+    "source_concentration_note": "Excluded rows are moderately concentrated in domo_community_forum and stackoverflow, but remain auditable by source and source tier.",
+    "cherry_picking_risk": "low_to_moderate_but_managed"
+  },
+  "readiness_options": {
+    "A_keep_adjusted_metric_diagnostic_only": {
+      "methodological_rigor": "highest",
+      "cherry_picking_risk": "lowest",
+      "reviewer_clarity": "high",
+      "implementation_complexity": "none",
+      "workbook_readiness_could_change": false,
+      "original_metric_remains_visible": true,
+      "persona_counts_change": false,
+      "persona_04_could_later_become_production_ready": false,
+      "persona_05_remains_blocked_subtheme": true
+    },
+    "B_use_adjusted_metric_as_secondary_deck_ready_coverage_check": {
+      "methodological_rigor": "high",
+      "cherry_picking_risk": "low_to_moderate",
+      "reviewer_clarity": "high_if_side_by_side",
+      "implementation_complexity": "low_to_moderate",
+      "workbook_readiness_could_change": false,
+      "original_metric_remains_visible": true,
+      "persona_counts_change": false,
+      "persona_04_could_later_become_production_ready": true,
+      "persona_05_remains_blocked_subtheme": true
+    },
+    "C_replace_original_metric_with_adjusted_metric": {
+      "methodological_rigor": "low",
+      "cherry_picking_risk": "high",
+      "reviewer_clarity": "low",
+      "implementation_complexity": "low",
+      "workbook_readiness_could_change": true,
+      "original_metric_remains_visible": false,
+      "persona_counts_change": false,
+      "persona_04_could_later_become_production_ready": true,
+      "persona_05_remains_blocked_subtheme": true,
+      "recommended": false
+    },
+    "D_require_both_original_and_adjusted_metrics_to_pass": {
+      "methodological_rigor": "high",
+      "cherry_picking_risk": "very_low",
+      "reviewer_clarity": "medium",
+      "implementation_complexity": "low",
+      "workbook_readiness_could_change": false,
+      "original_metric_remains_visible": true,
+      "persona_counts_change": false,
+      "persona_04_could_later_become_production_ready": false,
+      "persona_05_remains_blocked_subtheme": true
+    },
+    "E_use_adjusted_metric_only_when_precision_and_visibility_pass": {
+      "methodological_rigor": "high",
+      "cherry_picking_risk": "low",
+      "reviewer_clarity": "high",
+      "implementation_complexity": "moderate",
+      "workbook_readiness_could_change": false,
+      "original_metric_remains_visible": true,
+      "persona_counts_change": false,
+      "persona_04_could_later_become_production_ready": true,
+      "persona_05_remains_blocked_subtheme": true
+    }
+  },
+  "blocker_table_under_adjusted_metric": {
+    "adjusted_coverage_status": "pass",
+    "effective_balanced_source_count": 5.89,
+    "effective_balanced_source_count_floor": 6.0,
+    "weak_source_cost_center_count": 4,
+    "core_readiness_weak_source_cost_center_count": 3,
+    "selected_example_grounding_issue_count": 4,
+    "overall_status": "WARN",
+    "quality_flag": "EXPLORATORY",
+    "final_usable_persona_count": 3,
+    "production_ready_persona_count": 3,
+    "review_ready_persona_count": 1,
+    "deck_ready_claim_eligible_persona_count": 4,
+    "remaining_blockers": [
+      "effective_balanced_source_count<6.0",
+      "core_readiness_weak_source_cost_center_count=3",
+      "selected_example_grounding_issue_count=4",
+      "overall_status=WARN",
+      "quality_flag=EXPLORATORY"
+    ]
+  },
+  "adjusted_coverage_alone_enough_for_deck_ready": false,
+  "decision": "allow_adjusted_metric_as_secondary_gate",
+  "future_gate_change_not_implemented_yet": true,
+  "future_gate_logic": {
+    "original_metric_must_remain_visible": true,
+    "adjusted_metric_must_remain_visible": true,
+    "coverage_gate_may_use_adjusted_metric_when": [
+      "adjusted_denominator_metric_status == audited",
+      "denominator_policy_mode == conservative_high_confidence_noise_only",
+      "denominator_policy_version == v1",
+      "adjusted_deck_ready_denominator_core_coverage_pct >= 80.0",
+      "excluded_rows_remain_visible_in_diagnostics",
+      "ambiguous_review_bucket_remains_included"
+    ],
+    "non_coverage_gates_unchanged": true,
+    "overall_quality_cap_unchanged": true
+  },
+  "expected_readiness_if_gate_change_applied_today": {
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "reason": "Coverage would pass, but source-balance, weak-source, and example-grounding blockers still keep overall_status at WARN."
+  },
+  "implementation_targets_if_approved_later": [
+    "src/analysis/quality_status.py",
+    "src/analysis/stage_service.py",
+    "src/analysis/summary.py",
+    "tests/test_deck_ready_denominator_eligibility.py",
+    "tests/test_deck_ready_claims.py"
+  ],
+  "rollback_criteria": [
+    "adjusted coverage becomes dependent on a broadened exclusion rule",
+    "excluded row concentration worsens without transparent diagnostics",
+    "ambiguous rows begin to be excluded",
+    "original metric is no longer shown alongside adjusted metric",
+    "readiness upgrades while non-coverage blockers remain"
+  ]
+}
