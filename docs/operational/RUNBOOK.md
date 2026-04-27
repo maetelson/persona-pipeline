@@ -41,10 +41,12 @@ make validate-config
 make validate-schema
 ```
 
+- If `make` is not installed in the current shell, use `python run/devtools/test_matrix.py <tier>` instead.
+
 - `make test-unit`
   - utilities, parsers, date logic, score helpers
 - `make validate-config`
-  - YAML and source-registry changes
+  - YAML, source-registry, and seed-bank config changes
 - `make validate-schema`
   - sheet/column/denominator contract changes
 - `make test-fixture`

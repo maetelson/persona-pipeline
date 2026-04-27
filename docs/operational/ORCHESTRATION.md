@@ -52,7 +52,7 @@ Expanded sequence used by `00_run_all.py`:
   - target runtime: seconds
   - no live collection, no API calls, no LLM calls
 - `validate-config`
-  - use for `config/**/*.yaml`, source registry, time window, export schema edits
+  - use for `config/**/*.yaml`, including source registry, seed-bank config, time window, and export schema edits
   - validates parsing and key invariants without running stages
 - `validate-schema`
   - use for column-contract, workbook-sheet, and denominator-contract edits
