@@ -1,0 +1,120 @@
+{
+  "original_coverage_metric_visible": true,
+  "adjusted_coverage_metric_visible": true,
+  "original_persona_core_coverage_pct": 74.5,
+  "adjusted_deck_ready_denominator_core_coverage_pct": 83.25,
+  "original_coverage_gate_status": "fail",
+  "adjusted_coverage_gate_status": "pass",
+  "coverage_gate_passed_by_adjusted_metric": true,
+  "core_coverage_status": "OK",
+  "remaining_blockers": [
+    {
+      "blocker": "effective_balanced_source_count",
+      "current_value": 5.89,
+      "threshold": ">= 6.0 for deck-ready floor",
+      "gap": 0.11,
+      "safe_remediation_attempted": true,
+      "prior_attempt_summary": "Existing-source expansion and weak-source deletion paths were tested; deletion regressed balance and incremental expansion produced almost no new unique rows.",
+      "safe_remaining_path_exists": false,
+      "further_remediation_risk": "high"
+    },
+    {
+      "blocker": "source_diversity_status",
+      "current_value": "WARN",
+      "threshold": "OK",
+      "gap": "status gap",
+      "safe_remediation_attempted": true,
+      "prior_attempt_summary": "Representative-source additions and source salvage pilots failed or were not safely collectible.",
+      "safe_remaining_path_exists": false,
+      "further_remediation_risk": "high"
+    },
+    {
+      "blocker": "weak_source_cost_center_count",
+      "current_value": 4,
+      "threshold": "lower is better; workbook still carries visible weak-source debt",
+      "gap": "4 visible weak sources remain",
+      "safe_remediation_attempted": true,
+      "prior_attempt_summary": "Adobe and Google remediation did not safely improve; weak-source deletion worsened balance.",
+      "safe_remaining_path_exists": false,
+      "further_remediation_risk": "high"
+    },
+    {
+      "blocker": "core_readiness_weak_source_cost_center_count",
+      "current_value": 3,
+      "threshold": "< 2 to avoid WARN",
+      "gap": 1,
+      "safe_remediation_attempted": true,
+      "prior_attempt_summary": "Adobe, Domo, and Google source-specific safe remediation paths were audited but did not yield a reliable improvement path.",
+      "safe_remaining_path_exists": false,
+      "further_remediation_risk": "high"
+    },
+    {
+      "blocker": "weak_source_yield_status",
+      "current_value": "WARN",
+      "threshold": "OK",
+      "gap": "status gap",
+      "safe_remediation_attempted": true,
+      "prior_attempt_summary": "Weak-source debt remains after safe remediation attempts and cannot be hidden by denominator policy.",
+      "safe_remaining_path_exists": false,
+      "further_remediation_risk": "high"
+    },
+    {
+      "blocker": "selected_example_grounding_issue_count",
+      "current_value": 4,
+      "threshold": 0,
+      "gap": 4,
+      "safe_remediation_attempted": false,
+      "prior_attempt_summary": "No dedicated post-secondary-gate grounding cleanup has been run in the current frozen release path.",
+      "safe_remaining_path_exists": true,
+      "further_remediation_risk": "medium"
+    },
+    {
+      "blocker": "overall_status",
+      "current_value": "WARN",
+      "threshold": "OK for deck-ready",
+      "gap": "status gap",
+      "safe_remediation_attempted": true,
+      "prior_attempt_summary": "Coverage is now OK, but source balance, weak-source debt, and grounding warnings still hold the workbook below deck-ready.",
+      "safe_remaining_path_exists": false,
+      "further_remediation_risk": "high"
+    },
+    {
+      "blocker": "quality_flag",
+      "current_value": "EXPLORATORY",
+      "threshold": "OK-like non-exploratory quality state for deck-ready",
+      "gap": "status gap",
+      "safe_remediation_attempted": true,
+      "prior_attempt_summary": "Coverage-only improvement does not resolve the remaining WARN axes.",
+      "safe_remaining_path_exists": false,
+      "further_remediation_risk": "high"
+    },
+    {
+      "blocker": "persona_readiness_state",
+      "current_value": "reviewable_but_not_deck_ready",
+      "threshold": "deck_ready or higher",
+      "gap": "state gap",
+      "safe_remediation_attempted": true,
+      "prior_attempt_summary": "Adjusted denominator solved the core coverage component only; other deck-ready blockers remain active.",
+      "safe_remaining_path_exists": false,
+      "further_remediation_risk": "high"
+    }
+  ],
+  "path_exhaustion_reconciliation": {
+    "adobe_remediation": "no safe parser or episode fix",
+    "google_remediation": "no safe valid-filter expansion",
+    "weak_source_deletion": "regressed source balance",
+    "supermetrics_reddit_github_lightdash_pilots": "failed quality or viability gates",
+    "hubspot_reddit_incremental_expansion": "almost no new unique rows under strict dedupe",
+    "non_core_recovery": "unsafe and mostly technical/support noise",
+    "adjusted_denominator_secondary_gate": "solved coverage component only"
+  },
+  "recommended_next_action": "freeze_as_reviewable_claim_release",
+  "freeze_wording": {
+    "release_state": "reviewable_but_not_deck_ready",
+    "coverage_note": "The coverage blocker is addressed by an audited adjusted secondary denominator metric while the original coverage metric remains visible.",
+    "remaining_blockers": "Source balance and weak-source debt still prevent deck-ready status.",
+    "persona_counts": "3 production-ready / final usable personas and 1 review-ready + deck-ready claim-eligible persona are supported.",
+    "future_subtheme": "persona_05 remains preserved as a future subtheme / blocked candidate.",
+    "claim_scope": "This is not a full deck-ready corpus."
+  }
+}
