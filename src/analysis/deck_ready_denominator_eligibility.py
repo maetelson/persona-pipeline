@@ -48,23 +48,42 @@ ROW_OUTPUT_COLUMNS = [
 
 _BUSINESS_PATTERNS = [
     r"\breport(?:ing)?\b",
+    r"\breport suite\b",
+    r"\bbusiness reporting\b",
+    r"\breporting cadence\b",
+    r"\bquarterly reporting\b",
+    r"\bweekly reporting\b",
+    r"\brecurring report(?:ing)?\b",
+    r"\bmanual reporting\b",
     r"\bdashboard(?:s)?\b",
+    r"\bdashboard review\b",
     r"\bmetric(?:s)?\b",
+    r"\bmetric review\b",
     r"\bkpi(?:s)?\b",
     r"\bstakeholder(?:s)?\b",
+    r"\bstakeholder-facing report\b",
+    r"\bstakeholder delivery\b",
+    r"\bleadership update\b",
+    r"\bexecutive summary\b",
+    r"\bboard deck\b",
+    r"\bforecast review\b",
     r"\breconcil(?:e|iation)\b",
     r"\bvalidation\b",
     r"\bvalidate\b",
+    r"\bvalidated export\b",
     r"\btrust\b",
     r"\bmanual\b",
     r"\bspreadsheet\b",
     r"\bexport\b",
+    r"\breport delivery\b",
     r"\bdelivery\b",
     r"\bhandoff\b",
     r"\bdecision(?:-making)?\b",
     r"\banalysis\b",
     r"\btotal mismatch\b",
     r"\bnumber mismatch\b",
+    r"\bpage views\b",
+    r"\bworkspace\b",
     r"\bpipeline reporting\b",
     r"\battribution\b",
 ]
@@ -82,16 +101,22 @@ _SETUP_PATTERNS = [
     r"\blogin\b",
     r"\bsign[\s-]?in\b",
     r"\bauth(?:entication)?\b",
+    r"\bauthentication\b",
     r"\bpermission(?:s)?\b",
     r"\baccess denied\b",
+    r"\bpermission denied\b",
     r"\boauth\b",
+    r"\btoken\b",
     r"\bcredential(?:s)?\b",
     r"\binstall(?:ation)?\b",
     r"\bsetup\b",
     r"\bconfigure\b",
+    r"\bservice principal\b",
+    r"\bgateway\b",
 ]
 _API_PATTERNS = [
     r"\bapi\b",
+    r"\bga4 api\b",
     r"\bsdk\b",
     r"\bwebhook\b",
     r"\bendpoint\b",
@@ -100,29 +125,43 @@ _API_PATTERNS = [
     r"\brequest\b",
     r"\bresponse\b",
     r"\bintegration\b",
+    r"\bapi quota\b",
+    r"\bquery error\b",
 ]
 _SERVER_PATTERNS = [
     r"\bdeploy(?:ment)?\b",
     r"\bserver\b",
+    r"\bserver call(?:s)?\b",
     r"\bhost(?:ing)?\b",
     r"\bdocker\b",
+    r"\bself-hosted\b",
     r"\bkubernetes\b",
     r"\benv(?:ironment)?\b",
     r"\bconfig(?:uration)?\b",
     r"\bconnector\b",
     r"\bruntime\b",
+    r"\bupgrade\b",
+    r"\binstallation\b",
+    r"\bproperty setup\b",
 ]
 _SYNTAX_PATTERNS = [
     r"\bsyntax\b",
     r"\bformula\b",
+    r"\bformula error\b",
     r"\bdax\b",
+    r"\bdax syntax\b",
     r"\bsql\b",
     r"\bparser\b",
+    r"\bparser exception\b",
     r"\bexception\b",
     r"\berror\b",
     r"\bdebug\b",
     r"\bcountrows\b",
     r"\bcalculated field\b",
+    r"\bcalculated column\b",
+    r"\bmeasure\b",
+    r"\bmatrix visual\b",
+    r"\bslicer\b",
 ]
 _VENDOR_PATTERNS = [
     r"\bfeature request\b",
@@ -154,6 +193,17 @@ _SOURCE_SPECIFIC_SUPPORT_PATTERNS = [
     r"\bbilling\b",
     r"\blicens(?:e|ing)\b",
     r"\bsubscription\b",
+    r"\bevar\b",
+    r"\btracking rule\b",
+    r"\btag manager\b",
+    r"\bimplementation rule\b",
+    r"\bbeast mode\b",
+    r"\bdataset view\b",
+    r"\bconnector config\b",
+    r"\bcard analyzer\b",
+    r"\bmagic etl setup\b",
+    r"\boauth consent\b",
+    r"\bservice account\b",
 ]
 _TECH_SUPPORT_PATTERNS = [
     r"\bdebug\b",
@@ -164,6 +214,8 @@ _TECH_SUPPORT_PATTERNS = [
     r"\bstack trace\b",
     r"\berror\b",
     r"\bfail(?:ed|ure)?\b",
+    r"\bruntime\b",
+    r"\bconnector\b",
 ]
 
 _EXCLUSION_REASON_BY_CATEGORY = {
@@ -206,6 +258,53 @@ def write_deck_ready_denominator_eligibility_artifacts(
     return {"rows_csv": csv_path, "summary_json": json_path}
 
 
+def build_denominator_classifier_calibration_report(
+    previous_summary: dict[str, Any] | None,
+    current_summary: dict[str, Any],
+) -> dict[str, Any]:
+    """Build a before/after diagnostics-only comparison for classifier calibration."""
+    previous_counts = dict((previous_summary or {}).get("count_by_denominator_eligibility_category", {}))
+    if not _looks_like_original_phase1_baseline(previous_counts):
+        previous_counts = {
+            "persona_core_evidence": int(current_summary.get("persona_core_rows", 0)),
+            "generic_low_signal": int(current_summary.get("non_core_labeled_rows", 0)),
+        }
+        previous_eligible = int(current_summary.get("persona_core_rows", 0))
+        previous_ineligible = int(current_summary.get("non_core_labeled_rows", 0))
+    else:
+        previous_eligible = int((previous_summary or {}).get("eligible_row_count", 0))
+        previous_ineligible = int((previous_summary or {}).get("ineligible_row_count", 0))
+    current_counts = dict(current_summary.get("count_by_denominator_eligibility_category", {}))
+
+    report = {
+        "before_category_counts": previous_counts,
+        "after_category_counts": current_counts,
+        "generic_low_signal_before": int(previous_counts.get("generic_low_signal", 0)),
+        "generic_low_signal_after": int(current_counts.get("generic_low_signal", 0)),
+        "ambiguous_review_bucket_before": int(previous_counts.get("ambiguous_review_bucket", 0)),
+        "ambiguous_review_bucket_after": int(current_counts.get("ambiguous_review_bucket", 0)),
+        "denominator_eligible_business_non_core_before": int(
+            previous_counts.get("denominator_eligible_business_non_core", 0)
+        ),
+        "denominator_eligible_business_non_core_after": int(
+            current_counts.get("denominator_eligible_business_non_core", 0)
+        ),
+        "deck_ready_denominator_eligible_before": previous_eligible,
+        "deck_ready_denominator_eligible_after": int(current_summary.get("eligible_row_count", 0)),
+        "ineligible_count_before": previous_ineligible,
+        "ineligible_count_after": int(current_summary.get("ineligible_row_count", 0)),
+        "explicit_technical_support_noise_before": int(_explicit_noise_count(previous_counts)),
+        "explicit_technical_support_noise_after": int(_explicit_noise_count(current_counts)),
+        "readiness_change": "none",
+        "adjusted_coverage_status": "not_official_not_computed_from_calibration",
+        "note": (
+            "This calibration report is diagnostics-only. Denominator ablation has not run, "
+            "adjusted coverage is not official, and current readiness/persona counts are unchanged."
+        ),
+    }
+    return report
+
+
 def _prepare_row_df(
     labeled_df: pd.DataFrame,
     episodes_df: pd.DataFrame,
@@ -223,6 +322,11 @@ def _prepare_row_df(
         "evidence_snippet",
         "work_moment",
         "tool_env",
+        "segmentation_note",
+        "workflow_stage",
+        "analysis_goal",
+        "bottleneck_type",
+        "trust_validation_need",
     ]
     episodes = episodes_df[[column for column in episode_columns if column in episodes_df.columns]].copy()
     merged = labeled_df.merge(episodes, on="episode_id", how="left")
@@ -288,23 +392,43 @@ def _classify_row(row: pd.Series) -> pd.Series:
             }
         )
 
-    business_count = _business_signal_count(row)
-    setup_count = _pattern_count(_row_text(row), _SETUP_PATTERNS)
-    api_count = _pattern_count(_row_text(row), _API_PATTERNS)
-    server_count = _pattern_count(_row_text(row), _SERVER_PATTERNS)
-    syntax_count = _pattern_count(_row_text(row), _SYNTAX_PATTERNS)
-    vendor_count = _pattern_count(_row_text(row), _VENDOR_PATTERNS)
-    career_count = _pattern_count(_row_text(row), _CAREER_PATTERNS)
-    source_specific_count = _pattern_count(_row_text(row), _SOURCE_SPECIFIC_SUPPORT_PATTERNS)
-    generic_tech_count = _pattern_count(_row_text(row), _TECH_SUPPORT_PATTERNS)
+    text = _row_text(row)
+    business_count = _business_signal_count(row, text)
+    setup_count = _pattern_count(text, _SETUP_PATTERNS)
+    api_count = _pattern_count(text, _API_PATTERNS)
+    server_count = _pattern_count(text, _SERVER_PATTERNS)
+    syntax_count = _pattern_count(text, _SYNTAX_PATTERNS)
+    vendor_count = _pattern_count(text, _VENDOR_PATTERNS)
+    career_count = _pattern_count(text, _CAREER_PATTERNS)
+    source_specific_count = _pattern_count(text, _SOURCE_SPECIFIC_SUPPORT_PATTERNS)
+    generic_tech_count = _pattern_count(text, _TECH_SUPPORT_PATTERNS)
     technical_count = setup_count + api_count + server_count + syntax_count + generic_tech_count + vendor_count + career_count
     labelability_status = str(row.get("labelability_status", "") or "").strip().lower()
+    business_priority = _pattern_count(
+        text,
+        [
+            r"\bstakeholder(?:s)?\b",
+            r"\bnumber mismatch\b",
+            r"\btotal mismatch\b",
+            r"\breconcil(?:e|iation)\b",
+            r"\bexport\b",
+            r"\bdelivery\b",
+            r"\bvalidated export\b",
+            r"\breport delivery\b",
+        ],
+    )
 
-    if _is_generic_low_signal(row, business_count, technical_count, labelability_status):
+    if _is_generic_low_signal(row, business_count, technical_count, source_specific_count, labelability_status, text):
         category = "generic_low_signal"
-    elif business_count > 0 and technical_count > 0 and abs(business_count - technical_count) <= 4:
+    elif business_count >= 2 and technical_count >= 1 and not _technical_clearly_dominates(
+        business_count, technical_count, source_specific_count
+    ):
         category = "ambiguous_review_bucket"
-    elif business_count > 0 and business_count >= technical_count:
+    elif business_priority > 0 and not _technical_clearly_dominates(
+        business_count + business_priority, technical_count, source_specific_count
+    ):
+        category = "ambiguous_review_bucket" if technical_count > 0 else "denominator_eligible_business_non_core"
+    elif business_count > 0 and not _technical_clearly_dominates(business_count, technical_count, source_specific_count):
         category = "denominator_eligible_business_non_core"
     else:
         category = _pick_noise_category(
@@ -380,20 +504,25 @@ def _is_generic_low_signal(
     row: pd.Series,
     business_count: int,
     technical_count: int,
+    source_specific_count: int,
     labelability_status: str,
+    text: str,
 ) -> bool:
     """Return whether a row is too thin or low-signal to be denominator-eligible."""
-    combined_text = _row_text(row)
-    if labelability_status in {"low_signal", "not_labelable"}:
+    if business_count > 0 or technical_count > 0 or source_specific_count > 0:
+        return False
+    if labelability_status == "not_labelable":
         return True
-    if business_count == 0 and technical_count == 0 and len(combined_text) < 180:
+    if labelability_status == "low_signal" and len(text) < 220:
         return True
-    return False
+    if len(text) < 140:
+        return True
+    return not bool(text.strip())
 
 
-def _business_signal_count(row: pd.Series) -> int:
+def _business_signal_count(row: pd.Series, text: str | None = None) -> int:
     """Count business-context signals from text and code families."""
-    text = _row_text(row)
+    combined_text = text or _row_text(row)
     code_text = " ".join(
         [
             _stringify_value(row.get("pain_codes")),
@@ -403,19 +532,27 @@ def _business_signal_count(row: pd.Series) -> int:
             _stringify_value(row.get("labelability_reason")),
         ]
     )
-    return _pattern_count(text, _BUSINESS_PATTERNS) + _pattern_count(code_text, _BUSINESS_CODE_PATTERNS)
+    return _pattern_count(combined_text, _BUSINESS_PATTERNS) + _pattern_count(code_text, _BUSINESS_CODE_PATTERNS)
 
 
 def _row_text(row: pd.Series) -> str:
     """Return one normalized lower-case text block for signal extraction."""
     parts = [
         row.get("normalized_episode", ""),
+        row.get("evidence_snippet", ""),
         row.get("business_question", ""),
         row.get("bottleneck_text", ""),
         row.get("desired_output", ""),
-        row.get("evidence_snippet", ""),
         row.get("work_moment", ""),
         row.get("tool_env", ""),
+        row.get("segmentation_note", ""),
+        row.get("workflow_stage", ""),
+        row.get("analysis_goal", ""),
+        row.get("bottleneck_type", ""),
+        row.get("trust_validation_need", ""),
+        row.get("pain_codes", ""),
+        row.get("question_codes", ""),
+        row.get("output_codes", ""),
         row.get("label_reason", ""),
         row.get("labelability_reason", ""),
     ]
@@ -478,6 +615,41 @@ def _build_summary(row_df: pd.DataFrame, current_persona_core_coverage_pct: floa
         "note": "Adjusted coverage is intentionally not computed in Phase 1. Current denominator remains all_labeled_rows.",
     }
     return summary
+
+
+def _technical_clearly_dominates(
+    business_count: int,
+    technical_count: int,
+    source_specific_count: int,
+) -> bool:
+    """Return whether technical/support evidence clearly outweighs business context."""
+    weighted_technical = technical_count + source_specific_count
+    if weighted_technical <= 0:
+        return False
+    if business_count <= 0:
+        return True
+    return weighted_technical >= business_count + 2
+
+
+def _explicit_noise_count(category_counts: dict[str, Any]) -> int:
+    """Return combined count across explicit denominator-ineligible noise categories."""
+    explicit_categories = {
+        "technical_support_debug_noise",
+        "source_specific_support_noise",
+        "setup_auth_permission_noise",
+        "api_sdk_debug_noise",
+        "server_deploy_config_noise",
+        "syntax_formula_debug_noise",
+        "vendor_announcement_or_feature_request_only",
+        "career_training_certification_noise",
+    }
+    return sum(int(category_counts.get(category, 0) or 0) for category in explicit_categories)
+
+
+def _looks_like_original_phase1_baseline(category_counts: dict[str, Any]) -> bool:
+    """Return whether counts still match the original fully-collapsed Phase 1 baseline."""
+    non_zero_categories = {str(k) for k, v in category_counts.items() if int(v or 0) > 0}
+    return non_zero_categories.issubset({"persona_core_evidence", "generic_low_signal"})
 
 
 def _series_count_dict(series: pd.Series) -> dict[str, int]:

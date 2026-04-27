@@ -13,6 +13,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.analysis.deck_ready_denominator_eligibility import (  # noqa: E402
+    build_denominator_classifier_calibration_report,
     build_deck_ready_denominator_eligibility_outputs,
     write_deck_ready_denominator_eligibility_artifacts,
 )
@@ -21,6 +22,11 @@ from src.utils.io import read_parquet  # noqa: E402
 
 def main() -> None:
     """Build diagnostics-only denominator eligibility artifacts from current labeled rows."""
+    previous_summary_path = ROOT_DIR / "artifacts" / "readiness" / "deck_ready_denominator_eligibility_summary.json"
+    previous_summary: dict[str, object] | None = None
+    if previous_summary_path.exists():
+        previous_summary = json.loads(previous_summary_path.read_text(encoding="utf-8"))
+
     labeled_df = read_parquet(ROOT_DIR / "data" / "labeled" / "labeled_episodes.parquet")
     episodes_df = read_parquet(ROOT_DIR / "data" / "episodes" / "episode_table.parquet")
     persona_assignments_df = read_parquet(ROOT_DIR / "data" / "analysis" / "persona_assignments.parquet")
@@ -41,6 +47,12 @@ def main() -> None:
         outputs["rows_df"],
         outputs["summary"],
     )
+    report = build_denominator_classifier_calibration_report(previous_summary, outputs["summary"])
+    report_path = (
+        ROOT_DIR / "artifacts" / "readiness" / "deck_ready_denominator_classifier_calibration_report.json"
+    )
+    report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    artifact_paths["calibration_report_json"] = report_path
     print(json.dumps({key: str(value) for key, value in artifact_paths.items()}, ensure_ascii=False, indent=2))
 
 

@@ -4,31 +4,43 @@
   "non_core_labeled_rows": 3229,
   "count_by_denominator_eligibility_category": {
     "persona_core_evidence": 9445,
-    "generic_low_signal": 3229
+    "server_deploy_config_noise": 1263,
+    "ambiguous_review_bucket": 1082,
+    "syntax_formula_debug_noise": 305,
+    "denominator_eligible_business_non_core": 223,
+    "api_sdk_debug_noise": 136,
+    "source_specific_support_noise": 111,
+    "setup_auth_permission_noise": 107,
+    "career_training_certification_noise": 2
   },
-  "eligible_row_count": 9445,
-  "ineligible_row_count": 3229,
-  "ambiguous_review_bucket_count": 0,
+  "eligible_row_count": 10750,
+  "ineligible_row_count": 1924,
+  "ambiguous_review_bucket_count": 1082,
   "ineligible_count_by_source": {
-    "adobe_analytics_community": 449,
-    "domo_community_forum": 932,
-    "github_discussions": 217,
-    "google_developer_forums": 560,
-    "hubspot_community": 13,
-    "klaviyo_community": 7,
-    "power_bi_community": 15,
-    "reddit": 17,
-    "shopify_community": 175,
-    "stackoverflow": 844
+    "adobe_analytics_community": 84,
+    "domo_community_forum": 596,
+    "github_discussions": 188,
+    "google_developer_forums": 204,
+    "hubspot_community": 10,
+    "klaviyo_community": 6,
+    "power_bi_community": 9,
+    "reddit": 7,
+    "shopify_community": 151,
+    "stackoverflow": 669
   },
   "ineligible_count_by_source_tier": {
-    "core_representative_source": 15,
-    "excluded_from_deck_ready_core": 7,
-    "exploratory_edge_source": 932,
-    "supporting_validation_source": 2275
+    "core_representative_source": 9,
+    "excluded_from_deck_ready_core": 6,
+    "exploratory_edge_source": 596,
+    "supporting_validation_source": 1313
   },
   "ineligible_count_by_reason": {
-    "Row lacks enough business context or signal quality to support deck-ready denominator reasoning.": 3229
+    "Primary signal is API, SDK, or integration debugging without enough business workflow context.": 136,
+    "Primary signal is career, training, certification, or tutorial content rather than live workflow evidence.": 2,
+    "Primary signal is server, deployment, connector, or configuration troubleshooting without enough business workflow context.": 1263,
+    "Primary signal is setup, authentication, permission, or access troubleshooting without enough business context.": 107,
+    "Primary signal is source-specific support or vendor-help flow rather than business workflow pain.": 111,
+    "Primary signal is syntax or formula debugging without enough business reporting context.": 305
   },
   "persona_core_rows_always_eligible_check": true,
   "current_persona_core_coverage_of_all_labeled_pct": 74.5,

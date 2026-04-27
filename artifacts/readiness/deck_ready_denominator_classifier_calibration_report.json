@@ -1,0 +1,32 @@
+{
+  "before_category_counts": {
+    "persona_core_evidence": 9445,
+    "generic_low_signal": 3229
+  },
+  "after_category_counts": {
+    "persona_core_evidence": 9445,
+    "server_deploy_config_noise": 1263,
+    "ambiguous_review_bucket": 1082,
+    "syntax_formula_debug_noise": 305,
+    "denominator_eligible_business_non_core": 223,
+    "api_sdk_debug_noise": 136,
+    "source_specific_support_noise": 111,
+    "setup_auth_permission_noise": 107,
+    "career_training_certification_noise": 2
+  },
+  "generic_low_signal_before": 3229,
+  "generic_low_signal_after": 0,
+  "ambiguous_review_bucket_before": 0,
+  "ambiguous_review_bucket_after": 1082,
+  "denominator_eligible_business_non_core_before": 0,
+  "denominator_eligible_business_non_core_after": 223,
+  "deck_ready_denominator_eligible_before": 9445,
+  "deck_ready_denominator_eligible_after": 10750,
+  "ineligible_count_before": 3229,
+  "ineligible_count_after": 1924,
+  "explicit_technical_support_noise_before": 0,
+  "explicit_technical_support_noise_after": 1924,
+  "readiness_change": "none",
+  "adjusted_coverage_status": "not_official_not_computed_from_calibration",
+  "note": "This calibration report is diagnostics-only. Denominator ablation has not run, adjusted coverage is not official, and current readiness/persona counts are unchanged."
+}

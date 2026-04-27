@@ -220,6 +220,82 @@ class DeckReadyDenominatorEligibilityTests(unittest.TestCase):
         self.assertEqual(str(lookup.loc["ep-server", "denominator_eligibility_category"]), "server_deploy_config_noise")
         self.assertFalse(lookup["deck_ready_denominator_eligible"].astype(bool).any())
 
+    def test_source_specific_noise_patterns_classify_correctly(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[
+                {
+                    "episode_id": "ep-adobe",
+                    "persona_core_eligible": False,
+                    "labelability_status": "medium_signal",
+                    "labelability_reason": "implementation support",
+                    "pain_codes": [],
+                    "question_codes": [],
+                    "output_codes": [],
+                    "label_reason": "tracking implementation",
+                },
+                {
+                    "episode_id": "ep-domo",
+                    "persona_core_eligible": False,
+                    "labelability_status": "medium_signal",
+                    "labelability_reason": "domo support",
+                    "pain_codes": [],
+                    "question_codes": [],
+                    "output_codes": [],
+                    "label_reason": "connector config help",
+                },
+            ],
+            episode_rows=[
+                {
+                    "episode_id": "ep-adobe",
+                    "source": "adobe_analytics_community",
+                    "normalized_episode": "Tag manager implementation rule and evar server calls keep failing.",
+                    "business_question": "",
+                    "bottleneck_text": "implementation support",
+                    "desired_output": "",
+                },
+                {
+                    "episode_id": "ep-domo",
+                    "source": "domo_community_forum",
+                    "normalized_episode": "Beast mode and Magic ETL setup break after connector config changes.",
+                    "business_question": "",
+                    "bottleneck_text": "support setup",
+                    "desired_output": "",
+                },
+            ],
+        )
+        lookup = outputs["rows_df"].set_index("episode_id")
+        self.assertEqual(str(lookup.loc["ep-adobe", "denominator_eligibility_category"]), "source_specific_support_noise")
+        self.assertEqual(str(lookup.loc["ep-domo", "denominator_eligibility_category"]), "source_specific_support_noise")
+
+    def test_generic_low_signal_is_not_used_when_specific_noise_applies(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[
+                {
+                    "episode_id": "ep-stack",
+                    "persona_core_eligible": False,
+                    "labelability_status": "low_signal",
+                    "labelability_reason": "fallback prone",
+                    "pain_codes": [],
+                    "question_codes": [],
+                    "output_codes": [],
+                    "label_reason": "formula issue",
+                }
+            ],
+            episode_rows=[
+                {
+                    "episode_id": "ep-stack",
+                    "source": "stackoverflow",
+                    "normalized_episode": "Calculated column formula error in a matrix visual measure with dax syntax.",
+                    "business_question": "",
+                    "bottleneck_text": "formula error",
+                    "desired_output": "",
+                }
+            ],
+        )
+        row = outputs["rows_df"].iloc[0]
+        self.assertEqual(str(row["denominator_eligibility_category"]), "syntax_formula_debug_noise")
+        self.assertFalse(bool(row["deck_ready_denominator_eligible"]))
+
     def test_vendor_and_career_noise_are_excluded(self) -> None:
         outputs = self._build_outputs(
             labeled_rows=[
@@ -301,6 +377,38 @@ class DeckReadyDenominatorEligibilityTests(unittest.TestCase):
         row = outputs["rows_df"].iloc[0]
         self.assertTrue(bool(row["deck_ready_denominator_eligible"]))
         self.assertEqual(str(row["denominator_eligibility_category"]), "ambiguous_review_bucket")
+        self.assertTrue(bool(row["ambiguity_flag"]))
+
+    def test_mixed_business_and_technical_rows_become_ambiguous(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[
+                {
+                    "episode_id": "ep-mixed",
+                    "persona_core_eligible": False,
+                    "labelability_status": "low_signal",
+                    "labelability_reason": "mixed support and reporting context",
+                    "pain_codes": ["P_DATA_QUALITY"],
+                    "question_codes": ["Q_VALIDATE_NUMBERS"],
+                    "output_codes": ["O_VALIDATED_DATASET"],
+                    "label_reason": "stakeholder-facing reconciliation with query error",
+                }
+            ],
+            episode_rows=[
+                {
+                    "episode_id": "ep-mixed",
+                    "source": "adobe_analytics_community",
+                    "normalized_episode": "Stakeholder-facing report delivery is blocked by a query error while reconciling a number mismatch.",
+                    "business_question": "How do we reconcile stakeholder-facing numbers before weekly reporting?",
+                    "bottleneck_text": "reconciliation with query error",
+                    "desired_output": "validated export for leadership update",
+                    "evidence_snippet": "weekly reporting and stakeholder delivery are blocked",
+                    "segmentation_note": "mixed business and technical context",
+                }
+            ],
+        )
+        row = outputs["rows_df"].iloc[0]
+        self.assertEqual(str(row["denominator_eligibility_category"]), "ambiguous_review_bucket")
+        self.assertTrue(bool(row["deck_ready_denominator_eligible"]))
         self.assertTrue(bool(row["ambiguity_flag"]))
 
     def test_output_row_count_matches_labeled_rows_and_current_counts_do_not_change(self) -> None:
