@@ -1,0 +1,7 @@
+scenario_id,description,effective_balance,largest_source_share_pct,top3_source_share_pct,source_concentration_risk,balance_direction_vs_current,methodological_meaningfulness,row_count,source_count
+A_current_official,Current official effective balanced source count.,5.89,24.57,54.06,low,baseline,official influence-aware metric plus row-share proxy context,12674,14
+B_persona_core_only,Use persona-core rows only.,5.33,32.81,66.17,medium,worsens,row-share proxy over persona-core evidence only,9445,14
+C_denominator_eligible_rows,Use all deck-ready denominator-eligible rows.,6.43,28.88,58.47,medium,improves,row-share proxy over denominator-eligible evidence,10750,14
+D_excluding_high_conf_tech_noise,Exclude conservative high-confidence technical/support noise.,6.74,27.42,56.53,medium,improves,row-share proxy after audited high-confidence noise exclusion,11345,14
+E_core_plus_supporting_tiers_only,Keep core representative + supporting validation sources only.,6.34,27.21,59.87,medium,improves,row-share proxy over tier-filtered evidence,11445,10
+F_quarantine_debt_slices,Quarantine debt-producing slices inside current weak sources.,6.47,27.03,59.47,medium,improves,row-share proxy after source-internal slice quarantine,11522,13
