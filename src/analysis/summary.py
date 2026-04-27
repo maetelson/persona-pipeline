@@ -206,6 +206,10 @@ def build_quality_checks_df(quality_checks: dict[str, object]) -> pd.DataFrame:
             status_key, reason_key = metric_status_map[metric]
             status, level = _quality_row_style(str(quality_checks.get(status_key, QUALITY_FLAG_OK) or QUALITY_FLAG_OK))
             notes = str(quality_checks.get(reason_key, "") or "")
+            if metric == "persona_core_coverage_of_all_labeled_pct" and bool(
+                quality_checks.get("coverage_gate_passed_by_adjusted_metric", False)
+            ):
+                notes = str(quality_checks.get("adjusted_denominator_policy_reason", "") or "")
         elif metric == "quality_flag":
             status, level = _quality_row_style(str(quality_checks.get("overall_status", QUALITY_FLAG_OK) or QUALITY_FLAG_OK))
             notes = str(quality_checks.get("quality_flag_rule", "") or "")
@@ -419,6 +423,16 @@ def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) ->
         "persona_core_coverage_of_all_labeled_pct",
         "original_persona_core_coverage_pct",
         "adjusted_deck_ready_denominator_core_coverage_pct",
+        "coverage_gate_metric_used",
+        "original_coverage_gate_status",
+        "adjusted_coverage_gate_status",
+        "coverage_gate_passed_by_adjusted_metric",
+        "adjusted_denominator_policy_applied",
+        "adjusted_denominator_policy_reason",
+        "ambiguous_review_bucket_included_check",
+        "business_non_core_rows_included_check",
+        "persona_core_rows_never_excluded_check",
+        "excluded_rows_diagnostics_visible_check",
         "largest_labeled_source_share_pct",
     }:
         return DENOMINATOR_LABELED_EPISODE_ROWS
@@ -431,6 +445,16 @@ def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) ->
         "denominator_policy_mode",
         "denominator_policy_version",
         "adjusted_denominator_metric_status",
+        "coverage_gate_metric_used",
+        "original_coverage_gate_status",
+        "adjusted_coverage_gate_status",
+        "coverage_gate_passed_by_adjusted_metric",
+        "adjusted_denominator_policy_applied",
+        "adjusted_denominator_policy_reason",
+        "ambiguous_review_bucket_included_check",
+        "business_non_core_rows_included_check",
+        "persona_core_rows_never_excluded_check",
+        "excluded_rows_diagnostics_visible_check",
     }:
         return DENOMINATOR_LABELED_EPISODE_ROWS
     if metric == "largest_promoted_source_share_pct":
@@ -472,6 +496,16 @@ def _quality_denominator_value(metric: str, quality_checks: dict[str, object]) -
         "persona_core_coverage_of_all_labeled_pct",
         "original_persona_core_coverage_pct",
         "adjusted_deck_ready_denominator_core_coverage_pct",
+        "coverage_gate_metric_used",
+        "original_coverage_gate_status",
+        "adjusted_coverage_gate_status",
+        "coverage_gate_passed_by_adjusted_metric",
+        "adjusted_denominator_policy_applied",
+        "adjusted_denominator_policy_reason",
+        "ambiguous_review_bucket_included_check",
+        "business_non_core_rows_included_check",
+        "persona_core_rows_never_excluded_check",
+        "excluded_rows_diagnostics_visible_check",
         "largest_labeled_source_share_pct",
     }:
         return quality_checks.get(DENOMINATOR_LABELED_EPISODE_ROWS, quality_checks.get("labeled_count", ""))
@@ -486,6 +520,16 @@ def _quality_denominator_value(metric: str, quality_checks: dict[str, object]) -
         "denominator_policy_mode",
         "denominator_policy_version",
         "adjusted_denominator_metric_status",
+        "coverage_gate_metric_used",
+        "original_coverage_gate_status",
+        "adjusted_coverage_gate_status",
+        "coverage_gate_passed_by_adjusted_metric",
+        "adjusted_denominator_policy_applied",
+        "adjusted_denominator_policy_reason",
+        "ambiguous_review_bucket_included_check",
+        "business_non_core_rows_included_check",
+        "persona_core_rows_never_excluded_check",
+        "excluded_rows_diagnostics_visible_check",
     }:
         return quality_checks.get(DENOMINATOR_LABELED_EPISODE_ROWS, quality_checks.get("labeled_count", ""))
     if metric == "largest_promoted_source_share_pct":

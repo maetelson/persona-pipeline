@@ -8,6 +8,7 @@ from typing import Any
 import pandas as pd
 
 from src.analysis.deck_ready_denominator_eligibility import (
+    build_adjusted_denominator_secondary_gate_metadata,
     build_conservative_deck_ready_denominator_metrics,
     build_deck_ready_denominator_eligibility_outputs,
 )
@@ -308,6 +309,10 @@ def build_quality_metrics(
         denominator_outputs["rows_df"],
         persona_core_row_count=persona_core_labeled_count,
     )
+    adjusted_gate_metadata = build_adjusted_denominator_secondary_gate_metadata(
+        denominator_outputs["rows_df"],
+        conservative_denominator_metrics,
+    )
     cluster_distribution = [
         {
             "cluster_id": str(row.get("cluster_id", "")),
@@ -383,6 +388,16 @@ def build_quality_metrics(
         "denominator_policy_mode": conservative_denominator_metrics["denominator_policy_mode"],
         "denominator_policy_version": conservative_denominator_metrics["denominator_policy_version"],
         "adjusted_denominator_metric_status": conservative_denominator_metrics["adjusted_denominator_metric_status"],
+        "coverage_gate_metric_used": adjusted_gate_metadata["coverage_gate_metric_used"],
+        "original_coverage_gate_status": adjusted_gate_metadata["original_coverage_gate_status"],
+        "adjusted_coverage_gate_status": adjusted_gate_metadata["adjusted_coverage_gate_status"],
+        "coverage_gate_passed_by_adjusted_metric": adjusted_gate_metadata["coverage_gate_passed_by_adjusted_metric"],
+        "adjusted_denominator_policy_applied": adjusted_gate_metadata["adjusted_denominator_policy_applied"],
+        "adjusted_denominator_policy_reason": adjusted_gate_metadata["adjusted_denominator_policy_reason"],
+        "ambiguous_review_bucket_included_check": adjusted_gate_metadata["ambiguous_review_bucket_included_check"],
+        "business_non_core_rows_included_check": adjusted_gate_metadata["business_non_core_rows_included_check"],
+        "persona_core_rows_never_excluded_check": adjusted_gate_metadata["persona_core_rows_never_excluded_check"],
+        "excluded_rows_diagnostics_visible_check": adjusted_gate_metadata["excluded_rows_diagnostics_visible_check"],
         "promoted_candidate_persona_count": int(promotion_semantics.get("promoted_candidate_persona_count", 0)),
         "promotion_visibility_persona_count": int(promotion_semantics.get("promotion_visibility_persona_count", promoted_persona_count)),
         "headline_persona_count": int(promotion_semantics.get("headline_persona_count", grounding_counts.get("grounded", 0))),
@@ -659,6 +674,11 @@ def _unmet_readiness_requirements(metrics: dict[str, object], requirements: dict
     """Return unmet readiness requirements using human-readable threshold labels."""
     unmet: list[str] = []
     for metric_name, payload in requirements.items():
+        if metric_name == "persona_core_coverage_of_all_labeled_pct":
+            if _coverage_requirement_passed(metrics, payload):
+                continue
+            unmet.append(str(payload.get("display", f"{metric_name}>={payload.get('min')}")))
+            continue
         value = float(metrics.get(metric_name, 0.0) or 0.0)
         minimum = payload.get("min")
         maximum = payload.get("max")
@@ -687,6 +707,28 @@ def _persona_readiness_rule() -> str:
         "exploratory_only below reviewable thresholds; reviewable_but_not_deck_ready requires explicit floors for overall_unknown_ratio, persona_core_coverage_of_all_labeled_pct, promoted_persona_example_coverage_pct, final_usable_persona_count, largest_source_influence_share_pct, and fragile_tail_share_of_core_labeled; "
         "deck_ready is the first state allowed to claim a final persona asset; production_persona_ready requires the stricter production thresholds for those same metrics."
     )
+
+
+def _coverage_requirement_passed(
+    metrics: dict[str, object],
+    payload: dict[str, float | str],
+) -> bool:
+    """Return whether a readiness coverage requirement passes using the adjusted secondary gate when allowed."""
+    minimum = payload.get("min")
+    maximum = payload.get("max")
+    original_value = float(metrics.get("persona_core_coverage_of_all_labeled_pct", 0.0) or 0.0)
+    if minimum is not None and original_value >= float(minimum):
+        return True
+    if maximum is not None and original_value <= float(maximum):
+        return True
+    if not bool(metrics.get("coverage_gate_passed_by_adjusted_metric", False)):
+        return False
+    adjusted_value = float(metrics.get("adjusted_deck_ready_denominator_core_coverage_pct", 0.0) or 0.0)
+    if minimum is not None:
+        return adjusted_value >= float(minimum)
+    if maximum is not None:
+        return adjusted_value <= float(maximum)
+    return False
 
 
 def _readiness_threshold_display(metric_name: str) -> str:
@@ -1000,6 +1042,8 @@ def _evaluate_axis_from_policy(axis_name: str, metrics: dict[str, object]) -> di
     """Evaluate one axis using centralized policy metadata."""
     policy = QUALITY_STATUS_POLICY[axis_name]
     value = float(metrics.get(str(policy["metric"]), 0.0) or 0.0)
+    if axis_name == "core_coverage" and bool(metrics.get("coverage_gate_passed_by_adjusted_metric", False)):
+        value = float(metrics.get("adjusted_deck_ready_denominator_core_coverage_pct", value) or value)
     result = _evaluate_axis(
         value=value,
         warn_threshold=float(policy["warn_threshold"]),

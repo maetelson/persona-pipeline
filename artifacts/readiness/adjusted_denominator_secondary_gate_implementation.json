@@ -1,0 +1,22 @@
+{
+  "coverage_gate_metric_used": "adjusted_deck_ready_denominator_core_coverage_pct_secondary_gate",
+  "original_coverage_gate_status": "fail",
+  "adjusted_coverage_gate_status": "pass",
+  "coverage_gate_passed_by_adjusted_metric": "True",
+  "adjusted_denominator_policy_applied": "True",
+  "adjusted_denominator_policy_reason": "Adjusted conservative denominator metric may satisfy the coverage gate because it is audited, uses conservative_high_confidence_noise_only v1, keeps ambiguous and business non-core rows included, keeps excluded rows diagnostics-visible, and clears the 80.0 floor.",
+  "original_persona_core_coverage_pct": "74.5",
+  "adjusted_deck_ready_denominator_core_coverage_pct": "83.25",
+  "persona_core_coverage_of_all_labeled_pct": "74.5",
+  "persona_readiness_state": "reviewable_but_not_deck_ready",
+  "overall_status": "WARN",
+  "quality_flag": "EXPLORATORY",
+  "effective_balanced_source_count": "5.89",
+  "weak_source_cost_center_count": "4",
+  "core_readiness_weak_source_cost_center_count": "",
+  "final_usable_persona_count": "3",
+  "production_ready_persona_count": "3",
+  "review_ready_persona_count": "1",
+  "deck_ready_claim_eligible_persona_count": "4",
+  "note": "The adjusted conservative denominator metric now participates in the coverage component as a secondary gate only. The original metric remains visible and unchanged. Non-coverage readiness gates are unchanged."
+}

@@ -129,11 +129,102 @@ def main() -> None:
         + "\n",
         encoding="utf-8",
     )
+    secondary_gate_report = {
+        "coverage_gate_metric_used": overview_metrics.get("coverage_gate_metric_used", ""),
+        "original_coverage_gate_status": overview_metrics.get("original_coverage_gate_status", ""),
+        "adjusted_coverage_gate_status": overview_metrics.get("adjusted_coverage_gate_status", ""),
+        "coverage_gate_passed_by_adjusted_metric": overview_metrics.get("coverage_gate_passed_by_adjusted_metric", ""),
+        "adjusted_denominator_policy_applied": overview_metrics.get("adjusted_denominator_policy_applied", ""),
+        "adjusted_denominator_policy_reason": overview_metrics.get("adjusted_denominator_policy_reason", ""),
+        "original_persona_core_coverage_pct": overview_metrics.get("original_persona_core_coverage_pct", ""),
+        "adjusted_deck_ready_denominator_core_coverage_pct": overview_metrics.get(
+            "adjusted_deck_ready_denominator_core_coverage_pct", ""
+        ),
+        "persona_core_coverage_of_all_labeled_pct": overview_metrics.get(
+            "persona_core_coverage_of_all_labeled_pct", ""
+        ),
+        "persona_readiness_state": overview_metrics.get("persona_readiness_state", ""),
+        "overall_status": overview_metrics.get("overall_status", ""),
+        "quality_flag": overview_metrics.get("quality_flag", ""),
+        "effective_balanced_source_count": overview_metrics.get("effective_balanced_source_count", ""),
+        "weak_source_cost_center_count": overview_metrics.get("weak_source_cost_center_count", ""),
+        "core_readiness_weak_source_cost_center_count": overview_metrics.get(
+            "core_readiness_weak_source_cost_center_count", ""
+        ),
+        "final_usable_persona_count": overview_metrics.get("final_usable_persona_count", ""),
+        "production_ready_persona_count": overview_metrics.get("production_ready_persona_count", ""),
+        "review_ready_persona_count": overview_metrics.get("review_ready_persona_count", ""),
+        "deck_ready_claim_eligible_persona_count": overview_metrics.get(
+            "deck_ready_claim_eligible_persona_count", ""
+        ),
+        "note": (
+            "The adjusted conservative denominator metric now participates in the coverage component as a secondary gate only. "
+            "The original metric remains visible and unchanged. Non-coverage readiness gates are unchanged."
+        ),
+    }
+    secondary_gate_report_path = (
+        ROOT_DIR / "artifacts" / "readiness" / "adjusted_denominator_secondary_gate_implementation.json"
+    )
+    secondary_gate_report_path.write_text(
+        json.dumps(secondary_gate_report, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    secondary_gate_note_path = (
+        ROOT_DIR / "docs" / "operational" / "ADJUSTED_DENOMINATOR_SECONDARY_GATE_IMPLEMENTATION.md"
+    )
+    secondary_gate_note_path.write_text(
+        "\n".join(
+            [
+                "# Adjusted Denominator Secondary Gate Implementation",
+                "",
+                "## Scope",
+                "",
+                "This pass wires the audited adjusted conservative denominator metric into the coverage component as a secondary gate only.",
+                "It does not replace the original coverage metric, does not hide excluded rows, and does not change non-coverage readiness gates.",
+                "",
+                "## Secondary Gate Logic",
+                "",
+                "Coverage may pass by the adjusted metric only when all are true:",
+                "",
+                "1. `adjusted_denominator_metric_status = audited`",
+                "2. `denominator_policy_mode = conservative_high_confidence_noise_only`",
+                "3. `denominator_policy_version = v1`",
+                "4. `adjusted_deck_ready_denominator_core_coverage_pct >= 80.0`",
+                "5. `ambiguous_review_bucket` remains included",
+                "6. `denominator_eligible_business_non_core` remains included",
+                "7. excluded rows remain diagnostics-visible",
+                "",
+                "## Current Values",
+                "",
+                f"- original coverage: `{overview_metrics.get('persona_core_coverage_of_all_labeled_pct', '')}`",
+                f"- original_persona_core_coverage_pct: `{overview_metrics.get('original_persona_core_coverage_pct', '')}`",
+                f"- adjusted coverage: `{overview_metrics.get('adjusted_deck_ready_denominator_core_coverage_pct', '')}`",
+                f"- coverage_gate_metric_used: `{overview_metrics.get('coverage_gate_metric_used', '')}`",
+                f"- original_coverage_gate_status: `{overview_metrics.get('original_coverage_gate_status', '')}`",
+                f"- adjusted_coverage_gate_status: `{overview_metrics.get('adjusted_coverage_gate_status', '')}`",
+                f"- coverage_gate_passed_by_adjusted_metric: `{overview_metrics.get('coverage_gate_passed_by_adjusted_metric', '')}`",
+                "",
+                "## Invariants",
+                "",
+                f"- persona_readiness_state remains `{overview_metrics.get('persona_readiness_state', '')}`",
+                f"- overall_status remains `{overview_metrics.get('overall_status', '')}`",
+                f"- quality_flag remains `{overview_metrics.get('quality_flag', '')}`",
+                f"- final_usable_persona_count remains `{overview_metrics.get('final_usable_persona_count', '')}`",
+                f"- production_ready_persona_count remains `{overview_metrics.get('production_ready_persona_count', '')}`",
+                f"- review_ready_persona_count remains `{overview_metrics.get('review_ready_persona_count', '')}`",
+                f"- deck_ready_claim_eligible_persona_count remains `{overview_metrics.get('deck_ready_claim_eligible_persona_count', '')}`",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     artifact_paths["calibration_report_json"] = report_path
     artifact_paths["conservative_exclusions_csv"] = conservative_paths["conservative_exclusions_csv"]
     artifact_paths["conservative_metric_json"] = conservative_paths["conservative_metric_json"]
     artifact_paths["implementation_report_json"] = implementation_report_path
     artifact_paths["implementation_note_md"] = implementation_note_path
+    artifact_paths["secondary_gate_report_json"] = secondary_gate_report_path
+    artifact_paths["secondary_gate_note_md"] = secondary_gate_note_path
     print(json.dumps({key: str(value) for key, value in artifact_paths.items()}, ensure_ascii=False, indent=2))
 
 

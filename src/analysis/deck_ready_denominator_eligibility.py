@@ -326,6 +326,90 @@ def build_conservative_deck_ready_denominator_metrics(
     }
 
 
+def build_adjusted_denominator_secondary_gate_metadata(
+    row_df: pd.DataFrame,
+    conservative_metrics: dict[str, Any],
+) -> dict[str, Any]:
+    """Return audited metadata for using the conservative metric as a secondary coverage gate."""
+    working = row_df.copy()
+    if "denominator_eligibility_category" not in working.columns:
+        working["denominator_eligibility_category"] = ""
+    if "deck_ready_denominator_eligible" not in working.columns:
+        working["deck_ready_denominator_eligible"] = False
+    if "persona_core_eligible" not in working.columns:
+        working["persona_core_eligible"] = False
+
+    ambiguous_rows = working[
+        working["denominator_eligibility_category"].astype(str).eq("ambiguous_review_bucket")
+    ].copy()
+    business_non_core_rows = working[
+        working["denominator_eligibility_category"].astype(str).eq("denominator_eligible_business_non_core")
+    ].copy()
+    persona_core_rows = working[working["persona_core_eligible"].fillna(False).astype(bool)].copy()
+
+    ambiguous_rows_remain_included = bool(
+        ambiguous_rows.empty
+        or ambiguous_rows["deck_ready_denominator_eligible"].fillna(False).astype(bool).all()
+    )
+    business_non_core_rows_remain_included = bool(
+        business_non_core_rows.empty
+        or business_non_core_rows["deck_ready_denominator_eligible"].fillna(False).astype(bool).all()
+    )
+    persona_core_rows_never_excluded = bool(
+        persona_core_rows.empty
+        or persona_core_rows["deck_ready_denominator_eligible"].fillna(False).astype(bool).all()
+    )
+    excluded_rows_diagnostics_visible = bool(
+        int(conservative_metrics.get("adjusted_deck_ready_denominator_excluded_row_count", 0) or 0)
+        == int(_conservative_exclusion_mask(working).sum())
+    )
+    policy_mode = str(conservative_metrics.get("denominator_policy_mode", "") or "")
+    policy_version = str(conservative_metrics.get("denominator_policy_version", "") or "")
+    adjusted_status = str(conservative_metrics.get("adjusted_denominator_metric_status", "") or "")
+    adjusted_coverage = float(
+        conservative_metrics.get("adjusted_deck_ready_denominator_core_coverage_pct", 0.0) or 0.0
+    )
+    gate_eligible = all(
+        [
+            adjusted_status == "audited",
+            policy_mode == CONSERVATIVE_DENOMINATOR_POLICY_MODE,
+            policy_version == CONSERVATIVE_DENOMINATOR_POLICY_VERSION,
+            adjusted_coverage >= 80.0,
+            ambiguous_rows_remain_included,
+            business_non_core_rows_remain_included,
+            excluded_rows_diagnostics_visible,
+            persona_core_rows_never_excluded,
+        ]
+    )
+    reason = (
+        "Adjusted conservative denominator metric may satisfy the coverage gate because it is audited, "
+        "uses conservative_high_confidence_noise_only v1, keeps ambiguous and business non-core rows included, "
+        "keeps excluded rows diagnostics-visible, and clears the 80.0 floor."
+        if gate_eligible
+        else "Adjusted conservative denominator metric does not yet meet all secondary-gate safeguards."
+    )
+    return {
+        "coverage_gate_metric_used": (
+            "adjusted_deck_ready_denominator_core_coverage_pct_secondary_gate"
+            if gate_eligible
+            else "persona_core_coverage_of_all_labeled_pct"
+        ),
+        "original_coverage_gate_status": (
+            "pass"
+            if float(conservative_metrics.get("original_persona_core_coverage_pct", 0.0) or 0.0) >= 80.0
+            else "fail"
+        ),
+        "adjusted_coverage_gate_status": "pass" if gate_eligible else "fail",
+        "coverage_gate_passed_by_adjusted_metric": gate_eligible,
+        "adjusted_denominator_policy_applied": gate_eligible,
+        "adjusted_denominator_policy_reason": reason,
+        "ambiguous_review_bucket_included_check": ambiguous_rows_remain_included,
+        "business_non_core_rows_included_check": business_non_core_rows_remain_included,
+        "persona_core_rows_never_excluded_check": persona_core_rows_never_excluded,
+        "excluded_rows_diagnostics_visible_check": excluded_rows_diagnostics_visible,
+    }
+
+
 def write_conservative_denominator_artifacts(
     root_dir: Path,
     row_df: pd.DataFrame,

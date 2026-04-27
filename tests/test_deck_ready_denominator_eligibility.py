@@ -464,6 +464,26 @@ class DeckReadyDenominatorEligibilityTests(unittest.TestCase):
         self.assertIn("adjusted_deck_ready_denominator_core_coverage_pct", metrics)
         self.assertEqual(float(metrics["persona_core_coverage_of_all_labeled_pct"]), 74.5)
 
+    def test_secondary_gate_fields_are_visible_without_replacing_original_metric(self) -> None:
+        overview_df = pd.read_csv(ROOT_DIR / "data" / "analysis" / "overview.csv")
+        metrics = dict(zip(overview_df["metric"].astype(str), overview_df["value"]))
+        self.assertEqual(str(metrics["coverage_gate_metric_used"]), "adjusted_deck_ready_denominator_core_coverage_pct_secondary_gate")
+        self.assertEqual(str(metrics["original_coverage_gate_status"]), "fail")
+        self.assertEqual(str(metrics["adjusted_coverage_gate_status"]), "pass")
+        self.assertEqual(str(metrics["coverage_gate_passed_by_adjusted_metric"]), "True")
+        self.assertEqual(str(metrics["adjusted_denominator_policy_applied"]), "True")
+        self.assertEqual(float(metrics["persona_core_coverage_of_all_labeled_pct"]), 74.5)
+        self.assertEqual(float(metrics["original_persona_core_coverage_pct"]), 74.5)
+        self.assertEqual(float(metrics["adjusted_deck_ready_denominator_core_coverage_pct"]), 83.25)
+
+    def test_secondary_gate_guardrails_remain_true(self) -> None:
+        overview_df = pd.read_csv(ROOT_DIR / "data" / "analysis" / "overview.csv")
+        metrics = dict(zip(overview_df["metric"].astype(str), overview_df["value"]))
+        self.assertEqual(str(metrics["ambiguous_review_bucket_included_check"]), "True")
+        self.assertEqual(str(metrics["business_non_core_rows_included_check"]), "True")
+        self.assertEqual(str(metrics["persona_core_rows_never_excluded_check"]), "True")
+        self.assertEqual(str(metrics["excluded_rows_diagnostics_visible_check"]), "True")
+
     def test_output_row_count_matches_labeled_rows_and_current_counts_do_not_change(self) -> None:
         labeled_df = pd.read_parquet(ROOT_DIR / "data" / "labeled" / "labeled_episodes.parquet")
         overview_df = pd.read_csv(ROOT_DIR / "data" / "analysis" / "overview.csv")
@@ -500,3 +520,16 @@ class DeckReadyDenominatorEligibilityTests(unittest.TestCase):
         self.assertEqual(int(float(metrics["production_ready_persona_count"])), 3)
         self.assertEqual(int(float(metrics["review_ready_persona_count"])), 1)
         self.assertEqual(int(float(metrics["deck_ready_claim_eligible_persona_count"])), 4)
+
+    def test_secondary_gate_does_not_make_workbook_deck_ready_from_coverage_alone(self) -> None:
+        overview_df = pd.read_csv(ROOT_DIR / "data" / "analysis" / "overview.csv")
+        metrics = dict(zip(overview_df["metric"].astype(str), overview_df["value"]))
+        quality_checks_df = pd.read_csv(ROOT_DIR / "data" / "analysis" / "quality_checks.csv")
+        quality_metrics = dict(zip(quality_checks_df["metric"].astype(str), quality_checks_df["value"]))
+        self.assertEqual(str(metrics["persona_readiness_state"]), "reviewable_but_not_deck_ready")
+        self.assertEqual(str(metrics["overall_status"]), "WARN")
+        self.assertEqual(str(metrics["quality_flag"]), "EXPLORATORY")
+        self.assertEqual(str(metrics["source_diversity_status"]), "WARN")
+        self.assertEqual(str(metrics["weak_source_yield_status"]), "WARN")
+        self.assertLess(float(metrics["effective_balanced_source_count"]), 6.0)
+        self.assertGreaterEqual(int(float(quality_metrics["core_readiness_weak_source_cost_center_count"])), 3)
