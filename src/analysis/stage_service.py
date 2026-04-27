@@ -43,6 +43,7 @@ from src.analysis.diagnostics import (
     finalize_quality_checks,
 )
 from src.analysis.deck_ready_claims import build_deck_ready_claim_outputs
+from src.analysis.release_visibility import build_release_visibility_outputs
 from src.analysis.pipeline_thresholds import evaluate_cluster_thresholds, load_threshold_profile, upsert_threshold_audit
 from src.analysis.profiling import build_cluster_profiles
 from src.analysis.report_export import export_persona_reports
@@ -281,6 +282,15 @@ def build_deterministic_analysis_outputs(root_dir: Path, inputs: dict[str, Any])
         persona_service_outputs.get("persona_promotion_grounding_audit_df", pd.DataFrame()),
         quality_checks,
     )
+    release_visibility_outputs = build_release_visibility_outputs(
+        persona_summary_df=persona_service_outputs["persona_summary_df"],
+        cluster_stats_df=persona_service_outputs["cluster_stats_df"],
+        persona_promotion_path_debug_df=persona_service_outputs["persona_promotion_path_debug_df"],
+    )
+    quality_checks.update(release_visibility_outputs["counts"])
+    persona_service_outputs["persona_summary_df"] = release_visibility_outputs["persona_summary_df"]
+    persona_service_outputs["cluster_stats_df"] = release_visibility_outputs["cluster_stats_df"]
+    persona_service_outputs["persona_promotion_path_debug_df"] = release_visibility_outputs["persona_promotion_path_debug_df"]
     persona_service_outputs["overview_df"] = _build_final_overview_df(
         axis_names=reduced_outputs["reduced_axis_schema"],
         quality_checks=quality_checks,
@@ -429,6 +439,14 @@ def persist_analysis_outputs(
     ):
         LOGGER.warning("Workbook bundle validation: %s", message)
     bundle_paths = write_workbook_bundle(root_dir, deterministic_outputs["workbook_frames"])
+    persona_service_outputs["overview_df"].to_csv(analysis_dir / "overview.csv", index=False)
+    persona_service_outputs["quality_checks_df"].to_csv(analysis_dir / "quality_checks.csv", index=False)
+    persona_service_outputs["cluster_stats_df"].to_csv(analysis_dir / "cluster_stats.csv", index=False)
+    persona_service_outputs["persona_summary_df"].to_csv(analysis_dir / "persona_summary.csv", index=False)
+    persona_service_outputs["persona_promotion_path_debug_df"].to_csv(
+        analysis_dir / "persona_promotion_path_debug.csv",
+        index=False,
+    )
 
     debug_paths: dict[str, Path] = {}
     export_paths: dict[str, Path] = {}
@@ -711,6 +729,11 @@ def _build_final_overview_df(
         {"metric": "promoted_candidate_persona_count", "value": quality_checks.get("promoted_candidate_persona_count", promotion_visibility_persona_count)},
         {"metric": "promotion_visibility_persona_count", "value": promotion_visibility_persona_count},
         {"metric": "headline_persona_count", "value": quality_checks.get("headline_persona_count", final_usable_persona_count)},
+        {"metric": "final_usable_release_persona_count", "value": quality_checks.get("final_usable_release_persona_count", final_usable_persona_count)},
+        {"metric": "review_ready_claim_persona_count", "value": quality_checks.get("review_ready_claim_persona_count", review_ready_persona_count)},
+        {"metric": "future_candidate_subtheme_count", "value": quality_checks.get("future_candidate_subtheme_count", 0)},
+        {"metric": "exploratory_tail_persona_count", "value": quality_checks.get("exploratory_tail_persona_count", exploratory_bucket_count)},
+        {"metric": "release_headline_persona_count", "value": quality_checks.get("release_headline_persona_count", final_usable_persona_count + review_ready_persona_count)},
         {"metric": "production_ready_persona_count", "value": production_ready_persona_count},
         {"metric": "review_ready_persona_count", "value": review_ready_persona_count},
         {"metric": "final_usable_persona_count", "value": final_usable_persona_count},

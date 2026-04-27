@@ -1,0 +1,27 @@
+source_id: hubspot_community
+source_group: business_communities
+max_query_count: 6
+source_notes: "Pilot-only bounded HubSpot expansion focused on reporting trust, pipeline reporting, attribution, and stakeholder explanation pain."
+active_core_seeds:
+  - seed: hubspot report numbers wrong
+    reason: Direct mismatch phrasing with strong reporting trust signal.
+  - seed: lifecycle stage report doesn't match
+    reason: Strong funnel-stage reconciliation pain.
+  - seed: attribution report looks wrong
+    reason: Keeps attribution as a bounded but high-signal branch.
+  - seed: pipeline report makes no sense
+    reason: Native operator language for interpretation failure.
+  - seed: dashboard not matching export
+    reason: Concrete dashboard-vs-export discrepancy.
+  - seed: how do I explain this report to leadership
+    reason: Stakeholder explanation pressure.
+candidate_seed_pool:
+  - source report not matching CRM totals
+  - which hubspot report should I trust
+negative_terms:
+  - api
+  - developer
+  - certification
+  - career
+  - interview
+  - phone support

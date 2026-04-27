@@ -1,0 +1,38 @@
+{
+  "hubspot_community": {
+    "source": "hubspot_community",
+    "existing_raw_count": 6581,
+    "existing_normalized_count": 6581,
+    "existing_labeled_count": 796,
+    "existing_known_raw_id_count": 6581,
+    "existing_known_url_count": 1570,
+    "existing_known_canonical_url_count": 1570,
+    "existing_known_title_count": 2440,
+    "existing_known_content_hash_count": 7370,
+    "dedupe_key_coverage": {
+      "raw_id": true,
+      "url": true,
+      "canonical_url": true,
+      "title": true,
+      "content_hash": true
+    }
+  },
+  "reddit": {
+    "source": "reddit",
+    "existing_raw_count": 629,
+    "existing_normalized_count": 629,
+    "existing_labeled_count": 214,
+    "existing_known_raw_id_count": 629,
+    "existing_known_url_count": 629,
+    "existing_known_canonical_url_count": 0,
+    "existing_known_title_count": 787,
+    "existing_known_content_hash_count": 1387,
+    "dedupe_key_coverage": {
+      "raw_id": true,
+      "url": true,
+      "canonical_url": false,
+      "title": true,
+      "content_hash": true
+    }
+  }
+}

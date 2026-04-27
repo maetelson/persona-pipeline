@@ -310,6 +310,11 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
             quality_checks={
                 "persona_readiness_state": "exploratory_only",
                 "final_usable_persona_count": 3,
+                "final_usable_release_persona_count": 3,
+                "review_ready_claim_persona_count": 1,
+                "future_candidate_subtheme_count": 1,
+                "exploratory_tail_persona_count": 6,
+                "release_headline_persona_count": 4,
                 "promotion_visibility_persona_count": 3,
             },
             stage_counts={"labeled_episode_rows": 5},
@@ -342,6 +347,11 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
         lookup = dict(zip(overview_df["metric"], overview_df["value"]))
         self.assertEqual(float(lookup["production_ready_persona_count"]), 3.0)
         self.assertEqual(float(lookup["review_ready_persona_count"]), 1.0)
+        self.assertEqual(float(lookup["final_usable_release_persona_count"]), 3.0)
+        self.assertEqual(float(lookup["review_ready_claim_persona_count"]), 1.0)
+        self.assertEqual(float(lookup["future_candidate_subtheme_count"]), 1.0)
+        self.assertEqual(float(lookup["exploratory_tail_persona_count"]), 6.0)
+        self.assertEqual(float(lookup["release_headline_persona_count"]), 4.0)
         self.assertEqual(float(lookup["final_usable_persona_count"]), 3.0)
         self.assertEqual(float(lookup["exploratory_bucket_count"]), 0.0)
         self.assertEqual(float(lookup["blocked_or_constrained_persona_count"]), 1.0)

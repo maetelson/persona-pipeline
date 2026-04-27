@@ -1,0 +1,143 @@
+# Deck-Ready Core Coverage Recovery Audit
+
+## Current Deck-Ready Baseline
+
+- `persona_readiness_state` = `reviewable_but_not_deck_ready`
+- `overall_status` = `WARN`
+- `quality_flag` = `EXPLORATORY`
+- `persona_core_coverage_of_all_labeled_pct` = `74.5`
+- `current_labeled_row_count` = `12674`
+- `current_persona_core_row_count` = `9445`
+- `rows_needed_to_reach_75_0` = `61`
+- `rows_needed_to_reach_80_0` = `695`
+- `effective_balanced_source_count` = `5.89`
+- `core_readiness_weak_source_cost_center_count` = `3`
+- `weak_source_cost_center_count` = `4`
+- `final_usable_persona_count` = `3`
+- `production_ready_persona_count` = `3`
+- `review_ready_persona_count` = `1`
+- `deck_ready_claim_eligible_persona_count` = `4`
+
+## Non-Core Candidate Pool Summary
+
+- `total_non_core_labeled_rows` = `3229`
+- `good_source_non_core_rows` = `1281`
+- `weak_source_non_core_rows` = `1948`
+- `labelability_status_counts` = `{'low_signal': 3229}`
+- `source_counts` = `{'domo_community_forum': 932, 'stackoverflow': 844, 'google_developer_forums': 560, 'adobe_analytics_community': 449, 'github_discussions': 217, 'shopify_community': 175, 'reddit': 17, 'power_bi_community': 15, 'hubspot_community': 13, 'klaviyo_community': 7}`
+- `source_tier_counts` = `{'supporting_validation_source': 2275, 'exploratory_edge_source': 932, 'core_representative_source': 15, 'excluded_from_deck_ready_core': 7}`
+
+## Recoverable Candidate Summary
+
+- `automated_recovery_category_counts` = `{'weak_or_generic': 1191, 'do_not_recover': 1030, 'technical_support_noise': 493, 'ambiguous': 404, 'high_confidence_recoverable': 40, 'medium_confidence_recoverable': 40, 'source_specific_noise': 28, 'duplicate_or_near_duplicate': 3}`
+- `high_confidence_by_source` = `{'stackoverflow': 33, 'github_discussions': 7}`
+- `high_confidence_by_persona_target` = `{'persona_03': 21, 'persona_02': 14, 'persona_04': 5}`
+- `medium_confidence_by_source` = `{'stackoverflow': 33, 'github_discussions': 5, 'reddit': 1, 'shopify_community': 1}`
+- `weak_noise_by_source` = `{'domo_community_forum': 929, 'stackoverflow': 569, 'google_developer_forums': 560, 'adobe_analytics_community': 449, 'github_discussions': 171, 'shopify_community': 21, 'power_bi_community': 15, 'reddit': 15, 'klaviyo_community': 7, 'hubspot_community': 6}`
+- `recoverable_rows_concentrated_in_weak_sources` = `False`
+- `recovery_would_worsen_or_improve_balance` = `neutral_to_worse_if_stackoverflow_dominant; slight_improvement_only_if_limited_to_underweighted_supporting_sources`
+- `recovery_mostly_inflates_existing_personas` = `yes_mostly_persona_03_and_persona_02_with_some_persona_04_and_little_persona_01`
+- `recovery_helps_persona_04` = `limited`
+
+## Sample Classification Result
+
+- `sample_size` = `100`
+- `sample_bucket_counts` = `{'high_confidence_recoverable': 40, 'medium_confidence_recoverable': 30, 'weak_noise': 20, 'ambiguous': 10}`
+- `review_classification_counts` = `{'technical_noise': 71, 'source_noise': 24, 'keep_non_core': 3, 'ambiguous': 2}`
+- `review_by_bucket` = `{'high_confidence_recoverable': {'technical_noise': 37, 'source_noise': 3}, 'medium_confidence_recoverable': {'technical_noise': 26, 'keep_non_core': 3, 'source_noise': 1}, 'ambiguous': {'technical_noise': 8, 'ambiguous': 2}, 'weak_noise': {'source_noise': 20}}`
+- `sample_precision_high_confidence` = `0.0`
+- `sample_precision_medium_confidence` = `0.0`
+
+## Scenario Simulation Table
+
+### A_recover_only_high_confidence_candidates
+- `recovered_row_count` = `40`
+- `new_persona_core_coverage_of_all_labeled_pct` = `74.84`
+- `effective_balanced_source_count` = `5.92`
+- `core_readiness_weak_source_cost_center_count` = `3`
+- `overall_status` = `WARN`
+- `persona_readiness_state` = `reviewable_but_not_deck_ready`
+- `final_usable_persona_count` = `3`
+- `production_ready_persona_count` = `3`
+- `review_ready_persona_count` = `1`
+- `junk_risk_assessment` = `high_without_manual_curated_rule_because_sample_precision_was_low`
+- `source_balance_impact` = `slight_worsening_or_flat`
+- `persona_concentration_impact` = `mostly_persona_03_or_persona_02_from_stackoverflow`
+### B_recover_high_plus_medium_candidates
+- `recovered_row_count` = `80`
+- `new_persona_core_coverage_of_all_labeled_pct` = `75.15`
+- `effective_balanced_source_count` = `5.94`
+- `core_readiness_weak_source_cost_center_count` = `3`
+- `overall_status` = `WARN`
+- `persona_readiness_state` = `reviewable_but_not_deck_ready`
+- `final_usable_persona_count` = `3`
+- `production_ready_persona_count` = `3`
+- `review_ready_persona_count` = `1`
+- `junk_risk_assessment` = `high_without_manual_curated_rule_because_sample_precision_was_low`
+- `source_balance_impact` = `slight_worsening_or_flat`
+- `persona_concentration_impact` = `mostly_persona_03_or_persona_02_from_stackoverflow`
+### C_recover_only_candidates_from_core_representative_sources
+- `recovered_row_count` = `0`
+- `new_persona_core_coverage_of_all_labeled_pct` = `74.52`
+- `effective_balanced_source_count` = `5.9`
+- `core_readiness_weak_source_cost_center_count` = `3`
+- `overall_status` = `WARN`
+- `persona_readiness_state` = `reviewable_but_not_deck_ready`
+- `final_usable_persona_count` = `3`
+- `production_ready_persona_count` = `3`
+- `review_ready_persona_count` = `1`
+- `junk_risk_assessment` = `high_and_not_methodologically_useful_due_to_duplicate_core_source_concentration`
+- `source_balance_impact` = `none`
+- `persona_concentration_impact` = `none`
+### D_recover_only_candidates_that_improve_source_balance
+- `recovered_row_count` = `2`
+- `new_persona_core_coverage_of_all_labeled_pct` = `74.54`
+- `effective_balanced_source_count` = `5.9`
+- `core_readiness_weak_source_cost_center_count` = `3`
+- `overall_status` = `WARN`
+- `persona_readiness_state` = `reviewable_but_not_deck_ready`
+- `final_usable_persona_count` = `3`
+- `production_ready_persona_count` = `3`
+- `review_ready_persona_count` = `1`
+- `junk_risk_assessment` = `medium_high_with_low_metric_movement`
+- `source_balance_impact` = `slight_improvement`
+- `persona_concentration_impact` = `modest_supporting_source_broadening`
+### F_no_op_baseline
+- `recovered_row_count` = `0`
+- `new_persona_core_coverage_of_all_labeled_pct` = `74.52`
+- `effective_balanced_source_count` = `5.9`
+- `core_readiness_weak_source_cost_center_count` = `3`
+- `overall_status` = `WARN`
+- `persona_readiness_state` = `reviewable_but_not_deck_ready`
+- `final_usable_persona_count` = `3`
+- `production_ready_persona_count` = `3`
+- `review_ready_persona_count` = `1`
+- `junk_risk_assessment` = `none`
+- `source_balance_impact` = `none`
+- `persona_concentration_impact` = `none`
+### E_recover_enough_rows_to_reach_80_if_possible
+- `recovered_row_count` = `None`
+- `new_persona_core_coverage_of_all_labeled_pct` = `None`
+- `effective_balanced_source_count` = `None`
+- `core_readiness_weak_source_cost_center_count` = `3`
+- `overall_status` = `WARN`
+- `persona_readiness_state` = `reviewable_but_not_deck_ready`
+- `final_usable_persona_count` = `3`
+- `production_ready_persona_count` = `3`
+- `review_ready_persona_count` = `1`
+- `junk_risk_assessment` = `impossible_with_current_safe_candidate_pool`
+- `source_balance_impact` = `not_reachable`
+- `persona_concentration_impact` = `would_require_forcing_low-signal_or_duplicate_rows`
+
+## Recommendation
+
+- `decision` = `no_safe_core_recovery_available`
+- `why_selected_example_exposure_is_not_enough` = `selected-example changes do not change persona_core_coverage_of_all_labeled_pct, effective_balanced_source_count, or weak-source cost center metrics.`
+- `projected_recoverable_rows_from_current_corpus` = `0`
+- `optimistic_upper_bound_recoverable_rows_if_all_high_and_medium_passed` = `80`
+- `rows_needed_to_reach_75_0` = `61`
+- `rows_needed_to_reach_80_0` = `695`
+- `justification` = `The audited non-core pool is dominated by low-signal and weak-source rows, and the review sample found almost no safe recover_to_persona_core cases. Even the optimistic upper bound only moves coverage to about 75.2%, far below the 80.0 deck-ready floor.`
+- `smallest_safe_next_step` = `Do not implement broad recovery. If any implementation is attempted later, keep it to a manually curated recovery list from existing supporting_validation sources with explicit regression tests and rollback on junk-rate increase.`
+- `tests_needed_if_any_future_change_happens` = `['assert persona_core_coverage_of_all_labeled_pct does not rise through weak-source or technical-noise rows', 'assert source-balance metrics do not worsen when recovering supporting-validation rows', 'assert recovered rows come only from explicitly curated allowlists or rules', 'assert persona_04 and persona_05 readiness semantics remain unchanged']`
+- `rollback_criteria` = `rollback if recovered rows raise technical/support noise, increase weak-source concentration, or fail to move persona_core_coverage materially toward 75.0+`

@@ -1,0 +1,743 @@
+{
+  "baseline": {
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "overall_status": "WARN",
+    "quality_flag": "EXPLORATORY",
+    "persona_core_coverage_of_all_labeled_pct": 74.5,
+    "effective_balanced_source_count": 5.89,
+    "weak_source_cost_center_count": 4,
+    "core_readiness_weak_source_cost_center_count": 3,
+    "core_recovery_decision": "no_safe_core_recovery_available"
+  },
+  "existing_source_expansion_table": [
+    {
+      "source": "hubspot_community",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 6581,
+      "normalized_rows": 6581,
+      "valid_rows": 960,
+      "prefiltered_rows": 811,
+      "episode_rows": 796,
+      "labeled_rows": 796,
+      "persona_core_rows": 712,
+      "labelable_episode_ratio_pct": 98.4,
+      "persona_core_ratio": 0.894,
+      "blended_influence_share_pct": 8.2,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "contribution_persona_01": 632,
+      "contribution_persona_02": 55,
+      "contribution_persona_03": 25,
+      "contribution_persona_04": 37,
+      "contribution_persona_05": 20,
+      "source_balance_contribution": "balanced_growth_candidate",
+      "current_row_count_relative_to_other_sources": "mid_tail",
+      "is_under_expanded": true,
+      "expansion_worthy": true,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 13.0
+    },
+    {
+      "source": "reddit",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 1068,
+      "normalized_rows": 1068,
+      "valid_rows": 542,
+      "prefiltered_rows": 219,
+      "episode_rows": 214,
+      "labeled_rows": 214,
+      "persona_core_rows": 168,
+      "labelable_episode_ratio_pct": 90.2,
+      "persona_core_ratio": 0.785,
+      "blended_influence_share_pct": 2.0,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "contribution_persona_01": 160,
+      "contribution_persona_02": 8,
+      "contribution_persona_03": 0,
+      "contribution_persona_04": 21,
+      "contribution_persona_05": 2,
+      "source_balance_contribution": "balanced_growth_candidate",
+      "current_row_count_relative_to_other_sources": "mid_tail",
+      "is_under_expanded": true,
+      "expansion_worthy": true,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 12.0
+    },
+    {
+      "source": "sisense_community",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 586,
+      "normalized_rows": 586,
+      "valid_rows": 305,
+      "prefiltered_rows": 194,
+      "episode_rows": 189,
+      "labeled_rows": 189,
+      "persona_core_rows": 119,
+      "labelable_episode_ratio_pct": 100.0,
+      "persona_core_ratio": 0.63,
+      "blended_influence_share_pct": 1.5,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "contribution_persona_01": 15,
+      "contribution_persona_02": 20,
+      "contribution_persona_03": 84,
+      "contribution_persona_04": 3,
+      "contribution_persona_05": 66,
+      "source_balance_contribution": "balanced_growth_candidate",
+      "current_row_count_relative_to_other_sources": "small_tail",
+      "is_under_expanded": true,
+      "expansion_worthy": true,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 11.0
+    },
+    {
+      "source": "shopify_community",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 5691,
+      "normalized_rows": 5691,
+      "valid_rows": 2146,
+      "prefiltered_rows": 759,
+      "episode_rows": 624,
+      "labeled_rows": 624,
+      "persona_core_rows": 328,
+      "labelable_episode_ratio_pct": 71.3,
+      "persona_core_ratio": 0.526,
+      "blended_influence_share_pct": 4.4,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "contribution_persona_01": 187,
+      "contribution_persona_02": 129,
+      "contribution_persona_03": 12,
+      "contribution_persona_04": 61,
+      "contribution_persona_05": 23,
+      "source_balance_contribution": "balanced_growth_candidate",
+      "current_row_count_relative_to_other_sources": "mid_tail",
+      "is_under_expanded": true,
+      "expansion_worthy": false,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 10.0
+    },
+    {
+      "source": "mixpanel_community",
+      "source_tier": "exploratory_edge_source",
+      "raw_rows": 632,
+      "normalized_rows": 632,
+      "valid_rows": 268,
+      "prefiltered_rows": 27,
+      "episode_rows": 27,
+      "labeled_rows": 27,
+      "persona_core_rows": 24,
+      "labelable_episode_ratio_pct": 100.0,
+      "persona_core_ratio": 0.889,
+      "blended_influence_share_pct": 0.3,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "contribution_persona_01": 15,
+      "contribution_persona_02": 8,
+      "contribution_persona_03": 1,
+      "contribution_persona_04": 2,
+      "contribution_persona_05": 1,
+      "source_balance_contribution": "balanced_growth_candidate",
+      "current_row_count_relative_to_other_sources": "small_tail",
+      "is_under_expanded": false,
+      "expansion_worthy": false,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 9.0
+    },
+    {
+      "source": "qlik_community",
+      "source_tier": "exploratory_edge_source",
+      "raw_rows": 328,
+      "normalized_rows": 328,
+      "valid_rows": 200,
+      "prefiltered_rows": 49,
+      "episode_rows": 48,
+      "labeled_rows": 48,
+      "persona_core_rows": 38,
+      "labelable_episode_ratio_pct": 100.0,
+      "persona_core_ratio": 0.792,
+      "blended_influence_share_pct": 0.5,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "contribution_persona_01": 26,
+      "contribution_persona_02": 10,
+      "contribution_persona_03": 2,
+      "contribution_persona_04": 4,
+      "contribution_persona_05": 3,
+      "source_balance_contribution": "balanced_growth_candidate",
+      "current_row_count_relative_to_other_sources": "small_tail",
+      "is_under_expanded": false,
+      "expansion_worthy": false,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 9.0
+    },
+    {
+      "source": "github_discussions",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 18119,
+      "normalized_rows": 18119,
+      "valid_rows": 8901,
+      "prefiltered_rows": 1880,
+      "episode_rows": 1313,
+      "labeled_rows": 1313,
+      "persona_core_rows": 891,
+      "labelable_episode_ratio_pct": 83.2,
+      "persona_core_ratio": 0.679,
+      "blended_influence_share_pct": 11.0,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "contribution_persona_01": 453,
+      "contribution_persona_02": 358,
+      "contribution_persona_03": 80,
+      "contribution_persona_04": 108,
+      "contribution_persona_05": 27,
+      "source_balance_contribution": "watchlist_or_weak",
+      "current_row_count_relative_to_other_sources": "upper_mid",
+      "is_under_expanded": false,
+      "expansion_worthy": false,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 8.0
+    },
+    {
+      "source": "klaviyo_community",
+      "source_tier": "excluded_from_deck_ready_core",
+      "raw_rows": 6686,
+      "normalized_rows": 6686,
+      "valid_rows": 6238,
+      "prefiltered_rows": 192,
+      "episode_rows": 110,
+      "labeled_rows": 110,
+      "persona_core_rows": 73,
+      "labelable_episode_ratio_pct": 93.6,
+      "persona_core_ratio": 0.664,
+      "blended_influence_share_pct": 0.9,
+      "weak_source_cost_center": true,
+      "core_readiness_weak_source_cost_center": false,
+      "contribution_persona_01": 52,
+      "contribution_persona_02": 14,
+      "contribution_persona_03": 7,
+      "contribution_persona_04": 25,
+      "contribution_persona_05": 1,
+      "source_balance_contribution": "watchlist_or_weak",
+      "current_row_count_relative_to_other_sources": "small_tail",
+      "is_under_expanded": false,
+      "expansion_worthy": false,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 5.0
+    },
+    {
+      "source": "metabase_discussions",
+      "source_tier": "core_representative_source",
+      "raw_rows": 14239,
+      "normalized_rows": 14239,
+      "valid_rows": 2786,
+      "prefiltered_rows": 2139,
+      "episode_rows": 2055,
+      "labeled_rows": 2055,
+      "persona_core_rows": 1724,
+      "labelable_episode_ratio_pct": 100.0,
+      "persona_core_ratio": 0.839,
+      "blended_influence_share_pct": 20.0,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "contribution_persona_01": 533,
+      "contribution_persona_02": 907,
+      "contribution_persona_03": 284,
+      "contribution_persona_04": 84,
+      "contribution_persona_05": 133,
+      "source_balance_contribution": "dominant_concentrated",
+      "current_row_count_relative_to_other_sources": "dominant_top",
+      "is_under_expanded": false,
+      "expansion_worthy": false,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 4.0
+    },
+    {
+      "source": "adobe_analytics_community",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 4357,
+      "normalized_rows": 4357,
+      "valid_rows": 2193,
+      "prefiltered_rows": 959,
+      "episode_rows": 645,
+      "labeled_rows": 645,
+      "persona_core_rows": 172,
+      "labelable_episode_ratio_pct": 28.4,
+      "persona_core_ratio": 0.267,
+      "blended_influence_share_pct": 3.2,
+      "weak_source_cost_center": true,
+      "core_readiness_weak_source_cost_center": true,
+      "contribution_persona_01": 164,
+      "contribution_persona_02": 7,
+      "contribution_persona_03": 1,
+      "contribution_persona_04": 21,
+      "contribution_persona_05": 0,
+      "source_balance_contribution": "watchlist_or_weak",
+      "current_row_count_relative_to_other_sources": "mid_tail",
+      "is_under_expanded": false,
+      "expansion_worthy": false,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 3.0
+    },
+    {
+      "source": "power_bi_community",
+      "source_tier": "core_representative_source",
+      "raw_rows": 32088,
+      "normalized_rows": 32088,
+      "valid_rows": 4689,
+      "prefiltered_rows": 3237,
+      "episode_rows": 3114,
+      "labeled_rows": 3114,
+      "persona_core_rows": 2661,
+      "labelable_episode_ratio_pct": 99.5,
+      "persona_core_ratio": 0.855,
+      "blended_influence_share_pct": 30.7,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "contribution_persona_01": 1360,
+      "contribution_persona_02": 994,
+      "contribution_persona_03": 307,
+      "contribution_persona_04": 90,
+      "contribution_persona_05": 244,
+      "source_balance_contribution": "dominant_concentrated",
+      "current_row_count_relative_to_other_sources": "dominant_top",
+      "is_under_expanded": false,
+      "expansion_worthy": false,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 3.0
+    },
+    {
+      "source": "stackoverflow",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 21544,
+      "normalized_rows": 21544,
+      "valid_rows": 5668,
+      "prefiltered_rows": 3001,
+      "episode_rows": 1683,
+      "labeled_rows": 1683,
+      "persona_core_rows": 678,
+      "labelable_episode_ratio_pct": 48.2,
+      "persona_core_ratio": 0.403,
+      "blended_influence_share_pct": 10.2,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "contribution_persona_01": 635,
+      "contribution_persona_02": 40,
+      "contribution_persona_03": 3,
+      "contribution_persona_04": 83,
+      "contribution_persona_05": 14,
+      "source_balance_contribution": "watchlist_or_weak",
+      "current_row_count_relative_to_other_sources": "upper_mid",
+      "is_under_expanded": false,
+      "expansion_worthy": false,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 2.0
+    },
+    {
+      "source": "google_developer_forums",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 10984,
+      "normalized_rows": 10984,
+      "valid_rows": 4537,
+      "prefiltered_rows": 1583,
+      "episode_rows": 812,
+      "labeled_rows": 812,
+      "persona_core_rows": 186,
+      "labelable_episode_ratio_pct": 27.6,
+      "persona_core_ratio": 0.229,
+      "blended_influence_share_pct": 3.7,
+      "weak_source_cost_center": true,
+      "core_readiness_weak_source_cost_center": true,
+      "contribution_persona_01": 173,
+      "contribution_persona_02": 12,
+      "contribution_persona_03": 1,
+      "contribution_persona_04": 53,
+      "contribution_persona_05": 1,
+      "source_balance_contribution": "watchlist_or_weak",
+      "current_row_count_relative_to_other_sources": "mid_tail",
+      "is_under_expanded": false,
+      "expansion_worthy": false,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": 1.0
+    },
+    {
+      "source": "domo_community_forum",
+      "source_tier": "exploratory_edge_source",
+      "raw_rows": 9354,
+      "normalized_rows": 9354,
+      "valid_rows": 4731,
+      "prefiltered_rows": 4002,
+      "episode_rows": 1044,
+      "labeled_rows": 1044,
+      "persona_core_rows": 93,
+      "labelable_episode_ratio_pct": 8.9,
+      "persona_core_ratio": 0.089,
+      "blended_influence_share_pct": 3.5,
+      "weak_source_cost_center": true,
+      "core_readiness_weak_source_cost_center": true,
+      "contribution_persona_01": 85,
+      "contribution_persona_02": 8,
+      "contribution_persona_03": 0,
+      "contribution_persona_04": 9,
+      "contribution_persona_05": 4,
+      "source_balance_contribution": "watchlist_or_weak",
+      "current_row_count_relative_to_other_sources": "upper_mid",
+      "is_under_expanded": false,
+      "expansion_worthy": false,
+      "technical_feasibility_existing_collector": true,
+      "total_adjusted_score": -2.0
+    }
+  ],
+  "candidate_evaluations": {
+    "github_discussions": {
+      "is_currently_under_expanded": false,
+      "is_high_enough_quality_to_expand": false,
+      "would_expanding_improve_or_worsen_source_balance": "flat_or_risky",
+      "which_personas_would_benefit": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04",
+        "persona_05"
+      ],
+      "collection_technically_feasible_with_existing_collector": true,
+      "would_it_help_the_695_row_core_coverage_gap": "unlikely_or_dilutive"
+    },
+    "reddit": {
+      "is_currently_under_expanded": true,
+      "is_high_enough_quality_to_expand": true,
+      "would_expanding_improve_or_worsen_source_balance": "slight_improvement",
+      "which_personas_would_benefit": [
+        "persona_01",
+        "persona_02",
+        "persona_04",
+        "persona_05"
+      ],
+      "collection_technically_feasible_with_existing_collector": true,
+      "would_it_help_the_695_row_core_coverage_gap": "marginally"
+    },
+    "shopify_community": {
+      "is_currently_under_expanded": true,
+      "is_high_enough_quality_to_expand": false,
+      "would_expanding_improve_or_worsen_source_balance": "slight_improvement",
+      "which_personas_would_benefit": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04",
+        "persona_05"
+      ],
+      "collection_technically_feasible_with_existing_collector": true,
+      "would_it_help_the_695_row_core_coverage_gap": "unlikely_or_dilutive"
+    },
+    "sisense_community": {
+      "is_currently_under_expanded": true,
+      "is_high_enough_quality_to_expand": true,
+      "would_expanding_improve_or_worsen_source_balance": "slight_improvement",
+      "which_personas_would_benefit": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04",
+        "persona_05"
+      ],
+      "collection_technically_feasible_with_existing_collector": true,
+      "would_it_help_the_695_row_core_coverage_gap": "unlikely_or_dilutive"
+    },
+    "mixpanel_community": {
+      "is_currently_under_expanded": false,
+      "is_high_enough_quality_to_expand": false,
+      "would_expanding_improve_or_worsen_source_balance": "slight_improvement",
+      "which_personas_would_benefit": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04",
+        "persona_05"
+      ],
+      "collection_technically_feasible_with_existing_collector": true,
+      "would_it_help_the_695_row_core_coverage_gap": "marginally"
+    },
+    "qlik_community": {
+      "is_currently_under_expanded": false,
+      "is_high_enough_quality_to_expand": false,
+      "would_expanding_improve_or_worsen_source_balance": "slight_improvement",
+      "which_personas_would_benefit": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04",
+        "persona_05"
+      ],
+      "collection_technically_feasible_with_existing_collector": true,
+      "would_it_help_the_695_row_core_coverage_gap": "marginally"
+    },
+    "hubspot_community": {
+      "is_currently_under_expanded": true,
+      "is_high_enough_quality_to_expand": true,
+      "would_expanding_improve_or_worsen_source_balance": "slight_improvement",
+      "which_personas_would_benefit": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04",
+        "persona_05"
+      ],
+      "collection_technically_feasible_with_existing_collector": true,
+      "would_it_help_the_695_row_core_coverage_gap": "marginally"
+    },
+    "stackoverflow": {
+      "is_currently_under_expanded": false,
+      "is_high_enough_quality_to_expand": false,
+      "would_expanding_improve_or_worsen_source_balance": "flat_or_risky",
+      "which_personas_would_benefit": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04",
+        "persona_05"
+      ],
+      "collection_technically_feasible_with_existing_collector": true,
+      "would_it_help_the_695_row_core_coverage_gap": "unlikely_or_dilutive"
+    },
+    "metabase_discussions": {
+      "is_currently_under_expanded": false,
+      "is_high_enough_quality_to_expand": false,
+      "would_expanding_improve_or_worsen_source_balance": "worsen",
+      "which_personas_would_benefit": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04",
+        "persona_05"
+      ],
+      "collection_technically_feasible_with_existing_collector": true,
+      "would_it_help_the_695_row_core_coverage_gap": "marginally"
+    },
+    "power_bi_community": {
+      "is_currently_under_expanded": false,
+      "is_high_enough_quality_to_expand": false,
+      "would_expanding_improve_or_worsen_source_balance": "worsen",
+      "which_personas_would_benefit": [
+        "persona_01",
+        "persona_02",
+        "persona_03",
+        "persona_04",
+        "persona_05"
+      ],
+      "collection_technically_feasible_with_existing_collector": true,
+      "would_it_help_the_695_row_core_coverage_gap": "marginally"
+    }
+  },
+  "sources_that_should_not_be_expanded": [
+    {
+      "source": "adobe_analytics_community",
+      "reason": "current core-readiness weak-source cost center"
+    },
+    {
+      "source": "google_developer_forums",
+      "reason": "current core-readiness weak-source cost center and developer-support bias"
+    },
+    {
+      "source": "domo_community_forum",
+      "reason": "exploratory edge and current weak-source cost center"
+    },
+    {
+      "source": "klaviyo_community",
+      "reason": "excluded from deck-ready core"
+    },
+    {
+      "source": "mixpanel_community",
+      "reason": "exploratory edge and too small to move metrics materially"
+    },
+    {
+      "source": "qlik_community",
+      "reason": "exploratory edge and too small to move metrics materially"
+    },
+    {
+      "source": "power_bi_community",
+      "reason": "already dominant; more rows would worsen concentration"
+    },
+    {
+      "source": "metabase_discussions",
+      "reason": "already dominant core source; expansion would not improve balance enough"
+    },
+    {
+      "source": "stackoverflow",
+      "reason": "supporting_validation but low persona-core ratio and high technical-debug dilution"
+    },
+    {
+      "source": "github_discussions",
+      "reason": "prior expansion pilots failed quality gates and support/developer noise remains high"
+    }
+  ],
+  "scenario_simulation_results": {
+    "A_expand_one_best_existing_source_plus_500_raw": {
+      "projected_labeled_rows": 12734,
+      "projected_persona_core_rows": 9499,
+      "projected_persona_core_coverage_of_all_labeled_pct": 74.59,
+      "projected_effective_balanced_source_count": 5.94,
+      "projected_weak_source_cost_center_count": 4,
+      "projected_core_readiness_weak_source_cost_center_count": 3,
+      "projected_contribution_to_persona_01": 48.0,
+      "projected_contribution_to_persona_02": 4.2,
+      "projected_contribution_to_persona_03": 1.9,
+      "projected_contribution_to_persona_04": 2.8,
+      "risk_of_worsening_source_concentration": "low",
+      "risk_of_creating_new_weak_source_debt": "low",
+      "whether_deck_ready_becomes_materially_closer": "no",
+      "sources": [
+        [
+          "hubspot_community",
+          500
+        ]
+      ]
+    },
+    "B_expand_one_best_existing_source_plus_1000_raw": {
+      "projected_labeled_rows": 12795,
+      "projected_persona_core_rows": 9553,
+      "projected_persona_core_coverage_of_all_labeled_pct": 74.66,
+      "projected_effective_balanced_source_count": 5.97,
+      "projected_weak_source_cost_center_count": 4,
+      "projected_core_readiness_weak_source_cost_center_count": 3,
+      "projected_contribution_to_persona_01": 96.0,
+      "projected_contribution_to_persona_02": 8.4,
+      "projected_contribution_to_persona_03": 3.8,
+      "projected_contribution_to_persona_04": 5.6,
+      "risk_of_worsening_source_concentration": "low",
+      "risk_of_creating_new_weak_source_debt": "low",
+      "whether_deck_ready_becomes_materially_closer": "no",
+      "sources": [
+        [
+          "hubspot_community",
+          1000
+        ]
+      ]
+    },
+    "C_expand_two_balanced_existing_sources_plus_500_each": {
+      "projected_labeled_rows": 12835,
+      "projected_persona_core_rows": 9578,
+      "projected_persona_core_coverage_of_all_labeled_pct": 74.62,
+      "projected_effective_balanced_source_count": 6.02,
+      "projected_weak_source_cost_center_count": 4,
+      "projected_core_readiness_weak_source_cost_center_count": 3,
+      "projected_contribution_to_persona_01": 122.9,
+      "projected_contribution_to_persona_02": 7.9,
+      "projected_contribution_to_persona_03": 1.9,
+      "projected_contribution_to_persona_04": 12.6,
+      "risk_of_worsening_source_concentration": "low",
+      "risk_of_creating_new_weak_source_debt": "low",
+      "whether_deck_ready_becomes_materially_closer": "yes_for_balance_only",
+      "sources": [
+        [
+          "hubspot_community",
+          500
+        ],
+        [
+          "reddit",
+          500
+        ]
+      ]
+    },
+    "D_expand_one_core_representative_source_and_one_supporting_validation_source": {
+      "projected_labeled_rows": 12807,
+      "projected_persona_core_rows": 9560,
+      "projected_persona_core_coverage_of_all_labeled_pct": 74.65,
+      "projected_effective_balanced_source_count": 5.92,
+      "projected_weak_source_cost_center_count": 4,
+      "projected_core_readiness_weak_source_cost_center_count": 3,
+      "projected_contribution_to_persona_01": 66.7,
+      "projected_contribution_to_persona_02": 36.1,
+      "projected_contribution_to_persona_03": 11.9,
+      "projected_contribution_to_persona_04": 5.7,
+      "risk_of_worsening_source_concentration": "high",
+      "risk_of_creating_new_weak_source_debt": "low",
+      "whether_deck_ready_becomes_materially_closer": "no",
+      "sources": [
+        [
+          "metabase_discussions",
+          500
+        ],
+        [
+          "hubspot_community",
+          500
+        ]
+      ]
+    },
+    "E_expand_only_sources_that_improve_source_balance": {
+      "projected_labeled_rows": 12835,
+      "projected_persona_core_rows": 9578,
+      "projected_persona_core_coverage_of_all_labeled_pct": 74.62,
+      "projected_effective_balanced_source_count": 6.02,
+      "projected_weak_source_cost_center_count": 4,
+      "projected_core_readiness_weak_source_cost_center_count": 3,
+      "projected_contribution_to_persona_01": 122.9,
+      "projected_contribution_to_persona_02": 7.9,
+      "projected_contribution_to_persona_03": 1.9,
+      "projected_contribution_to_persona_04": 12.6,
+      "risk_of_worsening_source_concentration": "low",
+      "risk_of_creating_new_weak_source_debt": "low",
+      "whether_deck_ready_becomes_materially_closer": "yes_for_balance_only",
+      "sources": [
+        [
+          "hubspot_community",
+          500
+        ],
+        [
+          "reddit",
+          500
+        ]
+      ]
+    },
+    "F_no_op_baseline": {
+      "projected_labeled_rows": 12674,
+      "projected_persona_core_rows": 9445,
+      "projected_persona_core_coverage_of_all_labeled_pct": 74.5,
+      "projected_effective_balanced_source_count": 5.89,
+      "projected_weak_source_cost_center_count": 4,
+      "projected_core_readiness_weak_source_cost_center_count": 3,
+      "projected_contribution_to_persona_01": 0.0,
+      "projected_contribution_to_persona_02": 0.0,
+      "projected_contribution_to_persona_03": 0.0,
+      "projected_contribution_to_persona_04": 0.0,
+      "risk_of_worsening_source_concentration": "none",
+      "risk_of_creating_new_weak_source_debt": "none",
+      "whether_deck_ready_becomes_materially_closer": "no",
+      "sources": []
+    }
+  },
+  "recommendation": {
+    "strategy": "expand_two_balanced_existing_sources",
+    "why": "hubspot_community and reddit are the strongest under-expanded non-weak supporting_validation sources with persona_core_ratio above the current workbook baseline. Expanding them together is the only existing-source scenario that plausibly clears the effective_balanced_source_count floor while still nudging core coverage upward instead of diluting it.",
+    "sources_to_expand_first": [
+      "hubspot_community",
+      "reddit"
+    ],
+    "expected_row_target": {
+      "hubspot_community_raw": 500,
+      "reddit_raw": 500
+    },
+    "exact_collector_or_seed_config_to_adjust_later": [
+      "C:/Users/hands/OneDrive/Desktop/persona/config/seeds/business_communities/hubspot_community.yaml",
+      "C:/Users/hands/OneDrive/Desktop/persona/config/seeds/existing_forums/reddit.yaml",
+      "C:/Users/hands/OneDrive/Desktop/persona/config/sources/hubspot_community.yaml",
+      "C:/Users/hands/OneDrive/Desktop/persona/config/sources/reddit.yaml"
+    ],
+    "pilot_size": "250 raw rows per source before any full crawl increase",
+    "success_metrics": {
+      "combined_effective_balanced_source_count_target": ">=6.0",
+      "hubspot_incremental_persona_core_ratio_target": ">=0.80",
+      "reddit_incremental_persona_core_ratio_target": ">=0.75",
+      "projected_persona_core_coverage_must_not_drop": true,
+      "no_new_weak_source_cost_centers": true
+    },
+    "rollback_criteria": [
+      "rollback if expanded reddit rows resemble the failed RevOps bundle and incremental persona_core_ratio falls below 0.75",
+      "rollback if hubspot expansion is dominated by support/config noise and incremental persona_core_ratio falls below 0.80",
+      "rollback if concentration rises without maintaining effective_balanced_source_count >= 6.0"
+    ],
+    "why_better_than_adding_a_new_source_family": "It reuses already-active collectors and vetted source families, avoids the recent instability of new vendor-community pilots, and offers the best shot at clearing the source-balance blocker without opening another weak-source family.",
+    "expected_deck_ready_impact": "materially helps source balance but only marginally moves persona_core_coverage_of_all_labeled_pct from 74.5 to about 74.62, so deck-ready would still remain blocked on core coverage even after a successful bounded expansion."
+  }
+}

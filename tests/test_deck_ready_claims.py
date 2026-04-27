@@ -82,6 +82,49 @@ class DeckReadyClaimEligibilityTests(unittest.TestCase):
         self.assertEqual(int(float(metrics["production_ready_persona_count"])), 3)
         self.assertEqual(int(float(metrics["review_ready_persona_count"])), 1)
         self.assertEqual(int(float(metrics["deck_ready_claim_eligible_persona_count"])), 4)
+        self.assertEqual(int(float(metrics["final_usable_release_persona_count"])), 3)
+        self.assertEqual(int(float(metrics["review_ready_claim_persona_count"])), 1)
+        self.assertEqual(int(float(metrics["future_candidate_subtheme_count"])), 1)
+        self.assertEqual(int(float(metrics["exploratory_tail_persona_count"])), 6)
+        self.assertEqual(int(float(metrics["release_headline_persona_count"])), 4)
+
+    def test_release_visibility_tiers_match_final_release_contract(self) -> None:
+        required = [
+            "release_visibility_tier",
+            "headline_inclusion",
+            "workbook_section",
+            "tail_status",
+            "tail_reason",
+            "diagnostics_only_persona",
+            "included_in_final_narrative",
+        ]
+        for frame in [self.persona_summary_df, self.cluster_stats_df, self.promotion_path_debug_df]:
+            for column in required:
+                self.assertIn(column, frame.columns)
+        lookup = self.cluster_stats_df.set_index("persona_id")
+        for persona_id in ["persona_01", "persona_02", "persona_03"]:
+            row = lookup.loc[persona_id]
+            self.assertEqual(str(row["release_visibility_tier"]), "final_usable_persona")
+            self.assertTrue(bool(row["headline_inclusion"]))
+            self.assertTrue(bool(row["included_in_final_narrative"]))
+            self.assertFalse(bool(row["diagnostics_only_persona"]))
+        persona04 = lookup.loc["persona_04"]
+        self.assertEqual(str(persona04["release_visibility_tier"]), "review_ready_claim_persona")
+        self.assertTrue(bool(persona04["headline_inclusion"]))
+        self.assertTrue(bool(persona04["included_in_final_narrative"]))
+        self.assertFalse(bool(persona04["final_usable_persona"]))
+        persona05 = lookup.loc["persona_05"]
+        self.assertEqual(str(persona05["release_visibility_tier"]), "future_candidate_subtheme")
+        self.assertFalse(bool(persona05["headline_inclusion"]))
+        self.assertFalse(bool(persona05["included_in_final_narrative"]))
+        self.assertTrue(bool(persona05["future_candidate_subtheme"]))
+        for persona_id in ["persona_06", "persona_07", "persona_08", "persona_09", "persona_10", "persona_11"]:
+            row = lookup.loc[persona_id]
+            self.assertEqual(str(row["release_visibility_tier"]), "exploratory_tail_diagnostics_only")
+            self.assertFalse(bool(row["headline_inclusion"]))
+            self.assertFalse(bool(row["included_in_final_narrative"]))
+            self.assertTrue(bool(row["diagnostics_only_persona"]))
+            self.assertFalse(bool(row["deck_ready_claim_eligible_persona"]))
 
     def test_supporting_validation_cannot_replace_missing_core_anchor(self) -> None:
         outputs = build_deck_ready_claim_outputs(

@@ -1,0 +1,29 @@
+source_id: reddit
+source_group: existing_forums
+max_query_count: 5
+source_notes: "Pilot-only bounded Reddit expansion using only existing healthy operator-language seeds."
+active_core_seeds:
+  - seed: dashboard mismatch
+    reason: Existing high-yield mismatch phrasing.
+  - seed: still using excel after dashboard
+    reason: Strong manual reporting burden signal.
+  - seed: dashboard export
+    reason: Concrete dashboard-vs-export workflow pain.
+  - seed: cant trust dashboard numbers
+    reason: Natural trust-conflict phrasing.
+  - seed: stakeholders keep asking why numbers changed
+    reason: Bounded stakeholder-pressure wording.
+candidate_seed_pool:
+  - manual reporting after dashboard
+  - excel mismatch
+negative_terms:
+  - job
+  - hiring
+  - salary
+  - resume
+  - interview
+  - internship
+  - homework
+  - assignment
+  - course
+  - tutorial

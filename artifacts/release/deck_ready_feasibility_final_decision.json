@@ -1,0 +1,219 @@
+{
+  "final_decision": "freeze_as_reviewable_claim_release",
+  "feasibility_assessment": "deck_ready_not_achievable_with_current_safe_paths",
+  "baseline": {
+    "persona_readiness_state": "reviewable_but_not_deck_ready",
+    "overall_status": "WARN",
+    "quality_flag": "EXPLORATORY",
+    "final_usable_persona_count": 3,
+    "production_ready_persona_count": 3,
+    "review_ready_persona_count": 1,
+    "deck_ready_claim_eligible_persona_count": 4,
+    "persona_core_coverage_of_all_labeled_pct": 74.5,
+    "persona_core_labeled_rows": 9445,
+    "labeled_episode_rows": 12674,
+    "rows_needed_to_reach_80_0": 695,
+    "effective_balanced_source_count": 5.89,
+    "core_readiness_weak_source_cost_center_count": 3,
+    "weak_source_cost_center_count": 4,
+    "selected_example_grounding_issue_count": 4,
+    "largest_source_influence_share_pct": 30.7
+  },
+  "path_exhaustion_table": [
+    {
+      "path": "adobe_remediation",
+      "objective": "reduce weak-source debt and improve Adobe episode yield safely",
+      "result": "failed",
+      "metric_moved": "none",
+      "why_failed_or_insufficient": "No safe parser or episode-builder fix was identified without risking false positives or broader segmentation regressions.",
+      "should_retry": false,
+      "retry_condition": "Only if new source-specific parser evidence shows a bounded Adobe episode split rule with regression coverage."
+    },
+    {
+      "path": "google_remediation",
+      "objective": "recover more Google Developer Forums valid rows without admitting support noise",
+      "result": "failed",
+      "metric_moved": "none",
+      "why_failed_or_insufficient": "No safe valid-filter expansion was found; likely gains were too support-heavy.",
+      "should_retry": false,
+      "retry_condition": "Only if a source-native false-negative pattern is isolated with low noise and strong regression tests."
+    },
+    {
+      "path": "weak_source_deletion",
+      "objective": "remove weak-source debt and improve workbook readiness",
+      "result": "insufficient_and_regressive",
+      "metric_moved": "source balance worsened",
+      "why_failed_or_insufficient": "Deleting weak sources, especially Domo, reduced breadth and regressed source-balance metrics.",
+      "should_retry": false,
+      "retry_condition": "Only if a replacement source is already proven and balance-neutral or better."
+    },
+    {
+      "path": "tableau_new_source_search",
+      "objective": "add a new automated representative source family",
+      "result": "not_viable",
+      "metric_moved": "none",
+      "why_failed_or_insufficient": "Automated collection path was not viable enough to justify bounded implementation.",
+      "should_retry": false,
+      "retry_condition": "Only if a new clearly public and stable automated access path is discovered."
+    },
+    {
+      "path": "supermetrics_html_pilot",
+      "objective": "add a new HTML-only representative source family",
+      "result": "failed",
+      "metric_moved": "none",
+      "why_failed_or_insufficient": "Public listing discovery failed and yielded zero usable rows.",
+      "should_retry": false,
+      "retry_condition": "Only if stable public listing access is verified with a new public path."
+    },
+    {
+      "path": "reddit_revops_analytics_bundle",
+      "objective": "expand with a narrow Reddit operator-language bundle",
+      "result": "failed_quality_gate",
+      "metric_moved": "none",
+      "why_failed_or_insufficient": "Yield was noisy and low-signal; valid and labelable ratios were too weak.",
+      "should_retry": false,
+      "retry_condition": "Only if a materially different Reddit slice with demonstrated non-chatter retention is identified."
+    },
+    {
+      "path": "github_discussions_multi_repo_bundle",
+      "objective": "add a high-yield GitHub Discussions supporting source family",
+      "result": "failed_quality_gate",
+      "metric_moved": "none",
+      "why_failed_or_insufficient": "Access was stable but developer/support noise dominated.",
+      "should_retry": false,
+      "retry_condition": "Only if a materially different repo surface with proven user-pain concentration is found."
+    },
+    {
+      "path": "github_discussions_narrow_bundle",
+      "objective": "salvage GitHub Discussions by dropping noisy repos",
+      "result": "failed_quality_gate",
+      "metric_moved": "none",
+      "why_failed_or_insufficient": "Quality got worse, not better, after narrowing.",
+      "should_retry": false,
+      "retry_condition": "None under current repo family."
+    },
+    {
+      "path": "lightdash_single_repo_pilot",
+      "objective": "test the best remaining GitHub Discussions repo in isolation",
+      "result": "failed_quality_gate",
+      "metric_moved": "quality_ratio_improved_but_not_enough",
+      "why_failed_or_insufficient": "Single-repo isolation improved ratio but still left low volume, high support noise, and weak persona-core fit.",
+      "should_retry": false,
+      "retry_condition": "Only if a new Lightdash public discussion surface appears."
+    },
+    {
+      "path": "stackoverflow_ssrs_expansion",
+      "objective": "add non-PowerBI Stack Overflow reporting evidence",
+      "result": "pilot_not_justified",
+      "metric_moved": "none",
+      "why_failed_or_insufficient": "Existing Stack Overflow already contains meaningful SSRS coverage; the issue is exposure, not absence.",
+      "should_retry": false,
+      "retry_condition": "Only if the existing SSRS slice becomes exhausted or is shown to be absent in downstream stages."
+    },
+    {
+      "path": "non_core_recovery",
+      "objective": "promote safe non-core labeled rows into persona-core to close the 80.0 coverage gap",
+      "result": "failed",
+      "metric_moved": "optimistic_upper_bound_to_75_15_only",
+      "why_failed_or_insufficient": "Sampled recovery candidates were mostly technical, support, or source noise, with zero safe recover_to_persona_core cases in review.",
+      "should_retry": false,
+      "retry_condition": "Only if a manually curated allowlist from strong supporting sources is identified with demonstrated precision."
+    },
+    {
+      "path": "hubspot_reddit_existing_source_expansion",
+      "objective": "use existing healthy sources to improve balance without opening a new family",
+      "result": "failed_incremental_gate",
+      "metric_moved": "coverage_74_50_to_74_52_balance_5_89_to_5_90",
+      "why_failed_or_insufficient": "Strict dedupe showed almost no genuinely new rows: HubSpot fetched 303 with 302 duplicates and Reddit fetched 0.",
+      "should_retry": false,
+      "retry_condition": "Only if a clearly new seed/window for one source is demonstrated before crawling."
+    }
+  ],
+  "blocker_table": [
+    {
+      "metric": "persona_core_coverage_of_all_labeled_pct",
+      "current_value": 74.5,
+      "deck_ready_threshold": 80.0,
+      "gap": 5.5,
+      "rows_gap_context": 695,
+      "safe_path_remaining": false,
+      "why": "No safe recovery path exists and bounded expansions produced negligible new core evidence."
+    },
+    {
+      "metric": "effective_balanced_source_count",
+      "current_value": 5.89,
+      "deck_ready_threshold": 6.0,
+      "gap": 0.11,
+      "safe_path_remaining": false,
+      "why": "The only plausible bounded existing-source expansion failed after strict dedupe."
+    },
+    {
+      "metric": "core_readiness_weak_source_cost_center_count",
+      "current_value": 3,
+      "deck_ready_threshold": 1,
+      "gap": 2,
+      "safe_path_remaining": false,
+      "why": "Adobe and Google remediation found no safe fix, and weak-source deletion regressed balance."
+    },
+    {
+      "metric": "weak_source_cost_center_count",
+      "current_value": 4,
+      "deck_ready_threshold": 1,
+      "gap": 3,
+      "safe_path_remaining": false,
+      "why": "Safe removal or remediation paths are exhausted for the currently identified weak sources."
+    },
+    {
+      "metric": "selected_example_grounding_issue_count",
+      "current_value": 4,
+      "deck_ready_threshold": 0,
+      "gap": 4,
+      "safe_path_remaining": true,
+      "why": "Example-level cleanup may still be possible, but it does not materially move deck-ready readiness."
+    },
+    {
+      "metric": "largest_source_influence_share_pct",
+      "current_value": 30.7,
+      "deck_ready_threshold": 35.0,
+      "gap": -4.3,
+      "safe_path_remaining": "not_blocking_now",
+      "why": "Concentration is not the main blocker; core coverage and source balance are."
+    }
+  ],
+  "freeze_recommendation": {
+    "recommended_action": "freeze_as_reviewable_claim_release",
+    "why": "All safe bounded remediation and expansion paths have either failed, regressed a blocker, or produced negligible metric movement. Further micro-pilots are not justified without a genuinely new source family or dataset."
+  },
+  "future_requirements_if_reopened": {
+    "minimum_non_trivial_requirement": "add_a_new_high_quality_representative_source_family_with_proven_automated_access_or_secure_a_large_new_existing-dataset_increment",
+    "required_outcomes": [
+      "add approximately 695 new safe persona-core rows without threshold relaxation",
+      "raise effective_balanced_source_count above 6.0 with genuinely new evidence",
+      "reduce core_readiness_weak_source_cost_center_count from 3 to at most 1",
+      "avoid increasing source concentration or weak-source debt",
+      "preserve persona_04 semantics and keep persona_05 blocked or future-subtheme-only unless independently justified"
+    ],
+    "why_micro_pilots_are_not_recommended": "Recent bounded pilots and recovery audits consistently showed either access failure, high duplicate rates, low labelable yield, or technical/support noise dominance."
+  },
+  "final_release_wording": {
+    "summary": "Release as a reviewable_but_not_deck_ready workbook.",
+    "body": [
+      "The workbook currently supports 3 final-usable and production-ready personas.",
+      "It also preserves 1 review-ready and deck-ready-claim-eligible persona that should remain constrained until workbook-level blockers clear.",
+      "One future subtheme or blocked candidate is preserved for later work, but the corpus is not yet a full deck-ready or production-ready corpus.",
+      "Use this release for analyst review, evidence inspection, and scoped narrative claims only; do not present it as a final deck-ready persona corpus."
+    ]
+  },
+  "risks_and_assumptions": {
+    "risks": [
+      "Freezing now may leave some real but currently inaccessible representative evidence uncaptured.",
+      "A future high-quality source family could still change the decision, but no such path is currently validated.",
+      "Policy relaxation could make the workbook look deck-ready numerically while weakening methodological integrity."
+    ],
+    "assumptions": [
+      "The audited safe bounded paths are representative of the currently available remediation surface.",
+      "Current thresholds and semantics remain fixed, as requested.",
+      "Strict deduplication and noise controls are necessary to avoid fake readiness gains."
+    ]
+  }
+}

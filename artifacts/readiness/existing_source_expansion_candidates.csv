@@ -1,0 +1,15 @@
+﻿source,source_tier,raw_rows,normalized_rows,valid_rows,prefiltered_rows,episode_rows,labeled_rows,persona_core_rows,labelable_episode_ratio_pct,persona_core_ratio,blended_influence_share_pct,weak_source_cost_center,core_readiness_weak_source_cost_center,contribution_persona_01,contribution_persona_02,contribution_persona_03,contribution_persona_04,contribution_persona_05,source_balance_contribution,current_row_count_relative_to_other_sources,is_under_expanded,expansion_worthy,technical_feasibility_existing_collector,total_adjusted_score
+hubspot_community,supporting_validation_source,6581,6581,960,811,796,796,712,98.4,0.894,8.2,False,False,632,55,25,37,20,balanced_growth_candidate,mid_tail,True,True,True,13.0
+reddit,supporting_validation_source,1068,1068,542,219,214,214,168,90.2,0.785,2.0,False,False,160,8,0,21,2,balanced_growth_candidate,mid_tail,True,True,True,12.0
+sisense_community,supporting_validation_source,586,586,305,194,189,189,119,100.0,0.63,1.5,False,False,15,20,84,3,66,balanced_growth_candidate,small_tail,True,True,True,11.0
+shopify_community,supporting_validation_source,5691,5691,2146,759,624,624,328,71.3,0.526,4.4,False,False,187,129,12,61,23,balanced_growth_candidate,mid_tail,True,False,True,10.0
+mixpanel_community,exploratory_edge_source,632,632,268,27,27,27,24,100.0,0.889,0.3,False,False,15,8,1,2,1,balanced_growth_candidate,small_tail,False,False,True,9.0
+qlik_community,exploratory_edge_source,328,328,200,49,48,48,38,100.0,0.792,0.5,False,False,26,10,2,4,3,balanced_growth_candidate,small_tail,False,False,True,9.0
+github_discussions,supporting_validation_source,18119,18119,8901,1880,1313,1313,891,83.2,0.679,11.0,False,False,453,358,80,108,27,watchlist_or_weak,upper_mid,False,False,True,8.0
+klaviyo_community,excluded_from_deck_ready_core,6686,6686,6238,192,110,110,73,93.6,0.664,0.9,True,False,52,14,7,25,1,watchlist_or_weak,small_tail,False,False,True,5.0
+metabase_discussions,core_representative_source,14239,14239,2786,2139,2055,2055,1724,100.0,0.839,20.0,False,False,533,907,284,84,133,dominant_concentrated,dominant_top,False,False,True,4.0
+adobe_analytics_community,supporting_validation_source,4357,4357,2193,959,645,645,172,28.4,0.267,3.2,True,True,164,7,1,21,0,watchlist_or_weak,mid_tail,False,False,True,3.0
+power_bi_community,core_representative_source,32088,32088,4689,3237,3114,3114,2661,99.5,0.855,30.7,False,False,1360,994,307,90,244,dominant_concentrated,dominant_top,False,False,True,3.0
+stackoverflow,supporting_validation_source,21544,21544,5668,3001,1683,1683,678,48.2,0.403,10.2,False,False,635,40,3,83,14,watchlist_or_weak,upper_mid,False,False,True,2.0
+google_developer_forums,supporting_validation_source,10984,10984,4537,1583,812,812,186,27.6,0.229,3.7,True,True,173,12,1,53,1,watchlist_or_weak,mid_tail,False,False,True,1.0
+domo_community_forum,exploratory_edge_source,9354,9354,4731,4002,1044,1044,93,8.9,0.089,3.5,True,True,85,8,0,9,4,watchlist_or_weak,upper_mid,False,False,True,-2.0
