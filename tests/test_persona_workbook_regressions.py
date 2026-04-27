@@ -30,6 +30,16 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
 
     ROOT = Path(__file__).resolve().parents[1]
 
+    @staticmethod
+    def _minimal_episodes_df(episode_ids: list[str], source: str = "reddit") -> pd.DataFrame:
+        """Return the minimal episodes fixture shape required by build_quality_metrics."""
+        return pd.DataFrame(
+            {
+                "episode_id": episode_ids,
+                "source": [source] * len(episode_ids),
+            }
+        )
+
     def test_near_threshold_candidate_can_pass_with_strong_scores(self) -> None:
         config = load_yaml(self.ROOT / "config" / "bottleneck_clustering.yaml")["promotion_scoring"]
         eligible = _eligible_near_threshold_promotion_candidate(
@@ -166,6 +176,7 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
                 "labeled_episode_rows": 10,
             },
             labeled_df=labeled_df,
+            episodes_df=self._minimal_episodes_df(labeled_df["episode_id"].astype(str).tolist()),
             source_stage_counts_df=pd.DataFrame({"source": ["reddit"], "raw_record_count": [10], "labeled_episode_count": [10]}),
             cluster_stats_df=cluster_stats_df,
             persona_examples_df=pd.DataFrame(),
@@ -714,6 +725,7 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
                 "labeled_episode_rows": 4,
             },
             labeled_df=labeled_df,
+            episodes_df=self._minimal_episodes_df(labeled_df["episode_id"].astype(str).tolist()),
             source_stage_counts_df=pd.DataFrame({"source": ["reddit"], "raw_record_count": [4], "labeled_episode_count": [4]}),
             cluster_stats_df=cluster_stats_df,
             persona_examples_df=persona_examples_df,
@@ -893,6 +905,7 @@ class PersonaWorkbookRegressionTests(unittest.TestCase):
                 "labeled_episode_rows": 4,
             },
             labeled_df=labeled_df,
+            episodes_df=self._minimal_episodes_df(labeled_df["episode_id"].astype(str).tolist()),
             source_stage_counts_df=pd.DataFrame({"source": ["reddit"], "raw_record_count": [4], "labeled_episode_count": [4]}),
             cluster_stats_df=cluster_stats_df,
             persona_examples_df=persona_examples_df,
