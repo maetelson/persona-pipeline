@@ -1,0 +1,1206 @@
+{
+  "coverage_context": {
+    "original_coverage": 74.5,
+    "adjusted_coverage": 83.25,
+    "coverage_gate_passed_by_adjusted_metric": true
+  },
+  "source_root_cause_table": [
+    {
+      "source": "power_bi_community",
+      "source_tier": "core_representative_source",
+      "raw_rows": 32088,
+      "labeled_rows": 3114,
+      "persona_core_rows": 3099,
+      "deck_ready_denominator_eligible_rows": 3105,
+      "denominator_excluded_rows": 3,
+      "adjusted_evidence_rows": 3111,
+      "labelable_episode_ratio": 99.5,
+      "persona_core_ratio": 0.9952,
+      "adjusted_core_ratio": 0.9961,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "effective_balance_contribution": 30.7,
+      "blended_influence_share": 30.7,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 1360
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 994
+        },
+        {
+          "persona_id": "persona_03",
+          "rows": 307
+        }
+      ],
+      "dominant_exclusion_categories": [
+        "source_specific_support_noise",
+        "server_deploy_config_noise"
+      ],
+      "dominant_non_core_categories": [
+        "denominator_eligible_business_non_core",
+        "source_specific_support_noise",
+        "ambiguous_review_bucket"
+      ],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "metabase_discussions",
+      "source_tier": "core_representative_source",
+      "raw_rows": 14239,
+      "labeled_rows": 2055,
+      "persona_core_rows": 2055,
+      "deck_ready_denominator_eligible_rows": 2055,
+      "denominator_excluded_rows": 0,
+      "adjusted_evidence_rows": 2055,
+      "labelable_episode_ratio": 100.0,
+      "persona_core_ratio": 1.0,
+      "adjusted_core_ratio": 1.0,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "effective_balance_contribution": 20.0,
+      "blended_influence_share": 20.0,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_02",
+          "rows": 907
+        },
+        {
+          "persona_id": "persona_01",
+          "rows": 533
+        },
+        {
+          "persona_id": "persona_03",
+          "rows": 284
+        }
+      ],
+      "dominant_exclusion_categories": [],
+      "dominant_non_core_categories": [],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "github_discussions",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 18119,
+      "labeled_rows": 1313,
+      "persona_core_rows": 1096,
+      "deck_ready_denominator_eligible_rows": 1125,
+      "denominator_excluded_rows": 66,
+      "adjusted_evidence_rows": 1247,
+      "labelable_episode_ratio": 83.2,
+      "persona_core_ratio": 0.8347,
+      "adjusted_core_ratio": 0.8789,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "effective_balance_contribution": 11.0,
+      "blended_influence_share": 11.0,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 453
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 358
+        },
+        {
+          "persona_id": "persona_04",
+          "rows": 108
+        }
+      ],
+      "dominant_exclusion_categories": [
+        "server_deploy_config_noise",
+        "syntax_formula_debug_noise",
+        "api_sdk_debug_noise"
+      ],
+      "dominant_non_core_categories": [
+        "server_deploy_config_noise",
+        "api_sdk_debug_noise",
+        "syntax_formula_debug_noise"
+      ],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "stackoverflow",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 21544,
+      "labeled_rows": 1683,
+      "persona_core_rows": 839,
+      "deck_ready_denominator_eligible_rows": 1014,
+      "denominator_excluded_rows": 440,
+      "adjusted_evidence_rows": 1243,
+      "labelable_episode_ratio": 48.2,
+      "persona_core_ratio": 0.4985,
+      "adjusted_core_ratio": 0.675,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "effective_balance_contribution": 10.2,
+      "blended_influence_share": 10.2,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 635
+        },
+        {
+          "persona_id": "persona_04",
+          "rows": 83
+        },
+        {
+          "persona_id": "persona_06",
+          "rows": 58
+        }
+      ],
+      "dominant_exclusion_categories": [
+        "server_deploy_config_noise",
+        "syntax_formula_debug_noise",
+        "api_sdk_debug_noise"
+      ],
+      "dominant_non_core_categories": [
+        "server_deploy_config_noise",
+        "syntax_formula_debug_noise",
+        "ambiguous_review_bucket"
+      ],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "hubspot_community",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 6581,
+      "labeled_rows": 796,
+      "persona_core_rows": 783,
+      "deck_ready_denominator_eligible_rows": 786,
+      "denominator_excluded_rows": 10,
+      "adjusted_evidence_rows": 786,
+      "labelable_episode_ratio": 98.4,
+      "persona_core_ratio": 0.9837,
+      "adjusted_core_ratio": 0.9962,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "effective_balance_contribution": 8.2,
+      "blended_influence_share": 8.2,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 632
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 55
+        },
+        {
+          "persona_id": "persona_04",
+          "rows": 37
+        }
+      ],
+      "dominant_exclusion_categories": [
+        "server_deploy_config_noise",
+        "source_specific_support_noise",
+        "api_sdk_debug_noise"
+      ],
+      "dominant_non_core_categories": [
+        "server_deploy_config_noise",
+        "ambiguous_review_bucket",
+        "denominator_eligible_business_non_core"
+      ],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "shopify_community",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 5691,
+      "labeled_rows": 624,
+      "persona_core_rows": 449,
+      "deck_ready_denominator_eligible_rows": 473,
+      "denominator_excluded_rows": 140,
+      "adjusted_evidence_rows": 484,
+      "labelable_episode_ratio": 71.3,
+      "persona_core_ratio": 0.7196,
+      "adjusted_core_ratio": 0.9277,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "effective_balance_contribution": 4.4,
+      "blended_influence_share": 4.4,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 187
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 129
+        },
+        {
+          "persona_id": "persona_04",
+          "rows": 61
+        }
+      ],
+      "dominant_exclusion_categories": [
+        "server_deploy_config_noise",
+        "setup_auth_permission_noise",
+        "api_sdk_debug_noise"
+      ],
+      "dominant_non_core_categories": [
+        "server_deploy_config_noise",
+        "denominator_eligible_business_non_core",
+        "api_sdk_debug_noise"
+      ],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "google_developer_forums",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 10984,
+      "labeled_rows": 812,
+      "persona_core_rows": 252,
+      "deck_ready_denominator_eligible_rows": 608,
+      "denominator_excluded_rows": 81,
+      "adjusted_evidence_rows": 731,
+      "labelable_episode_ratio": 27.6,
+      "persona_core_ratio": 0.3103,
+      "adjusted_core_ratio": 0.3447,
+      "weak_source_cost_center": true,
+      "core_readiness_weak_source_cost_center": true,
+      "effective_balance_contribution": 3.7,
+      "blended_influence_share": 3.7,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 173
+        },
+        {
+          "persona_id": "persona_04",
+          "rows": 53
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 12
+        }
+      ],
+      "dominant_exclusion_categories": [
+        "server_deploy_config_noise",
+        "syntax_formula_debug_noise",
+        "setup_auth_permission_noise"
+      ],
+      "dominant_non_core_categories": [
+        "ambiguous_review_bucket",
+        "server_deploy_config_noise",
+        "syntax_formula_debug_noise"
+      ],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "domo_community_forum",
+      "source_tier": "exploratory_edge_source",
+      "raw_rows": 9354,
+      "labeled_rows": 1044,
+      "persona_core_rows": 112,
+      "deck_ready_denominator_eligible_rows": 448,
+      "denominator_excluded_rows": 519,
+      "adjusted_evidence_rows": 525,
+      "labelable_episode_ratio": 8.9,
+      "persona_core_ratio": 0.1073,
+      "adjusted_core_ratio": 0.2133,
+      "weak_source_cost_center": true,
+      "core_readiness_weak_source_cost_center": true,
+      "effective_balance_contribution": 3.5,
+      "blended_influence_share": 3.5,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 85
+        },
+        {
+          "persona_id": "persona_04",
+          "rows": 9
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 8
+        }
+      ],
+      "dominant_exclusion_categories": [
+        "server_deploy_config_noise",
+        "source_specific_support_noise",
+        "api_sdk_debug_noise"
+      ],
+      "dominant_non_core_categories": [
+        "server_deploy_config_noise",
+        "ambiguous_review_bucket",
+        "source_specific_support_noise"
+      ],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "adobe_analytics_community",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 4357,
+      "labeled_rows": 645,
+      "persona_core_rows": 196,
+      "deck_ready_denominator_eligible_rows": 561,
+      "denominator_excluded_rows": 64,
+      "adjusted_evidence_rows": 581,
+      "labelable_episode_ratio": 28.4,
+      "persona_core_ratio": 0.3039,
+      "adjusted_core_ratio": 0.3373,
+      "weak_source_cost_center": true,
+      "core_readiness_weak_source_cost_center": true,
+      "effective_balance_contribution": 3.2,
+      "blended_influence_share": 3.2,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 164
+        },
+        {
+          "persona_id": "persona_04",
+          "rows": 21
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 7
+        }
+      ],
+      "dominant_exclusion_categories": [
+        "server_deploy_config_noise",
+        "api_sdk_debug_noise",
+        "setup_auth_permission_noise"
+      ],
+      "dominant_non_core_categories": [
+        "ambiguous_review_bucket",
+        "denominator_eligible_business_non_core",
+        "server_deploy_config_noise"
+      ],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "reddit",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 1068,
+      "labeled_rows": 214,
+      "persona_core_rows": 197,
+      "deck_ready_denominator_eligible_rows": 207,
+      "denominator_excluded_rows": 1,
+      "adjusted_evidence_rows": 213,
+      "labelable_episode_ratio": 90.2,
+      "persona_core_ratio": 0.9206,
+      "adjusted_core_ratio": 0.9249,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "effective_balance_contribution": 2.0,
+      "blended_influence_share": 2.0,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 160
+        },
+        {
+          "persona_id": "persona_04",
+          "rows": 21
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 8
+        }
+      ],
+      "dominant_exclusion_categories": [
+        "server_deploy_config_noise"
+      ],
+      "dominant_non_core_categories": [
+        "ambiguous_review_bucket",
+        "setup_auth_permission_noise",
+        "server_deploy_config_noise"
+      ],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "sisense_community",
+      "source_tier": "supporting_validation_source",
+      "raw_rows": 586,
+      "labeled_rows": 189,
+      "persona_core_rows": 189,
+      "deck_ready_denominator_eligible_rows": 189,
+      "denominator_excluded_rows": 0,
+      "adjusted_evidence_rows": 189,
+      "labelable_episode_ratio": 100.0,
+      "persona_core_ratio": 1.0,
+      "adjusted_core_ratio": 1.0,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "effective_balance_contribution": 1.5,
+      "blended_influence_share": 1.5,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_03",
+          "rows": 84
+        },
+        {
+          "persona_id": "persona_05",
+          "rows": 66
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 20
+        }
+      ],
+      "dominant_exclusion_categories": [],
+      "dominant_non_core_categories": [],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "klaviyo_community",
+      "source_tier": "excluded_from_deck_ready_core",
+      "raw_rows": 6686,
+      "labeled_rows": 110,
+      "persona_core_rows": 103,
+      "deck_ready_denominator_eligible_rows": 104,
+      "denominator_excluded_rows": 5,
+      "adjusted_evidence_rows": 105,
+      "labelable_episode_ratio": 93.6,
+      "persona_core_ratio": 0.9364,
+      "adjusted_core_ratio": 0.981,
+      "weak_source_cost_center": true,
+      "core_readiness_weak_source_cost_center": false,
+      "effective_balance_contribution": 0.9,
+      "blended_influence_share": 0.9,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 52
+        },
+        {
+          "persona_id": "persona_04",
+          "rows": 25
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 14
+        }
+      ],
+      "dominant_exclusion_categories": [
+        "server_deploy_config_noise",
+        "api_sdk_debug_noise"
+      ],
+      "dominant_non_core_categories": [
+        "server_deploy_config_noise",
+        "denominator_eligible_business_non_core",
+        "source_specific_support_noise"
+      ],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "qlik_community",
+      "source_tier": "exploratory_edge_source",
+      "raw_rows": 328,
+      "labeled_rows": 48,
+      "persona_core_rows": 48,
+      "deck_ready_denominator_eligible_rows": 48,
+      "denominator_excluded_rows": 0,
+      "adjusted_evidence_rows": 48,
+      "labelable_episode_ratio": 100.0,
+      "persona_core_ratio": 1.0,
+      "adjusted_core_ratio": 1.0,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "effective_balance_contribution": 0.5,
+      "blended_influence_share": 0.5,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 26
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 10
+        },
+        {
+          "persona_id": "persona_04",
+          "rows": 4
+        }
+      ],
+      "dominant_exclusion_categories": [],
+      "dominant_non_core_categories": [],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    },
+    {
+      "source": "mixpanel_community",
+      "source_tier": "exploratory_edge_source",
+      "raw_rows": 632,
+      "labeled_rows": 27,
+      "persona_core_rows": 27,
+      "deck_ready_denominator_eligible_rows": 27,
+      "denominator_excluded_rows": 0,
+      "adjusted_evidence_rows": 27,
+      "labelable_episode_ratio": 100.0,
+      "persona_core_ratio": 1.0,
+      "adjusted_core_ratio": 1.0,
+      "weak_source_cost_center": false,
+      "core_readiness_weak_source_cost_center": false,
+      "effective_balance_contribution": 0.3,
+      "blended_influence_share": 0.3,
+      "top_persona_contributions": [
+        {
+          "persona_id": "persona_01",
+          "rows": 15
+        },
+        {
+          "persona_id": "persona_02",
+          "rows": 8
+        },
+        {
+          "persona_id": "persona_04",
+          "rows": 2
+        }
+      ],
+      "dominant_exclusion_categories": [],
+      "dominant_non_core_categories": [],
+      "seed_query_category_metadata": "not available in canonical labeled/episode outputs; using URL/text slice proxies"
+    }
+  ],
+  "weak_source_slice_breakdown_summary": [
+    {
+      "source": "adobe_analytics_community",
+      "source_tier": "supporting_validation_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "workspace_reporting",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 214,
+      "labeled_rows": 215,
+      "persona_core_rows": 63,
+      "denominator_eligible_rows": 202,
+      "technical_support_noise_excluded_rows": 3,
+      "ambiguous_rows": 106,
+      "business_non_core_rows": 33,
+      "adjusted_evidence_rows": 212,
+      "persona_core_ratio": 0.293,
+      "adjusted_core_ratio": 0.2972,
+      "persona_contribution_top": "persona_01:51 | persona_04:10",
+      "weak_source_contribution": "mixed",
+      "dominant_noncore_category": "ambiguous_review_bucket"
+    },
+    {
+      "source": "adobe_analytics_community",
+      "source_tier": "supporting_validation_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "other_operational",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 185,
+      "labeled_rows": 185,
+      "persona_core_rows": 33,
+      "denominator_eligible_rows": 136,
+      "technical_support_noise_excluded_rows": 46,
+      "ambiguous_rows": 78,
+      "business_non_core_rows": 25,
+      "adjusted_evidence_rows": 139,
+      "persona_core_ratio": 0.1784,
+      "adjusted_core_ratio": 0.2374,
+      "persona_contribution_top": "persona_01:27 | persona_04:3",
+      "weak_source_contribution": "mixed",
+      "dominant_noncore_category": "ambiguous_review_bucket"
+    },
+    {
+      "source": "adobe_analytics_community",
+      "source_tier": "supporting_validation_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "metric_reconciliation",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 81,
+      "labeled_rows": 83,
+      "persona_core_rows": 45,
+      "denominator_eligible_rows": 76,
+      "technical_support_noise_excluded_rows": 6,
+      "ambiguous_rows": 12,
+      "business_non_core_rows": 19,
+      "adjusted_evidence_rows": 77,
+      "persona_core_ratio": 0.5422,
+      "adjusted_core_ratio": 0.5844,
+      "persona_contribution_top": "persona_01:36 | persona_04:5",
+      "weak_source_contribution": "evidence-producing",
+      "dominant_noncore_category": "denominator_eligible_business_non_core"
+    },
+    {
+      "source": "adobe_analytics_community",
+      "source_tier": "supporting_validation_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "implementation_tracking",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 82,
+      "labeled_rows": 82,
+      "persona_core_rows": 24,
+      "denominator_eligible_rows": 69,
+      "technical_support_noise_excluded_rows": 7,
+      "ambiguous_rows": 36,
+      "business_non_core_rows": 9,
+      "adjusted_evidence_rows": 75,
+      "persona_core_ratio": 0.2927,
+      "adjusted_core_ratio": 0.32,
+      "persona_contribution_top": "persona_01:21 | persona_04:2",
+      "weak_source_contribution": "mixed",
+      "dominant_noncore_category": "ambiguous_review_bucket"
+    },
+    {
+      "source": "adobe_analytics_community",
+      "source_tier": "supporting_validation_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "api_admin_config",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 79,
+      "labeled_rows": 80,
+      "persona_core_rows": 31,
+      "denominator_eligible_rows": 78,
+      "technical_support_noise_excluded_rows": 2,
+      "ambiguous_rows": 46,
+      "business_non_core_rows": 1,
+      "adjusted_evidence_rows": 78,
+      "persona_core_ratio": 0.3875,
+      "adjusted_core_ratio": 0.3974,
+      "persona_contribution_top": "persona_01:29 | persona_04:1",
+      "weak_source_contribution": "mixed",
+      "dominant_noncore_category": "ambiguous_review_bucket"
+    },
+    {
+      "source": "domo_community_forum",
+      "source_tier": "exploratory_edge_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "card_report_delivery",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 379,
+      "labeled_rows": 379,
+      "persona_core_rows": 43,
+      "denominator_eligible_rows": 240,
+      "technical_support_noise_excluded_rows": 122,
+      "ambiguous_rows": 163,
+      "business_non_core_rows": 34,
+      "adjusted_evidence_rows": 257,
+      "persona_core_ratio": 0.1135,
+      "adjusted_core_ratio": 0.1673,
+      "persona_contribution_top": "persona_01:33 | persona_02:6",
+      "weak_source_contribution": "debt-producing",
+      "dominant_noncore_category": "ambiguous_review_bucket"
+    },
+    {
+      "source": "domo_community_forum",
+      "source_tier": "exploratory_edge_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "etl_dataset_config",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 341,
+      "labeled_rows": 341,
+      "persona_core_rows": 36,
+      "denominator_eligible_rows": 119,
+      "technical_support_noise_excluded_rows": 203,
+      "ambiguous_rows": 67,
+      "business_non_core_rows": 16,
+      "adjusted_evidence_rows": 138,
+      "persona_core_ratio": 0.1056,
+      "adjusted_core_ratio": 0.2609,
+      "persona_contribution_top": "persona_01:26 | persona_04:5",
+      "weak_source_contribution": "debt-producing",
+      "dominant_noncore_category": "server_deploy_config_noise"
+    },
+    {
+      "source": "domo_community_forum",
+      "source_tier": "exploratory_edge_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "other_operational",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 162,
+      "labeled_rows": 162,
+      "persona_core_rows": 22,
+      "denominator_eligible_rows": 43,
+      "technical_support_noise_excluded_rows": 107,
+      "ambiguous_rows": 18,
+      "business_non_core_rows": 3,
+      "adjusted_evidence_rows": 55,
+      "persona_core_ratio": 0.1358,
+      "adjusted_core_ratio": 0.4,
+      "persona_contribution_top": "persona_01:20 | persona_06:2",
+      "weak_source_contribution": "debt-producing",
+      "dominant_noncore_category": "server_deploy_config_noise"
+    },
+    {
+      "source": "domo_community_forum",
+      "source_tier": "exploratory_edge_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "beast_mode_formula",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 138,
+      "labeled_rows": 138,
+      "persona_core_rows": 11,
+      "denominator_eligible_rows": 44,
+      "technical_support_noise_excluded_rows": 65,
+      "ambiguous_rows": 23,
+      "business_non_core_rows": 10,
+      "adjusted_evidence_rows": 73,
+      "persona_core_ratio": 0.0797,
+      "adjusted_core_ratio": 0.1507,
+      "persona_contribution_top": "persona_01:6 | persona_04:2",
+      "weak_source_contribution": "debt-producing",
+      "dominant_noncore_category": "source_specific_support_noise"
+    },
+    {
+      "source": "domo_community_forum",
+      "source_tier": "exploratory_edge_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "filtering_logic",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 24,
+      "labeled_rows": 24,
+      "persona_core_rows": 0,
+      "denominator_eligible_rows": 2,
+      "technical_support_noise_excluded_rows": 22,
+      "ambiguous_rows": 1,
+      "business_non_core_rows": 1,
+      "adjusted_evidence_rows": 2,
+      "persona_core_ratio": 0.0,
+      "adjusted_core_ratio": 0.0,
+      "persona_contribution_top": "",
+      "weak_source_contribution": "debt-producing",
+      "dominant_noncore_category": "server_deploy_config_noise"
+    },
+    {
+      "source": "google_developer_forums",
+      "source_tier": "supporting_validation_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "report_delivery_ui",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 453,
+      "labeled_rows": 456,
+      "persona_core_rows": 155,
+      "denominator_eligible_rows": 413,
+      "technical_support_noise_excluded_rows": 1,
+      "ambiguous_rows": 255,
+      "business_non_core_rows": 3,
+      "adjusted_evidence_rows": 455,
+      "persona_core_ratio": 0.3399,
+      "adjusted_core_ratio": 0.3407,
+      "persona_contribution_top": "persona_01:113 | persona_04:27",
+      "weak_source_contribution": "mixed",
+      "dominant_noncore_category": "ambiguous_review_bucket"
+    },
+    {
+      "source": "google_developer_forums",
+      "source_tier": "supporting_validation_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "sharing_permissions_delivery",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 109,
+      "labeled_rows": 110,
+      "persona_core_rows": 41,
+      "denominator_eligible_rows": 81,
+      "technical_support_noise_excluded_rows": 8,
+      "ambiguous_rows": 38,
+      "business_non_core_rows": 2,
+      "adjusted_evidence_rows": 102,
+      "persona_core_ratio": 0.3727,
+      "adjusted_core_ratio": 0.402,
+      "persona_contribution_top": "persona_01:30 | persona_04:7",
+      "weak_source_contribution": "evidence-producing",
+      "dominant_noncore_category": "ambiguous_review_bucket"
+    },
+    {
+      "source": "google_developer_forums",
+      "source_tier": "supporting_validation_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "other_operational",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 102,
+      "labeled_rows": 103,
+      "persona_core_rows": 8,
+      "denominator_eligible_rows": 28,
+      "technical_support_noise_excluded_rows": 54,
+      "ambiguous_rows": 7,
+      "business_non_core_rows": 13,
+      "adjusted_evidence_rows": 49,
+      "persona_core_ratio": 0.0777,
+      "adjusted_core_ratio": 0.1633,
+      "persona_contribution_top": "persona_04:6 | persona_02:2",
+      "weak_source_contribution": "debt-producing",
+      "dominant_noncore_category": "server_deploy_config_noise"
+    },
+    {
+      "source": "google_developer_forums",
+      "source_tier": "supporting_validation_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "report_logic_and_filters",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 97,
+      "labeled_rows": 99,
+      "persona_core_rows": 39,
+      "denominator_eligible_rows": 71,
+      "technical_support_noise_excluded_rows": 11,
+      "ambiguous_rows": 30,
+      "business_non_core_rows": 2,
+      "adjusted_evidence_rows": 88,
+      "persona_core_ratio": 0.3939,
+      "adjusted_core_ratio": 0.4432,
+      "persona_contribution_top": "persona_01:23 | persona_04:12",
+      "weak_source_contribution": "evidence-producing",
+      "dominant_noncore_category": "ambiguous_review_bucket"
+    },
+    {
+      "source": "google_developer_forums",
+      "source_tier": "supporting_validation_source",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "api_auth_setup",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 41,
+      "labeled_rows": 44,
+      "persona_core_rows": 9,
+      "denominator_eligible_rows": 15,
+      "technical_support_noise_excluded_rows": 7,
+      "ambiguous_rows": 6,
+      "business_non_core_rows": 0,
+      "adjusted_evidence_rows": 37,
+      "persona_core_ratio": 0.2045,
+      "adjusted_core_ratio": 0.2432,
+      "persona_contribution_top": "persona_01:7 | persona_06:1",
+      "weak_source_contribution": "evidence-producing",
+      "dominant_noncore_category": "setup_auth_permission_noise"
+    },
+    {
+      "source": "klaviyo_community",
+      "source_tier": "excluded_from_deck_ready_core",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "revenue_reporting",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 79,
+      "labeled_rows": 79,
+      "persona_core_rows": 78,
+      "denominator_eligible_rows": 79,
+      "technical_support_noise_excluded_rows": 0,
+      "ambiguous_rows": 0,
+      "business_non_core_rows": 1,
+      "adjusted_evidence_rows": 79,
+      "persona_core_ratio": 0.9873,
+      "adjusted_core_ratio": 0.9873,
+      "persona_contribution_top": "persona_01:50 | persona_04:16",
+      "weak_source_contribution": "evidence-producing",
+      "dominant_noncore_category": "denominator_eligible_business_non_core"
+    },
+    {
+      "source": "klaviyo_community",
+      "source_tier": "excluded_from_deck_ready_core",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "segment_flow_logic",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 26,
+      "labeled_rows": 26,
+      "persona_core_rows": 23,
+      "denominator_eligible_rows": 23,
+      "technical_support_noise_excluded_rows": 3,
+      "ambiguous_rows": 0,
+      "business_non_core_rows": 0,
+      "adjusted_evidence_rows": 23,
+      "persona_core_ratio": 0.8846,
+      "adjusted_core_ratio": 1.0,
+      "persona_contribution_top": "persona_02:11 | persona_04:7",
+      "weak_source_contribution": "evidence-producing",
+      "dominant_noncore_category": "server_deploy_config_noise"
+    },
+    {
+      "source": "klaviyo_community",
+      "source_tier": "excluded_from_deck_ready_core",
+      "slice_dimension": "source_specific_url_text_proxy",
+      "slice_name": "other_operational",
+      "raw_rows_proxy_unique_raw_ids_in_labeled_slice": 5,
+      "labeled_rows": 5,
+      "persona_core_rows": 2,
+      "denominator_eligible_rows": 2,
+      "technical_support_noise_excluded_rows": 2,
+      "ambiguous_rows": 0,
+      "business_non_core_rows": 0,
+      "adjusted_evidence_rows": 3,
+      "persona_core_ratio": 0.4,
+      "adjusted_core_ratio": 0.6667,
+      "persona_contribution_top": "persona_04:2",
+      "weak_source_contribution": "debt-producing",
+      "dominant_noncore_category": "source_specific_support_noise"
+    }
+  ],
+  "weak_source_root_cause_classification": {
+    "google_developer_forums": [
+      "good_source_bad_slice_mix",
+      "support_setup_noise_dominant",
+      "source_specific_language_not_modeled",
+      "denominator_design_issue_already_partly_resolved"
+    ],
+    "adobe_analytics_community": [
+      "good_source_bad_slice_mix",
+      "source_specific_language_not_modeled",
+      "codebook_boundary_overreach",
+      "denominator_design_issue_already_partly_resolved"
+    ],
+    "domo_community_forum": [
+      "good_source_bad_slice_mix",
+      "parser_or_body_fidelity_issue",
+      "source_specific_language_not_modeled",
+      "support_setup_noise_dominant"
+    ],
+    "klaviyo_community": [
+      "bad_source_fit",
+      "overbroad_seed_or_query",
+      "low_incremental_yield",
+      "genuinely_low_value_source"
+    ]
+  },
+  "evidence_vs_debt_by_weak_source": {
+    "google_developer_forums": {
+      "high_value_slice_present": true,
+      "evidence_producing_slices": [
+        "sharing_permissions_delivery",
+        "report_logic_and_filters",
+        "api_auth_setup"
+      ],
+      "debt_producing_slices": [
+        "other_operational"
+      ],
+      "can_quarantine_bad_slice": true,
+      "improves_weak_source_debt_without_harming_balance": true
+    },
+    "adobe_analytics_community": {
+      "high_value_slice_present": true,
+      "evidence_producing_slices": [
+        "metric_reconciliation"
+      ],
+      "debt_producing_slices": [],
+      "can_quarantine_bad_slice": false,
+      "improves_weak_source_debt_without_harming_balance": true
+    },
+    "domo_community_forum": {
+      "high_value_slice_present": false,
+      "evidence_producing_slices": [],
+      "debt_producing_slices": [
+        "card_report_delivery",
+        "etl_dataset_config",
+        "other_operational",
+        "beast_mode_formula",
+        "filtering_logic"
+      ],
+      "can_quarantine_bad_slice": false,
+      "improves_weak_source_debt_without_harming_balance": true
+    },
+    "klaviyo_community": {
+      "high_value_slice_present": true,
+      "evidence_producing_slices": [
+        "revenue_reporting",
+        "segment_flow_logic"
+      ],
+      "debt_producing_slices": [
+        "other_operational"
+      ],
+      "can_quarantine_bad_slice": true,
+      "improves_weak_source_debt_without_harming_balance": false
+    }
+  },
+  "source_balance_root_cause": {
+    "current_effective_balanced_source_count": 5.89,
+    "diagnosis": [
+      "true evidence is concentrated in power_bi_community and metabase_discussions",
+      "weak sources contribute visible labeled volume but low influence-quality",
+      "supporting sources are often too small to materially lift balance",
+      "current official balance is influence-aware rather than denominator-adjusted, so denominator-excluded rows are not the main remaining distortion",
+      "source-tier membership and reviewable-release visibility keep diagnostics-active sources in the corpus even when they are weak deck-ready anchors"
+    ]
+  },
+  "quality_adjusted_source_balance_simulation": [
+    {
+      "scenario_id": "A_current_official",
+      "description": "Current official effective balanced source count.",
+      "effective_balance": 5.89,
+      "largest_source_share_pct": 24.57,
+      "top3_source_share_pct": 54.06,
+      "source_concentration_risk": "low",
+      "balance_direction_vs_current": "baseline",
+      "methodological_meaningfulness": "official influence-aware metric plus row-share proxy context",
+      "row_count": 12674,
+      "source_count": 14
+    },
+    {
+      "scenario_id": "B_persona_core_only",
+      "description": "Use persona-core rows only.",
+      "effective_balance": 5.33,
+      "largest_source_share_pct": 32.81,
+      "top3_source_share_pct": 66.17,
+      "source_concentration_risk": "medium",
+      "balance_direction_vs_current": "worsens",
+      "methodological_meaningfulness": "row-share proxy over persona-core evidence only",
+      "row_count": 9445,
+      "source_count": 14
+    },
+    {
+      "scenario_id": "C_denominator_eligible_rows",
+      "description": "Use all deck-ready denominator-eligible rows.",
+      "effective_balance": 6.43,
+      "largest_source_share_pct": 28.88,
+      "top3_source_share_pct": 58.47,
+      "source_concentration_risk": "medium",
+      "balance_direction_vs_current": "improves",
+      "methodological_meaningfulness": "row-share proxy over denominator-eligible evidence",
+      "row_count": 10750,
+      "source_count": 14
+    },
+    {
+      "scenario_id": "D_excluding_high_conf_tech_noise",
+      "description": "Exclude conservative high-confidence technical/support noise.",
+      "effective_balance": 6.74,
+      "largest_source_share_pct": 27.42,
+      "top3_source_share_pct": 56.53,
+      "source_concentration_risk": "medium",
+      "balance_direction_vs_current": "improves",
+      "methodological_meaningfulness": "row-share proxy after audited high-confidence noise exclusion",
+      "row_count": 11345,
+      "source_count": 14
+    },
+    {
+      "scenario_id": "E_core_plus_supporting_tiers_only",
+      "description": "Keep core representative + supporting validation sources only.",
+      "effective_balance": 6.34,
+      "largest_source_share_pct": 27.21,
+      "top3_source_share_pct": 59.87,
+      "source_concentration_risk": "medium",
+      "balance_direction_vs_current": "improves",
+      "methodological_meaningfulness": "row-share proxy over tier-filtered evidence",
+      "row_count": 11445,
+      "source_count": 10
+    },
+    {
+      "scenario_id": "F_quarantine_debt_slices",
+      "description": "Quarantine debt-producing slices inside current weak sources.",
+      "effective_balance": 6.47,
+      "largest_source_share_pct": 27.03,
+      "top3_source_share_pct": 59.47,
+      "source_concentration_risk": "medium",
+      "balance_direction_vs_current": "improves",
+      "methodological_meaningfulness": "row-share proxy after source-internal slice quarantine",
+      "row_count": 11522,
+      "source_count": 13
+    }
+  ],
+  "slice_aware_weak_source_debt_simulation": [
+    {
+      "scenario_id": "A_current_source_level",
+      "description": "Official current source-level weak-source debt.",
+      "weak_source_cost_center_count": 4,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "domo_community_forum",
+        "google_developer_forums",
+        "klaviyo_community"
+      ],
+      "slices_still_weak": [],
+      "evidence_loss_rows": 0,
+      "diagnostics_visibility_impact": "none",
+      "cherry_picking_risk": "low"
+    },
+    {
+      "scenario_id": "B_denominator_eligible_only",
+      "description": "Compute weak-source debt only on denominator-eligible rows.",
+      "weak_source_cost_center_count": 3,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "domo_community_forum",
+        "google_developer_forums"
+      ],
+      "slices_still_weak": [
+        "adobe_analytics_community::workspace_reporting",
+        "adobe_analytics_community::other_operational",
+        "adobe_analytics_community::implementation_tracking",
+        "adobe_analytics_community::api_admin_config",
+        "domo_community_forum::card_report_delivery",
+        "domo_community_forum::etl_dataset_config",
+        "domo_community_forum::other_operational",
+        "domo_community_forum::beast_mode_formula",
+        "domo_community_forum::filtering_logic",
+        "google_developer_forums::report_delivery_ui",
+        "google_developer_forums::other_operational"
+      ],
+      "evidence_loss_rows": 1924,
+      "diagnostics_visibility_impact": "none",
+      "cherry_picking_risk": "low"
+    },
+    {
+      "scenario_id": "C_excluding_high_conf_tech_noise",
+      "description": "Compute weak-source debt after excluding high-confidence technical/support noise.",
+      "weak_source_cost_center_count": 3,
+      "core_readiness_weak_source_cost_center_count": 3,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "domo_community_forum",
+        "google_developer_forums"
+      ],
+      "slices_still_weak": [
+        "adobe_analytics_community::workspace_reporting",
+        "adobe_analytics_community::other_operational",
+        "adobe_analytics_community::implementation_tracking",
+        "adobe_analytics_community::api_admin_config",
+        "domo_community_forum::card_report_delivery",
+        "domo_community_forum::etl_dataset_config",
+        "domo_community_forum::other_operational",
+        "domo_community_forum::beast_mode_formula",
+        "domo_community_forum::filtering_logic",
+        "google_developer_forums::report_delivery_ui",
+        "google_developer_forums::other_operational"
+      ],
+      "evidence_loss_rows": 1329,
+      "diagnostics_visibility_impact": "none",
+      "cherry_picking_risk": "low"
+    },
+    {
+      "scenario_id": "D_quarantine_debt_slices",
+      "description": "Quarantine debt-producing slices inside weak sources.",
+      "weak_source_cost_center_count": 2,
+      "core_readiness_weak_source_cost_center_count": 2,
+      "sources_still_weak": [
+        "adobe_analytics_community",
+        "google_developer_forums"
+      ],
+      "slices_still_weak": [
+        "adobe_analytics_community::workspace_reporting",
+        "adobe_analytics_community::other_operational",
+        "adobe_analytics_community::implementation_tracking",
+        "adobe_analytics_community::api_admin_config",
+        "google_developer_forums::report_delivery_ui",
+        "google_developer_forums::other_operational"
+      ],
+      "evidence_loss_rows": 1152,
+      "diagnostics_visibility_impact": "would require slice-aware diagnostics to stay visible",
+      "cherry_picking_risk": "medium"
+    },
+    {
+      "scenario_id": "E_keep_only_evidence_slices",
+      "description": "Keep only evidence-producing slices inside weak sources.",
+      "weak_source_cost_center_count": 0,
+      "core_readiness_weak_source_cost_center_count": 0,
+      "sources_still_weak": [],
+      "slices_still_weak": [],
+      "evidence_loss_rows": 2170,
+      "diagnostics_visibility_impact": "would require slice-aware diagnostics to stay visible",
+      "cherry_picking_risk": "high"
+    }
+  ],
+  "codebook_boundary_contribution_audit": {
+    "examples": [
+      {
+        "source": "stackoverflow",
+        "episode_id": "stackoverflow::70096096::01",
+        "family": "tool_limitation_workaround",
+        "category": "syntax_formula_debug_noise",
+        "reason": "Primary signal is syntax or formula debugging without enough business reporting context.",
+        "excerpt": "The PeriodCustomer column is not found or cannot be used in this expression. Power BI (DAX) <p>I am writing code to determine the Running Total Customers: All Customers Until This Period. Now, I have created a This period's Customers table "
+      },
+      {
+        "source": "stackoverflow",
+        "episode_id": "stackoverflow::75592842::01",
+        "family": "tool_limitation_workaround",
+        "category": "syntax_formula_debug_noise",
+        "reason": "Primary signal is syntax or formula debugging without enough business reporting context.",
+        "excerpt": "Power BI :: Show a Table of Measures on Rows Instead of Columns <p><strong>GOAL:</strong> I'm trying to create a table in Power BI with different measure.</p> <p>Every measure has a different filter, for example:</p> <pre><code>Realised Sav"
+      },
+      {
+        "source": "google_developer_forums",
+        "episode_id": "google_developer_forums::129993::02",
+        "family": "presentation_ready_output_need",
+        "category": "setup_auth_permission_noise",
+        "reason": "Primary signal is setup, authentication, permission, or access troubleshooting without enough business context.",
+        "excerpt": "To create a connection profile for Cloud SQL Postgres with a private IP address and SSL enabled in Google Cloud, you need to: Download the Client Certificate and Private Key from Google Cloud : Go to the Cloud SQL console. Navigate to your "
+      }
+    ],
+    "affected_sources": [
+      "google_developer_forums",
+      "stackoverflow"
+    ],
+    "is_codebook_boundary_problem": true,
+    "denominator_classifier_already_mitigates_it": true,
+    "future_codebook_revision_needed": true,
+    "summary": "Some manual-reporting, tool-limitation, reconciliation, and output-need codes still appear on rows that are operationally technical/support heavy. The adjusted denominator classifier already prevents those rows from inflating deck-ready coverage, but the label/code families still overstate business significance inside weak-source slices."
+  },
+  "recommended_next_action": "write_slice_aware_source_policy_spec",
+  "recommended_action_reason": "The dominant pattern is good-source-bad-slice mix inside several weak sources. A slice-aware source policy spec is the narrowest next step that can preserve diagnostics visibility while separating evidence-producing slices from debt-producing slices without another source expansion loop."
+}
