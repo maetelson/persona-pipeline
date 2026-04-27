@@ -28,6 +28,19 @@ DENOMINATOR_ELIGIBILITY_CATEGORIES = [
     "ambiguous_review_bucket",
 ]
 
+CONSERVATIVE_DENOMINATOR_POLICY_MODE = "conservative_high_confidence_noise_only"
+CONSERVATIVE_DENOMINATOR_POLICY_VERSION = "v1"
+CONSERVATIVE_EXCLUSION_CATEGORIES = {
+    "technical_support_debug_noise",
+    "source_specific_support_noise",
+    "setup_auth_permission_noise",
+    "api_sdk_debug_noise",
+    "server_deploy_config_noise",
+    "syntax_formula_debug_noise",
+    "vendor_announcement_or_feature_request_only",
+    "career_training_certification_noise",
+}
+
 ROW_OUTPUT_COLUMNS = [
     "episode_id",
     "source",
@@ -256,6 +269,107 @@ def write_deck_ready_denominator_eligibility_artifacts(
     row_df.to_csv(csv_path, index=False)
     json_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     return {"rows_csv": csv_path, "summary_json": json_path}
+
+
+def build_conservative_deck_ready_denominator_metrics(
+    row_df: pd.DataFrame,
+    *,
+    persona_core_row_count: int | None = None,
+) -> dict[str, Any]:
+    """Return conservative Scenario H denominator metrics without changing official readiness."""
+    working = row_df.copy()
+    if "business_context_signal_count" not in working.columns:
+        working["business_context_signal_count"] = 0
+    if "technical_noise_confidence" not in working.columns:
+        working["technical_noise_confidence"] = 0.0
+    if "denominator_eligibility_category" not in working.columns:
+        working["denominator_eligibility_category"] = ""
+    if "persona_core_eligible" not in working.columns:
+        working["persona_core_eligible"] = False
+    if "deck_ready_denominator_eligible" not in working.columns:
+        working["deck_ready_denominator_eligible"] = False
+
+    persona_core_rows = int(
+        persona_core_row_count
+        if persona_core_row_count is not None
+        else working["persona_core_eligible"].fillna(False).astype(bool).sum()
+    )
+    excluded_mask = _conservative_exclusion_mask(working)
+    excluded_df = working.loc[excluded_mask].copy()
+    adjusted_denominator_row_count = int(len(working) - len(excluded_df))
+    adjusted_core_coverage_pct = round(
+        (persona_core_rows / float(max(adjusted_denominator_row_count, 1))) * 100.0,
+        2,
+    )
+
+    return {
+        "original_persona_core_coverage_pct": round(
+            (persona_core_rows / float(max(len(working), 1))) * 100.0,
+            1,
+        ),
+        "adjusted_deck_ready_denominator_row_count": adjusted_denominator_row_count,
+        "adjusted_deck_ready_denominator_excluded_row_count": int(len(excluded_df)),
+        "adjusted_deck_ready_denominator_core_coverage_pct": adjusted_core_coverage_pct,
+        "denominator_exclusion_count_by_category": _series_count_dict(
+            excluded_df.get("denominator_eligibility_category", pd.Series(dtype=str))
+        ),
+        "denominator_exclusion_count_by_source": _series_count_dict(
+            excluded_df.get("source", pd.Series(dtype=str))
+        ),
+        "denominator_exclusion_count_by_source_tier": _series_count_dict(
+            excluded_df.get("source_tier", pd.Series(dtype=str))
+        ),
+        "denominator_policy_mode": CONSERVATIVE_DENOMINATOR_POLICY_MODE,
+        "denominator_policy_version": CONSERVATIVE_DENOMINATOR_POLICY_VERSION,
+        "adjusted_denominator_metric_status": "audited",
+        "conservative_exclusions_df": excluded_df,
+    }
+
+
+def write_conservative_denominator_artifacts(
+    root_dir: Path,
+    row_df: pd.DataFrame,
+    conservative_metrics: dict[str, Any],
+) -> dict[str, Path]:
+    """Write conservative Scenario H exclusion audit artifacts."""
+    excluded_df = conservative_metrics.get("conservative_exclusions_df", pd.DataFrame()).copy()
+    if "normalized_episode_excerpt" not in excluded_df.columns:
+        excluded_df["normalized_episode_excerpt"] = ""
+    exclusion_columns = [
+        "episode_id",
+        "source",
+        "source_tier",
+        "denominator_eligibility_category",
+        "denominator_exclusion_reason",
+        "technical_noise_confidence",
+        "business_context_signal_count",
+        "technical_noise_signal_count",
+        "normalized_episode_excerpt",
+    ]
+    for column in exclusion_columns:
+        if column not in excluded_df.columns:
+            excluded_df[column] = ""
+    exclusions_csv_path = (
+        root_dir / "artifacts" / "readiness" / "deck_ready_denominator_conservative_exclusions.csv"
+    )
+    metric_json_path = (
+        root_dir / "artifacts" / "readiness" / "deck_ready_denominator_conservative_metric.json"
+    )
+    ensure_dir(exclusions_csv_path.parent)
+    excluded_df[exclusion_columns].to_csv(exclusions_csv_path, index=False)
+    metric_payload = {
+        key: value
+        for key, value in conservative_metrics.items()
+        if key != "conservative_exclusions_df"
+    }
+    metric_json_path.write_text(
+        json.dumps(metric_payload, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return {
+        "conservative_exclusions_csv": exclusions_csv_path,
+        "conservative_metric_json": metric_json_path,
+    }
 
 
 def build_denominator_classifier_calibration_report(
@@ -650,6 +764,36 @@ def _looks_like_original_phase1_baseline(category_counts: dict[str, Any]) -> boo
     """Return whether counts still match the original fully-collapsed Phase 1 baseline."""
     non_zero_categories = {str(k) for k, v in category_counts.items() if int(v or 0) > 0}
     return non_zero_categories.issubset({"persona_core_evidence", "generic_low_signal"})
+
+
+def _conservative_exclusion_mask(row_df: pd.DataFrame) -> pd.Series:
+    """Return Scenario H exclusion mask for adjusted denominator auditing."""
+    categories = row_df["denominator_eligibility_category"].fillna("").astype(str)
+    business_context = pd.to_numeric(
+        row_df.get("business_context_signal_count", pd.Series(dtype=float)),
+        errors="coerce",
+    ).fillna(0)
+    technical_confidence = pd.to_numeric(
+        row_df.get("technical_noise_confidence", pd.Series(dtype=float)),
+        errors="coerce",
+    ).fillna(0.0)
+    persona_core = row_df["persona_core_eligible"].fillna(False).astype(bool)
+    denominator_eligible = row_df["deck_ready_denominator_eligible"].fillna(False).astype(bool)
+    generic_low_signal_mask = (
+        categories.eq("generic_low_signal")
+        & technical_confidence.ge(0.9)
+        & business_context.le(0)
+    )
+    explicit_noise_mask = categories.isin(CONSERVATIVE_EXCLUSION_CATEGORIES)
+    category_allowed_to_exclude = explicit_noise_mask | generic_low_signal_mask
+    return (
+        ~persona_core
+        & ~denominator_eligible
+        & category_allowed_to_exclude
+        & technical_confidence.ge(0.9)
+        & ~categories.eq("ambiguous_review_bucket")
+        & ~categories.eq("denominator_eligible_business_non_core")
+    )
 
 
 def _series_count_dict(series: pd.Series) -> dict[str, int]:

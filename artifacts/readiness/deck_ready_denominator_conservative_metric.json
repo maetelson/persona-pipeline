@@ -1,0 +1,35 @@
+{
+  "original_persona_core_coverage_pct": 74.5,
+  "adjusted_deck_ready_denominator_row_count": 11345,
+  "adjusted_deck_ready_denominator_excluded_row_count": 1329,
+  "adjusted_deck_ready_denominator_core_coverage_pct": 83.25,
+  "denominator_exclusion_count_by_category": {
+    "api_sdk_debug_noise": 71,
+    "career_training_certification_noise": 1,
+    "server_deploy_config_noise": 981,
+    "setup_auth_permission_noise": 55,
+    "source_specific_support_noise": 77,
+    "syntax_formula_debug_noise": 144
+  },
+  "denominator_exclusion_count_by_source": {
+    "adobe_analytics_community": 64,
+    "domo_community_forum": 519,
+    "github_discussions": 66,
+    "google_developer_forums": 81,
+    "hubspot_community": 10,
+    "klaviyo_community": 5,
+    "power_bi_community": 3,
+    "reddit": 1,
+    "shopify_community": 140,
+    "stackoverflow": 440
+  },
+  "denominator_exclusion_count_by_source_tier": {
+    "core_representative_source": 3,
+    "excluded_from_deck_ready_core": 5,
+    "exploratory_edge_source": 519,
+    "supporting_validation_source": 802
+  },
+  "denominator_policy_mode": "conservative_high_confidence_noise_only",
+  "denominator_policy_version": "v1",
+  "adjusted_denominator_metric_status": "audited"
+}

@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pandas as pd
 
+from src.analysis.deck_ready_denominator_eligibility import (
+    build_conservative_deck_ready_denominator_metrics,
+    build_deck_ready_denominator_eligibility_outputs,
+)
 from src.utils.pipeline_schema import (
     CLUSTER_DOMINANCE_SHARE_PCT,
     CORE_LABEL_COLUMNS,
@@ -226,9 +231,11 @@ READINESS_STATE_META: dict[str, dict[str, object]] = {
 def build_quality_metrics(
     stage_counts: dict[str, int],
     labeled_df: pd.DataFrame,
+    episodes_df: pd.DataFrame,
     source_stage_counts_df: pd.DataFrame,
     cluster_stats_df: pd.DataFrame,
     persona_examples_df: pd.DataFrame,
+    persona_assignments_df: pd.DataFrame | None = None,
     cluster_profiles: list[dict[str, object]] | None = None,
     cluster_robustness_summary_df: pd.DataFrame | None = None,
     source_balance_audit_df: pd.DataFrame | None = None,
@@ -290,6 +297,17 @@ def build_quality_metrics(
     min_cluster_size = _persona_min_cluster_size(labeled_count)
     selected_example_grounding_issue_count = _selected_example_grounding_issue_count(persona_examples_df)
     promoted_persona_grounding_failure_count = int(grounding_counts.get("weakly_grounded", 0)) + int(grounding_counts.get("ungrounded", 0))
+    denominator_outputs = build_deck_ready_denominator_eligibility_outputs(
+        labeled_df=labeled_df,
+        episodes_df=episodes_df,
+        persona_assignments_df=persona_assignments_df,
+        source_balance_audit_df=source_balance_audit_df,
+        current_persona_core_coverage_pct=round_pct(persona_core_labeled_count, labeled_count) if labeled_count else 0.0,
+    )
+    conservative_denominator_metrics = build_conservative_deck_ready_denominator_metrics(
+        denominator_outputs["rows_df"],
+        persona_core_row_count=persona_core_labeled_count,
+    )
     cluster_distribution = [
         {
             "cluster_id": str(row.get("cluster_id", "")),
@@ -343,6 +361,28 @@ def build_quality_metrics(
         "small_promoted_persona_count": _small_promoted_count(cluster_stats_df, min_cluster_size),
         "selected_example_grounding_issue_count": selected_example_grounding_issue_count,
         "promoted_persona_grounding_failure_count": promoted_persona_grounding_failure_count,
+        "original_persona_core_coverage_pct": conservative_denominator_metrics["original_persona_core_coverage_pct"],
+        "adjusted_deck_ready_denominator_row_count": conservative_denominator_metrics["adjusted_deck_ready_denominator_row_count"],
+        "adjusted_deck_ready_denominator_excluded_row_count": conservative_denominator_metrics["adjusted_deck_ready_denominator_excluded_row_count"],
+        "adjusted_deck_ready_denominator_core_coverage_pct": conservative_denominator_metrics["adjusted_deck_ready_denominator_core_coverage_pct"],
+        "denominator_exclusion_count_by_category": json.dumps(
+            conservative_denominator_metrics["denominator_exclusion_count_by_category"],
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
+        "denominator_exclusion_count_by_source": json.dumps(
+            conservative_denominator_metrics["denominator_exclusion_count_by_source"],
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
+        "denominator_exclusion_count_by_source_tier": json.dumps(
+            conservative_denominator_metrics["denominator_exclusion_count_by_source_tier"],
+            ensure_ascii=False,
+            sort_keys=True,
+        ),
+        "denominator_policy_mode": conservative_denominator_metrics["denominator_policy_mode"],
+        "denominator_policy_version": conservative_denominator_metrics["denominator_policy_version"],
+        "adjusted_denominator_metric_status": conservative_denominator_metrics["adjusted_denominator_metric_status"],
         "promoted_candidate_persona_count": int(promotion_semantics.get("promoted_candidate_persona_count", 0)),
         "promotion_visibility_persona_count": int(promotion_semantics.get("promotion_visibility_persona_count", promoted_persona_count)),
         "headline_persona_count": int(promotion_semantics.get("headline_persona_count", grounding_counts.get("grounded", 0))),

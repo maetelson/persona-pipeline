@@ -7,7 +7,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.analysis.deck_ready_denominator_eligibility import build_deck_ready_denominator_eligibility_outputs
+from src.analysis.deck_ready_denominator_eligibility import (
+    build_conservative_deck_ready_denominator_metrics,
+    build_deck_ready_denominator_eligibility_outputs,
+)
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -64,6 +67,8 @@ class DeckReadyDenominatorEligibilityTests(unittest.TestCase):
         self.assertTrue(bool(row["deck_ready_denominator_eligible"]))
         self.assertEqual(str(row["denominator_eligibility_category"]), "persona_core_evidence")
         self.assertTrue(bool(outputs["summary"]["persona_core_rows_always_eligible_check"]))
+        conservative = build_conservative_deck_ready_denominator_metrics(outputs["rows_df"], persona_core_row_count=1)
+        self.assertEqual(int(conservative["adjusted_deck_ready_denominator_excluded_row_count"]), 0)
 
     def test_business_reporting_pain_is_retained(self) -> None:
         outputs = self._build_outputs(
@@ -152,6 +157,8 @@ class DeckReadyDenominatorEligibilityTests(unittest.TestCase):
         self.assertFalse(bool(row["deck_ready_denominator_eligible"]))
         self.assertEqual(str(row["denominator_eligibility_category"]), "syntax_formula_debug_noise")
         self.assertTrue(str(row["denominator_exclusion_reason"]))
+        conservative = build_conservative_deck_ready_denominator_metrics(outputs["rows_df"], persona_core_row_count=0)
+        self.assertEqual(int(conservative["adjusted_deck_ready_denominator_excluded_row_count"]), 1)
 
     def test_setup_auth_api_and_deploy_noise_is_excluded(self) -> None:
         outputs = self._build_outputs(
@@ -219,6 +226,8 @@ class DeckReadyDenominatorEligibilityTests(unittest.TestCase):
         self.assertEqual(str(lookup.loc["ep-api", "denominator_eligibility_category"]), "api_sdk_debug_noise")
         self.assertEqual(str(lookup.loc["ep-server", "denominator_eligibility_category"]), "server_deploy_config_noise")
         self.assertFalse(lookup["deck_ready_denominator_eligible"].astype(bool).any())
+        conservative = build_conservative_deck_ready_denominator_metrics(outputs["rows_df"], persona_core_row_count=0)
+        self.assertEqual(int(conservative["adjusted_deck_ready_denominator_excluded_row_count"]), 3)
 
     def test_source_specific_noise_patterns_classify_correctly(self) -> None:
         outputs = self._build_outputs(
@@ -266,6 +275,8 @@ class DeckReadyDenominatorEligibilityTests(unittest.TestCase):
         lookup = outputs["rows_df"].set_index("episode_id")
         self.assertEqual(str(lookup.loc["ep-adobe", "denominator_eligibility_category"]), "source_specific_support_noise")
         self.assertEqual(str(lookup.loc["ep-domo", "denominator_eligibility_category"]), "source_specific_support_noise")
+        conservative = build_conservative_deck_ready_denominator_metrics(outputs["rows_df"], persona_core_row_count=0)
+        self.assertEqual(int(conservative["adjusted_deck_ready_denominator_excluded_row_count"]), 2)
 
     def test_generic_low_signal_is_not_used_when_specific_noise_applies(self) -> None:
         outputs = self._build_outputs(
@@ -295,6 +306,8 @@ class DeckReadyDenominatorEligibilityTests(unittest.TestCase):
         row = outputs["rows_df"].iloc[0]
         self.assertEqual(str(row["denominator_eligibility_category"]), "syntax_formula_debug_noise")
         self.assertFalse(bool(row["deck_ready_denominator_eligible"]))
+        conservative = build_conservative_deck_ready_denominator_metrics(outputs["rows_df"], persona_core_row_count=0)
+        self.assertEqual(int(conservative["adjusted_deck_ready_denominator_excluded_row_count"]), 1)
 
     def test_vendor_and_career_noise_are_excluded(self) -> None:
         outputs = self._build_outputs(
@@ -378,6 +391,8 @@ class DeckReadyDenominatorEligibilityTests(unittest.TestCase):
         self.assertTrue(bool(row["deck_ready_denominator_eligible"]))
         self.assertEqual(str(row["denominator_eligibility_category"]), "ambiguous_review_bucket")
         self.assertTrue(bool(row["ambiguity_flag"]))
+        conservative = build_conservative_deck_ready_denominator_metrics(outputs["rows_df"], persona_core_row_count=0)
+        self.assertEqual(int(conservative["adjusted_deck_ready_denominator_excluded_row_count"]), 0)
 
     def test_mixed_business_and_technical_rows_become_ambiguous(self) -> None:
         outputs = self._build_outputs(
@@ -410,6 +425,44 @@ class DeckReadyDenominatorEligibilityTests(unittest.TestCase):
         self.assertEqual(str(row["denominator_eligibility_category"]), "ambiguous_review_bucket")
         self.assertTrue(bool(row["deck_ready_denominator_eligible"]))
         self.assertTrue(bool(row["ambiguity_flag"]))
+        conservative = build_conservative_deck_ready_denominator_metrics(outputs["rows_df"], persona_core_row_count=0)
+        self.assertEqual(int(conservative["adjusted_deck_ready_denominator_excluded_row_count"]), 0)
+
+    def test_medium_confidence_technical_rows_are_not_excluded(self) -> None:
+        outputs = self._build_outputs(
+            labeled_rows=[
+                {
+                    "episode_id": "ep-medium",
+                    "persona_core_eligible": False,
+                    "labelability_status": "medium_signal",
+                    "labelability_reason": "mixed support row",
+                    "pain_codes": [],
+                    "question_codes": [],
+                    "output_codes": [],
+                    "label_reason": "support row",
+                }
+            ],
+            episode_rows=[
+                {
+                    "episode_id": "ep-medium",
+                    "source": "github_discussions",
+                    "normalized_episode": "Installation upgrade issue in docker deployment with some workflow context.",
+                    "business_question": "How do we get this report back out to the team?",
+                    "bottleneck_text": "deployment issue",
+                    "desired_output": "weekly report delivery",
+                }
+            ],
+        )
+        conservative = build_conservative_deck_ready_denominator_metrics(outputs["rows_df"], persona_core_row_count=0)
+        self.assertEqual(int(conservative["adjusted_deck_ready_denominator_excluded_row_count"]), 0)
+
+    def test_adjusted_metric_is_added_separately_from_original_metric(self) -> None:
+        overview_df = pd.read_csv(ROOT_DIR / "data" / "analysis" / "overview.csv")
+        metrics = dict(zip(overview_df["metric"].astype(str), overview_df["value"]))
+        self.assertIn("original_persona_core_coverage_pct", metrics)
+        self.assertIn("adjusted_deck_ready_denominator_row_count", metrics)
+        self.assertIn("adjusted_deck_ready_denominator_core_coverage_pct", metrics)
+        self.assertEqual(float(metrics["persona_core_coverage_of_all_labeled_pct"]), 74.5)
 
     def test_output_row_count_matches_labeled_rows_and_current_counts_do_not_change(self) -> None:
         labeled_df = pd.read_parquet(ROOT_DIR / "data" / "labeled" / "labeled_episodes.parquet")

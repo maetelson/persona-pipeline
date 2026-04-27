@@ -369,10 +369,12 @@ def build_quality_checks(
     return build_quality_metrics(
         stage_counts=stage_counts,
         labeled_df=labeled_df,
+        episodes_df=pd.DataFrame(),
         source_stage_counts_df=pd.DataFrame(),
         source_balance_audit_df=None,
         cluster_stats_df=pd.DataFrame(),
         persona_examples_df=pd.DataFrame(),
+        persona_assignments_df=pd.DataFrame(),
         cluster_profiles=cluster_profiles,
     )
 
@@ -415,7 +417,20 @@ def _quality_denominator_type(metric: str, quality_checks: dict[str, object]) ->
         "overall_unknown_ratio",
         DENOMINATOR_LABELED_EPISODE_ROWS,
         "persona_core_coverage_of_all_labeled_pct",
+        "original_persona_core_coverage_pct",
+        "adjusted_deck_ready_denominator_core_coverage_pct",
         "largest_labeled_source_share_pct",
+    }:
+        return DENOMINATOR_LABELED_EPISODE_ROWS
+    if metric in {
+        "adjusted_deck_ready_denominator_row_count",
+        "adjusted_deck_ready_denominator_excluded_row_count",
+        "denominator_exclusion_count_by_category",
+        "denominator_exclusion_count_by_source",
+        "denominator_exclusion_count_by_source_tier",
+        "denominator_policy_mode",
+        "denominator_policy_version",
+        "adjusted_denominator_metric_status",
     }:
         return DENOMINATOR_LABELED_EPISODE_ROWS
     if metric == "largest_promoted_source_share_pct":
@@ -455,7 +470,22 @@ def _quality_denominator_value(metric: str, quality_checks: dict[str, object]) -
         "overall_unknown_ratio",
         DENOMINATOR_LABELED_EPISODE_ROWS,
         "persona_core_coverage_of_all_labeled_pct",
+        "original_persona_core_coverage_pct",
+        "adjusted_deck_ready_denominator_core_coverage_pct",
         "largest_labeled_source_share_pct",
+    }:
+        return quality_checks.get(DENOMINATOR_LABELED_EPISODE_ROWS, quality_checks.get("labeled_count", ""))
+    if metric == "adjusted_deck_ready_denominator_row_count":
+        return quality_checks.get(DENOMINATOR_LABELED_EPISODE_ROWS, quality_checks.get("labeled_count", ""))
+    if metric == "adjusted_deck_ready_denominator_excluded_row_count":
+        return quality_checks.get(DENOMINATOR_LABELED_EPISODE_ROWS, quality_checks.get("labeled_count", ""))
+    if metric in {
+        "denominator_exclusion_count_by_category",
+        "denominator_exclusion_count_by_source",
+        "denominator_exclusion_count_by_source_tier",
+        "denominator_policy_mode",
+        "denominator_policy_version",
+        "adjusted_denominator_metric_status",
     }:
         return quality_checks.get(DENOMINATOR_LABELED_EPISODE_ROWS, quality_checks.get("labeled_count", ""))
     if metric == "largest_promoted_source_share_pct":
