@@ -27,6 +27,33 @@ do not launch 03_filter_valid.py and 03_5_prefilter_relevance.py together in a p
 do not launch 04_build_episodes.py, 05_label_episodes.py, and 06_cluster_and_score.py together in a parallel wrapper
 ```
 
+## Fast validation commands
+
+Prefer the smallest tier that matches the change before running downstream stages.
+
+```bash
+make test-unit
+make test-fixture
+make test-smoke
+make test-full
+make test-changed
+make validate-config
+make validate-schema
+```
+
+- `make test-unit`
+  - utilities, parsers, date logic, score helpers
+- `make validate-config`
+  - YAML and source-registry changes
+- `make validate-schema`
+  - sheet/column/denominator contract changes
+- `make test-fixture`
+  - stage-local fixture behavior changes
+- `make test-smoke`
+  - orchestration or cross-stage wiring changes
+- `make test-full`
+  - release or regression confirmation only
+
 ## 1. 설치
 
 ```bash

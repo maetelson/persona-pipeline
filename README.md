@@ -251,6 +251,45 @@ Important: dependent stages should be run sequentially, not in parallel. This re
 
 By default, pipeline runs are expected to update canonical outputs under `data/`. Optional diagnostics and experimental sidecar artifacts under `artifacts/` should be treated as opt-in outputs.
 
+## Test And Validation Tiers
+
+Use the smallest validation tier that matches the change:
+
+| Change type | Example | Minimum validation | Full pipeline required |
+|---|---|---|---|
+| pure utility change | date parser, YAML loader | `make test-unit` | no |
+| schema change | episode columns, label columns | `make validate-schema` | usually no |
+| config change | source yaml, time window | `make validate-config` + `make test-fixture` | no |
+| filter rule change | invalid rule, hard negative | `make test-fixture` | no |
+| normalizer change | raw -> normalized mapping | `make test-fixture` | no |
+| episode change | normalized -> episode | `make test-fixture` | no |
+| labeling parser change | LLM output parsing | `make test-fixture` | no |
+| clustering or scoring change | co-occurrence, persona scoring | `make validate-schema` + `make test-fixture` | sometimes smoke only |
+| end-to-end behavior change | pipeline wiring, stage orchestration | `make test-smoke` | yes, before merge or release |
+| release validation | final regression check | `make test-full` | yes |
+
+Primary commands:
+
+```bash
+make test-unit
+make test-fixture
+make test-smoke
+make test-full
+make test-changed
+make validate-config
+make validate-schema
+```
+
+Command intent:
+
+- `make test-unit`: fast function-level tests only
+- `make test-fixture`: small fixture-based stage tests
+- `make test-smoke`: config/schema validation + CLI smoke tests + mini pipeline smoke
+- `make test-full`: full pipeline plus snapshot/audit checks
+- `make test-changed`: choose the smallest reasonable suite from current changed files
+- `make validate-config`: YAML/config integrity only
+- `make validate-schema`: schema contract checks plus schema-focused tests
+
 ### 4. Run Tests
 
 Example test commands:
@@ -265,6 +304,14 @@ You can also run a broader suite, for example:
 
 ```bash
 python -m unittest
+```
+
+Fast local alternatives:
+
+```bash
+python run/devtools/test_matrix.py test-unit
+python run/devtools/test_matrix.py test-fixture
+python run/devtools/test_matrix.py test-changed
 ```
 
 ## Repository Structure

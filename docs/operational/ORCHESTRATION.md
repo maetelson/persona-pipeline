@@ -45,6 +45,30 @@ Expanded sequence used by `00_run_all.py`:
 - Default pipeline runs must prefer canonical outputs under `data/` and should not emit optional files under `artifacts/` unless the operator explicitly opts in.
 - Diagnostics, pilot, policy, readiness, release, and other sidecar artifact generation is opt-in behavior, not part of the default `00 -> 07` execution contract.
 
+## Validation tiers
+
+- `test-unit`
+  - use for pure utilities, parsers, date logic, YAML loading, score helpers, source-name normalization
+  - target runtime: seconds
+  - no live collection, no API calls, no LLM calls
+- `validate-config`
+  - use for `config/**/*.yaml`, source registry, time window, export schema edits
+  - validates parsing and key invariants without running stages
+- `validate-schema`
+  - use for column-contract, workbook-sheet, and denominator-contract edits
+  - validates schema invariants and schema-focused regressions without running the full pipeline
+- `test-fixture`
+  - use for one-stage behavior changes: normalizers, filters, relevance, episodes, labeling parsers, scoring helpers
+  - fixture size should stay small, roughly `5-20` rows
+  - prefer golden expectations on key columns or key rows, not full large snapshots
+- `test-smoke`
+  - use for orchestration or cross-stage wiring changes
+  - should stay bounded and avoid full dataset collection
+  - collector/API/LLM paths should remain mocked or disabled unless explicitly testing them
+- `test-full`
+  - reserve for release validation, large pipeline refactors, or major config churn
+  - includes the full sequential pipeline plus downstream summary/audit comparison
+
 ## Stage boundaries
 
 ### Time slices

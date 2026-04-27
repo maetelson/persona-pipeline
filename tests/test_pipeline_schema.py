@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import unittest
-from pathlib import Path
 
 import pandas as pd
 
@@ -338,12 +337,12 @@ class PipelineSchemaTests(unittest.TestCase):
         self.assertEqual(str(quality_row["status"]), "fail")
         self.assertEqual(str(quality_row["level"]), "hard_fail")
 
-    def test_policy_document_explicitly_describes_source_diversity_fail_rule(self) -> None:
-        policy_doc = Path("docs/quality_status_policy.md").read_text(encoding="utf-8")
-        self.assertIn("effective_source_diversity", policy_doc)
-        self.assertIn("effective_balanced_source_count", policy_doc)
-        self.assertIn("FAIL at `< 5.0`", policy_doc)
-        self.assertIn("influence-aware source balance", policy_doc)
+    def test_central_policy_explicitly_describes_source_diversity_fail_rule(self) -> None:
+        policy = QUALITY_STATUS_POLICY["effective_source_diversity"]
+        self.assertEqual(policy["metric"], "effective_balanced_source_count")
+        self.assertEqual(float(policy["fail_threshold"]), 5.0)
+        self.assertEqual(float(policy["warn_threshold"]), 6.0)
+        self.assertEqual(str(policy["display_threshold"]), "warn<6.0; fail<5.0")
 
 
 if __name__ == "__main__":
